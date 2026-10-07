@@ -13,6 +13,7 @@ import {
   voiceBitrateForListeners,
   withVoiceOpusBitrate,
 } from "./voice-transport";
+import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "./relay-policy";
 import { inputMeterLevelDb } from "./input-meter";
 import { RnnoiseWorkletNode, loadRnnoise } from "@sapphi-red/web-noise-suppressor";
 import rnnoiseWorkletPath from "@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js?url";
@@ -45,10 +46,10 @@ import type {
   VoiceJoinAttempt,
 } from "../app/types";
 import { AUDIO_SETTINGS_KEY } from "../app/settings-storage";
-import { SCREEN_SHARE_PROFILES, VOICE_RELAY_UNAVAILABLE_MESSAGE, microphoneErrorMessage } from "../app/voice";
+import { SCREEN_SHARE_PROFILES, microphoneErrorMessage } from "../app/voice";
 import { clamp } from "../app/format";
 import { hasDesktopActivityBridge } from "../app/desktop";
-import { hasUsableRelayIceServers } from "../../shared/rtc-relay";
+import { callDescriptionAuth, checkCallDescription, clearCallVerdict } from "../e2ee/call-verification";
 
 export type VoiceEngineDeps = {
   extraSettingsRef: MutableRefObject<ExtraSettings>;
@@ -1448,6 +1449,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
   };
 
   const closePeer = (connectionId: string) => {
+    clearCallVerdict(connectionId);
     const session = peerSessionsRef.current.get(connectionId);
     if (session) {
       if (session.recoveryTimer !== null) window.clearTimeout(session.recoveryTimer);
@@ -1608,11 +1610,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       return existing;
     }
 
-    if (!hasUsableRelayIceServers(iceServersRef.current)) {
-      setVoiceError(VOICE_RELAY_UNAVAILABLE_MESSAGE);
-      throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
-    }
-
+    // Relay-only: media always flows through TURN so peers never learn each
+    // other's IP addresses. ICE restarts gather fresh relay candidates.
     const pc = new RTCPeerConnection({
       iceServers: iceServersRef.current,
       iceTransportPolicy: "relay",
@@ -1768,7 +1767,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     };
 
     pc.onicecandidate = (event) => {
-      if (!event.candidate) return;
+      if (!event.candidate || !isRelayIceCandidate(event.candidate)) return;
       sendSocket({
         type: "RTC_ICE_CANDIDATE",
         targetConnectionId: participant.connectionId,
@@ -1920,6 +1919,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
             type: "RTC_DESCRIPTION",
             targetConnectionId: participant.connectionId,
             description: pc.localDescription,
+            ...callDescriptionAuth(participant.userId, pc.localDescription.sdp),
           });
         } catch (error) {
           console.error("WebRTC negotiation error:", error);
@@ -1948,10 +1948,21 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     }
   };
 
-  const handleRtcDescription = async (participant: VoiceParticipant, description: RTCSessionDescriptionInit) => {
+  const handleRtcDescription = async (
+    participant: VoiceParticipant,
+    description: RTCSessionDescriptionInit,
+    auth?: unknown,
+  ) => {
     const session = ensurePeer(participant);
     await enqueuePeerSignaling(session, async () => {
       const { pc } = session;
+      // A description whose fingerprints aren't signed by the participant's account
+      // key, when they have one, could be the server's: don't connect to it. Checked
+      // inside the signaling queue so candidates keep their order.
+      if ((await checkCallDescription(participant, description, auth, false)) === "rejected") {
+        console.warn("Ignored a voice description that failed its encryption check.");
+        return;
+      }
       try {
         const readyForOffer =
           !session.makingOffer && (pc.signalingState === "stable" || session.isSettingRemoteAnswerPending);
@@ -1985,6 +1996,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
               type: "RTC_DESCRIPTION",
               targetConnectionId: participant.connectionId,
               description: pc.localDescription,
+              ...callDescriptionAuth(participant.userId, pc.localDescription.sdp),
             });
           }
         }
@@ -1997,6 +2009,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
   };
 
   const handleRtcCandidate = async (participant: VoiceParticipant, candidate: RTCIceCandidateInit) => {
+    // Relay-only: never apply a host/srflx candidate a peer may have sent.
+    if (!isRelayIceCandidate(candidate)) return;
     const session = ensurePeer(participant);
     await enqueuePeerSignaling(session, async () => {
       if (!session.pc.remoteDescription || session.remoteDescriptionPending) {
@@ -2175,18 +2189,11 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       setRemoteScreens({});
       setRemoteCameras({});
 
-      // Voice is relay-only: refuse to join (with a friendly message) instead of
-      // joining a room where no peer connection can be built.
-      const relayReady = loadIceServers().then(
-        (servers) => {
-          if (!hasUsableRelayIceServers(servers)) throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
-        },
-        () => {
-          throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
-        },
-      );
-      await cancellable(Promise.all([microphoneReady, relayReady]));
+      const [, iceServers] = await cancellable(Promise.all([microphoneReady, loadIceServers()]));
       if (!isAttemptCurrent()) throw createAbortError("The voice join was cancelled.");
+      // Voice is relay-only. A STUN-only list (TURN not configured) can never
+      // connect, so fail the join visibly instead of joining a silent room.
+      if (!hasRelayIceServer(iceServers)) throw new Error(RELAY_UNAVAILABLE_MESSAGE);
       if (!sendSocket({ type: "VOICE_JOIN", channelId })) throw new Error("WebSocket is not connected");
       armVoiceJoinAcknowledgementTimeout();
     } catch (error) {

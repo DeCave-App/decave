@@ -8,7 +8,7 @@ import { colors } from "@/src/theme";
 export function MessagePreview({ author, text, mine }: { author: string; text: string; mine?: boolean }) {
   const body = text.trim() || "Attachment";
   return (
-    <View style={[styles.bubble, mine && styles.mine]} accessible accessibilityLabel={`Message from ${author}: ${body}`}>
+    <View style={[styles.bubble, mine && styles.mine]} accessible accessibilityLabel={mine ? `Your message: ${body}` : `Message from ${author}: ${body}`}>
       <Text style={styles.author} numberOfLines={1}>
         {mine ? "You" : author}
       </Text>

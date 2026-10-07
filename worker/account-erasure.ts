@@ -276,11 +276,15 @@ export async function eraseAccountData(
     env.DB.prepare("DELETE FROM decave_steam_links WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_dm_preferences WHERE user_id=? OR peer_user_id=?").bind(target.id, target.id),
     env.DB.prepare("DELETE FROM decave_squad_searches WHERE user_id=?").bind(target.id),
+    env.DB.prepare("DELETE FROM decave_hub_event_rsvps WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_squad_game_suggestions WHERE user_id=?").bind(target.id),
     env.DB.prepare("UPDATE decave_squad_game_suggestions SET reviewed_by=NULL WHERE reviewed_by=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_room_members WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_hub_bots WHERE created_by=?").bind(target.id),
     env.DB.prepare("UPDATE decave_bots SET created_by=NULL WHERE created_by=?").bind(target.id),
+    env.DB.prepare(
+      "DELETE FROM decave_dm_reaction_envelopes WHERE user_id=? OR message_id IN (SELECT id FROM decave_direct_messages WHERE from_user_id=? OR to_user_id=?)",
+    ).bind(target.id, target.id, target.id),
     env.DB.prepare(
       "DELETE FROM decave_dm_reactions WHERE user_id=? OR message_id IN (SELECT id FROM decave_direct_messages WHERE from_user_id=? OR to_user_id=?)",
     ).bind(target.id, target.id, target.id),
@@ -288,6 +292,10 @@ export async function eraseAccountData(
       target.id,
       target.id,
     ),
+    env.DB.prepare("DELETE FROM decave_dm_key_settings WHERE user_id=?").bind(target.id),
+    env.DB.prepare("DELETE FROM decave_dm_link_requests WHERE user_id=?").bind(target.id),
+    env.DB.prepare("DELETE FROM decave_dm_key_backups WHERE user_id=?").bind(target.id),
+    env.DB.prepare("DELETE FROM decave_dm_keys WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_dm_conversation_clears WHERE user_id=? OR partner_id=?").bind(
       target.id,
       target.id,

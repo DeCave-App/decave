@@ -45,40 +45,39 @@ export function parseHubCalendarEvent(text: string): EventPayload | null {
   };
 }
 
+/**
+ * Canonical GIPHY media URL (https, media.giphy.com / mediaN.giphy.com / i.giphy.com,
+ * plain .gif/.webp/.mp4 path, no query) or null. Mirrors the Worker's media proxy rules.
+ */
 export function safeGiphyUrl(value: string | undefined): string | null {
-  if (!value) return null;
+  if (!value || value.length > 2048) return null;
+  // Percent-encoded or backslash path bytes are never part of a GIPHY media path.
+  if (/[%\\]/.test(value.split(/[?#]/, 1)[0] ?? "")) return null;
   try {
-    const parsed = new URL(value, HTTP_URL);
-    if (parsed.origin === HTTP_URL && parsed.pathname === "/api/giphy/media") {
-      const source = new URL(parsed.searchParams.get("url") || "");
-      return isTrustedGiphySource(source) ? parsed.toString() : null;
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.toLowerCase();
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.port) return null;
+    if (hostname !== "media.giphy.com" && hostname !== "i.giphy.com" && !/^media[0-9]\.giphy\.com$/.test(hostname)) {
+      return null;
     }
-    if (isTrustedGiphySource(parsed)) {
-      const proxy = new URL("/api/giphy/media", HTTP_URL);
-      proxy.searchParams.set("url", parsed.toString());
-      return proxy.toString();
+    const segments = parsed.pathname.split("/").slice(1);
+    if (segments.length < 1 || segments.length > 6) return null;
+    if (segments.some((segment) => !/^[A-Za-z0-9_-][A-Za-z0-9._-]{0,159}$/.test(segment) || segment.includes(".."))) {
+      return null;
     }
+    if (!/\.(?:gif|webp|mp4)$/i.test(segments[segments.length - 1] ?? "")) return null;
+    return `https://${hostname}/${segments.join("/")}`;
   } catch {}
   return null;
 }
 
-function isTrustedGiphySource(parsed: URL): boolean {
-  const host = parsed.hostname.toLowerCase();
-  return (
-    parsed.protocol === "https:" &&
-    !parsed.port &&
-    !parsed.username &&
-    !parsed.password &&
-    ([
-      "media.giphy.com",
-      "media0.giphy.com",
-      "media1.giphy.com",
-      "media2.giphy.com",
-      "media3.giphy.com",
-      "media4.giphy.com",
-    ].includes(host) ||
-      (host === "giphy.com" && parsed.pathname.startsWith("/media/")))
-  );
+/**
+ * Same-origin proxy address for a GIPHY media URL, so viewers' devices never
+ * contact GIPHY. The session cookie authenticates the request.
+ */
+export function giphyMediaProxyUrl(value: string | undefined): string | null {
+  const safe = safeGiphyUrl(value);
+  return safe ? `${HTTP_URL}/api/giphy/media?u=${encodeURIComponent(safe)}` : null;
 }
 
 export function safeForumIconUrl(value: string | undefined): string | null {
@@ -87,3 +86,6 @@ export function safeForumIconUrl(value: string | undefined): string | null {
   if (value.startsWith(`${HTTP_URL}/uploads/`)) return value;
   return null;
 }
+
+// List previews for DM and group messages are shared with the mobile app.
+export { dmPreviewText } from "../../shared/dm-message-preview";

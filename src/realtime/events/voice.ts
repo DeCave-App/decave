@@ -50,7 +50,11 @@ export type VoiceEventContext = {
   closePeer: (connectionId: string) => void;
   ensurePeer: (participant: VoiceParticipant) => PeerSession;
   ensureVoicePeersFromState: (participants: VoiceParticipant[]) => void;
-  handleRtcDescription: (participant: VoiceParticipant, description: RTCSessionDescriptionInit) => Promise<void>;
+  handleRtcDescription: (
+    participant: VoiceParticipant,
+    description: RTCSessionDescriptionInit,
+    auth?: unknown,
+  ) => Promise<void>;
   handleRtcCandidate: (participant: VoiceParticipant, candidate: RTCIceCandidateInit) => Promise<void>;
   finishVoiceJoinAttempt: (channelId: number) => void;
   acceptsVoiceJoinAcknowledgement: (channelId: number) => boolean;
@@ -201,7 +205,11 @@ export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext
 
   if (data.type === "RTC_DESCRIPTION") {
     if (data.from && typeof data.from === "object" && data.description && typeof data.description === "object") {
-      void handleRtcDescription(data.from as VoiceParticipant, data.description as RTCSessionDescriptionInit);
+      void handleRtcDescription(
+        data.from as VoiceParticipant,
+        data.description as RTCSessionDescriptionInit,
+        data.auth,
+      );
     }
     return true;
   }

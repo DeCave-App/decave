@@ -31,9 +31,12 @@ import {
   GIF_PREFIX,
   parsePrefixedJson,
   parseHubCalendarEvent,
-  safeGiphyUrl,
+  giphyMediaProxyUrl,
+  dmPreviewText,
 } from "../message-payloads";
 import type { ComposerState } from "../state/composer";
+import { attachmentDecrypter } from "../../e2ee/dm-e2ee-client";
+import { unreadableMessageText } from "../../e2ee/DmEncryptionUi";
 
 export type MessageRenderingDeps = {
   currentUser: AccountUser;
@@ -201,6 +204,8 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
         filename: attachment.name,
         baseUrl: HTTP_URL,
         authorizedFetch,
+        decrypt: attachmentDecrypter(attachment),
+        contentType: attachment.mimeType,
       });
     } catch (error) {
       setAttachmentError(error instanceof Error ? error.message : "Could not download attachment.");
@@ -209,11 +214,11 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
 
   const renderHubMessageBody = (item: ChatMessage) => {
     const gif = parsePrefixedJson<GifPayload>(item.text, GIF_PREFIX);
-    const gifUrl = safeGiphyUrl(gif?.url);
-    if (gif && gifUrl)
+    const gifSrc = giphyMediaProxyUrl(gif?.url);
+    if (gif && gifSrc)
       return (
-        <a className="dc-gif-message" data-alt={gif.title || "GIF"} href={gifUrl} target="_blank" rel="noreferrer">
-          <img src={gifUrl} alt={gif.title || "GIF"} loading="lazy" />
+        <a className="dc-gif-message" data-alt={gif.title || "GIF"} href={gifSrc} target="_blank" rel="noreferrer">
+          <img src={gifSrc} alt={gif.title || "GIF"} loading="lazy" />
         </a>
       );
     const poll = parsePrefixedJson<PollPayload>(item.text, POLL_PREFIX);
@@ -301,16 +306,6 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
     );
   };
 
-  const dmPreviewText = (text: string) => {
-    const gif = parsePrefixedJson<GifPayload>(text, GIF_PREFIX);
-    if (gif && safeGiphyUrl(gif.url)) return "GIF";
-    const attachment = parsePrefixedJson<AttachmentMeta>(text, DM_ATTACHMENT_PREFIX);
-    if (attachment) return `📎 ${attachment.name}`;
-    const poll = parsePrefixedJson<PollPayload>(text, POLL_PREFIX);
-    if (poll) return `Poll: ${poll.question}`;
-    return text;
-  };
-
   const replyPreviewText = (text: string) => {
     const preview = dmPreviewText(text).replace(/\s+/g, " ").trim();
     if (!preview || preview.startsWith("__DECAVE_")) return "Message";
@@ -325,12 +320,19 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
   };
 
   const renderDmMessageBody = (message: DirectMessage) => {
-    const gif = parsePrefixedJson<GifPayload>(message.text, GIF_PREFIX);
-    const gifUrl = safeGiphyUrl(gif?.url);
-    if (gif && gifUrl)
+    if (message.e2ee === "locked" || message.e2ee === "failed")
       return (
-        <a className="dc-gif-message" data-alt={gif.title || "GIF"} href={gifUrl} target="_blank" rel="noreferrer">
-          <img src={gifUrl} alt={gif.title || "GIF"} loading="lazy" />
+        <span className="dc-dm-e2ee-placeholder">
+          <Icon name="lock" size="sm" />
+          {unreadableMessageText(message.e2ee, "dm")}
+        </span>
+      );
+    const gif = parsePrefixedJson<GifPayload>(message.text, GIF_PREFIX);
+    const gifSrc = giphyMediaProxyUrl(gif?.url);
+    if (gif && gifSrc)
+      return (
+        <a className="dc-gif-message" data-alt={gif.title || "GIF"} href={gifSrc} target="_blank" rel="noreferrer">
+          <img src={gifSrc} alt={gif.title || "GIF"} loading="lazy" />
         </a>
       );
     const poll = parsePrefixedJson<PollPayload>(message.text, POLL_PREFIX);
@@ -343,6 +345,7 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
           baseUrl={HTTP_URL}
           authorizedFetch={authorizedFetch}
           onDownload={() => void downloadLegacyAttachment(attachment)}
+          decrypt={attachmentDecrypter(attachment)}
         />
       );
     if (attachment)
@@ -354,8 +357,8 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
           <span>
             <strong>{attachment.name}</strong>
             <small>
-              {attachment.mimeType || "Attachment"} · {(attachment.size / 1024 / 1024).toFixed(2)} MB · Authenticated
-              legacy download
+              {attachment.mimeType || "Attachment"} · {(attachment.size / 1024 / 1024).toFixed(2)} MB ·{" "}
+              {attachment.fileKey ? "End-to-end encrypted" : "Authenticated legacy download"}
             </small>
           </span>
         </button>
@@ -376,12 +379,19 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
 }
 
 export const renderGroupMessageBody = (message: GroupChatMessage) => {
-  const gif = parsePrefixedJson<GifPayload>(message.text, GIF_PREFIX);
-  const gifUrl = safeGiphyUrl(gif?.url);
-  if (gif && gifUrl)
+  if (message.e2ee === "locked" || message.e2ee === "failed")
     return (
-      <a className="dc-gif-message" data-alt={gif.title || "GIF"} href={gifUrl} target="_blank" rel="noreferrer">
-        <img src={gifUrl} alt={gif.title || "GIF"} loading="lazy" />
+      <span className="dc-dm-e2ee-placeholder">
+        <Icon name="lock" size="sm" />
+        {unreadableMessageText(message.e2ee, "group")}
+      </span>
+    );
+  const gif = parsePrefixedJson<GifPayload>(message.text, GIF_PREFIX);
+  const gifSrc = giphyMediaProxyUrl(gif?.url);
+  if (gif && gifSrc)
+    return (
+      <a className="dc-gif-message" data-alt={gif.title || "GIF"} href={gifSrc} target="_blank" rel="noreferrer">
+        <img src={gifSrc} alt={gif.title || "GIF"} loading="lazy" />
       </a>
     );
   return message.text;

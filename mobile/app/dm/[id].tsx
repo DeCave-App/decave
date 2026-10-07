@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { fetch as expoFetch } from "expo/fetch";
 import {
   ActionSheetIOS,
   Alert,
@@ -21,7 +22,7 @@ import { ComposerMediaSheet } from "@/src/components/ComposerMediaSheet";
 import { MessageImage } from "@/src/components/MessageMedia";
 import { DM_ATTACHMENT_PREFIX as MEDIA_ATTACHMENT_PREFIX, gifMessageText, isImageMime, parseGif, pickMedia, uploadAsset, type GiphyGif } from "@/src/lib/chat-media";
 import { errorHaptic, impactHaptic, successHaptic, tapHaptic } from "@/src/lib/haptics";
-import ReportSheet, { type MobileReportTarget } from "@/src/components/ReportSheet";
+import ReportSheet, { REPORT_CONFIRMATION_MS, type MobileReportTarget } from "@/src/components/ReportSheet";
 import { Screen } from "@/src/components/Screen";
 import { API_BASE, apiFetch, apiJson } from "@/src/lib/api";
 import { downloadLegacyAttachmentMobile, LegacyAttachmentError } from "@/src/lib/legacy-attachment-download";
@@ -40,18 +41,52 @@ import { colors } from "@/src/theme";
 import type { AccountUser, DirectMessage } from "@/src/types";
 import { VoiceFloatingBar } from "@/src/components/VoiceFloatingBar";
 import { useDraftInput } from "@/src/lib/drafts";
+import {
+  attachmentDecrypter,
+  dmE2ee,
+  dmReactionBody,
+  dmSealedBody,
+  dmSocketFrame,
+  encryptFileForDm,
+  useDmE2ee,
+} from "@/src/lib/e2ee/client";
+import { DmEncryptionBadge, DmEncryptionNotice } from "@/src/providers/DmE2eeProvider";
+import type { ImagePickerAsset } from "expo-image-picker";
+
+/** Encrypt a picked photo or video, upload the ciphertext and describe it for the encrypted message. */
+async function uploadEncryptedAsset(targetId: string, asset: ImagePickerAsset, token: string) {
+  const name = asset.fileName || `photo-${Date.now()}.${asset.mimeType?.split("/")[1] ?? "jpg"}`;
+  const mimeType = asset.mimeType || (asset.type === "video" ? "video/mp4" : "image/jpeg");
+  if (asset.fileSize && asset.fileSize > 25 * 1024 * 1024 - 16) throw new Error("Attachments can be up to 25 MB.");
+  const { body, fileKey } = await encryptFileForDm(asset.uri);
+  const response = await expoFetch(`${API_BASE}/api/dms/${encodeURIComponent(targetId)}/attachments`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/octet-stream",
+      // The server only sees an anonymous blob; name and type travel encrypted.
+      "X-File-Name": "encrypted",
+      "X-File-Type": "application/octet-stream",
+    },
+    body: body as Uint8Array<ArrayBuffer>,
+  });
+  const data = (await response.json().catch(() => ({}))) as { attachment?: { id?: string; url: string }; error?: string };
+  if (!response.ok || !data.attachment) throw new Error(data.error || "Could not upload the attachment.");
+  return { id: data.attachment.id, url: data.attachment.url, name, mimeType, size: body.length - 16, fileKey };
+}
 
 const DM_REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡", "🎉", "🔥", "👎", "✅"] as const;
 const DM_ATTACHMENT_PREFIX = "__DECAVE_DM_ATTACHMENT__";
 
-type LegacyDmAttachment = { name: string; mimeType: string; size: number; url: string };
+type LegacyDmAttachment = { name: string; mimeType: string; size: number; url: string; fileKey?: unknown };
 
 function parseLegacyAttachment(text: string): LegacyDmAttachment | null {
   if (!text.startsWith(DM_ATTACHMENT_PREFIX)) return null;
   try {
     const value = JSON.parse(text.slice(DM_ATTACHMENT_PREFIX.length)) as Partial<LegacyDmAttachment>;
     if (typeof value.name !== "string" || typeof value.mimeType !== "string" || typeof value.url !== "string") return null;
-    return { name: value.name, mimeType: value.mimeType, size: typeof value.size === "number" ? value.size : 0, url: value.url };
+    // fileKey: the file was encrypted before upload (end-to-end encrypted DMs).
+    return { name: value.name, mimeType: value.mimeType, size: typeof value.size === "number" ? value.size : 0, url: value.url, fileKey: value.fileKey };
   } catch {
     return null;
   }
@@ -174,6 +209,8 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         apiFetch,
         token,
         platform: Platform.OS,
+        decrypt: attachmentDecrypter(attachment),
+        contentType: attachment.mimeType,
       });
     } catch (error) {
       Alert.alert("Could not download attachment", error instanceof LegacyAttachmentError ? error.message : "The authenticated attachment download failed.");
@@ -196,10 +233,10 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         token,
       );
 
+      const latest = await dmE2ee.openAll(data.messages ?? [], targetId);
       if (generation !== loadGenerationRef.current) return;
       setTarget(data.user);
       setPeerReadAt(data.peerReadAt ?? null);
-      const latest = data.messages ?? [];
       if (latest.length < 100) setHasOlder(false);
       setMessages((current) => {
         const latestIds = new Set(latest.map((item) => item.id));
@@ -225,6 +262,12 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
     void load();
   }, [targetId, token]);
 
+  // Once this phone can decrypt (set up, unlocked or approved), read the conversation again.
+  const e2eeState = useDmE2ee();
+  useEffect(() => {
+    if (e2eeState.status === "ready") void load();
+  }, [e2eeState.status, e2eeState.keyId]);
+
   useEffect(() => {
     if (!lastEvent) return;
 
@@ -238,6 +281,8 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
 
     if (
       lastEvent.type === "DM_MESSAGE" ||
+      lastEvent.type === "DM_EDITED" ||
+      lastEvent.type === "DM_DELETED" ||
       lastEvent.type === "DM_MESSAGE_UPDATED" ||
       lastEvent.type === "DM_MESSAGE_DELETED" ||
       lastEvent.type === "DM_REACTION_UPDATED"
@@ -249,12 +294,25 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
   const reactToMessage = async (message: DirectMessage, emoji: string) => {
     try {
       if (!token) return;
-      const data = await apiJson<{ message: DirectMessage }>(
-        `/api/dms/messages/${encodeURIComponent(message.id)}/reactions`,
-        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ emoji }) },
-        token,
-      );
-      if (data.message) setMessages((current) => current.map((item) => item.id === data.message.id ? data.message : item));
+      // On an encrypted message the whole set of this account's reactions is sealed.
+      const post = async (refreshKeys: boolean) => {
+        const body = await dmReactionBody(message, user?.id ?? "", targetId, emoji, refreshKeys);
+        const response = await apiFetch(
+          `/api/dms/messages/${encodeURIComponent(message.id)}/reactions`,
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+          token,
+        );
+        const result = (await response.json().catch(() => ({}))) as { message?: DirectMessage; error?: string; code?: string };
+        return { response, result };
+      };
+      let { response, result } = await post(false);
+      if (result.code === "DM_E2EE_STALE_KEY") ({ response, result } = await post(true));
+      if (!response.ok) throw new Error(result.error || "Please try again.");
+      const data = result;
+      if (data.message) {
+        const updated = await dmE2ee.open(data.message, targetId);
+        setMessages((current) => current.map((item) => item.id === updated.id ? updated : item));
+      }
       setActionMessage(null);
     } catch (error) {
       Alert.alert("Could not add reaction", error instanceof Error ? error.message : "Please try again.");
@@ -263,6 +321,8 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
 
   const beginEdit = (message: DirectMessage) => {
     if (message.fromUserId !== user?.id) return;
+    // A message this phone can't decrypt has no text to edit.
+    if (message.e2ee === "locked" || message.e2ee === "failed") return;
     setReplyingTo(null);
     setEditingId(message.id);
     setInput(message.text, false);
@@ -282,13 +342,24 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
   const saveEdit = async (text: string) => {
     if (!editingId) return;
     try {
-      if (!token) return;
-      const data = await apiJson<{ message: DirectMessage }>(
-        `/api/dms/messages/${encodeURIComponent(editingId)}`,
-        { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) },
-        token,
-      );
-      if (data.message) setMessages((current) => current.map((item) => item.id === data.message.id ? data.message : item));
+      if (!token || !targetId) return;
+      const patch = async (refreshKeys: boolean) => {
+        const body = await dmSealedBody(targetId, text, { id: editingId, refreshKeys });
+        const response = await apiFetch(
+          `/api/dms/messages/${encodeURIComponent(editingId)}`,
+          { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+          token,
+        );
+        const data = (await response.json().catch(() => ({}))) as { message?: DirectMessage; error?: string; code?: string };
+        return { response, data };
+      };
+      let { response, data } = await patch(false);
+      if (data.code === "DM_E2EE_STALE_KEY" || data.code === "DM_E2EE_REQUIRED") ({ response, data } = await patch(true));
+      if (!response.ok) throw new Error(data.error || "The message was not changed.");
+      if (data.message) {
+        const edited = await dmE2ee.open(data.message, targetId);
+        setMessages((current) => current.map((item) => item.id === edited.id ? edited : item));
+      }
       setEditingId(null);
       restoreDraft();
     } catch (error) {
@@ -353,7 +424,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         {},
         token,
       );
-      const older = data.messages ?? [];
+      const older = await dmE2ee.openAll(data.messages ?? [], targetId);
       if (older.length === 0) setHasOlder(false);
       setMessages((current) => {
         const ids = new Set(current.map((item) => item.id));
@@ -373,9 +444,12 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       const asset = await pickMedia(source);
       if (!asset) return;
       setUploading(true);
-      const attachment = await uploadAsset({ kind: "dm", userId: targetId }, asset, token);
+      // In an encrypted conversation the file is encrypted on the phone first.
+      const attachment = (await dmE2ee.peerHasKey(targetId))
+        ? await uploadEncryptedAsset(targetId, asset, token)
+        : await uploadAsset({ kind: "dm", userId: targetId }, asset, token);
       const text = `${MEDIA_ATTACHMENT_PREFIX}${JSON.stringify(attachment)}`;
-      if (!send({ type: "DM_MESSAGE", targetUserId: targetId, text, replyToId: replyingTo?.id ?? null })) {
+      if (!send(await dmSocketFrame(targetId, text, replyingTo?.id ?? null))) {
         throw new Error("Realtime is reconnecting. Try again in a moment.");
       }
       successHaptic();
@@ -387,11 +461,18 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
     }
   };
 
-  const sendGif = (gif: GiphyGif) => {
+  const sendGif = async (gif: GiphyGif) => {
     const text = gifMessageText(gif);
     setMediaOpen(false);
     if (!text || !targetId) return;
-    if (send({ type: "DM_MESSAGE", targetUserId: targetId, text, replyToId: replyingTo?.id ?? null })) {
+    let frame: Record<string, unknown>;
+    try {
+      frame = await dmSocketFrame(targetId, text, replyingTo?.id ?? null);
+    } catch (error) {
+      Alert.alert("Could not send GIF", error instanceof Error ? error.message : "Please try again.");
+      return;
+    }
+    if (send(frame)) {
       impactHaptic();
       setReplyingTo(null);
     } else {
@@ -406,7 +487,15 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       await saveEdit(text);
       return;
     }
-    if (send({ type: "DM_MESSAGE", targetUserId: targetId, text, replyToId: replyingTo?.id ?? null })) {
+    let frame: Record<string, unknown>;
+    try {
+      frame = await dmSocketFrame(targetId, text, replyingTo?.id ?? null);
+    } catch (error) {
+      errorHaptic();
+      Alert.alert("Could not send message", error instanceof Error ? error.message : "Please try again.");
+      return;
+    }
+    if (send(frame)) {
       impactHaptic();
       setInput("");
       setReplyingTo(null);
@@ -513,6 +602,8 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
             </View>
           </View>
 
+          <DmEncryptionBadge peer={{ id: targetId, username: target?.username || fallbackName }} />
+
           <Pressable
             style={styles.reportConversationButton}
             onPress={openConversationMenu}
@@ -536,6 +627,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
           </Pressable>
         </View>
         {!embedded && <VoiceFloatingBar style={{ marginTop: 6, marginBottom: 4 }} />}
+        <DmEncryptionNotice peer={{ id: targetId, username: target?.username || fallbackName }} />
         <FlatList
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
@@ -598,6 +690,9 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
             // avatar and one timestamp at the end, tighter spacing inside.
             const next = messages[index + 1];
             const endsRun = !inSameRun(item, next);
+            // Where history switches from pre-encryption messages to encrypted ones.
+            const encryptionStarts = !!previous && item.e2ee !== "plaintext" && previous.e2ee === "plaintext";
+            const unreadable = item.e2ee === "locked" || item.e2ee === "failed";
 
             return (
               <View>
@@ -608,6 +703,14 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                       {formatDayLabel(item.timestamp)}
                     </Text>
                     <View style={styles.dayLine} />
+                  </View>
+                )}
+                {encryptionStarts && (
+                  <View style={styles.e2eeDivider} accessibilityRole="text">
+                    <Ionicons name="lock-closed-outline" size={12} color={colors.muted} />
+                    <Text style={styles.e2eeDividerText}>
+                      Messages below are end-to-end encrypted. Earlier ones were sent before encryption.
+                    </Text>
                   </View>
                 )}
 
@@ -646,14 +749,21 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                         </Text>
                       </View>
                     )}
-                    {legacyAttachment && isImageMime(legacyAttachment.mimeType) ? (
-                      <MessageImage url={legacyAttachment.url} title={legacyAttachment.name} token={token} authenticated onSave={() => void downloadLegacyAttachment(legacyAttachment)} />
+                    {unreadable ? (
+                      <View style={styles.e2eePlaceholder}>
+                        <Ionicons name="lock-closed-outline" size={14} color={colors.muted} />
+                        <Text style={styles.e2eePlaceholderText}>
+                          {item.e2ee === "locked" ? "Encrypted message. Unlock encrypted messages on this phone to read it." : "This message couldn't be decrypted."}
+                        </Text>
+                      </View>
+                    ) : legacyAttachment && isImageMime(legacyAttachment.mimeType) ? (
+                      <MessageImage url={legacyAttachment.url} title={legacyAttachment.name} token={token} authenticated decrypt={attachmentDecrypter(legacyAttachment)} mimeType={legacyAttachment.mimeType} onSave={() => void downloadLegacyAttachment(legacyAttachment)} />
                     ) : parseGif(item.text) ? (
                       <MessageImage url={parseGif(item.text)!.url} title={parseGif(item.text)!.title} token={token} authenticated />
                     ) : legacyAttachment ? (
                       <Pressable accessibilityRole="button" style={styles.attachmentRow} onPress={() => void downloadLegacyAttachment(legacyAttachment)}>
                         <Ionicons name="document-outline" size={18} color={colors.cyan} />
-                        <View style={styles.attachmentDetails}><Text style={styles.messageText} numberOfLines={1}>{legacyAttachment.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>Tap to save or share</Text></View>
+                        <View style={styles.attachmentDetails}><Text style={styles.messageText} numberOfLines={1}>{legacyAttachment.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{legacyAttachment.fileKey ? "End-to-end encrypted · Tap to save or share" : "Tap to save or share"}</Text></View>
                       </Pressable>
                     ) : <LinkifiedText style={styles.messageText} text={item.text} />}
 
@@ -796,7 +906,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
               </Pressable>
             )}
             {actionMessage?.fromUserId !== user?.id && actionMessage && (
-              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: "message", targetId: message.id, subjectUserId: target?.id || targetId, subjectUsername: target?.username || fallbackName, contextType: "dm", contextId: targetId, contextLabel: `Private conversation with ${target?.username || fallbackName}` }); }}>
+              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: "message", targetId: message.id, subjectUserId: target?.id || targetId, subjectUsername: target?.username || fallbackName, contextType: "dm", contextId: targetId, contextLabel: `Private conversation with ${target?.username || fallbackName}`, evidenceType: "message", evidenceText: message.e2ee === "locked" || message.e2ee === "failed" ? undefined : message.text, e2eeProof: dmE2ee.reportProof(message) ?? undefined }); }}>
                 <Ionicons name="flag-outline" size={18} color={colors.cyan} />
                 <Text style={styles.sheetActionText}>Report message</Text>
               </Pressable>
@@ -829,7 +939,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         token={token}
         target={reportTarget}
         onClose={() => setReportTarget(null)}
-        onSubmitted={() => setTimeout(() => setReportTarget(null), 900)}
+        onSubmitted={() => setTimeout(() => setReportTarget(null), REPORT_CONFIRMATION_MS)}
       />
     </>
   );
@@ -1101,5 +1211,9 @@ const styles = StyleSheet.create({
   },
   sendDisabled: {
     opacity: 0.34,
-  },});
+  },  e2eeDivider: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginVertical: 10, paddingHorizontal: 18 },
+  e2eeDividerText: { flexShrink: 1, color: colors.muted, fontSize: 11, textAlign: "center" },
+  e2eePlaceholder: { flexDirection: "row", alignItems: "center", gap: 6 },
+  e2eePlaceholderText: { flexShrink: 1, color: colors.muted, fontSize: 14, fontStyle: "italic" },
+});
 

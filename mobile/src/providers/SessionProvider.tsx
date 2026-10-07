@@ -20,6 +20,8 @@ import {
 } from "@/src/lib/session-token";
 import { MobileAuthOperationCoordinator } from "@/src/lib/auth-operations";
 import type { AccountUser, AuthResponse } from "@/src/types";
+import { dmE2ee } from "@/src/lib/e2ee/client";
+import { clearKeychainLeftoversAfterReinstall } from "@/src/lib/fresh-install";
 import { PRIVACY_VERSION, TERMS_VERSION } from "../../../shared/legal-consent";
 
 type LoginResult =
@@ -103,6 +105,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     const tokenVersion = beginSessionTokenMutation();
     setLoading(true);
     try {
+      await clearKeychainLeftoversAfterReinstall(() => clearSessionToken(tokenVersion));
       const saved = await loadSessionToken();
       if (!ownsAuthOperation(operation)) return;
       if (!saved) return;
@@ -326,6 +329,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
   };
 
   const logout = async () => {
+    // Choosing to sign out removes the DM encryption key from this phone.
+    void dmE2ee.stop({ forget: true });
     const operation = beginAuthOperation();
     settleRestoreLoading();
     const previousToken = token;

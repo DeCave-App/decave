@@ -42,7 +42,7 @@ const ORPHANED_UPLOAD_CONDITION = `(
     SELECT 1 FROM decave_direct_messages d
     WHERE ((d.from_user_id=a.owner_user_id AND d.to_user_id=a.peer_user_id)
         OR (d.from_user_id=a.peer_user_id AND d.to_user_id=a.owner_user_id))
-      AND instr(d.text,a.r2_key)>0
+      AND (instr(d.text,a.r2_key)>0 OR instr(COALESCE(d.attachment_refs,''),a.r2_key)>0)
   ))
 )`;
 

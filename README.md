@@ -8,11 +8,28 @@ promise a stable release.
 
 ## Security and privacy
 
-In this checkout, the Worker can read message text and attachments; they are
-not end-to-end encrypted. HTTPS/WSS protects client traffic to Cloudflare, and
-WebRTC media uses DTLS-SRTP in transit. These protections do not prevent the
-service or its hosting provider from accessing stored message content. Do not
-use this alpha software for sensitive conversations or files.
+In release 0.1.132, direct messages and group chats are end-to-end encrypted
+after both direct-message participants, or every group member, have set up keys
+in an up-to-date client. This covers message content and attachments, plus DM
+reactions and poll votes. The Worker stores ciphertext and can see conversation
+metadata, but not this encrypted content. Hub rooms, forums, and messages sent
+before encryption remain readable by the service.
+
+Voice, video, and screen-share media in direct calls and voice rooms uses
+DTLS-SRTP between devices through Cloudflare TURN relays. A direct call rejects
+an invalid signature, and rejects a missing signature when the peer's key is
+available or pinned. If no peer key is available or pinned, an unsigned
+description may proceed without a visible verification mark. Voice rooms may
+also admit unverified participants, shown without a lock; a signaling-level
+interception is not ruled out for unverified participants.
+This code has not had an independent security audit. The launch checklist
+records real-device checks and a two-account production smoke test that remain
+outstanding.
+
+See [the end-to-end encryption design and limits](docs/security/DM-E2EE.md) and
+the [launch record and checklist](docs/security/DM-E2EE-LAUNCH.md). These
+descriptions reflect the implementation in this source snapshot; they are not
+an independent security assessment.
 
 The [data-routing disclosure](docs/legal/PRIVACY-AND-DATA-ROUTING.md) describes
 the implementation visible in this repository. It and the

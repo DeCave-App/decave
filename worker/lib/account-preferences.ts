@@ -90,7 +90,6 @@ export function accountPreferencesForClient(row: AccountPreferencesRow) {
   const changedAt = row.username_changed_at || null;
   const next = changedAt ? new Date(Date.parse(changedAt) + 30 * 24 * 60 * 60 * 1000).toISOString() : null;
   return {
-    phoneNumber: row.phone_number || "",
     usernameChangedAt: changedAt,
     usernameChangeAvailableAt: next,
     friendRequestPolicy:

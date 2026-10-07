@@ -23,6 +23,7 @@ import { securityEvent, revokeAccountSessions, createAuthToken, activeSuspension
 import { streamerMigrationExists, streamerRevokeParticipantStatements } from "../../streamer/index.ts";
 import { sendResetEmail } from "../../lib/email";
 import { ownedHubCount } from "../../lib/hubs";
+import { UNDERAGE_DELETION_REASON } from "../../retention";
 import { realtimeBroadcast } from "../../lib/realtime";
 import { AccountErasureStorageError, claimAccountErasure, eraseAccountData } from "../../account-erasure";
 import type { ApiContext } from "../context";
@@ -126,7 +127,10 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
     const targetReference = decodeURIComponent(adminAgeRecoveryMatch[1]);
     const target = await userByReference(env.DB, targetReference);
     if (!target) return json({ error: "Account was not found" }, 404);
-    if (target.erased_at || target.deleted_at) {
+    // An account scheduled for deletion only because it was found to be under
+    // 18 can still be corrected during the grace period.
+    const underageDeletion = target.deleted_at && target.deletion_reason === UNDERAGE_DELETION_REASON;
+    if (target.erased_at || (target.deleted_at && !underageDeletion)) {
       return json({ error: "This account is not active." }, 409);
     }
 
@@ -134,10 +138,17 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
     const profile = deriveAgeProfile(body.birthDate);
     if (!profile) return json({ error: "Enter a valid birth date." }, 400);
     if (profile.ageStatus !== "eligible") {
-      return json({ error: "The corrected birth date must show that the account holder is at least 13." }, 400);
+      return json({ error: "The corrected birth date must show that the account holder is at least 18." }, 400);
     }
 
     await saveAgeProfile(env.DB, target.id, profile, nowIso(), "reviewed");
+    if (underageDeletion) {
+      await env.DB.prepare(
+        "UPDATE decave_users SET deleted_at=NULL,delete_after=NULL,deletion_reason='' WHERE id=? AND deletion_reason=? AND erased_at IS NULL",
+      )
+        .bind(target.id, UNDERAGE_DELETION_REASON)
+        .run();
+    }
     await platformAudit(env, owner.id, "platform.account_age_corrected", request, target.id, {
       ageBand: profile.ageBand,
       agePolicyVersion: AGE_POLICY_VERSION,
@@ -147,7 +158,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
       env,
       target.id,
       "age.corrected_by_owner",
-      request,
+      null,
       `Owner-reviewed age correction (${profile.ageBand})`,
     );
     return json({ success: true, safety: safetyProfileForClient(await getSafetyProfile(env.DB, target.id)) });
@@ -348,7 +359,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     await revokeAccountSessions(env, target.id, "account_suspended");
     await platformAudit(env, owner.id, "platform.account_suspended", request, target.id, { durationDays, reason });
-    await securityEvent(env, target.id, "account.suspended", request, reason);
+    await securityEvent(env, target.id, "account.suspended", null, reason);
 
     return json({ success: true, suspendedAt, suspendedUntil });
   }
@@ -384,7 +395,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
       .run();
 
     await platformAudit(env, owner.id, "platform.account_unsuspended", request, target.id);
-    await securityEvent(env, target.id, "account.unsuspended", request);
+    await securityEvent(env, target.id, "account.unsuspended", null);
     return json({ success: true });
   }
 
@@ -442,7 +453,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     await revokeAccountSessions(env, target.id, "password_reset_required");
     await platformAudit(env, owner.id, "platform.password_reset_forced", request, target.id);
-    await securityEvent(env, target.id, "password.reset_forced", request);
+    await securityEvent(env, target.id, "password.reset_forced", null);
 
     return json({
       success: true,
@@ -506,7 +517,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
       deleteAfter,
       reason,
     });
-    await securityEvent(env, target.id, "account.deletion_scheduled", request, reason);
+    await securityEvent(env, target.id, "account.deletion_scheduled", null, reason);
 
     return json({ success: true, deletedAt, deleteAfter });
   }
@@ -548,7 +559,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
       return json({ error: "The account changed state and could not be restored." }, 409);
 
     await platformAudit(env, owner.id, "platform.account_restored", request, target.id);
-    await securityEvent(env, target.id, "account.restored", request);
+    await securityEvent(env, target.id, "account.restored", null);
     return json({ success: true });
   }
 

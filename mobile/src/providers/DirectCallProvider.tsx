@@ -1,3 +1,5 @@
+import { CallVerificationMark } from "@/src/providers/DmE2eeProvider";
+import { callDescriptionAuth, checkCallDescription, clearCallVerdict } from "@/src/lib/e2ee/call-verification";
 import {
   createContext,
   type PropsWithChildren,
@@ -26,11 +28,11 @@ import {
   mediaDevices,
 } from "react-native-webrtc";
 import { apiJson } from "@/src/lib/api";
+import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "@/src/lib/rtc-relay";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
 import type { RealtimeEvent, VoiceParticipant } from "@/src/types";
-import { hasUsableRelayIceServers } from "../../../shared/rtc-relay";
 
 type CallPhase = "idle" | "ringing" | "incoming" | "connecting" | "connected";
 
@@ -61,6 +63,7 @@ type DirectCallContextValue = {
 };
 
 const DirectCallContext = createContext<DirectCallContextValue | null>(null);
+
 function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -162,6 +165,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
   };
 
   const resetLocal = (keepError = false, keepPeer = false) => {
+    clearCallVerdict();
     closePeer();
     stopLocalMedia();
     outgoingRef.current = false;
@@ -248,15 +252,21 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     }
   };
 
+  // Calls are relay-only. Without a TURN server no connection can ever form,
+  // so fail before ringing instead of falling back to STUN/peer-to-peer.
   const loadIceServers = async () => {
+    let iceServers: IceServer[] = [];
     try {
       const data = await apiJson<{ iceServers?: IceServer[] }>("/api/rtc/ice-servers", {}, token);
-      if (!hasUsableRelayIceServers(data.iceServers)) throw new Error("Calls are temporarily unavailable. We couldn't reach the secure call relay. Please try again in a few minutes.");
-      iceServersRef.current = data.iceServers!;
-    } catch {
-      iceServersRef.current = [];
-      throw new Error("Calls are temporarily unavailable. We couldn't reach the secure call relay. Please try again in a few minutes.");
+      if (Array.isArray(data.iceServers)) iceServers = data.iceServers;
+    } catch (cause) {
+      console.warn("Could not load call ICE servers.", cause);
     }
+    if (!hasRelayIceServer(iceServers)) {
+      iceServersRef.current = [];
+      throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+    }
+    iceServersRef.current = iceServers;
   };
 
   const sendDescription = (targetConnectionId: string, description: any): boolean => {
@@ -265,6 +275,8 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       type: "RTC_DESCRIPTION",
       targetConnectionId,
       description: { type: description.type, sdp: description.sdp },
+      // Signed with the account key so the friend can check the DTLS fingerprints are ours.
+      ...callDescriptionAuth(peerRef.current?.userId, description.sdp),
     });
   };
 
@@ -275,13 +287,14 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     const next = new MediaStream([...existing, track]);
     remoteStreamRef.current = next;
     setRemoteStream(next);
-    if (connectedAtRef.current === null) connectedAtRef.current = Date.now();
-    setCallPhase("connected");
+    // A remote track arrives with the answer, before any media can flow, so
+    // "connected" (and the call timer) waits for onconnectionstatechange.
   };
 
   const ensurePeer = (participant: VoiceParticipant): RTCPeerConnection => {
     if (pcRef.current) return pcRef.current;
-    if (!hasUsableRelayIceServers(iceServersRef.current)) throw new Error("Calls are temporarily unavailable. We couldn't reach the secure call relay. Please try again in a few minutes.");
+    // Relay-only: peers never exchange host/srflx candidates, so neither side
+    // learns the other's IP address.
     const pc = new RTCPeerConnection({
       iceServers: iceServersRef.current as any,
       iceTransportPolicy: "relay",
@@ -291,7 +304,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     pcRef.current = pc;
 
     pc.onicecandidate = (event: any) => {
-      if (!event.candidate) return;
+      if (!event.candidate || !isRelayIceCandidate(event.candidate)) return;
       send({
         type: "RTC_ICE_CANDIDATE",
         targetConnectionId: participant.connectionId,
@@ -327,10 +340,28 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     }
   };
 
-  const handleDescription = async (participant: VoiceParticipant, description: DescriptionPayload) => {
+  const handleDescription = async (
+    participant: VoiceParticipant,
+    description: DescriptionPayload,
+    auth?: unknown,
+  ) => {
     if (phaseRef.current === "idle") return;
     const currentPeer = peerRef.current;
     if (currentPeer?.userId && participant.userId !== currentPeer.userId) return;
+    // Direct calls are strict: with a friend who has a key, the connection must be
+    // signed by it, or it could be the server in the middle. Candidates wait for the
+    // remote description, so checking first keeps their order.
+    const verdict = await checkCallDescription(
+      { connectionId: "direct-call", userId: currentPeer?.userId || participant.userId },
+      description,
+      auth,
+      true,
+    );
+    if (verdict === "rejected") {
+      throw new Error(
+        "This call couldn't be verified as end-to-end encrypted, so it wasn't connected. Both of you need an up-to-date DeCave that can read encrypted messages.",
+      );
+    }
     const media = await ensureLocalMedia(videoRef.current);
     if (!media) throw new Error("Microphone permission is required.");
     const pc = ensurePeer(participant);
@@ -563,13 +594,13 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       const from = event.from as VoiceParticipant | undefined;
       const description = event.description as DescriptionPayload | undefined;
       if (!from?.connectionId || !description?.type || !description.sdp) return;
-      void handleDescription(from, description).catch((cause) => failCall(cause, "Call negotiation failed."));
+      void handleDescription(from, description, event.auth).catch((cause) => failCall(cause, "Call negotiation failed."));
       return;
     }
 
     if (type === "RTC_ICE_CANDIDATE" && phaseRef.current !== "idle") {
       const candidate = event.candidate as CandidatePayload | undefined;
-      if (!candidate?.candidate) return;
+      if (!candidate?.candidate || !isRelayIceCandidate(candidate)) return;
       void handleCandidate(candidate).catch(() => {});
       return;
     }
@@ -587,7 +618,9 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    if (type === "DM_CALL_ENDED" || type === "DM_CALL_DECLINED") {
+    // Already ended here (a failed call, such as one refused for failing its
+    // encryption check): the server's confirmation must not wipe the explanation.
+    if ((type === "DM_CALL_ENDED" || type === "DM_CALL_DECLINED") && phaseRef.current !== "idle") {
       resetLocal();
     }
   };
@@ -660,7 +693,10 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
               <Ionicons name={video ? "videocam" : "call"} size={15} color={colors.cyan} />
               <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{video ? "VIDEO CALL" : "VOICE CALL"}</Text>
             </View>
-            <Text style={styles.name}>{peerName}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+              <Text style={styles.name}>{peerName}</Text>
+              {live && <CallVerificationMark connectionId="direct-call" />}
+            </View>
             <Text style={styles.status}>
               {phase === "incoming"
                 ? "Incoming call"
@@ -712,17 +748,17 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
             ) : phase === "connected" || phase === "connecting" ? (
               <View style={styles.actions}>
                 <Pressable accessibilityRole="button" accessibilityLabel={muted ? "Unmute" : "Mute"} style={[styles.roundButton, muted && styles.activeControl]} onPress={toggleMute}>
-                  <Ionicons name={muted ? "mic-off" : "mic"} size={22} color="#fff" />
+                  <Ionicons name={muted ? "mic-off" : "mic"} size={22} color={colors.text} />
                 </Pressable>
-                <View style={{ position: "relative" }}><Pressable accessibilityRole="button" style={styles.roundButton} onPress={() => setVolumeOpen((value) => !value)} accessibilityLabel="Adjust call volume"><Ionicons name={volume === 0 ? "volume-mute" : "volume-high"} size={22} color="#fff" /></Pressable>{volumeOpen && <View style={styles.volumePopup}><Pressable accessibilityRole="button" style={styles.volumeButton} onPress={() => changeVolume(volume - 10)}><Text style={styles.volumeButtonText}>−</Text></Pressable><Text style={styles.volumeValue}>{volume}%</Text><Pressable accessibilityRole="button" style={styles.volumeButton} onPress={() => changeVolume(volume + 10)}><Text style={styles.volumeButtonText}>+</Text></Pressable></View>}</View>
+                <View style={{ position: "relative" }}><Pressable accessibilityRole="button" style={styles.roundButton} onPress={() => setVolumeOpen((value) => !value)} accessibilityLabel="Adjust call volume"><Ionicons name={volume === 0 ? "volume-mute" : "volume-high"} size={22} color={colors.text} /></Pressable>{volumeOpen && <View style={styles.volumePopup}><Pressable accessibilityRole="button" style={styles.volumeButton} onPress={() => changeVolume(volume - 10)}><Text style={styles.volumeButtonText}>−</Text></Pressable><Text style={styles.volumeValue}>{volume}%</Text><Pressable accessibilityRole="button" style={styles.volumeButton} onPress={() => changeVolume(volume + 10)}><Text style={styles.volumeButtonText}>+</Text></Pressable></View>}</View>
                 {phase === "connected" && !video && (
                   <Pressable accessibilityRole="button" accessibilityLabel="Switch to video" style={styles.roundButton} onPress={() => void upgradeToVideo()}>
-                    <Ionicons name="videocam" size={22} color="#fff" />
+                    <Ionicons name="videocam" size={22} color={colors.text} />
                   </Pressable>
                 )}
                 {video && (
                   <Pressable accessibilityRole="button" accessibilityLabel="Toggle camera" style={[styles.roundButton, !cameraEnabled && styles.activeControl]} onPress={() => void toggleOrStartCamera()}>
-                    <Ionicons name={localStreamRef.current?.getVideoTracks().length && cameraEnabled ? "videocam" : "videocam-off"} size={22} color="#fff" />
+                    <Ionicons name={localStreamRef.current?.getVideoTracks().length && cameraEnabled ? "videocam" : "videocam-off"} size={22} color={colors.text} />
                   </Pressable>
                 )}
                 <Pressable accessibilityRole="button" accessibilityLabel="End call" style={[styles.roundButton, styles.decline]} onPress={endCall}>
@@ -807,7 +843,7 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,.10)",
+    backgroundColor: colors.panel2,
   },
   accept: { backgroundColor: "#24b56b" },
   decline: { backgroundColor: colors.red },

@@ -1,9 +1,8 @@
 {
   "name": "decave",
   "private": true,
-  "version": "0.1.129",
+  "version": "0.1.132",
   "description": "DeCave gaming chat and voice desktop client",
-  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -54,7 +53,10 @@
     "onnxruntime-web": "^1.29.0",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "@noble/ciphers": "^2.4.0",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -173,5 +175,6 @@
       "sign": true
     },
     "afterAllArtifactBuild": "scripts/release/notarize-dmg.cjs"
-  }
+  },
+  "license": "SEE LICENSE IN LICENSE"
 }

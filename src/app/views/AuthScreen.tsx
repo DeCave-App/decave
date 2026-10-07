@@ -9,7 +9,9 @@ import { DeCaveBrand } from "../components/DeCaveBrand";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { authErrorStyle, authSwitchStyle } from "../inline-styles";
 import type { AuthFormState } from "../state/auth-form";
-import { MINIMUM_SIGNUP_AGE } from "../../../shared/legal-consent";
+
+const TERMS_URL = "https://de-cave.com/terms";
+const PRIVACY_URL = "https://de-cave.com/privacy";
 
 type Props = {
   setCurrentUser: Dispatch<SetStateAction<AccountUser | null>>;
@@ -75,10 +77,10 @@ export function AuthScreen({
     setConfirmPasswordInput,
     birthDateInput,
     setBirthDateInput,
-    termsAccepted,
-    setTermsAccepted,
     staySignedIn,
     setStaySignedIn,
+    acceptedTerms,
+    setAcceptedTerms,
     authBusy,
     loginMfaKind,
   } = authForm;
@@ -103,8 +105,8 @@ export function AuthScreen({
           <div className="vadrion-auth-card-kicker">
             {authMode === "login" ? "WELCOME BACK" : authMode === "register" ? "JOIN DECAVE" : "ACCOUNT RECOVERY"}
           </div>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="dc-auth-card-head">
+            <div className="dc-auth-card-title">
               <h1>
                 {ownerLoginChallengeToken
                   ? loginMfaKind === "user"
@@ -237,8 +239,8 @@ export function AuthScreen({
                     max={new Date().toISOString().slice(0, 10)}
                   />
                   <small>
-                    Used only to confirm that DeCave is available to people aged {MINIMUM_SIGNUP_AGE} or older. We do
-                    not store the exact date.
+                    Used only to confirm that DeCave is only for adults aged 18 or older. We do not store the exact
+                    date.
                   </small>
                 </label>
               )}
@@ -254,40 +256,8 @@ export function AuthScreen({
                   }}
                   autoComplete={authMode === "login" ? "current-password" : "new-password"}
                   maxLength={128}
-                  minLength={authMode === "register" ? 10 : undefined}
                   style={{ marginTop: "12px" }}
                 />
-              )}
-
-              {authMode === "register" && (
-                <label
-                  style={{
-                    marginTop: "12px",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "9px",
-                    color: "var(--ds-text-soft)",
-                    fontSize: "12px",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(event) => setTermsAccepted(event.target.checked)}
-                    aria-label="I agree to Terms and acknowledge Privacy Notice"
-                    style={{ width: "16px", height: "16px", margin: 0, accentColor: "#6d63ff" }}
-                  />
-                  <span>
-                    I agree to{" "}
-                    <a href="https://de-cave.com/terms" target="_blank" rel="noopener noreferrer">
-                      Terms
-                    </a>{" "}
-                    and acknowledge{" "}
-                    <a href="https://de-cave.com/privacy" target="_blank" rel="noopener noreferrer">
-                      Privacy Notice
-                    </a>
-                  </span>
-                </label>
               )}
 
               {authMode === "register" && (
@@ -303,6 +273,27 @@ export function AuthScreen({
                   maxLength={128}
                   style={{ marginTop: "12px" }}
                 />
+              )}
+
+              {authMode === "register" && (
+                <label className="dc-auth-consent">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(event) => setAcceptedTerms(event.target.checked)}
+                  />
+                  <span>
+                    I am 18 or older and agree to the{" "}
+                    <a href={TERMS_URL} target="_blank" rel="noreferrer">
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a href={PRIVACY_URL} target="_blank" rel="noreferrer">
+                      Privacy Policy
+                    </a>
+                    .
+                  </span>
+                </label>
               )}
 
               {authMode === "login" && (
@@ -368,8 +359,7 @@ export function AuthScreen({
                       (authMode === "register" &&
                         (!emailInput.trim() ||
                           !birthDateInput ||
-                          !termsAccepted ||
-                          passwordInput.length < 10 ||
+                          !acceptedTerms ||
                           !confirmPasswordInput ||
                           confirmPasswordInput !== passwordInput)))
                 }
@@ -406,6 +396,7 @@ export function AuthScreen({
                   setAuthError("");
                   setConfirmPasswordInput("");
                   setBirthDateInput("");
+                  setAcceptedTerms(false);
                   setTurnstileToken("");
                   setTurnstileNonce((value) => value + 1);
                 }}
@@ -414,6 +405,18 @@ export function AuthScreen({
               >
                 {authMode === "login" ? "New to DeCave? Create an account" : "Back to login"}
               </button>
+
+              <p className="dc-auth-legal">
+                DeCave is an alpha for adults 18+. Read the{" "}
+                <a href={TERMS_URL} target="_blank" rel="noreferrer">
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a href={PRIVACY_URL} target="_blank" rel="noreferrer">
+                  Privacy Policy
+                </a>
+                .
+              </p>
             </>
           )}
 

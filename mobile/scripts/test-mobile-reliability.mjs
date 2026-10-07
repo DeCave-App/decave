@@ -263,6 +263,7 @@ async function testDirectCallRevocation() {
     {
       ...refs,
       closePeer: () => calls.push("closePeer"), stopLocalMedia: () => calls.push("stopLocalMedia"),
+      clearCallVerdict: () => {},
       ...Object.fromEntries(["setCallPeer", "setCallVideo", "setCallPhase", "setMuted", "setCameraEnabled", "setDurationSeconds", "setVolumeOpen", "setMinimized", "setError"].map((name) => [name, (value) => { updates[name] = value; }])),
     },
     "handleEvent",

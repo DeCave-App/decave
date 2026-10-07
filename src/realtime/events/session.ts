@@ -16,7 +16,7 @@ export type SessionEventContext = {
     text: string;
     settle: (error: Error | null) => void;
   } | null>;
-  logout: () => Promise<void>;
+  logout: (options?: { signedOutElsewhere?: boolean }) => Promise<void>;
 };
 
 /** Returns true when the frame was handled. */
@@ -39,7 +39,7 @@ export function handleSessionEvent(data: RealtimeFrame, context: SessionEventCon
         ? "Your DeCave account was signed in on another browser or desktop app."
         : "Your session was ended.";
 
-    void logout().then(() => {
+    void logout({ signedOutElsewhere: true }).then(() => {
       setAuthError(reason);
     });
     return true;

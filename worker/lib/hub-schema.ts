@@ -157,7 +157,7 @@ export function ensureHubFeatureSchema(env: Env): Promise<void> {
            AND hub_id IN (SELECT hub_id FROM decave_official_hubs WHERE key='decave-community-v1')`,
       ).run();
     } catch (error) {
-      console.warn("Official room icons not set", error);
+      console.warn("Official room icons not set", error instanceof Error ? error.name : "UnknownError");
     }
     const hubColumns = await env.DB.prepare("PRAGMA table_info(decave_hubs)").all<{ name: string }>();
     if (!hubColumns.results.some((column) => column.name === "icon_ring")) {

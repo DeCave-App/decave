@@ -2,6 +2,8 @@
 
 This source snapshot contains no history from the private source checkout. It was assembled from selected working-tree files; the destination repository starts with its own fresh commit history. Files ignored by Git, local credentials and configuration, local data, screenshots awaiting privacy review, internal compliance working papers, the private audit report, and the nested comparison checkout are omitted.
 
+The included application source corresponds to release 0.1.132. The release's end-to-end encryption switch is enabled in the included `wrangler.jsonc`. The security documents describe encrypted direct and group messages, their attachments, and call media, along with the metadata and verification limits. They also record that no independent security audit has been completed, and that real-device checks and a two-account production smoke test remain outstanding. See [the encryption design](docs/security/DM-E2EE.md) and [launch record](docs/security/DM-E2EE-LAUNCH.md).
+
 Production Cloudflare resource identifiers and the deployed app host are replaced with example values in the exported `wrangler.jsonc`; remote email delivery is disabled. The exported mobile configuration likewise uses placeholder bundle, signing, API, and EAS project values. Replace these example values with resources you control before deploying or publishing a mobile build.
 
 ClearVoice model-training sources, model weights, and the bundled legacy ONNX Runtime are omitted. The ClearVoice AI runtime and its runtime-wiring test are replaced with model-free versions. AI enhancement therefore reports that its models are unavailable; the voice engine continues through its existing non-AI fallback path.

@@ -395,7 +395,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
     await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { userIds: memberIds });
     return json(
       {
-        group: await groupChatForClient(env, groupId),
+        group: await groupChatForClient(env, groupId, true, user.id),
         hubId: squadRoom.hub_id,
         channelId: squadRoom.room_id,
         channelName: "Squad Lounge",

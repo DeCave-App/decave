@@ -1,4 +1,5 @@
-// Third-party integrations: GIF search (GIPHY) and the Steam link.
+// Third-party integrations: GIF search and media proxy (GIPHY) and the Steam
+// link.
 
 import { requireUser } from "../lib/sessions";
 import { json } from "../lib/http";
@@ -13,84 +14,135 @@ import {
 import { createRawToken, nowIso } from "../db";
 import type { ApiContext } from "./context";
 
-const GIPHY_MEDIA_HOSTS = new Set([
-  "media.giphy.com",
-  "media0.giphy.com",
-  "media1.giphy.com",
-  "media2.giphy.com",
-  "media3.giphy.com",
-  "media4.giphy.com",
-  "giphy.com",
-]);
+/** Path the clients load GIF media through, so viewers never contact GIPHY. */
+export const GIPHY_MEDIA_PROXY_PATH = "/api/giphy/media";
+/** Largest GIF/WebP/MP4 the proxy relays. */
+export const GIPHY_MEDIA_MAX_BYTES = 20 * 1024 * 1024;
+const GIPHY_MEDIA_CACHE_SECONDS = 30 * 24 * 60 * 60;
+const GIPHY_MEDIA_MAX_REDIRECTS = 2;
+const GIPHY_MEDIA_CONTENT_TYPES = new Set(["image/gif", "image/webp", "video/mp4"]);
 
-function giphyMediaUrl(request: Request, value: string | undefined): string | null {
-  if (!value) return null;
+function isGiphyMediaHost(hostname: string): boolean {
+  return hostname === "media.giphy.com" || hostname === "i.giphy.com" || /^media[0-9]\.giphy\.com$/.test(hostname);
+}
+
+/**
+ * Canonical GIPHY media URL for a client-supplied value, or null.
+ * Only https media hosts (media.giphy.com, mediaN.giphy.com, i.giphy.com) on the
+ * default port, without credentials, with a plain media path ending in
+ * .gif/.webp/.mp4. Query and fragment (GIPHY analytics ids) are dropped.
+ */
+export function giphyMediaTarget(value: string | null | undefined): URL | null {
+  if (typeof value !== "string" || !value || value.length > 2048) return null;
+  // Percent-encoded or backslash path bytes are never part of a GIPHY media path.
+  if (/[%\\]/.test(value.split(/[?#]/, 1)[0] ?? "")) return null;
+  let parsed: URL;
   try {
-    const source = new URL(value);
-    if (
-      source.protocol !== "https:" ||
-      source.port ||
-      source.username ||
-      source.password ||
-      !GIPHY_MEDIA_HOSTS.has(source.hostname.toLowerCase()) ||
-      (source.hostname.toLowerCase() === "giphy.com" && !source.pathname.startsWith("/media/"))
-    )
-      return null;
-    const proxy = new URL("/api/giphy/media", request.url);
-    proxy.searchParams.set("url", source.toString());
-    return `${proxy.pathname}${proxy.search}`;
+    parsed = new URL(value);
   } catch {
     return null;
   }
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.port) return null;
+  const hostname = parsed.hostname.toLowerCase();
+  if (!isGiphyMediaHost(hostname)) return null;
+  const segments = parsed.pathname.split("/").slice(1);
+  if (segments.length < 1 || segments.length > 6) return null;
+  if (segments.some((segment) => !/^[A-Za-z0-9_-][A-Za-z0-9._-]{0,159}$/.test(segment) || segment.includes(".."))) {
+    return null;
+  }
+  if (!/\.(?:gif|webp|mp4)$/i.test(segments[segments.length - 1] ?? "")) return null;
+  return new URL(`https://${hostname}/${segments.join("/")}`);
+}
+
+function giphyMediaError(message: string, status: number): Response {
+  return json({ error: message }, status, { "Cache-Control": "no-store" });
+}
+
+/** Caps a body stream at GIPHY_MEDIA_MAX_BYTES, erroring the stream past it. */
+function cappedBody(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+  let total = 0;
+  return body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        total += chunk.byteLength;
+        if (total > GIPHY_MEDIA_MAX_BYTES) {
+          controller.error(new Error("GIF exceeds the proxy size limit."));
+          return;
+        }
+        controller.enqueue(chunk);
+      },
+    }),
+  );
+}
+
+async function proxyGiphyMedia(target: URL): Promise<Response> {
+  let current = target;
+  for (let hop = 0; hop <= GIPHY_MEDIA_MAX_REDIRECTS; hop += 1) {
+    let upstream: Response;
+    try {
+      // A fresh request: no viewer cookies, IP, referrer or user agent reach GIPHY.
+      upstream = await fetch(current.toString(), {
+        method: "GET",
+        redirect: "manual",
+        headers: { Accept: "image/webp,image/gif,video/mp4", "User-Agent": "DeCave-Media-Proxy/1.0" },
+        cf: { cacheEverything: true, cacheTtl: GIPHY_MEDIA_CACHE_SECONDS },
+      });
+    } catch {
+      return giphyMediaError("Could not load the GIF.", 502);
+    }
+
+    if (upstream.status >= 300 && upstream.status < 400) {
+      const location = upstream.headers.get("Location");
+      let next: URL | null = null;
+      try {
+        next = location ? giphyMediaTarget(new URL(location, current).toString()) : null;
+      } catch {
+        next = null;
+      }
+      void upstream.body?.cancel();
+      if (!next) return giphyMediaError("The GIF redirected to an unapproved host.", 502);
+      current = next;
+      continue;
+    }
+
+    if (!upstream.ok || !upstream.body) {
+      void upstream.body?.cancel();
+      return giphyMediaError("The GIF is unavailable.", upstream.status === 404 ? 404 : 502);
+    }
+    const contentType = (upstream.headers.get("Content-Type") ?? "").split(";", 1)[0]!.trim().toLowerCase();
+    if (!GIPHY_MEDIA_CONTENT_TYPES.has(contentType)) {
+      void upstream.body.cancel();
+      return giphyMediaError("The GIF has an unsupported media type.", 502);
+    }
+    const lengthHeader = upstream.headers.get("Content-Length");
+    const length = lengthHeader && /^\d+$/.test(lengthHeader) ? Number(lengthHeader) : null;
+    if (length !== null && length > GIPHY_MEDIA_MAX_BYTES) {
+      void upstream.body.cancel();
+      return giphyMediaError("The GIF is too large.", 502);
+    }
+
+    const headers = new Headers({
+      "Content-Type": contentType,
+      // Authenticated route: browsers and the app may cache it, shared caches must not.
+      "Cache-Control": `private, max-age=${GIPHY_MEDIA_CACHE_SECONDS}, immutable`,
+      "Content-Disposition": "inline",
+      "Cross-Origin-Resource-Policy": "same-origin",
+      "Content-Security-Policy": "default-src 'none'; sandbox",
+    });
+    if (length !== null) headers.set("Content-Length", String(length));
+    return new Response(cappedBody(upstream.body), { status: 200, headers });
+  }
+  return giphyMediaError("The GIF redirected too many times.", 502);
 }
 
 export async function handleGiphyRoutes({ request, env, url, p, method }: ApiContext): Promise<Response | null> {
-  if (method === "GET" && p === "/api/giphy/media") {
+  if (method === "GET" && p === GIPHY_MEDIA_PROXY_PATH) {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-    const target = giphyMediaUrl(request, url.searchParams.get("url") ?? undefined);
-    if (!target) return json({ error: "Unsupported GIPHY media URL." }, 400);
-    const upstreamUrl = new URL(target, url.origin);
-    const original = upstreamUrl.searchParams.get("url");
-    if (!original) return new Response(null, { status: 400 });
-    try {
-      const upstream = await fetch(original, {
-        redirect: "manual",
-        headers: { Accept: "image/gif,image/webp,image/png,image/jpeg" },
-      });
-      const type = (upstream.headers.get("content-type") ?? "").split(";", 1)[0].toLowerCase();
-      const size = Number(upstream.headers.get("content-length") ?? 0);
-      if (
-        !upstream.ok ||
-        upstream.status >= 300 ||
-        !["image/gif", "image/webp", "image/png", "image/jpeg"].includes(type) ||
-        size > 20 * 1024 * 1024 ||
-        !upstream.body
-      ) {
-        await upstream.body?.cancel();
-        return new Response(null, { status: 502 });
-      }
-      let total = 0;
-      const body = upstream.body.pipeThrough(
-        new TransformStream<Uint8Array, Uint8Array>({
-          transform(chunk, controller) {
-            total += chunk.byteLength;
-            if (total > 20 * 1024 * 1024) throw new Error("GIPHY media too large");
-            controller.enqueue(chunk);
-          },
-        }),
-      );
-      return new Response(body, {
-        headers: {
-          "Content-Type": type,
-          "Cache-Control": "private, max-age=300",
-          "X-Content-Type-Options": "nosniff",
-          "Content-Security-Policy": "default-src 'none'; sandbox",
-        },
-      });
-    } catch {
-      return new Response(null, { status: 502 });
-    }
+    void user;
+    const target = giphyMediaTarget(url.searchParams.get("u"));
+    if (!target) return giphyMediaError("That GIF address is not allowed.", 400);
+    return proxyGiphyMedia(target);
   }
 
   if (method === "GET" && p === "/api/giphy") {
@@ -134,8 +186,9 @@ export async function handleGiphyRoutes({ request, env, url, p, method }: ApiCon
         const id = typeof item.id === "string" ? item.id : "";
         const original = item.images?.original;
         const preview = item.images?.fixed_width_small ?? item.images?.fixed_width ?? original;
-        const urlValue = giphyMediaUrl(request, original?.webp || original?.url);
-        const previewValue = giphyMediaUrl(request, preview?.webp || preview?.url) || urlValue;
+        // Only media the proxy will relay is offered; analytics query ids are stripped.
+        const urlValue = giphyMediaTarget(original?.webp || original?.url)?.toString() ?? "";
+        const previewValue = giphyMediaTarget(preview?.webp || preview?.url)?.toString() || urlValue;
         if (!id || !urlValue || !previewValue) return [];
         return [
           {

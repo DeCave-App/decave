@@ -131,7 +131,7 @@ export async function steamPlayerSummary(env: Env, steamId: string): Promise<Ste
     const data = (await response.json()) as { response?: { players?: SteamPlayerSummary[] } };
     return data.response?.players?.[0] ?? null;
   } catch (error) {
-    console.warn("Steam GetPlayerSummaries failed:", error);
+    console.warn("Steam GetPlayerSummaries failed:", error instanceof Error ? error.name : "UnknownError");
     return null;
   }
 }
@@ -208,7 +208,7 @@ export async function verifySteamOpenIdCallback(url: URL): Promise<string | null
     if (!/(?:^|\n)is_valid:true(?:\r?\n|$)/.test(verification)) return null;
     return match[1];
   } catch (error) {
-    console.warn("Steam OpenID verification failed:", error);
+    console.warn("Steam OpenID verification failed:", error instanceof Error ? error.name : "UnknownError");
     return null;
   }
 }

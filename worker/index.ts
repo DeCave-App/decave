@@ -11,7 +11,7 @@ import { ensureHubFeatureSchema } from "./lib/hub-schema";
 import { ensureOfficialHubSchema } from "./lib/official-hubs";
 import { handleTrustSafetyApi, pruneExpiredEvidenceUploadReservations } from "./routes/trust-safety";
 import { eraseDueAccounts } from "./account-erasure";
-import { pruneExpiredPrivacyData } from "./lib/retention";
+import { pruneExpiredPersonalData } from "./retention";
 import {
   streamerMigrationExists,
   handleStreamerRequest,
@@ -95,15 +95,13 @@ export async function handleApi(request: Request, env: Env, ctx?: ExecutionConte
 
 async function handleWebSocket(request: Request, env: Env): Promise<Response> {
   if ((request.headers.get("Upgrade") ?? "").toLowerCase() !== "websocket") {
-    return json({ error: "Expected WebSocket upgrade" }, 426);
+    return securityHeaders(json({ error: "Expected WebSocket upgrade" }, 426), request);
   }
-  // Cross-site WebSocket hijacking guard: browsers attach Origin to the
-  // upgrade; native clients may omit it.
   if (!webSocketOriginAllowed(request)) {
-    return json({ error: "Cross-site WebSocket blocked" }, 403);
+    return securityHeaders(json({ error: "Cross-origin WebSocket upgrade blocked" }, 403), request);
   }
   const room = await globalRoom(env);
-  return room.fetch(new Request("https://internal.decave/connect", request));
+  return securityHeaders(await room.fetch(new Request("https://internal.decave/connect", request)), request);
 }
 
 export default {
@@ -138,15 +136,8 @@ export default {
         error instanceof Error ? error.name : "UnknownError",
       );
     }
-    try {
-      await pruneExpiredPrivacyData(env);
-    } catch (error) {
-      failures.push("privacy-retention");
-      console.error(
-        "Scheduled privacy retention cleanup failed; remaining rows or objects are retryable.",
-        error instanceof Error ? error.name : "UnknownError",
-      );
-    }
+    // Delete personal data past its retention period (see worker/retention.ts).
+    for (const step of await pruneExpiredPersonalData(env)) failures.push(`retention:${step}`);
     if (failures.length) throw new Error(`Scheduled maintenance failed: ${failures.join(", ")}.`);
   },
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {

@@ -23,8 +23,8 @@ export function AgeGateDialog({
         <div className="dc-safety-kicker ds-kicker">WELCOME TO DECAVE</div>
         <h2 id="dc-age-gate-title">Confirm your age</h2>
         <p>
-          DeCave is available to people aged 13 and older. Choose your birth date to finish setting up your account. We
-          keep only an age band and the verification time, not the exact date.
+          DeCave is only for adults aged 18 and older. Choose your birth date to finish setting up your account. We keep
+          only an age band and the verification time, not the exact date.
         </p>
         <label className="ds-field">
           Birth date

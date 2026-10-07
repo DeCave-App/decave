@@ -2,6 +2,8 @@
 
 import type { Server } from "./types";
 
+/** How long a successful report stays on screen, long enough to read or hear before it closes. */
+export const REPORT_CONFIRMATION_MS = 3000;
 export const MAX_PROFILE_IMAGE_BYTES = 2 * 1024 * 1024;
 
 export const EMOJI_GROUPS: Array<{ name: string; items: string[] }> = [

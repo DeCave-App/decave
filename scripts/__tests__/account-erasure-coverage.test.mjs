@@ -90,6 +90,25 @@ test("every table with a user-reference column is erased, anonymized, or explici
 
 test("erasure scrubs share links, Hub home edits, moderation targets and legacy 0001 tables", async () => {
   const past = "2025-01-01T00:00:00.000Z";
+  // The current migration set deliberately drops the 0001 prototype schema.
+  // Recreate only the legacy tables this compatibility test exercises.
+  db.exec("CREATE TABLE users(id TEXT PRIMARY KEY, username TEXT NOT NULL, password_hash TEXT NOT NULL)");
+  db.exec(`CREATE TABLE hubs(
+    id TEXT PRIMARY KEY,
+    owner_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    name TEXT NOT NULL
+  )`);
+  db.exec(
+    "CREATE TABLE sessions(id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL, expires_at TEXT NOT NULL)",
+  );
+  db.exec(`CREATE TABLE audit_log(
+    id TEXT PRIMARY KEY,
+    hub_id TEXT NOT NULL,
+    actor_user_id TEXT,
+    target_user_id TEXT,
+    action TEXT NOT NULL,
+    details_json TEXT NOT NULL
+  )`);
   for (const [id, deleted] of [
     ["erase-me", true],
     ["hub-owner", false],

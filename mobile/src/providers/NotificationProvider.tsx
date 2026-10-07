@@ -11,6 +11,7 @@ import {
 import { Platform } from "react-native";
 import { router, usePathname } from "expo-router";
 import * as Notifications from "expo-notifications";
+import * as SecureStore from "expo-secure-store";
 import { useNotificationSettings } from "@/src/providers/NotificationSettingsProvider";
 import { useMutedUsers } from "@/src/providers/MutedUsersProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
@@ -19,6 +20,12 @@ import { apiJson } from "@/src/lib/api";
 import { registerForPush, unregisterPush } from "@/src/lib/push";
 import { primePermission } from "@/src/lib/permission-primer";
 import { onSquadSearchChanged } from "@/src/lib/squad-search-events";
+import { dmE2ee } from "@/src/lib/e2ee/client";
+import type { DirectMessage } from "@/src/types";
+
+// "Not now" leaves the system permission undecided, so remember it instead of asking on every launch.
+const PRIMER_DECLINED_KEY = "decave.notifications.primerDeclinedAt";
+const PRIMER_RETRY_MS = 14 * 24 * 60 * 60 * 1000;
 
 export type NotificationPermissionState =
   | "checking"
@@ -216,12 +223,15 @@ export function NotificationProvider({ children }: PropsWithChildren) {
         return;
       }
       if (current && current.status !== "undetermined") return;
+      const declinedAt = Number(await SecureStore.getItemAsync(PRIMER_DECLINED_KEY).catch(() => null));
+      if (declinedAt && Date.now() - declinedAt < PRIMER_RETRY_MS) return;
       const go = await primePermission(
         "Stay in the loop",
         "Get notified about DMs, mentions, friend requests and when a squad is ready for you. You can fine-tune this in Settings.",
         "Turn on",
       );
       if (go) await requestPermission();
+      else void SecureStore.setItemAsync(PRIMER_DECLINED_KEY, String(Date.now())).catch(() => undefined);
     })();
   }, [user?.id, settings.enabled]);
 
@@ -346,13 +356,12 @@ export function NotificationProvider({ children }: PropsWithChildren) {
           ? (lastEvent.sender as Record<string, unknown>)
           : null;
       const senderName = stringValue(sender?.username) || "DeCave user";
-      const preview = privacyText(
-        settingsRef.current.notificationPreview,
-        senderName,
-        stringValue(message.text),
-        "dm",
-      );
-      void notify(preview.title, preview.body, route);
+      // Encrypted messages are decrypted on the phone; one this phone can't read yet says so.
+      void dmE2ee.open(message as unknown as DirectMessage).then((opened) => {
+        const text = opened.e2ee === "locked" || opened.e2ee === "failed" ? "🔒 Encrypted message" : opened.text;
+        const preview = privacyText(settingsRef.current.notificationPreview, senderName, text, "dm");
+        void notify(preview.title, preview.body, route);
+      });
       return;
     }
 

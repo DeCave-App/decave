@@ -24,7 +24,7 @@ import {
 import { safetyProfileForClient, getSafetyProfile } from "../trust-safety";
 import { allMessageSubscriptions, pushSettingsFromJson } from "../push-policy";
 import { broadcastProfileUpdate, realtimeBroadcast } from "../lib/realtime";
-import { validateUsername, cleanPhoneNumber } from "../lib/validation";
+import { validateUsername } from "../lib/validation";
 import { ownedHubCount } from "../lib/hubs";
 import { ensureActivitySchema } from "../lib/activity";
 import { serveR2 } from "../lib/media";
@@ -151,7 +151,8 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
            SELECT 1 FROM decave_messages m WHERE m.attachment_key=a.r2_key AND m.author_user_id=?
          )) OR
          (a.kind='dm' AND EXISTS(
-           SELECT 1 FROM decave_direct_messages d WHERE d.from_user_id=? AND instr(d.text,a.r2_key)>0
+           SELECT 1 FROM decave_direct_messages d WHERE d.from_user_id=?
+             AND (instr(d.text,a.r2_key)>0 OR instr(COALESCE(d.attachment_refs,''),a.r2_key)>0)
          ))
        )
        UNION ALL
@@ -271,18 +272,20 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
       {
         name: "directMessagesSent",
         alias: "d",
-        sql: `SELECT u.username AS recipient,d.text,d.created_at,d.rowid AS __export_rowid
+        sql: `SELECT u.username AS recipient,d.text,d.envelope,d.attachment_refs,d.created_at,d.rowid AS __export_rowid
           FROM decave_direct_messages d LEFT JOIN decave_users u ON u.id=d.to_user_id WHERE d.from_user_id=?`,
         binds: [user.id],
+        transform: (row: Record<string, unknown>) => (row.envelope ? { ...row, text: "[end-to-end encrypted]" } : row),
       },
       {
         // Messages other people sent to this account are part of the account
         // holder's own conversations and are included for access/portability.
         name: "directMessagesReceived",
         alias: "d",
-        sql: `SELECT u.username AS sender,d.text,d.created_at,d.rowid AS __export_rowid
+        sql: `SELECT u.username AS sender,d.text,d.envelope,d.attachment_refs,d.created_at,d.rowid AS __export_rowid
           FROM decave_direct_messages d LEFT JOIN decave_users u ON u.id=d.from_user_id WHERE d.to_user_id=?`,
         binds: [user.id],
+        transform: (row: Record<string, unknown>) => (row.envelope ? { ...row, text: "[end-to-end encrypted]" } : row),
       },
       {
         name: "hubMessageReactions",
@@ -298,6 +301,35 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
         alias: "dr",
         sql: `SELECT dr.message_id,dr.emoji,dr.created_at,dr.rowid AS __export_rowid
           FROM decave_dm_reactions dr WHERE dr.user_id=?`,
+        binds: [user.id],
+      },
+      {
+        name: "directMessageReactionEnvelopes",
+        alias: "re",
+        sql: `SELECT re.message_id,re.envelope,re.updated_at,re.rowid AS __export_rowid
+          FROM decave_dm_reaction_envelopes re WHERE re.user_id=?`,
+        binds: [user.id],
+      },
+      {
+        name: "dmPublicKeys",
+        alias: "k",
+        sql: `SELECT k.key_id,k.x25519_public,k.ed25519_public,k.created_at,k.retired_at,k.previous_key_id,
+            k.certificate,k.sealed_for_previous,k.rowid AS __export_rowid
+          FROM decave_dm_keys k WHERE k.user_id=?`,
+        binds: [user.id],
+      },
+      {
+        name: "dmEncryptedKeyBackup",
+        alias: "b",
+        sql: `SELECT b.key_id,b.backup AS encryptedBackup,b.updated_at,b.rowid AS __export_rowid
+          FROM decave_dm_key_backups b WHERE b.user_id=?`,
+        binds: [user.id],
+      },
+      {
+        name: "dmKeySettings",
+        alias: "ks",
+        sql: `SELECT ks.history_days,ks.updated_at,ks.rowid AS __export_rowid
+          FROM decave_dm_key_settings ks WHERE ks.user_id=?`,
         binds: [user.id],
       },
       {
@@ -438,7 +470,8 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
         sql: `SELECT a.r2_key AS __download_key,a.created_at,a.rowid AS __export_rowid
           FROM decave_attachment_access a
           WHERE a.owner_user_id=? AND a.kind='dm' AND EXISTS(
-            SELECT 1 FROM decave_direct_messages d WHERE d.from_user_id=? AND instr(d.text,a.r2_key)>0
+            SELECT 1 FROM decave_direct_messages d WHERE d.from_user_id=?
+              AND (instr(d.text,a.r2_key)>0 OR instr(COALESCE(d.attachment_refs,''),a.r2_key)>0)
           )`,
         binds: [user.id, user.id],
         transform: (row: Record<string, unknown>) => {
@@ -767,39 +800,7 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
   }
 
   if (method === "PUT" && p === "/api/account/phone") {
-    const user = await requireUser(request, env);
-    if (user instanceof Response) return user;
-    const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: `account-phone:${user.id}` });
-    if (!limited.success) return json({ error: "Too many phone changes. Please try again later." }, 429);
-    const body = await bodyJson(request);
-    if (!body) {
-      return json({ error: "Invalid account mutation request.", code: "INVALID_INPUT" }, 400);
-    }
-    const phoneNumber = cleanPhoneNumber(body.phoneNumber);
-    if (phoneNumber === null) {
-      return json({ error: "Enter a valid phone number, including country code when applicable." }, 400);
-    }
-    {
-      const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
-      if (!(await verifyPassword(currentPassword, user.password_salt, user.password_hash))) {
-        await securityEvent(env, user.id, "phone.change_failed_password", request);
-        return json({ error: "Current password is incorrect." }, 403);
-      }
-    }
-    await accountPreferencesRow(env, user.id);
-    {
-      const result = await env.DB.prepare(
-        `UPDATE decave_account_preferences SET phone_number=?,updated_at=? WHERE user_id=?
-          AND EXISTS(SELECT 1 FROM decave_users WHERE id=?)`,
-      )
-        .bind(phoneNumber, nowIso(), user.id, user.id)
-        .run();
-      if (Number(result.meta.changes ?? 0) !== 1)
-        return json({ error: "Fresh scoped authentication is required.", code: "REAUTH_REQUIRED" }, 401);
-    }
-    await securityEvent(env, user.id, "phone.updated", request);
-    const updated = await accountPreferencesRow(env, user.id);
-    return json(accountPreferencesForClient(updated), 200, { "Cache-Control": "no-store, private" });
+    return json({ error: "Phone numbers are no longer collected.", code: "FEATURE_REMOVED" }, 410);
   }
 
   if (method === "POST" && (p === "/api/account/disable" || p === "/api/account/delete")) {

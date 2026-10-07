@@ -3,6 +3,7 @@
 
 import type { Env } from "./env";
 import type { ServerRole } from "../db";
+import { parseDmEnvelope, type DmEnvelope } from "../../shared/dm-e2ee-format";
 
 // D1 caps bound parameters per statement; keep IN (...) lists below that.
 export const D1_IN_CHUNK = 90;
@@ -120,11 +121,36 @@ export type ClientDirectMessage = {
   id: string;
   fromUserId: string;
   toUserId: string;
+  /** Empty for an encrypted message; the client decrypts `envelope`. */
   text: string;
+  envelope: DmEnvelope | null;
   timestamp: string;
   replyToId: string | null;
   reactions: Record<string, string[]>;
+  /** Encrypted reactions (one envelope per account), for an encrypted message. */
+  reactionEnvelopes: DmEnvelope[];
 };
+
+async function reactionEnvelopesFor(env: Env, messageIds: readonly string[]): Promise<Map<string, DmEnvelope[]>> {
+  const envelopes = new Map<string, DmEnvelope[]>();
+  for (const ids of chunked([...new Set(messageIds)])) {
+    const rows = await env.DB.prepare(
+      `SELECT message_id, envelope FROM decave_dm_reaction_envelopes
+         WHERE message_id IN (${ids.map(() => "?").join(",")})
+         ORDER BY updated_at`,
+    )
+      .bind(...ids)
+      .all<{ message_id: string; envelope: string }>();
+    for (const row of rows.results) {
+      const envelope = parseDmEnvelope(row.envelope);
+      if (!envelope) continue;
+      const list = envelopes.get(row.message_id) ?? [];
+      list.push(envelope);
+      envelopes.set(row.message_id, list);
+    }
+  }
+  return envelopes;
+}
 
 /** Load and format direct messages in two queries, preserving the order of `messageIds`. */
 export async function dmMessagesForClient(env: Env, messageIds: readonly string[]): Promise<ClientDirectMessage[]> {
@@ -133,6 +159,7 @@ export async function dmMessagesForClient(env: Env, messageIds: readonly string[
     from_user_id: string;
     to_user_id: string;
     text: string;
+    envelope: string | null;
     created_at: string;
     reply_to_id: string | null;
     from_public_id: string | null;
@@ -141,7 +168,7 @@ export async function dmMessagesForClient(env: Env, messageIds: readonly string[
   const rowsById = new Map<string, Row>();
   for (const ids of chunked([...new Set(messageIds)])) {
     const rows = await env.DB.prepare(
-      `SELECT m.id,m.from_user_id,m.to_user_id,m.text,m.created_at,m.reply_to_id,
+      `SELECT m.id,m.from_user_id,m.to_user_id,m.text,m.envelope,m.created_at,m.reply_to_id,
                 fu.public_id AS from_public_id,tu.public_id AS to_public_id
          FROM decave_direct_messages m
          JOIN decave_users fu ON fu.id=m.from_user_id
@@ -153,6 +180,8 @@ export async function dmMessagesForClient(env: Env, messageIds: readonly string[
     for (const row of rows.results) rowsById.set(row.id, row);
   }
   const reactions = await reactionMapsFor(env, "decave_dm_reactions", [...rowsById.keys()]);
+  const encryptedIds = [...rowsById.values()].filter((row) => row.envelope).map((row) => row.id);
+  const reactionEnvelopes = encryptedIds.length ? await reactionEnvelopesFor(env, encryptedIds) : new Map();
   return messageIds.flatMap((id) => {
     const row = rowsById.get(id);
     if (!row) return [];
@@ -162,9 +191,11 @@ export async function dmMessagesForClient(env: Env, messageIds: readonly string[
         fromUserId: row.from_public_id ?? "",
         toUserId: row.to_public_id ?? "",
         text: row.text,
+        envelope: row.envelope ? parseDmEnvelope(row.envelope) : null,
         timestamp: row.created_at,
         replyToId: row.reply_to_id,
         reactions: reactions.get(row.id) ?? {},
+        reactionEnvelopes: reactionEnvelopes.get(row.id) ?? [],
       },
     ];
   });

@@ -74,7 +74,7 @@ export function securityHeaders(response: Response, request?: Request): Response
   headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   headers.set(
     "Content-Security-Policy",
-    `default-src 'self'; object-src 'none'; worker-src 'self'; script-src-attr 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.giphy.com https://icons.duckduckgo.com; media-src 'self' blob: https://*.giphy.com; connect-src 'self' https://challenges.cloudflare.com https://rtc.live.cloudflare.com https://api.giphy.com${realtimeConnectSource(request)}; frame-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`,
+    `default-src 'self'; object-src 'none'; worker-src 'self'; script-src-attr 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://challenges.cloudflare.com https://rtc.live.cloudflare.com${realtimeConnectSource(request)}; frame-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`,
   );
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }

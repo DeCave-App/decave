@@ -63,6 +63,17 @@ export type SocialEventContext = {
   loadDmConversations: () => Promise<void>;
   loadGroupChats: () => Promise<void>;
   openGroupChat: (group: GroupChat) => Promise<void>;
+  sendSocket: (payload: unknown) => boolean;
+  /** DM encryption (src/e2ee/dm-e2ee-client.ts), passed in so this module stays free of browser globals. */
+  e2ee?: {
+    handleEvent: (data: RealtimeFrame) => boolean;
+    open: (message: DirectMessage) => Promise<DirectMessage>;
+    retryFrame: (error: RealtimeFrame) => Promise<Record<string, unknown> | null>;
+    settle: (messageId: string, peerId: string) => void;
+    openGroup: (message: GroupChatMessage, groupId: string) => Promise<GroupChatMessage>;
+    retryGroupFrame: (error: RealtimeFrame) => Promise<Record<string, unknown> | null>;
+    settleGroup: (messageId: string, groupId: string) => void;
+  };
 };
 
 /** Returns true when the frame was handled. */
@@ -101,7 +112,20 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
     loadDmConversations,
     loadGroupChats,
     openGroupChat,
+    sendSocket,
+    e2ee,
   } = context;
+
+  if (e2ee?.handleEvent(data)) return true;
+
+  /** Run `handle` with the message's readable text: at once for plaintext, after decrypting otherwise. */
+  const withText = (raw: DirectMessage, handle: (message: DirectMessage) => void) => {
+    if (!raw.envelope || !e2ee) {
+      handle({ ...raw, e2ee: raw.envelope ? "locked" : "plaintext" });
+      return;
+    }
+    void e2ee.open(raw).then(handle);
+  };
 
   if (data.type === "SOCIAL_REFRESH") {
     void loadSocialState();
@@ -118,9 +142,15 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
   }
 
   if (data.type === "DM_MESSAGE" && data.message && typeof data.message === "object") {
-    const message = data.message as DirectMessage;
+    // Decrypt first; the rest runs once the text is known.
+    withText(data.message as DirectMessage, handleDirectMessage);
+    return true;
+  }
+
+  function handleDirectMessage(message: DirectMessage) {
     const partnerId = message.fromUserId === currentUser?.id ? message.toUserId : message.fromUserId;
     const isIncoming = message.fromUserId !== currentUser?.id;
+    if (!isIncoming) e2ee?.settle(message.id, partnerId);
 
     void loadDmConversations();
 
@@ -148,7 +178,9 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
           ? realtimeSender.username
           : (sender?.username ?? "DeCave user");
       const avatarUrl = typeof realtimeSender?.avatarUrl === "string" ? realtimeSender.avatarUrl : sender?.avatarUrl;
-      const preview = notificationPreviewText(username, message.text, "DeCave");
+      // A device that can't decrypt yet still says a message arrived.
+      const readable = message.e2ee === "locked" || message.e2ee === "failed" ? "🔒 Encrypted message" : message.text;
+      const preview = notificationPreviewText(username, readable, "DeCave");
 
       const previewMode = notificationPreviewMode();
       const hiddenPreview = previewMode === "hidden";
@@ -156,7 +188,7 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
         userId: partnerId,
         username: hiddenPreview ? "DeCave" : username,
         avatarUrl: hiddenPreview ? undefined : avatarUrl,
-        text: previewMode === "full" ? message.text : preview.body,
+        text: previewMode === "full" ? readable : preview.body,
       });
 
       if (dmNoticeTimerRef.current !== null) {
@@ -169,14 +201,13 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
 
       desktopNotify(preview.title, preview.body, "dm");
     }
-
-    return true;
   }
 
   if (data.type === "DM_EDITED" && data.message && typeof data.message === "object") {
-    const message = data.message as DirectMessage;
-    setDmMessages((current) => current.map((item) => (item.id === message.id ? message : item)));
-    void loadDmConversations();
+    withText(data.message as DirectMessage, (message) => {
+      setDmMessages((current) => current.map((item) => (item.id === message.id ? message : item)));
+      void loadDmConversations();
+    });
     return true;
   }
 
@@ -187,19 +218,39 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
   }
 
   if (data.type === "DM_REACTION_UPDATED" && data.message && typeof data.message === "object") {
-    const message = data.message as DirectMessage;
-    setDmMessages((current) => current.map((item) => (item.id === message.id ? message : item)));
+    withText(data.message as DirectMessage, (message) => {
+      setDmMessages((current) => current.map((item) => (item.id === message.id ? message : item)));
+    });
     return true;
   }
 
   if (data.type === "DM_ERROR") {
-    setDmError(typeof data.message === "string" ? data.message : "Private message failed.");
+    const fallback = typeof data.message === "string" ? data.message : "Private message failed.";
+    // A stale key is fixed by sealing again with fresh keys, once.
+    if (!e2ee) {
+      setDmError(fallback);
+      return true;
+    }
+    void e2ee
+      .retryFrame(data)
+      .then((frame) => {
+        if (!frame || !sendSocket(frame)) setDmError(fallback);
+      })
+      .catch((error: unknown) => setDmError(error instanceof Error ? error.message : fallback));
     return true;
   }
 
   if (data.type === "GROUP_MESSAGE" && data.message && typeof data.message === "object") {
-    const message = data.message as GroupChatMessage;
-    const groupId = typeof data.groupId === "string" ? data.groupId : message.groupId;
+    const raw = data.message as GroupChatMessage;
+    const groupId = typeof data.groupId === "string" ? data.groupId : raw.groupId;
+    // Decrypt first; the rest runs once the text is known.
+    if (!raw.envelope || !e2ee) handleGroupMessage({ ...raw, e2ee: raw.envelope ? "locked" : "plaintext" }, groupId);
+    else void e2ee.openGroup(raw, groupId).then((message) => handleGroupMessage(message, groupId));
+    return true;
+  }
+
+  function handleGroupMessage(message: GroupChatMessage, groupId: string) {
+    if (message.fromUserId === currentUser?.id) e2ee?.settleGroup(message.id, groupId);
     void loadGroupChats();
 
     if (activeGroupChatRef.current?.id === groupId) {
@@ -213,10 +264,10 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
     ) {
       const group = groupChats.find((item) => item.id === groupId);
       const context = group?.name || "Group chat";
-      const preview = notificationPreviewText(message.username || "DeCave user", message.text, "DeCave", context);
+      const readable = message.e2ee === "locked" || message.e2ee === "failed" ? "🔒 Encrypted message" : message.text;
+      const preview = notificationPreviewText(message.username || "DeCave user", readable, "DeCave", context);
       desktopNotify(preview.title, preview.body, "dm", undefined, "other");
     }
-    return true;
   }
 
   if (data.type === "GROUP_CHAT_UPDATED" && typeof data.groupId === "string") {
@@ -245,7 +296,18 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
   }
 
   if (data.type === "GROUP_ERROR") {
-    setGroupError(typeof data.message === "string" ? data.message : "Group message failed.");
+    const fallback = typeof data.message === "string" ? data.message : "Group message failed.";
+    // Keys or members changed since the message was sealed: seal again, once.
+    if (!e2ee) {
+      setGroupError(fallback);
+      return true;
+    }
+    void e2ee
+      .retryGroupFrame(data)
+      .then((frame) => {
+        if (!frame || !sendSocket(frame)) setGroupError(fallback);
+      })
+      .catch((error: unknown) => setGroupError(error instanceof Error ? error.message : fallback));
     return true;
   }
 

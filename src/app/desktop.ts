@@ -36,6 +36,11 @@ declare global {
       getUpdateStatus: () => Promise<DesktopUpdateState>;
       checkForUpdates: () => Promise<DesktopUpdateState>;
       restartToUpdate: () => Promise<boolean>;
+      /** Desktop builds with DM encryption: wrap a key with the OS keychain (null when there is none). */
+      e2eeKeys?: {
+        protect: (seedBase64: string) => Promise<string | null>;
+        unprotect: (protectedBase64: string) => Promise<string | null>;
+      };
       onUpdateStatus: (callback: (state: DesktopUpdateState) => void) => () => void;
       browser: {
         create: (input: { url: string; tabKey: string }) => Promise<{

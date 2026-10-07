@@ -12,6 +12,8 @@ import {
   type FriendRequestPolicy,
 } from "@/src/lib/account-preferences";
 import { useSession } from "@/src/providers/SessionProvider";
+import { DmEncryptionSettings } from "@/src/providers/DmE2eeProvider";
+import { useDmE2ee } from "@/src/lib/e2ee/client";
 import { colors } from "@/src/theme";
 
 type BlockedAccount = { userId: string; username: string; createdAt: string };
@@ -29,6 +31,7 @@ const activityOptions: Array<[ActivityVisibility, string]> = [
 ];
 
 export default function PrivacyScreen() {
+  const dmE2eeAvailable = useDmE2ee().available;
   const { token } = useSession();
   const [friendPolicy, setFriendPolicy] = useState<FriendRequestPolicy | null>(null);
   const [activity, setActivity] = useState<ActivityVisibility | null>(null);
@@ -168,6 +171,15 @@ export default function PrivacyScreen() {
               <Ionicons name="chatbubbles-outline" size={18} color={colors.cyan} />
               <Text style={styles.infoText}>Only friends can message you. DeCave doesn't deliver private messages from people who aren't your friends.</Text>
             </View>
+
+            {dmE2eeAvailable && (
+              <>
+                <Text style={styles.section}>ENCRYPTED MESSAGES</Text>
+                <View style={styles.card}>
+                  <DmEncryptionSettings />
+                </View>
+              </>
+            )}
 
             <Text style={styles.section}>BLOCKED ACCOUNTS</Text>
             {!!blocksError && <Text style={styles.error}>{blocksError}</Text>}

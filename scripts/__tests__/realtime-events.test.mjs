@@ -196,3 +196,48 @@ test("USERS_UPDATE keeps friends' presence in step with who is connected", async
     [true, false, false],
   );
 });
+
+test("encrypted DM frames are decrypted before they reach the conversation", async () => {
+  const dms = state([{ id: "m1", text: "secret v1", e2ee: "encrypted" }]);
+  const opened = [];
+  const sent = [];
+  const context = {
+    currentUser: { id: "me" },
+    activeDmUserRef: ref({ id: "peer" }),
+    setDmMessages: dms.set,
+    setDmError: () => {},
+    loadDmConversations: async () => {},
+    notificationSettingsRef: ref({ dms: false }),
+    mutedUserIdsRef: ref(new Set()),
+    sendSocket: (frame) => sent.push(frame) > 0,
+    e2ee: {
+      handleEvent: (frame) => frame.type === "DM_KEYS_CHANGED",
+      open: async (message) => {
+        opened.push(message.id);
+        return { ...message, text: `decrypted ${message.id}`, e2ee: "encrypted" };
+      },
+      retryFrame: async (error) => (error.code === "DM_E2EE_STALE_KEY" ? { type: "DM_MESSAGE", resent: true } : null),
+      settle: () => {},
+    },
+  };
+  const envelope = { v: 1 };
+  assert.equal(handleSocialEvent({ type: "DM_EDITED", message: { id: "m1", text: "", envelope } }, context), true);
+  assert.equal(
+    handleSocialEvent(
+      { type: "DM_MESSAGE", message: { id: "m2", fromUserId: "peer", toUserId: "me", text: "", envelope } },
+      context,
+    ),
+    true,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(opened, ["m1", "m2"]);
+  assert.deepEqual(
+    dms.value.map((m) => m.text),
+    ["decrypted m1", "decrypted m2"],
+  );
+  // Key events belong to the encryption session; a stale-key error is resent once.
+  assert.equal(handleSocialEvent({ type: "DM_KEYS_CHANGED", userId: "peer" }, context), true);
+  handleSocialEvent({ type: "DM_ERROR", code: "DM_E2EE_STALE_KEY", messageId: "m3", message: "stale" }, context);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(sent, [{ type: "DM_MESSAGE", resent: true }]);
+});

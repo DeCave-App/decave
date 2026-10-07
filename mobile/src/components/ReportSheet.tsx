@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AccessibilityInfo, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { apiJson } from "@/src/lib/api";
+import { apiFetch, apiJson } from "@/src/lib/api";
+import { uploadEvidence, type EvidenceTarget } from "@/src/lib/report-evidence";
 import { colors } from "@/src/theme";
 import { REPORT_CATEGORIES, type ReportCategory, type ReportTargetType, type ReportUrgency } from "@/src/types";
 
@@ -28,6 +29,11 @@ export type MobileReportTarget = {
   contextType?: string;
   contextId?: string;
   contextLabel?: string;
+  /** The reported message, attached encrypted to the safety team's key. */
+  evidenceType?: EvidenceTarget["evidenceType"];
+  evidenceText?: string;
+  /** Encrypted message only: lets reviewers check it really was sent. */
+  e2eeProof?: EvidenceTarget["e2eeProof"];
 };
 
 type ReportSheetProps = {
@@ -37,6 +43,9 @@ type ReportSheetProps = {
   onClose: () => void;
   onSubmitted?: () => void;
 };
+
+/** How long a successful report stays on screen, long enough to read or hear before it closes. */
+export const REPORT_CONFIRMATION_MS = 3000;
 
 export function ReportSheet({ visible, token, target, onClose, onSubmitted }: ReportSheetProps) {
   const [category, setCategory] = useState<ReportCategory>("HARASSMENT_BULLYING");
@@ -68,17 +77,34 @@ export function ReportSheet({ visible, token, target, onClose, onSubmitted }: Re
             category,
             urgency,
             description: description.trim(),
-            clientVersion: "decave-mobile-trust-safety-v1",
+            clientVersion: "decave-mobile-trust-safety-v2",
           }),
         },
         token,
       );
       if (!data.report?.id) throw new Error("The report could not be submitted.");
+      let evidenceAttached = true;
+      if (target.evidenceText?.trim()) {
+        try {
+          evidenceAttached = await uploadEvidence((path, init) => apiFetch(path, init, token), data.report.id, target);
+        } catch {
+          evidenceAttached = false;
+        }
+      }
       if (blockAfter && target.subjectUserId) {
         await apiJson(`/api/safety/blocks/${encodeURIComponent(target.subjectUserId)}`, { method: "PUT" }, token);
       }
-      setNotice("Report submitted. Thank you for helping keep DeCave safe.");
-      onSubmitted?.();
+      if (evidenceAttached) {
+        setNotice("Report submitted. Thank you for helping keep DeCave safe.");
+        AccessibilityInfo.announceForAccessibility("Report submitted. Thank you for helping keep DeCave safe.");
+        onSubmitted?.();
+      } else {
+        // Leave the sheet open: the auto-close would hide this before anyone reads it.
+        setNotice(
+          "Report submitted, but the reported message could not be attached, so the safety team can't read it. You can close this.",
+        );
+        AccessibilityInfo.announceForAccessibility("Report submitted, but the reported message could not be attached.");
+      }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not submit the report.");
     } finally {
@@ -111,8 +137,12 @@ export function ReportSheet({ visible, token, target, onClose, onSubmitted }: Re
           <View style={styles.urgencyRow}>{(["critical", "high", "medium", "low"] as ReportUrgency[]).map((value) => <Pressable accessibilityRole="button" key={value} style={[styles.urgency, urgency === value && styles.chipActive]} onPress={() => setUrgency(value)}><Text style={[styles.chipText, urgency === value && styles.chipTextActive]}>{value}</Text></Pressable>)}</View>
           <TextInput value={description} onChangeText={(value) => setDescription(value.slice(0, 4000))} placeholder="Tell us what we should know (optional)" placeholderTextColor={colors.faint} multiline numberOfLines={4} textAlignVertical="top" style={styles.textarea} />
           {target.subjectUserId && <Pressable accessibilityRole="button" style={styles.checkRow} onPress={() => setBlockAfter((value) => !value)}><Ionicons name={blockAfter ? "checkbox" : "square-outline"} size={20} color={blockAfter ? colors.cyan : colors.muted} /><Text style={styles.checkText}>Block this user after submitting</Text></Pressable>}
-          <Text style={styles.note}>Private-message evidence is encrypted before upload on the desktop client. Mobile reports send the report and context without sending message text.</Text>
-          {!!notice && <Text style={styles.notice}>{notice}</Text>}
+          <Text style={styles.note}>
+            {target.evidenceText?.trim()
+              ? "The reported message is attached, encrypted so only DeCave's safety team can read it."
+              : "Your report and its context are sent to DeCave's safety team."}
+          </Text>
+          {!!notice && <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text>}
           <View style={styles.actions}><Pressable accessibilityRole="button" style={styles.cancel} onPress={onClose} disabled={busy}><Text style={styles.cancelText}>Cancel</Text></Pressable><Pressable accessibilityRole="button" style={[styles.submit, busy && styles.disabled]} onPress={() => void submit()} disabled={busy}><Text style={styles.submitText}>{busy ? "Submitting…" : "Submit report"}</Text></Pressable></View>
         </Pressable>
       </Pressable>

@@ -58,3 +58,14 @@ export function decidePollVote(
     return { kind: "reject", error: "Invalid poll option.", code: "POLL_OPTION_INVALID" };
   return { kind: "allow", clearOtherPollVotes: !rules.multi };
 }
+
+/**
+ * Poll votes on an end-to-end encrypted DM. The server can't read the poll, so it
+ * only checks the vote's form; DM polls are single-choice, so a new vote replaces
+ * the old one. Clients ignore votes for options a poll doesn't have.
+ */
+export function decideEncryptedPollVote(emoji: string, removing: boolean): PollVoteDecision {
+  if (!emoji.startsWith("poll_")) return { kind: "not_poll_vote" };
+  if (!POLL_EMOJI.test(emoji)) return { kind: "reject", error: "Invalid poll option.", code: "POLL_OPTION_INVALID" };
+  return { kind: "allow", clearOtherPollVotes: !removing };
+}

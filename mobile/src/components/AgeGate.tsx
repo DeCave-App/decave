@@ -42,7 +42,7 @@ export function AgeGate({ token, onComplete }: AgeGateProps) {
           <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>WELCOME TO DECAVE</Text>
           <Text style={styles.title}>Confirm your age</Text>
           <Text style={styles.copy}>
-            DeCave is available to people aged 13 and older. We keep only an age band and the verification time, not your exact birth date.
+            DeCave is only for adults aged 18 and older. We keep only an age band and the verification time, not your exact birth date.
           </Text>
           <Text style={styles.label}>Birth date</Text>
           <TextInput

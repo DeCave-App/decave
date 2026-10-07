@@ -6,6 +6,7 @@ import type { ChatMessage, SocialUser, DirectMessage, GroupChatMessage, GroupCha
 import { HTTP_URL } from "../env";
 import { HISTORY_PAGE_SIZE } from "../constants";
 import type { ComposerState } from "../state/composer";
+import { dmE2ee } from "../../e2ee/dm-e2ee-client";
 
 export type MessageHistoryActionsDeps = {
   authToken: string;
@@ -106,8 +107,8 @@ export function createMessageHistoryActions(deps: MessageHistoryActionsDeps) {
         );
         const data = (await response.json().catch(() => ({}))) as { messages?: DirectMessage[] } & ApiError;
         if (!response.ok) throw new Error(data.error || "Older messages failed to load.");
+        const page = await dmE2ee.openAll(Array.isArray(data.messages) ? data.messages : [], target.id);
         if (activeDmUserRef.current?.id !== target.id) return;
-        const page = Array.isArray(data.messages) ? data.messages : [];
         prependingHistoryRef.current = true;
         setDmMessages((current) => prepend(page, current));
         setOlderHistory((current) => ({ ...current, dm: page.length >= HISTORY_PAGE_SIZE }));
@@ -120,8 +121,8 @@ export function createMessageHistoryActions(deps: MessageHistoryActionsDeps) {
         );
         const data = (await response.json().catch(() => ({}))) as { messages?: GroupChatMessage[]; error?: string };
         if (!response.ok) throw new Error(data.error || "Older messages failed to load.");
+        const page = await dmE2ee.openGroupAll(Array.isArray(data.messages) ? data.messages : [], group.id);
         if (activeGroupChatRef.current?.id !== group.id) return;
-        const page = Array.isArray(data.messages) ? data.messages : [];
         prependingHistoryRef.current = true;
         setGroupMessages((current) => prepend(page, current));
         setOlderHistory((current) => ({ ...current, group: page.length >= HISTORY_PAGE_SIZE }));

@@ -8,27 +8,45 @@ export type GifPayload = { id: string; title?: string; url: string };
 export type GiphyGif = { id: string; title: string; url: string; previewUrl: string; width?: number; height?: number };
 export type UploadedAttachment = { id?: string; name: string; mimeType: string; size: number; url: string };
 
-/** Only GIPHY-hosted https URLs are rendered or sent, matching the web client. */
+/**
+ * Canonical GIPHY media URL (https, media.giphy.com / mediaN.giphy.com / i.giphy.com,
+ * plain .gif/.webp/.mp4 path, query dropped) or null. Mirrors the web client and
+ * the Worker's media proxy rules. Parsed without URL() so it behaves the same on Hermes.
+ */
 export function safeGiphyUrl(value: string | undefined): string | null {
-  if (!value) return null;
-  try {
-    const parsed = new URL(value, `${API_BASE}/`);
-    const trusted = (source: URL) => {
-      const host = source.hostname.toLowerCase();
-      return source.protocol === "https:" && !source.port && !source.username && !source.password &&
-        (["media.giphy.com", "media0.giphy.com", "media1.giphy.com", "media2.giphy.com", "media3.giphy.com", "media4.giphy.com"].includes(host) ||
-          (host === "giphy.com" && source.pathname.startsWith("/media/")));
-    };
-    if (parsed.origin === API_BASE && parsed.pathname === "/api/giphy/media") {
-      return trusted(new URL(parsed.searchParams.get("url") || "")) ? parsed.toString() : null;
-    }
-    if (!trusted(parsed)) return null;
-    const proxy = new URL(`${API_BASE}/api/giphy/media`);
-    proxy.searchParams.set("url", parsed.toString());
-    return proxy.toString();
-  } catch {
+  if (!value || value.length > 2048) return null;
+  const match = /^https:\/\/([A-Za-z0-9.-]+)(\/[^?#]*)(?:[?#].*)?$/.exec(value);
+  if (!match) return null;
+  const host = (match[1] ?? "").toLowerCase();
+  if (host !== "media.giphy.com" && host !== "i.giphy.com" && !/^media[0-9]\.giphy\.com$/.test(host)) return null;
+  const segments = (match[2] ?? "").split("/").slice(1);
+  if (segments.length < 1 || segments.length > 6) return null;
+  if (segments.some((segment) => !/^[A-Za-z0-9_-][A-Za-z0-9._-]{0,159}$/.test(segment) || segment.includes(".."))) {
     return null;
   }
+  if (!/\.(?:gif|webp|mp4)$/i.test(segments[segments.length - 1] ?? "")) return null;
+  return `https://${host}/${segments.join("/")}`;
+}
+
+const GIPHY_MEDIA_PROXY_PATH = "/api/giphy/media";
+
+/** DeCave proxy address for a GIPHY media URL, so the device never contacts GIPHY. */
+export function giphyMediaProxyUrl(value: string | undefined): string | null {
+  const safe = safeGiphyUrl(value);
+  return safe ? `${API_BASE}${GIPHY_MEDIA_PROXY_PATH}?u=${encodeURIComponent(safe)}` : null;
+}
+
+/**
+ * Image source for a GIPHY media URL, loaded through the authenticated proxy
+ * with the session bearer token (the proxy route requires sign-in).
+ */
+export function giphyImageSource(
+  value: string | undefined,
+  token: string | null | undefined,
+): { uri: string; headers: Record<string, string> } | null {
+  const uri = giphyMediaProxyUrl(value);
+  if (!uri || !token) return null;
+  return { uri, headers: { Authorization: `Bearer ${token}` } };
 }
 
 export function parseGif(text: string): GifPayload | null {

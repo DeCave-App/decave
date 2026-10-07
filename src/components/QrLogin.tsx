@@ -84,43 +84,13 @@ export function QrLogin({ client, onAuthenticated }: QrLoginProps) {
   }, [client, nonce]);
 
   return (
-    <div
-      title={message}
-      style={{ flex: "0 0 150px", width: 150, display: "grid", justifyItems: "center", gap: 4, marginTop: 1 }}
-    >
+    <div className="dc-qr-login" title={message}>
       {image ? (
-        <img
-          src={image}
-          alt="DeCave QR login code"
-          width={92}
-          height={92}
-          style={{
-            display: "block",
-            borderRadius: 8,
-            background: "var(--ds-text)",
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-        />
+        <img className="dc-qr-login-code" src={image} alt="DeCave QR login code" width={88} height={88} />
       ) : (
-        <div
-          style={{
-            width: 92,
-            height: 92,
-            display: "grid",
-            placeItems: "center",
-            borderRadius: 8,
-            background: "color-mix(in srgb, var(--ds-accent-2) 5%, transparent)",
-            color: "var(--ds-accent-2)",
-            fontSize: 8,
-          }}
-        >
-          Preparing…
-        </div>
+        <div className="dc-qr-login-code is-pending">Preparing…</div>
       )}
-      <small style={{ width: 98, color: "var(--ds-muted)", fontSize: 7, lineHeight: 1.25, textAlign: "center" }}>
-        Log in using DeCave app
-      </small>
+      <small>Scan with the DeCave app</small>
     </div>
   );
 }

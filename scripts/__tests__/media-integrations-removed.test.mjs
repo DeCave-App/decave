@@ -18,6 +18,7 @@ const homeOutput = ts.transpileModule(homeSource, {
 const homeContext = vm.createContext({ exports: {}, URL });
 vm.runInContext(`${homeOutput}\nglobalThis.__homeExports = exports;`, homeContext);
 const { normalizeHomeQuickLink } = homeContext.__homeExports;
+const { isSafeExternalUrl } = await import("../../electron/security-boundary.cjs");
 
 function sourceFiles(directory) {
   if (!existsSync(directory)) return [];
@@ -38,10 +39,22 @@ test("application and desktop source no longer contain video platform integratio
   const desktopSource = ["electron/main.cjs", "electron/security-boundary.cjs", "electron/capture-apps.cjs"]
     .map((file) => readFileSync(path.join(root, file), "utf8"))
     .join("\n");
+  const websiteSource = sourceFiles(path.join(root, "website/src"))
+    .map((file) => readFileSync(file, "utf8"))
+    .join("\n");
 
   assert.doesNotMatch(workerSource, /youtube\/(?:search|v3\/search)|twitch\/discovery|api\.twitch\.tv/i);
   assert.doesNotMatch(appSource, /YouTubeDock|TwitchDock|youtube-nocookie\.com|youtube\.com|twitch\.tv/i);
   assert.doesNotMatch(desktopSource, /youtube-nocookie\.com|youtube\.com|twitch\.tv/i);
+  assert.doesNotMatch(websiteSource, /youtube-nocookie\.com|youtube\.com|twitch\.tv/i);
+  for (const url of [
+    "https://www.youtube.com/watch?v=example",
+    "https://www.youtube-nocookie.com/embed/example",
+    "https://youtu.be/example",
+    "https://www.twitch.tv/example",
+  ]) {
+    assert.equal(isSafeExternalUrl(url), false, `${url} should not remain an allowed external integration`);
+  }
 });
 
 test("video platform credentials are absent from configuration examples", () => {

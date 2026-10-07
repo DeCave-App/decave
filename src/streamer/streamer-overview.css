@@ -394,49 +394,6 @@
   text-transform: uppercase;
   color: #b5bcf7;
 }
-.dc-streamer-clips {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-.dc-streamer-clip {
-  min-width: 0;
-  overflow: hidden;
-  padding-bottom: 8px;
-  border: 1px solid var(--dcs-line);
-  border-radius: 9px;
-  background: var(--dcs-panel);
-}
-.dc-streamer-clip-preview {
-  aspect-ratio: 16/9;
-  position: relative;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: radial-gradient(ellipse at 70% 25%, #332c60, #0b1321 75%);
-}
-.dc-streamer-clip-preview img {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.dc-streamer-clip-preview .dc-streamer-icon {
-  position: relative;
-  width: 30px;
-  height: 30px;
-  color: white;
-  filter: drop-shadow(0 2px 5px black);
-}
-.dc-streamer-clip h4 {
-  padding: 9px;
-  min-height: 42px;
-}
-.dc-streamer-clip .dc-streamer-button {
-  margin: 0 8px;
-  padding: 5px 8px;
-  min-height: 27px;
-}
 .dc-streamer-preview-note {
   padding: 9px 12px;
   margin-bottom: 12px;
@@ -647,9 +604,6 @@
   .dc-streamer-tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .dc-streamer-clips {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 @container (max-width: 480px) {
   .dc-streamer-content {
@@ -683,4 +637,161 @@
 }
 .dc-streamer-panel .dc-streamer-muted {
   white-space: pre-line;
+}
+
+/* DeCave Official: project information for every member. */
+.dc-official-about {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.dc-official-about-copy {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.dc-official-alpha {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 196, 76, 0.32);
+  border-radius: 10px;
+  background: rgba(255, 196, 76, 0.07);
+  color: var(--dcs-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.dc-official-alpha strong {
+  color: #ffd27a;
+}
+.dc-official-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.dc-official-facts div {
+  padding: 10px 12px;
+  border: 1px solid var(--dcs-line);
+  border-radius: 10px;
+  background: var(--dcs-panel);
+}
+.dc-official-facts dt {
+  color: var(--dcs-muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.dc-official-facts dd {
+  margin: 3px 0 0;
+  color: var(--dcs-text);
+  font-size: 13px;
+  font-weight: 750;
+}
+.dc-official-news,
+.dc-official-roadmap {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dc-official-news li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--dcs-line);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(28, 25, 49, 0.7), rgba(8, 19, 31, 0.9));
+}
+.dc-official-news h4,
+.dc-official-roadmap h4 {
+  margin: 0;
+  color: var(--dcs-text);
+  font-size: 12.5px;
+}
+.dc-official-news-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dcs-muted);
+  font-size: 10px;
+}
+.dc-official-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(136, 112, 255, 0.18);
+  color: #c9bcff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.dc-official-roadmap {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.dc-official-roadmap li {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid var(--dcs-line);
+  border-top: 3px solid var(--step, var(--dcs-line));
+  border-radius: 10px;
+  background: var(--dcs-panel);
+}
+.dc-official-roadmap .is-step-0 {
+  --step: #b6f36a;
+}
+.dc-official-roadmap .is-step-1 {
+  --step: var(--dcs-cyan);
+}
+.dc-official-roadmap .is-step-2 {
+  --step: var(--dcs-violet);
+}
+.dc-official-roadmap-state {
+  color: var(--step, var(--dcs-muted));
+  font-size: 9.5px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.dc-official-resources {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.dc-official-resource {
+  display: grid;
+  gap: 2px;
+  padding: 11px 13px;
+  border: 1px solid var(--dcs-line);
+  border-radius: 10px;
+  background: var(--dcs-panel);
+  color: var(--dcs-text);
+  text-decoration: none;
+}
+.dc-official-resource:hover,
+.dc-official-resource:focus-visible {
+  border-color: rgba(104, 213, 255, 0.5);
+}
+.dc-official-resource strong {
+  font-size: 12px;
+}
+.dc-official-resource small {
+  color: var(--dcs-muted);
+  font-size: 10.5px;
+}
+@container (max-width: 760px) {
+  .dc-official-about {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dc-official-roadmap,
+  .dc-official-resources {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (max-width: 480px) {
+  .dc-official-roadmap,
+  .dc-official-resources,
+  .dc-official-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

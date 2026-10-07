@@ -187,7 +187,7 @@ export async function sendPush(env: PushEnv, userIds: string[], message: PushMes
       }
     }
   } catch (error) {
-    console.warn("[push] could not send", error);
+    console.warn("[push] could not send", error instanceof Error ? error.name : "UnknownError");
   }
 }
 

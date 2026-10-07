@@ -1,6 +1,8 @@
-import type { ChannelMessageRow } from "./lib/messages";
+import { dmMessageForClient, type ChannelMessageRow } from "./lib/messages";
+import { checkOutgoingDm, checkOutgoingGroupMessage, dmE2eeEnabled, dmPushText } from "./lib/dm-e2ee";
+import { DM_GROUP_MAX_WRAPS, parseDmEnvelope } from "../shared/dm-e2ee-format";
 import { DurableObject } from "cloudflare:workers";
-import { createHash, createHmac } from "node:crypto";
+import { createHash } from "node:crypto";
 import {
   canAccessRoom as dbCanAccessRoom,
   canCreateForumPost,
@@ -18,13 +20,14 @@ import {
   publicIdOf,
   publicUser,
   userByReference,
+  type GroupChatRow,
   type RoomRow,
   type ServerRole,
   type UserRow,
   activityTextFor,
 } from "./db";
 import type { Env } from "./index";
-import { consumeSessionBoundWsToken, isActiveSession } from "./lib/sessions";
+import { consumeSessionBoundWsToken, isActiveSession, securityIpAddressTag } from "./lib/sessions";
 import { streamerHubIdsForUser, streamerMigrationExists } from "./streamer/index.ts";
 import { isBlockedEitherDirection } from "./trust-safety";
 import {
@@ -230,30 +233,55 @@ type Filter = {
   exceptConnectionId?: string;
 };
 
-/**
- * Per-IP admission key for WebSocket limits. The raw address is never kept in
- * socket state or attachments: it is reduced to a keyed (SECURITY_IP_HASH_KEY)
- * or domain-separated hash, which is all equality-based limiting needs.
- */
-function peerAddressTag(address: string, ipHashKey: string | undefined): string {
-  const input = `decave-ws-peer-v1:${address}`;
-  const key = ipHashKey?.trim() ?? "";
-  const digest = key
-    ? createHmac("sha256", key).update(input).digest("hex")
-    : createHash("sha256").update(input).digest("hex");
-  return `ip:${digest.slice(0, 32)}`;
+// Connection limits keep only a per-address tag in socket state. Prefer the
+// shared keyed IP-tag policy; this domain-separated fallback is transient and
+// keeps per-address limits working when no deployment key is configured.
+async function peerAddressTag(address: string, env: Env): Promise<string> {
+  const keyedTag = await securityIpAddressTag(env, address, "decave-ws-peer-v1");
+  if (keyedTag) return keyedTag;
+  const digest = createHash("sha256").update(`decave-ws-peer-v1\0${address}`).digest("hex");
+  return `sha256:v1:${digest}`;
 }
 
-function peerAddressForRequest(request: Request, ipHashKey: string | undefined): string {
+async function peerAddressForRequest(request: Request, env: Env): Promise<string> {
   const address = request.headers.get("CF-Connecting-IP")?.trim() ?? "";
-  return address && address.length <= 64 ? peerAddressTag(address, ipHashKey) : UNKNOWN_WS_ADDRESS;
+  return address && address.length <= 64 ? peerAddressTag(address, env) : UNKNOWN_WS_ADDRESS;
 }
 
-/** Older hibernated sockets may carry a raw address; re-tag it on restore. */
-function normalizedPeerAddress(value: unknown, ipHashKey: string | undefined): string {
+/** Drop legacy raw addresses from hibernated attachments before they persist. */
+function normalizedPeerAddress(value: unknown): string {
   if (typeof value !== "string" || !value || value === UNKNOWN_WS_ADDRESS) return UNKNOWN_WS_ADDRESS;
-  if (/^ip:[0-9a-f]{32}$/.test(value)) return value;
-  return value.length <= 64 ? peerAddressTag(value, ipHashKey) : UNKNOWN_WS_ADDRESS;
+  if (/^(?:hmac:v1d?:[0-9a-f]{64}|sha256:v1:[0-9a-f]{64}|ip:[0-9a-f]{32}|[0-9a-f]{24})$/.test(value)) {
+    return value;
+  }
+  return UNKNOWN_WS_ADDRESS;
+}
+
+/** A well-formed signature next to a session description, or null. */
+function rtcDescriptionAuth(raw: unknown): { k: string; s: string } | null {
+  if (!raw || typeof raw !== "object") return null;
+  const { k, s } = raw as { k?: unknown; s?: unknown };
+  return typeof k === "string" &&
+    /^[A-Za-z0-9_-]{22}$/.test(k) &&
+    typeof s === "string" &&
+    /^[A-Za-z0-9_-]{86}$/.test(s)
+    ? { k, s }
+    : null;
+}
+
+// Calls are relay-only: forward only TURN relay candidates (and the empty
+// end-of-candidates marker) so no participant learns another's IP address,
+// even from an outdated client.
+function isRelayCandidatePayload(candidate: unknown): boolean {
+  const line =
+    typeof candidate === "string"
+      ? candidate
+      : candidate &&
+          typeof candidate === "object" &&
+          typeof (candidate as { candidate?: unknown }).candidate === "string"
+        ? (candidate as { candidate: string }).candidate
+        : "";
+  return line.trim() === "" || /\styp relay(\s|$)/.test(line);
 }
 
 export class HubRoom extends DurableObject<Env> {
@@ -417,7 +445,7 @@ export class HubRoom extends DurableObject<Env> {
       if ((request.headers.get("Upgrade") ?? "").toLowerCase() !== "websocket") {
         return new Response("Expected WebSocket", { status: 426 });
       }
-      const peerAddress = peerAddressForRequest(request, this.env.SECURITY_IP_HASH_KEY);
+      const peerAddress = await peerAddressForRequest(request, this.env);
       if (!this.allowWebSocketAdmission(peerAddress)) {
         return new Response("Realtime connection temporarily limited.", {
           status: 429,
@@ -1171,7 +1199,9 @@ export class HubRoom extends DurableObject<Env> {
               if (await canAccessRoom(this.env.DB, room, row.user_id)) roomTargets.push(row.user_id);
             }
             await pushWithPolicy(this.env, roomTargets, { kind: "room", hubId: room.hub_id, roomId }, pushMessage);
-          })().catch((error) => console.warn("[push] room push failed", error)),
+          })().catch((error) =>
+            console.warn("[push] room push failed", error instanceof Error ? error.name : "UnknownError"),
+          ),
         );
       }
       return;
@@ -1179,11 +1209,10 @@ export class HubRoom extends DurableObject<Env> {
 
     if (type === "DM_MESSAGE") {
       const targetReference = typeof data.targetUserId === "string" ? data.targetUserId : "";
-      const text = typeof data.text === "string" ? data.text.trim().slice(0, 4000) : "";
       const replyToId = typeof data.replyToId === "string" ? data.replyToId : null;
       const targetUser = targetReference ? await userByReference(this.env.DB, targetReference) : null;
       const targetId = targetUser?.id ?? "";
-      if (!targetId || !text) return;
+      if (!targetUser || !targetId || targetId === state.userId || targetUser.deleted_at) return;
       const pair = [state.userId, targetId].sort();
       const friend = await this.env.DB.prepare("SELECT 1 FROM decave_friendships WHERE user_a=? AND user_b=?")
         .bind(pair[0], pair[1])
@@ -1197,6 +1226,31 @@ export class HubRoom extends DurableObject<Env> {
           type: "DM_ERROR",
           message: "This user is blocked. Unblock them before sending private messages.",
         });
+        return;
+      }
+      const sender = await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?")
+        .bind(state.userId)
+        .first<UserRow>();
+      if (!sender) return;
+      const outgoing = await checkOutgoingDm(this.env.DB, {
+        enabled: dmE2eeEnabled(this.env),
+        sender,
+        target: targetUser,
+        text: data.text,
+        envelope: data.envelope,
+        attachmentKeys: data.attachmentKeys,
+      });
+      if (!outgoing.ok) {
+        // An empty plaintext message is dropped silently, as before.
+        if (outgoing.code !== "DM_EMPTY") {
+          const envelopeId = (data.envelope as { id?: unknown } | null | undefined)?.id;
+          this.send(ws, {
+            type: "DM_ERROR",
+            message: outgoing.error,
+            code: outgoing.code,
+            messageId: typeof envelopeId === "string" ? envelopeId : null,
+          });
+        }
         return;
       }
       if (replyToId) {
@@ -1213,37 +1267,40 @@ export class HubRoom extends DurableObject<Env> {
           return;
         }
       }
-      const message = {
-        id: crypto.randomUUID(),
-        fromUserId: publicIdOf(
-          (await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(state.userId).first<UserRow>())!,
-        ),
-        toUserId: targetUser ? publicIdOf(targetUser) : "",
-        text,
-        timestamp: nowIso(),
-        replyToId,
-      };
-      await this.env.DB.prepare(
-        "INSERT INTO decave_direct_messages(id,from_user_id,to_user_id,text,created_at,reply_to_id) VALUES(?,?,?,?,?,?)",
+      const messageId = outgoing.id ?? crypto.randomUUID();
+      const inserted = await this.env.DB.prepare(
+        `INSERT INTO decave_direct_messages(id,from_user_id,to_user_id,text,envelope,created_at,reply_to_id,attachment_refs)
+         VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`,
       )
-        .bind(message.id, state.userId, targetId, message.text, message.timestamp, message.replyToId)
+        .bind(
+          messageId,
+          state.userId,
+          targetId,
+          outgoing.text,
+          outgoing.envelope,
+          nowIso(),
+          replyToId,
+          outgoing.attachmentRefs || null,
+        )
         .run();
+      if (!inserted.meta.changes) {
+        this.send(ws, { type: "DM_ERROR", message: "That message was already sent.", code: "DM_DUPLICATE" });
+        return;
+      }
+      const message = await dmMessageForClient(this.env, messageId);
+      if (!message) return;
       await this.broadcast(
         {
           type: "DM_MESSAGE",
           message,
-          sender: {
-            id: publicIdOf(
-              (await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(state.userId).first<UserRow>())!,
-            ),
-            username: state.username,
-          },
+          sender: { id: publicIdOf(sender), username: state.username },
         },
         { userIds: [state.userId, targetId] },
       );
       const targetOnline = this.states().some((other) => other.userId === targetId);
       if (!targetOnline) {
         const senderId = state.userId;
+        const pushBody = dmPushText(outgoing);
         this.ctx.waitUntil(
           (async () => {
             const muted = await this.env.DB.prepare(
@@ -1259,12 +1316,14 @@ export class HubRoom extends DurableObject<Env> {
               {
                 sender: state.username ?? "New message",
                 where: null,
-                text,
-                route: `/dm/${encodeURIComponent(message.fromUserId)}?username=${encodeURIComponent(state.username ?? "")}`,
+                text: pushBody,
+                route: `/dm/${encodeURIComponent(message.fromUserId)}`,
                 threadId: `dm-${message.fromUserId}`,
               },
             );
-          })().catch((error) => console.warn("[push] DM push failed", error)),
+          })().catch((error) =>
+            console.warn("[push] DM push failed", error instanceof Error ? error.name : "UnknownError"),
+          ),
         );
       }
       return;
@@ -1272,19 +1331,48 @@ export class HubRoom extends DurableObject<Env> {
 
     if (type === "GROUP_MESSAGE") {
       const groupId = typeof data.groupId === "string" ? data.groupId.trim() : "";
-      const text = typeof data.text === "string" ? data.text.trim().slice(0, 4000) : "";
       const replyToId = typeof data.replyToId === "string" ? data.replyToId : null;
-      if (!groupId || !text) return;
+      const hasEnvelope = data.envelope !== undefined && data.envelope !== null;
+      if (!groupId || (!hasEnvelope && !(typeof data.text === "string" && data.text.trim()))) return;
       await ensureGroupChatSchema(this.env.DB);
       if (!(await isGroupChatMember(this.env.DB, groupId, state.userId))) {
         this.send(ws, { type: "GROUP_ERROR", groupId, message: "You are not a member of this group chat." });
         return;
       }
 
-      const sender = await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?")
-        .bind(state.userId)
-        .first<UserRow>();
-      if (!sender) return;
+      const [sender, group, memberIds] = await Promise.all([
+        this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(state.userId).first<UserRow>(),
+        this.env.DB.prepare("SELECT * FROM decave_group_chats WHERE id=?").bind(groupId).first<GroupChatRow>(),
+        groupChatMemberIds(this.env.DB, groupId),
+      ]);
+      if (!sender || !group) return;
+      const members = memberIds.length
+        ? (
+            await this.env.DB.prepare(`SELECT * FROM decave_users WHERE id IN (${memberIds.map(() => "?").join(",")})`)
+              .bind(...memberIds)
+              .all<UserRow>()
+          ).results
+        : [];
+      const outgoing = await checkOutgoingGroupMessage(this.env.DB, {
+        enabled: dmE2eeEnabled(this.env),
+        sender,
+        groupId,
+        members,
+        encryptedSince: group.e2ee_since ?? null,
+        text: data.text,
+        envelope: data.envelope,
+      });
+      if (!outgoing.ok) {
+        const envelopeId = (data.envelope as { id?: unknown } | null | undefined)?.id;
+        this.send(ws, {
+          type: "GROUP_ERROR",
+          groupId,
+          message: outgoing.error,
+          code: outgoing.code,
+          messageId: typeof envelopeId === "string" ? envelopeId : null,
+        });
+        return;
+      }
 
       if (replyToId) {
         const replyTarget = await this.env.DB.prepare(
@@ -1298,15 +1386,34 @@ export class HubRoom extends DurableObject<Env> {
         }
       }
 
-      const id = crypto.randomUUID();
+      const id = outgoing.id ?? crypto.randomUUID();
       const timestamp = nowIso();
-      await this.env.DB.batch([
+      const statements = [
         this.env.DB.prepare(
-          `INSERT INTO decave_group_chat_messages(id,group_id,from_user_id,text,created_at,reply_to_id)
-             VALUES(?,?,?,?,?,?)`,
-        ).bind(id, groupId, state.userId, text, timestamp, replyToId),
+          `INSERT INTO decave_group_chat_messages(id,group_id,from_user_id,text,created_at,reply_to_id,envelope)
+             VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`,
+        ).bind(id, groupId, state.userId, outgoing.text, timestamp, replyToId, outgoing.envelope),
         this.env.DB.prepare("UPDATE decave_group_chats SET updated_at=? WHERE id=?").bind(timestamp, groupId),
-      ]);
+      ];
+      // The first encrypted message makes the group encrypted for good.
+      if (outgoing.encrypted && !group.e2ee_since) {
+        statements.push(
+          this.env.DB.prepare("UPDATE decave_group_chats SET e2ee_since=? WHERE id=? AND e2ee_since IS NULL").bind(
+            timestamp,
+            groupId,
+          ),
+        );
+      }
+      const [inserted] = await this.env.DB.batch(statements);
+      if (!inserted.meta.changes) {
+        this.send(ws, {
+          type: "GROUP_ERROR",
+          groupId,
+          message: "That message was already sent.",
+          code: "DM_DUPLICATE",
+        });
+        return;
+      }
 
       const message = {
         id,
@@ -1314,11 +1421,11 @@ export class HubRoom extends DurableObject<Env> {
         fromUserId: publicIdOf(sender),
         username: sender.username,
         avatarUrl: publicUser(sender).avatarUrl,
-        text,
+        text: outgoing.text,
+        envelope: outgoing.envelope ? parseDmEnvelope(outgoing.envelope, DM_GROUP_MAX_WRAPS) : null,
         timestamp,
         replyToId,
       };
-      const memberIds = await groupChatMemberIds(this.env.DB, groupId);
       await this.broadcast({ type: "GROUP_MESSAGE", groupId, message }, { userIds: memberIds });
       return;
     }
@@ -1351,20 +1458,21 @@ export class HubRoom extends DurableObject<Env> {
         this.send(ws, { type: "DM_CALL_ERROR", message: "Direct calls are available between friends." });
         return;
       }
-      const target = await this.preferredDirectCallSocket(targetUserId);
-      if (!target) {
+      // Ring every idle device the friend is signed in on; the first to accept takes the call.
+      const targets = [];
+      for (const candidate of await this.directCallSockets(targetUserId)) {
+        if (await this.socketIsLive(candidate)) targets.push(candidate);
+      }
+      if (!targets.length) {
         this.send(ws, {
           type: "DM_CALL_ERROR",
-          message: "This friend is offline.",
+          message: (await this.userIsInCall(targetUserId))
+            ? "This friend is already in another call."
+            : "This friend is offline.",
           peer: { userId: publicIdOf(targetUserRecord), username: targetUserRecord.username },
         });
         return;
       }
-      if (!(await this.socketIsLive(target))) {
-        this.send(ws, { type: "DM_CALL_ERROR", message: "This friend is offline." });
-        return;
-      }
-      const targetState = this.state(target);
       const targetUser = await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?")
         .bind(targetUserId)
         .first<UserRow>();
@@ -1372,35 +1480,35 @@ export class HubRoom extends DurableObject<Env> {
         this.send(ws, { type: "DM_CALL_ERROR", message: "This friend is offline." });
         return;
       }
-      if (targetState.voiceChannelId !== null || targetState.dmCallId) {
-        this.send(ws, { type: "DM_CALL_ERROR", message: "This friend is already in another call." });
-        return;
-      }
       const callId = crypto.randomUUID();
+      // The caller binds to one of the friend's devices only once it accepts.
       const callerNext = {
         ...state,
         dmCallId: callId,
         dmCallPeerUserId: targetUserId,
-        dmCallPeerConnectionId: targetState.connectionId,
+        dmCallPeerConnectionId: null,
         dmCallIncoming: false,
         dmCallAccepted: false,
         dmCallVideo: video,
       };
-      const targetNext = {
-        ...targetState,
-        dmCallId: callId,
-        dmCallPeerUserId: state.userId,
-        dmCallPeerConnectionId: state.connectionId,
-        dmCallIncoming: true,
-        dmCallAccepted: false,
-        dmCallVideo: video,
-      };
       ws.serializeAttachment(callerNext);
-      target.serializeAttachment(targetNext);
       const caller = await this.callParticipant(callerNext);
-      const peer = await this.callParticipant(targetNext);
+      let peer = null;
+      for (const target of targets) {
+        const targetNext = {
+          ...this.state(target),
+          dmCallId: callId,
+          dmCallPeerUserId: state.userId,
+          dmCallPeerConnectionId: state.connectionId,
+          dmCallIncoming: true,
+          dmCallAccepted: false,
+          dmCallVideo: video,
+        };
+        target.serializeAttachment(targetNext);
+        peer ??= await this.callParticipant(targetNext);
+      }
       this.send(ws, { type: "DM_CALL_RINGING", callId, video, peer });
-      await this.sendToLive(target, { type: "DM_CALL_INCOMING", callId, video, caller });
+      for (const target of targets) await this.sendToLive(target, { type: "DM_CALL_INCOMING", callId, video, caller });
       return;
     }
 
@@ -1423,10 +1531,24 @@ export class HubRoom extends DurableObject<Env> {
       }
       const peerState = this.state(peerSocket);
       if (peerState.dmCallId !== state.dmCallId || peerState.dmCallPeerUserId !== state.userId) return;
+      if (peerState.dmCallAccepted) return; // Another of this user's devices already answered.
       const selfNext = { ...state, dmCallIncoming: false, dmCallAccepted: true };
-      const peerNext = { ...peerState, dmCallIncoming: false, dmCallAccepted: true };
+      const peerNext = {
+        ...peerState,
+        dmCallPeerConnectionId: state.connectionId,
+        dmCallIncoming: false,
+        dmCallAccepted: true,
+      };
       ws.serializeAttachment(selfNext);
       peerSocket.serializeAttachment(peerNext);
+      // Stop the call ringing on this user's other devices.
+      for (const other of this.ctx.getWebSockets()) {
+        if (other === ws) continue;
+        const otherState = this.state(other);
+        if (otherState.userId !== state.userId || otherState.dmCallId !== state.dmCallId) continue;
+        other.serializeAttachment(this.withoutDirectCall(otherState));
+        await this.sendToLive(other, { type: "DM_CALL_ENDED", callId: state.dmCallId, reason: "answered-elsewhere" });
+      }
       this.send(ws, {
         type: "DM_CALL_ACCEPTED",
         callId: state.dmCallId,
@@ -1648,12 +1770,18 @@ export class HubRoom extends DurableObject<Env> {
         targetState.dmCallPeerConnectionId === state.connectionId, // DECAVE_PARITY_RTC_PEER_BINDING
       );
       if (!sameVoiceRoom && !sameDirectCall) return;
+      if (type === "RTC_ICE_CANDIDATE" && !isRelayCandidatePayload(data.candidate)) return;
       const from = sameVoiceRoom ? await this.participant(state) : await this.callParticipant(state);
       if (!from) return;
+      // `auth` is the sender's account-key signature over the description's DTLS
+      // fingerprints (shared/dm-e2ee.ts); the receiver checks it, the server only passes it on.
+      const auth = type === "RTC_DESCRIPTION" ? rtcDescriptionAuth(data.auth) : null;
       await this.sendToLive(target, {
         type,
         from,
-        ...(type === "RTC_DESCRIPTION" ? { description: data.description } : { candidate: data.candidate }),
+        ...(type === "RTC_DESCRIPTION"
+          ? { description: data.description, ...(auth ? { auth } : {}) }
+          : { candidate: data.candidate }),
       });
       return;
     }
@@ -1740,7 +1868,7 @@ export class HubRoom extends DurableObject<Env> {
           : Date.now() + WS_AUTH_DEADLINE_MS;
       const normalized = {
         ...attached,
-        peerAddress: normalizedPeerAddress(attached.peerAddress, this.env.SECURITY_IP_HASH_KEY),
+        peerAddress: normalizedPeerAddress(attached.peerAddress),
         sessionHash: typeof attached.sessionHash === "string" ? attached.sessionHash : null,
         authDeadlineAt,
         identifyFailures:
@@ -1798,7 +1926,7 @@ export class HubRoom extends DurableObject<Env> {
     return this.ctx.getWebSockets().map((ws) => this.state(ws));
   }
 
-  /** Hide invisible accounts from every aggregate/public presence snapshot. */
+  /** Hide invisible accounts from aggregate and public presence snapshots. */
   private async visiblePresenceStates(states: SocketState[]): Promise<SocketState[]> {
     const ids = [...new Set(states.map((state) => state.userId).filter((id): id is string => !!id))];
     if (!ids.length) return states.filter((state) => !state.userId);
@@ -1918,14 +2046,35 @@ export class HubRoom extends DurableObject<Env> {
     return (await this.liveRecipients({ userIds: [userId] }))[0] ?? null;
   }
 
-  private async preferredDirectCallSocket(userId: string): Promise<WebSocket | null> {
+  /** Every idle device a user is signed in on, newest first. */
+  private async directCallSockets(userId: string): Promise<WebSocket[]> {
     const candidates = (await this.liveRecipients({ userIds: [userId] })).filter((candidate) => {
       const s = this.state(candidate);
       return s.userId === userId && s.voiceChannelId === null && !s.dmCallId;
     });
     candidates.sort((a, b) => Number(this.state(b).identifiedAt || 0) - Number(this.state(a).identifiedAt || 0));
-    return candidates[0] ?? null;
+    return candidates;
   } // DECAVE_PARITY_CALL_ROUTE
+
+  private async userIsInCall(userId: string): Promise<boolean> {
+    return (await this.liveRecipients({ userIds: [userId] })).some((candidate) => {
+      const s = this.state(candidate);
+      return s.userId === userId && (s.voiceChannelId !== null || !!s.dmCallId);
+    });
+  }
+
+  private withoutDirectCall(state: SocketState): SocketState {
+    return {
+      ...state,
+      dmCallId: null,
+      dmCallPeerUserId: null,
+      dmCallPeerConnectionId: null,
+      dmCallIncoming: false,
+      dmCallAccepted: false,
+      dmCallVideo: false,
+      cameraSharing: false,
+    };
+  }
 
   private async sendServers(ws: WebSocket, userId: string): Promise<void> {
     const rows = await this.env.DB.prepare(
@@ -2125,37 +2274,26 @@ export class HubRoom extends DurableObject<Env> {
 
   private async endDirectCall(ws: WebSocket, state: SocketState, reason: string): Promise<void> {
     const callId = state.dmCallId;
-    const peerUserId = state.dmCallPeerUserId;
-    const peerConnectionId = state.dmCallPeerConnectionId;
-    ws.serializeAttachment({
-      ...state,
-      dmCallId: null,
-      dmCallPeerUserId: null,
-      dmCallPeerConnectionId: null,
-      dmCallIncoming: false,
-      dmCallAccepted: false,
-      dmCallVideo: false,
-      cameraSharing: false,
-    });
+    // One ringing device dropping offline leaves the call ringing on the others.
+    const ringingElsewhere =
+      reason === "peer-offline" &&
+      state.dmCallIncoming &&
+      !state.dmCallAccepted &&
+      this.states().some(
+        (other) =>
+          other.connectionId !== state.connectionId && other.userId === state.userId && other.dmCallId === callId,
+      );
+    ws.serializeAttachment(this.withoutDirectCall(state));
     await this.sendToLive(ws, { type: "DM_CALL_ENDED", callId, reason });
-    if (!callId || !peerUserId) return;
-    const peerSocket = peerConnectionId
-      ? this.socketByConnectionId(peerConnectionId)
-      : await this.socketByUserId(peerUserId);
-    if (!peerSocket) return;
-    const peerState = this.state(peerSocket);
-    if (peerState.dmCallId !== callId) return;
-    peerSocket.serializeAttachment({
-      ...peerState,
-      dmCallId: null,
-      dmCallPeerUserId: null,
-      dmCallPeerConnectionId: null,
-      dmCallIncoming: false,
-      dmCallAccepted: false,
-      dmCallVideo: false,
-      cameraSharing: false,
-    });
-    await this.sendToLive(peerSocket, { type: "DM_CALL_ENDED", callId, reason });
+    if (!callId || ringingElsewhere) return;
+    // Call ids are unique, so this reaches the peer and any device still ringing.
+    for (const other of this.ctx.getWebSockets()) {
+      if (other === ws) continue;
+      const otherState = this.state(other);
+      if (otherState.dmCallId !== callId) continue;
+      other.serializeAttachment(this.withoutDirectCall(otherState));
+      await this.sendToLive(other, { type: "DM_CALL_ENDED", callId, reason });
+    }
   } // DECAVE_PARITY_END_DIRECT_CALL
 
   private async participant(s: SocketState): Promise<VoiceParticipant | null> {

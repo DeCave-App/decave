@@ -35,4 +35,6 @@ export interface Env {
   GIPHY_API_KEY?: string;
   STREAMER_HUBS_ENABLED?: string;
   STREAMER_GIVEAWAYS_ENABLED?: string;
+  /** "true" turns on end-to-end encrypted DMs (docs/security/DM-E2EE.md). */
+  DM_E2EE_ENABLED?: string;
 }

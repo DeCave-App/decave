@@ -207,7 +207,7 @@ test("account export streams complete own records, consent, feedback and safe at
   assert.equal(data.format, "decave-account-export-v2");
   assert.equal(data.account.consent.terms_version, "terms-2025-02");
   assert.equal(data.account.consent.privacy_version, "privacy-2025-02");
-  assert.equal(data.account.phoneNumber, "+15555550123");
+  assert.equal(data.account.phoneNumber, undefined, "retired phone data is not included in account exports");
   assert.equal(data.account.twoFactorEnabled, true);
   assert.ok(!text.includes("MFA-DO-NOT-EXPORT"));
   assert.ok(!text.includes(ipHash));

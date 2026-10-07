@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -139,6 +140,17 @@ export default function LoginScreen() {
           <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.push("/register")}>
             <Text style={styles.secondaryText}>Create a DeCave account</Text>
           </Pressable>
+          <Text style={styles.legal}>
+            DeCave is an alpha for adults 18+. Read the{" "}
+            <Text style={styles.legalLink} onPress={() => void Linking.openURL("https://de-cave.com/terms")}>
+              Terms of Service
+            </Text>{" "}
+            and{" "}
+            <Text style={styles.legalLink} onPress={() => void Linking.openURL("https://de-cave.com/privacy")}>
+              Privacy Policy
+            </Text>
+            .
+          </Text>
         </View>
       </ScrollView>
 
@@ -187,6 +199,8 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "900", fontSize: 15 },
   secondary: { paddingVertical: 11, alignItems: "center" },
   secondaryText: { color: colors.cyan, fontWeight: "700" },
+  legal: { color: colors.faint, fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: 8 },
+  legalLink: { color: colors.cyan, fontWeight: "700" },
   error: { color: colors.red, marginVertical: 8, lineHeight: 19 },
   message: { color: colors.green, marginVertical: 8, lineHeight: 19 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginVertical: 4 },

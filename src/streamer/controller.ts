@@ -9,6 +9,7 @@ import {
 } from "../../shared/streamer-mode";
 import { createStreamerApi, type StreamerTransport } from "./api";
 import { action, el, field, formValues, icon } from "./dom";
+import { OFFICIAL_ABOUT, OFFICIAL_ANNOUNCEMENTS, OFFICIAL_RESOURCES, OFFICIAL_ROADMAP } from "./official-content";
 import { localeForLanguage, preferredTimeOptions } from "../app/locale";
 
 export type StreamerActions = {
@@ -19,7 +20,6 @@ export type StreamerActions = {
   composeAnnouncement(): void;
   findSquad(): void;
   manageHub(): void;
-  openExternal(url: string): void;
   /** Resolve only media already authorized for every member of this Hub. */
   mediaUrl(path: string): string;
   openModeration?: () => void;
@@ -54,6 +54,10 @@ const OFFICIAL_LABELS: Partial<typeof LABELS> = {
   welcome: "Welcome to DeCave",
 };
 const formatNumber = (n: number) => n.toLocaleString();
+function renderKey(options: StreamerOverviewOptions): string {
+  const { hubName, bannerPath, events, announcementAvailable, official, isDesktop } = options;
+  return JSON.stringify({ hubName, bannerPath, events, announcementAvailable, official, isDesktop });
+}
 function message(error: unknown): string {
   return error instanceof Error ? error.message : "Unable to complete this action.";
 }
@@ -134,6 +138,12 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     result.disabled = busy || (previewMember && !allowPreview);
     return result;
   }
+  // de-cave.com pages open in a new tab on web; on desktop the main process
+  // routes allowlisted https links to the system browser.
+  function openSite(url: string) {
+    if (!/^https:\/\/de-cave\.com(\/|$)/.test(url)) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
   function planNext() {
     clearTimeout(timeout);
     if (disposed || document.hidden) return;
@@ -160,7 +170,7 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       lastError = "";
       announce("");
       renderContent();
-      // Do not replace an open settings/highlight/giveaway form during polling.
+      // Do not replace an open settings/giveaway form during polling.
       if (panel === "queue" && value.session) await loadQueue(false);
       else if (panel === "queue" && previousSession) renderPanel();
       if (panel === "analytics") renderPanel();
@@ -248,7 +258,14 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     });
     return { form, submitButton };
   }
+  // Rebuilding the scroll container's children must not move the reader:
+  // keep the scroll position across every re-render.
   function renderContent() {
+    const scrollTop = content.scrollTop;
+    renderContentChildren();
+    content.scrollTop = scrollTop;
+  }
+  function renderContentChildren() {
     const activeElement = document.activeElement;
     const focusedLabel =
       activeElement instanceof HTMLButtonElement && content.contains(activeElement) ? activeElement.textContent : null;
@@ -590,10 +607,17 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
           button("Open FAQ", room("faq"), false, true),
         ),
         card(
-          "Find a Squad",
-          "game",
-          "Get matched with players looking for the same game.",
-          button("Find a Squad", () => guardedNative(options.actions.findSquad)),
+          "Roadmap",
+          "chart",
+          "What's shipped, what we're building now and what comes next.",
+          button(
+            "See the Roadmap",
+            () => {
+              if (!options.actions.openRoom?.("roadmap")) openSite("https://de-cave.com/roadmap");
+            },
+            false,
+            true,
+          ),
         ),
         card(
           "What's New",
@@ -608,7 +632,7 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
             "Get the Desktop App",
             "live",
             "Game detection, notifications and push-to-talk on Windows and Mac.",
-            button("Download ↗", () => options.actions.openExternal("https://de-cave.com"), false, true),
+            button("Download ↗", () => openSite("https://de-cave.com/#download"), false, true),
           ),
         );
     }
@@ -629,8 +653,91 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
           "Member preview — participation actions are disabled. Your permissions have not changed.",
         ),
       );
-    sections.push(heroRow, tiles, privacy);
+    sections.push(heroRow, tiles, ...officialInfoSections(), privacy);
     content.replaceChildren(...sections);
+  }
+  function officialInfoSections(): HTMLElement[] {
+    const section = (title: string, ...children: Array<Node | null>) =>
+      el(
+        "section",
+        "dc-streamer-section dc-official-section",
+        el("header", "dc-streamer-section-head", el("h3", "", title)),
+        ...children,
+      );
+    const about = section(
+      OFFICIAL_ABOUT.title,
+      el(
+        "div",
+        "dc-official-about",
+        el(
+          "div",
+          "dc-official-about-copy",
+          quiet(OFFICIAL_ABOUT.body),
+          el("p", "dc-official-alpha", el("strong", "", "Alpha. "), OFFICIAL_ABOUT.alphaNote),
+        ),
+        el(
+          "dl",
+          "dc-official-facts",
+          ...OFFICIAL_ABOUT.facts.map((fact) => el("div", "", el("dt", "", fact.label), el("dd", "", fact.value))),
+        ),
+      ),
+    );
+    const announcementsHead = section(
+      "Announcements",
+      el(
+        "ol",
+        "dc-official-news",
+        ...OFFICIAL_ANNOUNCEMENTS.map((item) =>
+          el(
+            "li",
+            "",
+            el("div", "dc-official-news-meta", el("span", "dc-official-tag", item.tag), el("time", "", item.date)),
+            el("h4", "", item.title),
+            quiet(item.body),
+          ),
+        ),
+      ),
+    );
+    const openAnnouncements = button(
+      "Open #announcements",
+      () => {
+        if (!options.actions.openRoom?.("announcements")) announce("#announcements isn't available in this Hub.", true);
+      },
+      false,
+      true,
+    );
+    announcementsHead.querySelector(".dc-streamer-section-head")?.append(openAnnouncements);
+    const roadmap = section(
+      "Roadmap",
+      el(
+        "ol",
+        "dc-official-roadmap",
+        ...OFFICIAL_ROADMAP.map((item, index) =>
+          el(
+            "li",
+            `is-step-${index}`,
+            el("span", "dc-official-roadmap-state", item.state),
+            el("h4", "", item.title),
+            quiet(item.body),
+          ),
+        ),
+      ),
+    );
+    const resources = section(
+      "Helpful resources",
+      el(
+        "div",
+        "dc-official-resources",
+        ...OFFICIAL_RESOURCES.map((item) => {
+          const link = el("a", "dc-official-resource", el("strong", "", item.label), el("small", "", item.detail));
+          link.href = item.href;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          return link;
+        }),
+      ),
+    );
+    return [about, announcementsHead, roadmap, resources];
   }
   function queueDescription(data: StreamerSnapshot): string {
     const mine = data.queue.mine;
@@ -754,9 +861,7 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       return;
     }
     container.append(
-      quiet(
-        "These settings update your DeCave Overview only. They do not start a broadcast or verify the creator's identity. Live status expires automatically.",
-      ),
+      quiet("These settings update your DeCave Overview only. Live status is manual and expires automatically."),
     );
     const { form, submitButton } = panelForm(
       "Save Stream Settings",
@@ -946,9 +1051,12 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     update(next) {
       if (next.hubId !== options.hubId || next.accountId !== options.accountId)
         throw new Error("Remount StreamerOverview when switching accounts or Hubs.");
+      const changed = renderKey(next) !== renderKey(options);
       options = next;
       api = createStreamerApi(next.hubId, next.transport);
-      renderContent();
+      // The parent re-renders often (activity clocks, presence); only rebuild
+      // the DOM when something this view shows has actually changed.
+      if (changed) renderContent();
     },
     destroy() {
       disposed = true;

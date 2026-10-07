@@ -7,7 +7,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import type { ChatMessage } from "@/src/types";
 import { useDraftInput } from "@/src/lib/drafts";
-import ReportSheet, { type MobileReportTarget } from "@/src/components/ReportSheet";
+import ReportSheet, { REPORT_CONFIRMATION_MS, type MobileReportTarget } from "@/src/components/ReportSheet";
 import { useMutedUsers } from "@/src/providers/MutedUsersProvider";
 import { FlatList, Platform, Alert, View, Pressable, Text, ActivityIndicator, TextInput, Modal } from "react-native";
 import { downloadLegacyAttachmentMobile, LegacyAttachmentError } from "@/src/lib/legacy-attachment-download";
@@ -912,7 +912,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
         token={token}
         target={reportTarget}
         onClose={() => setReportTarget(null)}
-        onSubmitted={() => setTimeout(() => setReportTarget(null), 900)}
+        onSubmitted={() => setTimeout(() => setReportTarget(null), REPORT_CONFIRMATION_MS)}
       />
     </>
   );

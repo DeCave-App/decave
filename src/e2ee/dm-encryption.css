@@ -1,0 +1,161 @@
+/* End-to-end encrypted DMs: header lock, conversation notice, history divider, dialogs. */
+
+.dc-e2ee-badge.is-encrypted {
+  color: var(--ds-success);
+}
+.dc-e2ee-badge.is-plain {
+  color: var(--ds-muted);
+}
+
+.dc-e2ee-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-2);
+  margin: var(--ds-space-2) var(--ds-space-3) 0;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-2);
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-sm);
+  line-height: var(--ds-leading);
+}
+.dc-e2ee-notice > span {
+  flex: 1 1 220px;
+}
+.dc-e2ee-notice.is-warning {
+  border-color: color-mix(in srgb, var(--ds-warn) 40%, transparent);
+  background: color-mix(in srgb, var(--ds-warn) 8%, var(--ds-surface-2));
+}
+
+.dc-e2ee-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  margin: var(--ds-space-3) 0;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  text-align: center;
+}
+
+.dc-dm-e2ee-placeholder {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  color: var(--ds-muted);
+  font-style: italic;
+}
+
+.dc-e2ee-modal {
+  width: min(520px, calc(100vw - 32px));
+}
+.dc-e2ee-code {
+  margin: var(--ds-space-3) 0;
+  padding: var(--ds-space-3);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-sink);
+  color: var(--ds-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--ds-text-lg);
+  letter-spacing: 0.06em;
+  text-align: center;
+  word-break: break-word;
+  user-select: all;
+}
+.dc-e2ee-safety {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: center;
+  gap: var(--ds-space-2) var(--ds-space-4);
+  font-size: var(--ds-text-md);
+}
+.dc-e2ee-section {
+  margin-top: var(--ds-space-4);
+}
+.dc-e2ee-section h3 {
+  margin: 0 0 var(--ds-space-2);
+  font-size: var(--ds-text-md);
+}
+.dc-e2ee-section form {
+  display: flex;
+  gap: var(--ds-space-2);
+}
+.dc-e2ee-code-input {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+}
+.dc-e2ee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+}
+.dc-e2ee-check {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  margin-top: var(--ds-space-3);
+  font-size: var(--ds-text-sm);
+}
+.dc-e2ee-check input[type="checkbox"] {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--ds-accent);
+}
+.dc-e2ee-footnote {
+  margin-top: var(--ds-space-4);
+  font-size: var(--ds-text-xs);
+}
+.dc-e2ee-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ds-accent-2);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.dc-e2ee-settings p {
+  margin: 0 0 var(--ds-space-3);
+  line-height: var(--ds-leading);
+}
+
+/* The DM pane is a grid of head / messages (1fr) / composer; give the notice its own row. */
+.dc-dm-chat-pane:has(> .dc-e2ee-notice) {
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.dc-e2ee-history {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.dc-e2ee-history > span {
+  display: grid;
+  gap: 2px;
+}
+
+.dc-e2ee-history select {
+  flex: none;
+}
+
+.dc-e2ee-call-mark {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  color: var(--ds-muted);
+}
+
+.dc-e2ee-call-mark.is-rejected {
+  color: var(--ds-danger, #f87171);
+}

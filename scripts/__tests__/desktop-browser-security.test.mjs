@@ -17,6 +17,10 @@ test("desktop browser uses an isolated WebContentsView session", () => {
   assert.match(main, /decave:browser:deactivate/);
   assert.match(main, /decave:browser:zoom/);
   assert.match(main, /decave:browser:find/);
+  assert.match(
+    main,
+    /ipcMain\.handle\("decave:browser:clear-session", async \(event\) => \{[\s\S]*?trustedMainRenderer\(event\)[\s\S]*?clearStorageData\(\)[\s\S]*?clearCache\(\)/,
+  );
   assert.match(main, /stopFindInPage/);
   assert.match(main, /found-in-page/);
   assert.match(main, /setZoomFactor/);
@@ -67,15 +71,15 @@ test("preload exposes only the narrow browser operations", () => {
     assert.match(preload, new RegExp(`${operation}:`));
   }
   assert.match(preload, /deactivate:/);
+  assert.match(preload, /clearSession:\s*\(\) => ipcRenderer\.invoke\("decave:browser:clear-session"\)/);
   assert.match(preload, /onPermissionRequest:/);
   assert.match(preload, /respondPermission:/);
   assert.doesNotMatch(preload, /executeJavaScript/);
   assert.doesNotMatch(preload, /webContents/);
 });
 
-test("desktop external links cover the shared social destinations", () => {
+test("desktop external links allowlisted social and developer destinations only", () => {
   for (const url of [
-    "https://store.steampowered.com/",
     "https://discord.com/",
     "https://x.com/",
     "https://www.instagram.com/",
@@ -86,6 +90,14 @@ test("desktop external links cover the shared social destinations", () => {
   }
   assert.equal(isSafeExternalUrl("http://example.com/"), false);
   assert.equal(isSafeExternalUrl("https://example.com/"), false);
+  for (const url of [
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "https://www.youtube-nocookie.com/",
+    "https://youtu.be/example",
+    "https://www.twitch.tv/example",
+  ]) {
+    assert.equal(isSafeExternalUrl(url), false, `${url} should not be allowlisted`);
+  }
 });
 
 test("dashboard quick links use the same external-link path on web and desktop", () => {
@@ -102,18 +114,48 @@ test("forum composer is portaled outside clipped message surfaces", () => {
   assert.match(app, /createPortal\([\s\S]*?forum-compose[\s\S]*?document\.body/);
 });
 
-test("desktop renderer blocks embedded frames and remote code", () => {
+test("desktop renderer blocks third-party frames and remote code", () => {
+  for (const frame of [
+    "https://player.twitch.tv/",
+    "https://www.youtube-nocookie.com/embed/test",
+    "https://www.youtube.com/embed/test",
+    "https://example.com/",
+  ]) {
+    assert.equal(shouldBlockPrivilegedResource(frame, "subFrame", "GET", "https://app.de-cave.com/"), true, frame);
+  }
   assert.equal(
-    shouldBlockPrivilegedResource("https://example.com/", "subFrame", "GET", "https://app.de-cave.com/"),
-    true,
-  );
-  assert.equal(
-    shouldBlockPrivilegedResource("https://cdn.example.net/frame/", "object", "GET", "https://app.de-cave.com/"),
+    shouldBlockPrivilegedResource(
+      "https://www.youtube.com/s/player/base.js",
+      "script",
+      "GET",
+      "https://www.youtube-nocookie.com/",
+    ),
     true,
   );
   assert.equal(
     shouldBlockPrivilegedResource("https://example.com/player.js", "script", "GET", "https://app.de-cave.com/"),
     true,
   );
-  assert.equal(shouldBlockPrivilegedResource("https://app.de-cave.com/api/profile", "fetch", "GET"), false);
+  assert.equal(
+    shouldBlockPrivilegedResource(
+      "https://app.de-cave.com/assets/index.js",
+      "script",
+      "GET",
+      "https://app.de-cave.com/",
+    ),
+    false,
+  );
+});
+
+test("DM encryption keys are wrapped by the OS keychain only for the trusted app window", () => {
+  for (const channel of ["decave:e2ee:protect-key", "decave:e2ee:unprotect-key"]) {
+    const start = main.indexOf(`ipcMain.handle("${channel}"`);
+    assert.ok(start > 0, `${channel} is handled`);
+    const handler = main.slice(start, main.indexOf("\n});", start));
+    assert.match(handler, /if \(!trustedMainRenderer\(event\)\)/, `${channel} checks the sender`);
+    assert.match(handler, /osKeychainAvailable\(\)/, `${channel} refuses without a real keychain`);
+    assert.match(preload, new RegExp(`ipcRenderer\\.invoke\\("${channel}"`));
+  }
+  // Linux without a secret service falls back to a hard-coded key: not a keychain.
+  assert.match(main, /getSelectedStorageBackend\(\) !== "basic_text"/);
 });

@@ -11,6 +11,7 @@ interface __BaseEnv_Env {
 	ASSETS: Fetcher;
 	STREAMER_HUBS_ENABLED: "true";
 	STREAMER_GIVEAWAYS_ENABLED: "true";
+	DM_E2EE_ENABLED: "false";
 	HUB_ROOM: DurableObjectNamespace<import("./index").HubRoom>;
 }
 declare namespace Cloudflare {
@@ -25,7 +26,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "STREAMER_HUBS_ENABLED" | "STREAMER_GIVEAWAYS_ENABLED">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "STREAMER_HUBS_ENABLED" | "STREAMER_GIVEAWAYS_ENABLED" | "DM_E2EE_ENABLED">> {}
 }
 
 // Begin runtime types

@@ -145,10 +145,9 @@ export async function securityEvent(
   env: Env,
   userId: string | null,
   event: string,
-  request: Request,
+  request: Request | null,
   detail = "",
 ): Promise<void> {
-  const ipHash = await securityEventIpHash(env, request);
   await env.DB.prepare(
     `INSERT INTO decave_security_events
      (id,user_id,event,ip_hash,user_agent,detail,created_at)
@@ -158,8 +157,8 @@ export async function securityEvent(
       crypto.randomUUID(),
       userId,
       event,
-      ipHash,
-      (request.headers.get("user-agent") ?? "").slice(0, 240),
+      "",
+      (request?.headers.get("user-agent") ?? "").slice(0, 240),
       detail.slice(0, 500),
       nowIso(),
     )
@@ -181,7 +180,7 @@ async function hmacSha256(keyBytes: BufferSource, message: string): Promise<Uint
  * the derived subkey reveals nothing about it. Tags from the derived key carry
  * a distinct version prefix so they are never confused with dedicated-key tags.
  */
-async function securityIpHashKey(env: Env): Promise<{ key: BufferSource; prefix: string } | null> {
+export async function securityIpHashKey(env: Env): Promise<{ key: BufferSource; prefix: string } | null> {
   const dedicated = env.SECURITY_IP_HASH_KEY?.trim() ?? "";
   if (dedicated) return { key: new TextEncoder().encode(dedicated), prefix: "hmac:v1:" };
   const parent = env.OWNER_MFA_ENCRYPTION_KEY?.trim() ?? "";
@@ -206,14 +205,21 @@ async function securityIpHashKey(env: Env): Promise<{ key: BufferSource; prefix:
   return null;
 }
 
+/** Returns a versioned, domain-separated keyed address tag, or empty if no key is configured. */
+export async function securityIpAddressTag(env: Env, address: string, domain: string): Promise<string> {
+  const normalizedAddress = address.trim();
+  const normalizedDomain = domain.trim();
+  if (!normalizedAddress || !normalizedDomain) return "";
+  const resolved = await securityIpHashKey(env);
+  if (!resolved) return "";
+  const signature = await hmacSha256(resolved.key, `${normalizedDomain}\0${normalizedAddress}`);
+  return `${resolved.prefix}${Array.from(signature, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+
 /** Returns a versioned keyed IP tag, or an empty string when no key can be resolved. */
 export async function securityEventIpHash(env: Env, request: Request): Promise<string> {
   const rawIp = request.headers.get("CF-Connecting-IP")?.trim() ?? "";
-  if (!rawIp) return "";
-  const resolved = await securityIpHashKey(env);
-  if (!resolved) return "";
-  const signature = await hmacSha256(resolved.key, `decave-security-ip-v1\0${rawIp}`);
-  return `${resolved.prefix}${Array.from(signature, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+  return securityIpAddressTag(env, rawIp, "decave-security-ip-v1");
 }
 
 export function activeSuspension(user: UserRow): boolean {
@@ -520,7 +526,7 @@ export async function requireUser(request: Request, env: Env): Promise<UserRow |
     if (safetyProfile?.age_status === "ineligible") {
       return json(
         {
-          error: "This account is not eligible for DeCave because the account holder is under 13.",
+          error: "This account is not eligible for DeCave because DeCave is only for adults aged 18 or older.",
           code: "AGE_RESTRICTED",
         },
         403,

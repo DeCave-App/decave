@@ -12,8 +12,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Avatar } from "@/src/components/Avatar";
 import { Screen } from "@/src/components/Screen";
+import { HomeNowCards } from "@/src/components/HomeNowCards";
 import { API_BASE, apiJson } from "@/src/lib/api";
-import { loadLastVoiceRoom, voiceRoomHref, type LastVoiceRoom } from "@/src/lib/last-voice-room";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useVoice } from "@/src/providers/VoiceProvider";
@@ -24,6 +24,7 @@ import type {
   Hub,
   SocialState,
 } from "@/src/types";
+import { decryptConversationPreviews } from "@/src/lib/e2ee/client";
 
 function relativeTime(value: string): string {
   const timestamp = Date.parse(value);
@@ -72,8 +73,6 @@ export default function HomeScreen() {
   });
   const [dms, setDms] = useState<DmConversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastRoom, setLastRoom] = useState<LastVoiceRoom | null>(null);
-  const inVoice = voiceChannelId != null && voiceStatus !== "disconnected";
 
   const load = async () => {
     if (!token) return;
@@ -87,17 +86,13 @@ export default function HomeScreen() {
 
       setHubs(nextHubs);
       setSocial(nextSocial);
-      setDms(dmData.conversations ?? []);
+      setDms(await decryptConversationPreviews(dmData.conversations ?? []));
     } catch {}
   };
 
   useEffect(() => {
     void load();
   }, [token]);
-
-  useEffect(() => {
-    void loadLastVoiceRoom().then(setLastRoom);
-  }, [voiceChannelId, voiceStatus]);
 
   useEffect(() => {
     const type = lastEvent?.type;
@@ -207,65 +202,8 @@ export default function HomeScreen() {
           </Pressable>
         )}
 
-        <View style={styles.hero}>
-          <View style={styles.heroGlow} />
-          <Text maxFontSizeMultiplier={1.3} style={styles.heroKicker}>YOUR SPACE</Text>
-          <Text style={styles.heroTitle}>Everything that matters, one tap away.</Text>
-          <Text style={styles.heroText}>
-            Jump back into a conversation, find your crew, or open a Hub.
-          </Text>
 
-          <View style={styles.heroActions}>
-            <QuickButton
-              icon="compass-outline"
-              label="Discover Hubs"
-              onPress={() => router.navigate("/hubs?mode=discover")}
-            />
-            <QuickButton
-              icon="color-palette-outline"
-              label="Appearance"
-              onPress={() => router.push("/appearance")}
-            />
-            <QuickButton
-              icon="settings-outline"
-              label="Settings"
-              onPress={() => router.push("/settings")}
-            />
-          </View>
-        </View>
-
-        {(inVoice || lastRoom) && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={inVoice ? "Open your voice room" : `Rejoin ${lastRoom?.name}`}
-            onPress={() => {
-              if (inVoice && lastRoom?.channelId === voiceChannelId) router.push(voiceRoomHref(lastRoom));
-              else if (inVoice) router.push(`/voice/${voiceChannelId}`);
-              else if (lastRoom) router.push(voiceRoomHref(lastRoom));
-            }}
-            style={({ pressed }) => [styles.liveCard, inVoice && styles.liveCardOn, pressed && { opacity: 0.8 }]}
-          >
-            <View style={[styles.liveIcon, inVoice && { backgroundColor: colors.greenSoft }]}>
-              <Ionicons name="volume-high" size={20} color={inVoice ? colors.green : colors.cyan} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text maxFontSizeMultiplier={1.3} style={[styles.liveKicker, inVoice && { color: colors.green }]}>
-                {inVoice ? (voiceStatus === "connected" ? "LIVE NOW" : "CONNECTING") : "JUMP BACK IN"}
-              </Text>
-              <Text style={styles.liveTitle} numberOfLines={1}>
-                {inVoice && lastRoom?.channelId !== voiceChannelId ? "Voice room" : lastRoom?.name ?? "Voice room"}
-              </Text>
-              <Text style={styles.liveMeta} numberOfLines={1}>
-                {inVoice
-                  ? `${participants.length} ${participants.length === 1 ? "person" : "people"} in the room`
-                  : "Tap to rejoin your last voice room"}
-              </Text>
-            </View>
-            <View style={[styles.liveAction, inVoice && { backgroundColor: colors.panel2 }]}>
-              <Text style={styles.liveActionText}>{inVoice ? "Open" : "Join"}</Text>
-            </View>
-          </Pressable>
-        )}
+        <HomeNowCards hubs={hubs} participants={participants} friends={social.friends} myUserId={user?.id} />
 
         <SectionHeader
           title="Friends online"
@@ -408,31 +346,6 @@ export default function HomeScreen() {
   );
 }
 
-function QuickButton({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: string;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.quickButton,
-        pressed && styles.quickPressed,
-      ]}
-      onPress={onPress}
-    >
-      <View style={styles.quickIcon}>
-        <Ionicons name={icon as any} size={20} color={colors.cyan} />
-      </View>
-      <Text style={styles.quickLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function SectionHeader({
   title,
   action,
@@ -559,14 +472,6 @@ function HubIcon({ hub, size }: { hub: Hub; size: number }) {
 }
 
 const styles = StyleSheet.create({
-  liveCard: { marginTop: 16, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 18, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border },
-  liveCardOn: { borderColor: "rgba(67,226,154,0.35)" },
-  liveIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: colors.cyanSoft },
-  liveKicker: { color: colors.cyan, fontSize: 11, fontWeight: "900", letterSpacing: 1.2 },
-  liveTitle: { color: colors.text, fontSize: 16, fontWeight: "900", marginTop: 2 },
-  liveMeta: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  liveAction: { paddingHorizontal: 16, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: colors.violet },
-  liveActionText: { color: "#FFFFFF", fontSize: 13, fontWeight: "900" },
   scroll: {
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -657,78 +562,6 @@ const styles = StyleSheet.create({
     color: colors.green,
     fontSize: 13,
     fontWeight: "900",
-  },
-  hero: {
-    position: "relative",
-    overflow: "hidden",
-    borderRadius: 24,
-    padding: 18,
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  heroGlow: {
-    position: "absolute",
-    width: 180,
-    height: 180,
-    borderRadius: 99,
-    right: -58,
-    top: -92,
-    backgroundColor: "rgba(124,92,255,.18)",
-  },
-  heroKicker: {
-    color: colors.violet,
-    fontSize: 12,
-    letterSpacing: 1.8,
-    fontWeight: "900",
-  },
-  heroTitle: {
-    color: colors.text,
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: "900",
-    marginTop: 6,
-    maxWidth: 290,
-  },
-  heroText: {
-    color: colors.muted,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 7,
-    maxWidth: 300,
-  },
-  heroActions: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 17,
-  },
-  quickButton: {
-    flex: 1,
-    alignItems: "center",
-    gap: 7,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: 14,
-    backgroundColor: colors.panel2,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  quickPressed: {
-    opacity: 0.72,
-    transform: [{ scale: 0.98 }],
-  },
-  quickIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.cyanSoft,
-  },
-  quickLabel: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "800",
   },
   sectionHeader: {
     marginTop: 24,

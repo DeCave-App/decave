@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { API_BASE, apiJson } from "@/src/lib/api";
-import type { GiphyGif } from "@/src/lib/chat-media";
+import { apiJson } from "@/src/lib/api";
+import { giphyImageSource, type GiphyGif } from "@/src/lib/chat-media";
 import { colors } from "@/src/theme";
 
 /**
@@ -94,7 +94,10 @@ export function ComposerMediaSheet({
             style={{ flexGrow: 0, maxHeight: 320 }}
             renderItem={({ item }) => (
               <Pressable accessibilityRole="button" accessibilityLabel={item.title || "GIF"} style={styles.gif} onPress={() => onGif(item)}>
-                <Image source={{ uri: item.previewUrl.startsWith("/") ? `${API_BASE}${item.previewUrl}` : item.previewUrl, headers: token ? { Authorization: `Bearer ${token}` } : undefined }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                {(() => {
+                  const source = giphyImageSource(item.previewUrl, token) ?? giphyImageSource(item.url, token);
+                  return source ? <Image source={source} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null;
+                })()}
               </Pressable>
             )}
           />

@@ -18,6 +18,11 @@ const bridge = {
   getUpdateStatus: () => ipcRenderer.invoke("decave:update:get-status"),
   checkForUpdates: () => ipcRenderer.invoke("decave:update:check"),
   restartToUpdate: () => ipcRenderer.invoke("decave:update:restart"),
+  // DM encryption key at rest, wrapped with the OS keychain (null when unavailable).
+  e2eeKeys: {
+    protect: (seedBase64) => ipcRenderer.invoke("decave:e2ee:protect-key", seedBase64),
+    unprotect: (protectedBase64) => ipcRenderer.invoke("decave:e2ee:unprotect-key", protectedBase64),
+  },
   browser: {
     create: (input) => ipcRenderer.invoke("decave:browser:create", input),
     deactivate: (id) => ipcRenderer.invoke("decave:browser:deactivate", id),

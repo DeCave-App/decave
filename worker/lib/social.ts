@@ -4,6 +4,7 @@
 import type { Env } from "./env";
 import { type UserRow, publicUserWithPresence, ensureGroupChatSchema, type GroupChatRow, publicIdOf } from "../db";
 import { realtimeFetch } from "./realtime";
+import { DM_GROUP_MAX_WRAPS, parseDmEnvelope } from "../../shared/dm-e2ee-format";
 
 export async function usersHaveMutualFriend(db: D1Database, firstId: string, secondId: string): Promise<boolean> {
   const mutual = await db
@@ -74,7 +75,12 @@ export async function socialState(env: Env, userId: string) {
   };
 }
 
-export async function groupChatForClient(env: Env, groupId: string, includeLatestMessage = true) {
+export async function groupChatForClient(
+  env: Env,
+  groupId: string,
+  includeLatestMessage = true,
+  viewerUserId?: string,
+) {
   await ensureGroupChatSchema(env.DB);
   const group = await env.DB.prepare("SELECT * FROM decave_group_chats WHERE id=?").bind(groupId).first<GroupChatRow>();
   if (!group) return null;
@@ -91,7 +97,7 @@ export async function groupChatForClient(env: Env, groupId: string, includeLates
 
   const latest = await env.DB.prepare(
     includeLatestMessage
-      ? `SELECT text, created_at
+      ? `SELECT text, envelope, created_at
            FROM decave_group_chat_messages
            WHERE group_id=?
            ORDER BY created_at DESC
@@ -103,7 +109,7 @@ export async function groupChatForClient(env: Env, groupId: string, includeLates
            LIMIT 1`,
   )
     .bind(groupId)
-    .first<{ text?: string; created_at: string }>();
+    .first<{ text?: string; envelope?: string | null; created_at: string }>();
 
   const onlineResponse = await realtimeFetch(env, "/internal/online-users");
   const onlineData = onlineResponse.ok ? ((await onlineResponse.json()) as { userIds?: string[] }) : {};
@@ -113,14 +119,24 @@ export async function groupChatForClient(env: Env, groupId: string, includeLates
   );
   const ownerRow = memberRows.results.find((row) => row.id === group.owner_user_id);
 
+  // Unnamed groups are titled from the other members, so nobody sees their own name in the title.
+  const others = memberRows.results.filter((row) => row.id !== viewerUserId).map((row) => row.username);
+  const name =
+    group.name || others.slice(0, 3).join(", ") + (others.length > 3 ? ` +${others.length - 3}` : "") || "Group chat";
+
   return {
     id: group.id,
-    name: group.name,
+    name,
     ownerUserId: ownerRow ? publicIdOf(ownerRow) : "",
     members,
     memberCount: members.length,
     latestMessage: includeLatestMessage ? (latest?.text ?? "") : "",
+    /** The latest message's envelope when it is encrypted; the app decrypts the preview. */
+    latestEnvelope:
+      includeLatestMessage && latest?.envelope ? parseDmEnvelope(latest.envelope, DM_GROUP_MAX_WRAPS) : null,
     latestTimestamp: latest?.created_at ?? group.updated_at,
+    /** Messages are end-to-end encrypted (for good, once they are). */
+    e2ee: Boolean(group.e2ee_since),
   };
 }
 
@@ -149,7 +165,7 @@ export async function groupChatMessagesForClient(env: Env, groupId: string, befo
   const cursor = await historyCursor(env, "decave_group_chat_messages", before, "group_id=?", [groupId]);
   if (cursor === false) return [];
   const rows = await env.DB.prepare(
-    `SELECT m.id, m.group_id, m.from_user_id, m.text, m.created_at, m.reply_to_id,
+    `SELECT m.id, m.group_id, m.from_user_id, m.text, m.envelope, m.created_at, m.reply_to_id,
               u.public_id, u.username, u.avatar_key, u.avatar_updated_at
        FROM decave_group_chat_messages m
        JOIN decave_users u ON u.id=m.from_user_id
@@ -163,6 +179,7 @@ export async function groupChatMessagesForClient(env: Env, groupId: string, befo
       group_id: string;
       from_user_id: string;
       text: string;
+      envelope: string | null;
       created_at: string;
       reply_to_id: string | null;
       public_id: string | null;
@@ -180,6 +197,7 @@ export async function groupChatMessagesForClient(env: Env, groupId: string, befo
       ? `/api/users/${encodeURIComponent(row.public_id ?? row.username)}/avatar?v=${encodeURIComponent(row.avatar_updated_at ?? "")}`
       : null,
     text: row.text,
+    envelope: row.envelope ? parseDmEnvelope(row.envelope, DM_GROUP_MAX_WRAPS) : null,
     timestamp: row.created_at,
     replyToId: row.reply_to_id,
   }));

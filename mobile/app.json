@@ -12,8 +12,8 @@
       "bundleIdentifier": "com.example.decave",
       "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow DeCave to use your camera for video rooms and calls.",
-        "NSMicrophoneUsageDescription": "Allow DeCave to use your microphone for voice rooms and calls.",
+        "NSCameraUsageDescription": "Allow DeCave to use your camera for video calls and rooms.",
+        "NSMicrophoneUsageDescription": "Allow DeCave to use your microphone for calls and voice rooms.",
         "NSPhotoLibraryUsageDescription": "Allow DeCave to choose photos and videos to share.",
         "UIBackgroundModes": [
           "audio"
@@ -162,8 +162,8 @@
       [
         "@config-plugins/react-native-webrtc",
         {
-          "cameraPermission": "Allow DeCave to use your camera for video rooms.",
-          "microphonePermission": "Allow DeCave to use your microphone for voice rooms."
+          "cameraPermission": "Allow DeCave to use your camera for video calls and rooms.",
+          "microphonePermission": "Allow DeCave to use your microphone for calls and voice rooms."
         }
       ],
       "./plugins/withWebRtcScreenShare",

@@ -1,4 +1,5 @@
 import type { SafetyReportTarget } from "./types";
+import type { DmReportProof } from "../../shared/dm-e2ee";
 
 type ReportKey = {
   keyId: string;
@@ -12,6 +13,8 @@ type EvidencePackage = {
   target: Pick<SafetyReportTarget, "targetType" | "targetId" | "subjectUserId" | "contextType" | "contextId">;
   content: string;
   createdAt: string;
+  /** Encrypted DM only: the signed envelope and its content key. */
+  e2eeProof?: DmReportProof;
 };
 
 const encoder = new TextEncoder();
@@ -66,6 +69,7 @@ export function buildTextEvidencePackage(target: SafetyReportTarget): Uint8Array
     },
     content,
     createdAt: new Date().toISOString(),
+    ...(target.e2eeProof ? { e2eeProof: target.e2eeProof } : {}),
   };
   return encoder.encode(canonicalJson(payload));
 }

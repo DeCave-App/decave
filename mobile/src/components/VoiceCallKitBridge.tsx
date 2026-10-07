@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
-import RNCallKeep from "react-native-callkeep";
+import type CallKeep from "react-native-callkeep";
 import { RTCAudioSession } from "react-native-webrtc";
 import { AudioRouting } from "../../modules/decave-audio-route";
 import { roomNameFor } from "@/src/lib/last-voice-room";
@@ -13,6 +13,12 @@ function newCallId(): string {
     return (char === "x" ? value : (value & 0x3) | 0x8).toString(16);
   });
 }
+
+// iOS only. On Android with the New Architecture, merely touching the native
+// module throws (RNCallKeep exports overloaded displayIncomingCall methods),
+// which crashed the app at launch, so the module is never loaded there.
+const RNCallKeep: typeof CallKeep =
+  Platform.OS === "ios" ? require("react-native-callkeep").default : (null as unknown as typeof CallKeep);
 
 let setupDone: Promise<boolean> | null = null;
 

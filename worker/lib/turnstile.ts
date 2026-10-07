@@ -30,8 +30,7 @@ export async function verifyTurnstile(
   const form = new FormData();
   form.set("secret", env.TURNSTILE_SECRET_KEY);
   form.set("response", token);
-  const ip = request.headers.get("CF-Connecting-IP");
-  if (ip) form.set("remoteip", ip);
+  // remoteip is optional for Siteverify; the visitor's IP is not shared.
   try {
     const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",

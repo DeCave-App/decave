@@ -5,6 +5,7 @@ const {
   ipcMain,
   Menu,
   nativeImage,
+  safeStorage,
   screen,
   session,
   shell,
@@ -538,7 +539,7 @@ function localRendererHeaders(filePath) {
     "content-type": rendererContentType(filePath),
     "cache-control": filePath.endsWith(".html") ? "no-store" : "private, max-age=31536000, immutable",
     "content-security-policy":
-      "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.giphy.com; media-src 'self' blob: https://*.giphy.com; connect-src 'self' https://rtc.live.cloudflare.com https://api.giphy.com https://giphy-analytics.giphy.com wss://app.de-cave.com; frame-src 'none'; object-src 'none'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+      "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://rtc.live.cloudflare.com wss://app.de-cave.com; frame-src 'none'; object-src 'none'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
     "permissions-policy": "camera=(self), microphone=(self), display-capture=(self), geolocation=()",
     "referrer-policy": "strict-origin-when-cross-origin",
     "x-content-type-options": "nosniff",
@@ -662,7 +663,7 @@ async function installLocalRenderer() {
   });
   secureSession.webRequest.onBeforeRequest((details, callback) => {
     callback({
-      cancel: shouldBlockPrivilegedResource(details.url, details.resourceType, details.method),
+      cancel: shouldBlockPrivilegedResource(details.url, details.resourceType, details.method, details.initiator),
     });
   });
   await secureSession.protocol.handle("https", async (request) => {
@@ -1347,8 +1348,8 @@ ipcMain.handle("decave:browser:destroy", (event, rawId) => {
   return true;
 });
 
-// Logout wipes the in-app browser profile (cookies, storage, cache) so the next
-// account on this device does not inherit the previous user's web sessions.
+// Logout wipes the in-app browser profile so the next account on this device
+// does not inherit the previous user's web sessions.
 ipcMain.handle("decave:browser:clear-session", async (event) => {
   if (!trustedMainRenderer(event)) return false;
   destroyBrowserView();
@@ -1396,6 +1397,65 @@ ipcMain.handle("decave:update:restart", async (event) => {
   isQuitting = true;
   setImmediate(() => autoUpdater.quitAndInstall(false, true));
   return true;
+});
+
+// DM encryption keys (docs/security/DM-E2EE.md): the renderer keeps the account
+// key in IndexedDB, wrapped here with the OS keychain so a copied profile folder
+// can't be read without the user's OS login. Without a real keychain (Linux with
+// no secret service falls back to a hard-coded key) this refuses and the
+// renderer keeps the key as before.
+function osKeychainAvailable() {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return false;
+    if (process.platform === "linux" && typeof safeStorage.getSelectedStorageBackend === "function") {
+      return safeStorage.getSelectedStorageBackend() !== "basic_text";
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+// A keyring: 32-byte keys, at most 120 of them (shared/dm-e2ee-format.ts).
+const KEYRING_MAX_BYTES = 120 * 32;
+
+ipcMain.handle("decave:e2ee:protect-key", async (event, seedBase64) => {
+  if (!trustedMainRenderer(event)) {
+    throw new Error("Untrusted renderer asked to protect an encryption key.");
+  }
+  if (
+    typeof seedBase64 !== "string" ||
+    seedBase64.length > Math.ceil(KEYRING_MAX_BYTES / 3) * 4 ||
+    !BASE64.test(seedBase64)
+  ) {
+    throw new Error("Invalid encryption key.");
+  }
+  const seed = Buffer.from(seedBase64, "base64");
+  if (seed.length < 32 || seed.length % 32 !== 0 || seed.length > KEYRING_MAX_BYTES) {
+    seed.fill(0);
+    throw new Error("Invalid encryption key.");
+  }
+  if (!osKeychainAvailable()) {
+    seed.fill(0);
+    return null;
+  }
+  try {
+    return safeStorage.encryptString(seed.toString("base64")).toString("base64");
+  } finally {
+    seed.fill(0);
+  }
+});
+
+ipcMain.handle("decave:e2ee:unprotect-key", async (event, protectedBase64) => {
+  if (!trustedMainRenderer(event)) {
+    throw new Error("Untrusted renderer asked to unprotect an encryption key.");
+  }
+  if (typeof protectedBase64 !== "string" || protectedBase64.length > 16384 || !BASE64.test(protectedBase64)) {
+    throw new Error("Invalid protected key.");
+  }
+  if (!osKeychainAvailable()) return null;
+  return safeStorage.decryptString(Buffer.from(protectedBase64, "base64"));
 });
 
 ipcMain.handle("decave:desktop:get-settings", async (event) => {

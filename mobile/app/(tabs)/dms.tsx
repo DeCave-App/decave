@@ -33,6 +33,7 @@ import type {
   GroupChat,
   SocialState,
 } from "@/src/types";
+import { decryptConversationPreviews, groupPreview, rememberGroup } from "@/src/lib/e2ee/client";
 
 type DmPreference = { favorite: boolean; archived: boolean };
 type ListFilter = "all" | "unread" | "requests";
@@ -100,8 +101,12 @@ export default function DmsScreen() {
         apiJson<SocialState>("/api/social", {}, token),
       ]);
 
-      setItems(dmData.conversations ?? []);
-      setGroups(groupData.groups ?? []);
+      setItems(await decryptConversationPreviews(dmData.conversations ?? []));
+      // Encrypted group previews are decrypted on the phone.
+      const groupList = groupData.groups ?? [];
+      const previews = await Promise.all(groupList.map((group) => groupPreview(group)));
+      groupList.forEach(rememberGroup);
+      setGroups(groupList.map((group, index) => ({ ...group, latestMessage: previews[index] })));
       setFriends(socialData.friends ?? []);
       setIncoming(socialData.incoming ?? []);
       setLoadError("");

@@ -18,6 +18,9 @@
   "vars": {
     "STREAMER_HUBS_ENABLED": "true",
     "STREAMER_GIVEAWAYS_ENABLED": "true",
+    // End-to-end encrypted DMs and group chats are enabled in this review configuration.
+    // Validate supported mobile versions and recovery limitations before deployment.
+    "DM_E2EE_ENABLED": "true",
   },
   "observability": {
     "enabled": true,

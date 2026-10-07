@@ -42,7 +42,14 @@ import type {
 } from "../types";
 import { HTTP_URL } from "../env";
 import { EMOJI_GROUPS } from "../constants";
-import { POLL_PREFIX, EVENT_PREFIX, STICKER_PREFIX, GIF_PREFIX, safeGiphyUrl } from "../message-payloads";
+import {
+  POLL_PREFIX,
+  EVENT_PREFIX,
+  STICKER_PREFIX,
+  GIF_PREFIX,
+  giphyMediaProxyUrl,
+  safeGiphyUrl,
+} from "../message-payloads";
 import type { GifSearchState } from "../state/gif-search";
 import type { HubPanelsState } from "../state/hub-panels";
 import type { ComposerState } from "../state/composer";
@@ -669,17 +676,21 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
           <div className="dc-gif-status">No GIFs found.</div>
         ) : (
           <div className="dc-gif-grid">
-            {gifResults.map((gif) => (
-              <button
-                key={gif.id}
-                type="button"
-                className="dc-gif-item"
-                title={gif.title || "GIF"}
-                onClick={() => sendSelectedGif(gif)}
-              >
-                <img src={gif.previewUrl} alt={gif.title || "GIF"} loading="lazy" />
-              </button>
-            ))}
+            {gifResults.flatMap((gif) => {
+              const previewSrc = giphyMediaProxyUrl(gif.previewUrl) ?? giphyMediaProxyUrl(gif.url);
+              if (!previewSrc) return [];
+              return [
+                <button
+                  key={gif.id}
+                  type="button"
+                  className="dc-gif-item"
+                  title={gif.title || "GIF"}
+                  onClick={() => sendSelectedGif(gif)}
+                >
+                  <img src={previewSrc} alt={gif.title || "GIF"} loading="lazy" />
+                </button>,
+              ];
+            })}
           </div>
         )}
         <div className="dc-gif-attribution">Powered by GIPHY</div>
@@ -800,6 +811,11 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
       .filter(([key, users]) => key.startsWith("poll_") && users.includes(currentUser.id))
       .map(([key]) => key);
     const next = `poll_${optionIndex}`;
+    // An encrypted vote replaces the earlier one in a single sealed update.
+    if (message.envelope) {
+      if (!selected.includes(next)) await sendDmReaction(message, next);
+      return;
+    }
     for (const key of selected) if (key !== next) await sendDmReaction(message, key);
     if (!selected.includes(next)) await sendDmReaction(message, next);
   };

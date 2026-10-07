@@ -1,9 +1,12 @@
 import "react-native-gesture-handler";
+// Before anything that encrypts: Hermes needs crypto.getRandomValues from expo-crypto.
+import "@/src/lib/e2ee/polyfills";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider } from "@/src/providers/SessionProvider";
 import { RealtimeProvider } from "@/src/providers/RealtimeProvider";
+import { DmE2eeProvider } from "@/src/providers/DmE2eeProvider";
 import { VoiceProvider } from "@/src/providers/VoiceProvider";
 import { DirectCallProvider } from "@/src/providers/DirectCallProvider";
 import { NotificationProvider } from "@/src/providers/NotificationProvider";
@@ -25,6 +28,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <SessionProvider>
           <RealtimeProvider>
+            <DmE2eeProvider>
             <MutedUsersProvider>
             <UnreadProvider>
             <NotificationSettingsProvider>
@@ -51,6 +55,7 @@ export default function RootLayout() {
             </NotificationSettingsProvider>
             </UnreadProvider>
             </MutedUsersProvider>
+            </DmE2eeProvider>
           </RealtimeProvider>
         </SessionProvider>
       </SafeAreaProvider>

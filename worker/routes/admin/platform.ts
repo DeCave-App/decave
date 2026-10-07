@@ -91,7 +91,7 @@ export async function handlePlatformAdminRoutes({
     await platformAudit(env, owner.id, "platform.sessions_revoked", request, target.id, {
       targetRole: target.platform_role,
     });
-    await securityEvent(env, target.id, "sessions.revoked_by_platform_owner", request);
+    await securityEvent(env, target.id, "sessions.revoked_by_platform_owner", null);
 
     return json({ success: true, targetUserId: publicIdOf(target) });
   }

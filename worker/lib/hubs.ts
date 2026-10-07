@@ -266,7 +266,7 @@ export async function hubHomeConfig(env: Env, hubId: number): Promise<HubHomeCon
     }
     return normalizeHubHomeConfig({ sections, welcome: row?.welcome ?? "", rules: row?.rules ?? "" });
   } catch (error) {
-    console.warn("Hub Home config unavailable", error);
+    console.warn("Hub Home config unavailable", error instanceof Error ? error.name : "UnknownError");
     return normalizeHubHomeConfig({});
   }
 }
@@ -281,7 +281,7 @@ export async function voiceCountsForRooms(env: Env, channelIds: number[]): Promi
     const data = (await response.json()) as { counts?: Record<string, number> };
     for (const [id, n] of Object.entries(data.counts ?? {})) counts.set(Number(id), Number(n) || 0);
   } catch (error) {
-    console.warn("Voice counts unavailable", error);
+    console.warn("Voice counts unavailable", error instanceof Error ? error.name : "UnknownError");
   }
   return counts;
 }
@@ -320,7 +320,7 @@ export async function discoverSignals(
       friends.set(hubId, list);
     }
   } catch (error) {
-    console.warn("Discover: friend signals unavailable", error);
+    console.warn("Discover: friend signals unavailable", error instanceof Error ? error.name : "UnknownError");
   }
   try {
     const rooms = await env.DB.prepare(
@@ -335,7 +335,7 @@ export async function discoverSignals(
       if (hubId !== undefined) voice.set(hubId, (voice.get(hubId) ?? 0) + n);
     }
   } catch (error) {
-    console.warn("Discover: voice signals unavailable", error);
+    console.warn("Discover: voice signals unavailable", error instanceof Error ? error.name : "UnknownError");
   }
   return { friends, voice };
 }

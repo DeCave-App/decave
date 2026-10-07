@@ -4,6 +4,7 @@ import type { MouseEvent as ReactMouseEvent, Dispatch, SetStateAction, MutableRe
 import { Icon } from "../../components/Icon";
 import { VoiceLobby } from "../../features/voice-room/VoiceLobby";
 import type { Channel, Server, AccountUser, VoiceParticipant, UserContextTarget, SoundboardSound } from "../types";
+import { CallVerificationMark } from "../../e2ee/DmEncryptionUi";
 import { formatRtcBitrate } from "../format";
 import { UserAvatar } from "../components/UserAvatar";
 import { VoiceStatusIcons } from "../components/VoiceStatusIcons";
@@ -361,6 +362,7 @@ export function VoiceRoomStage({
                     }
                   >
                     <span>{participant.username}</span>
+                    <CallVerificationMark connectionId={participant.connectionId} />
                     <VoiceStatusIcons participant={participant} />
                   </div>
                   <div style={{ color: "var(--ds-muted)", fontSize: "12px" }}>
@@ -513,6 +515,7 @@ export function VoiceRoomStage({
                       }}
                     >
                       <span>{participant.username}</span>
+                      <CallVerificationMark connectionId={participant.connectionId} />
                     </strong>
                     <VoiceStatusIcons participant={participant} standalone />
                     <small>

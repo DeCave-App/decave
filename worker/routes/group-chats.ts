@@ -17,6 +17,7 @@ import { json, bodyJson, idFromPath } from "../lib/http";
 import { isBlockedEitherDirection } from "../trust-safety";
 import { realtimeBroadcast } from "../lib/realtime";
 import { ensureSquadFinderSchema } from "../lib/squad";
+import { currentDmKey, dmE2eeEnabled } from "../lib/dm-e2ee";
 import { ensureHubFeatureSchema } from "../lib/hub-schema";
 import { ensureSoundboardSchema } from "../lib/soundboard";
 import { attemptQueuedMediaDeletionIfQueued, hubMediaObjectKeys, queueHubMediaDeletionStatement } from "../lib/media";
@@ -40,7 +41,7 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
 
     const groups: Array<NonNullable<Awaited<ReturnType<typeof groupChatForClient>>>> = [];
     for (const row of rows.results) {
-      const group = await groupChatForClient(env, row.id, true);
+      const group = await groupChatForClient(env, row.id, true, user.id);
       if (group) groups.push(group);
     }
     return json({ groups });
@@ -73,17 +74,8 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
       }
     }
 
-    let name = typeof body.name === "string" ? body.name.trim().slice(0, 48) : "";
-    if (!name) {
-      const names: string[] = [];
-      for (const memberId of memberIds.slice(0, 3)) {
-        const target = await env.DB.prepare("SELECT username FROM decave_users WHERE id=?")
-          .bind(memberId)
-          .first<{ username: string }>();
-        if (target?.username) names.push(target.username);
-      }
-      name = names.join(", ") || "Group chat";
-    }
+    // An unnamed group is titled per viewer from the other members (see groupChatForClient).
+    const name = typeof body.name === "string" ? body.name.trim().slice(0, 48) : "";
 
     const groupId = crypto.randomUUID();
     const createdAt = nowIso();
@@ -105,7 +97,7 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     await env.DB.batch(statements);
 
     await realtimeBroadcast(env, { type: "GROUP_CHAT_UPDATED", groupId }, { userIds: allMemberIds });
-    return json({ group: await groupChatForClient(env, groupId) }, 201);
+    return json({ group: await groupChatForClient(env, groupId, true, user.id) }, 201);
   }
 
   const groupBase = idFromPath(p, /^\/api\/groups\/([^/]+)$/);
@@ -116,7 +108,7 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     if (!(await isGroupChatMember(env.DB, groupId, user.id))) {
       return json({ error: "You are not a member of this group chat." }, 403);
     }
-    const group = await groupChatForClient(env, groupId);
+    const group = await groupChatForClient(env, groupId, true, user.id);
     if (!group) return json({ error: "Group chat not found." }, 404);
     return json({
       group,
@@ -139,9 +131,6 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     const squadRoom = await env.DB.prepare("SELECT hub_id FROM decave_squad_rooms WHERE group_id=?")
       .bind(groupId)
       .first<{ hub_id: number }>();
-    // Group chat messages are text-only (no group upload route), so the only
-    // R2 objects are those of a linked squad-room Hub. Queue them in the same
-    // batch that deletes the Hub so a failed R2 delete stays retryable.
     let squadMediaKeys: string[] = [];
     if (squadRoom) {
       await ensureHubFeatureSchema(env);
@@ -155,13 +144,18 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     ];
     if (squadRoom) {
       statements.unshift(
-        queueHubMediaDeletionStatement(env.DB, squadRoom.hub_id, nowIso()),
+        queueHubMediaDeletionStatement(
+          env.DB,
+          squadRoom.hub_id,
+          nowIso(),
+          "EXISTS(SELECT 1 FROM decave_group_chats WHERE id=? AND owner_user_id=?)",
+          [groupId, user.id],
+        ),
         env.DB.prepare("DELETE FROM decave_hubs WHERE id=?").bind(squadRoom.hub_id),
-        env.DB.prepare("DELETE FROM decave_attachment_access WHERE hub_id=?").bind(squadRoom.hub_id),
       );
     }
     await env.DB.batch(statements);
-    if (squadMediaKeys.length) await attemptQueuedMediaDeletionIfQueued(env, squadMediaKeys);
+    if (squadRoom && squadMediaKeys.length) await attemptQueuedMediaDeletionIfQueued(env, squadMediaKeys);
     await realtimeBroadcast(env, { type: "GROUP_CHAT_REMOVED", groupId, deleted: true }, { userIds: memberIds });
     if (squadRoom) await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { userIds: memberIds });
     return json({ success: true, deleted: true });
@@ -232,6 +226,22 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
       .first<{ id: string }>();
     if (!target) return json({ error: "User not found." }, 404);
 
+    // An encrypted group stays encrypted: someone joining needs a key first.
+    if (dmE2eeEnabled(env)) {
+      const group = await env.DB.prepare("SELECT e2ee_since FROM decave_group_chats WHERE id=?")
+        .bind(groupId)
+        .first<{ e2ee_since: string | null }>();
+      if (group?.e2ee_since && !(await currentDmKey(env.DB, targetId))) {
+        return json(
+          {
+            error: "This group is end-to-end encrypted. Your friend needs to open an up-to-date DeCave first.",
+            code: "DM_E2EE_MEMBER_NO_KEY",
+          },
+          409,
+        );
+      }
+    }
+
     const now = nowIso();
     const addResults = await env.DB.batch([
       // Keep the capacity check in the INSERT write. A separate COUNT()
@@ -264,7 +274,7 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
       { type: "GROUP_CHAT_UPDATED", groupId, addedUserId: targetUser ? publicIdOf(targetUser) : "" },
       { userIds: memberIds },
     );
-    return json({ group: await groupChatForClient(env, groupId) });
+    return json({ group: await groupChatForClient(env, groupId, true, user.id) });
   }
 
   const groupMember = idFromPath(p, /^\/api\/groups\/([^/]+)\/members\/([^/]+)$/);
@@ -321,7 +331,7 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
       { type: "GROUP_CHAT_REMOVED", groupId, userId: targetUser ? publicIdOf(targetUser) : "" },
       { userIds: [...new Set([...beforeIds, ...remainingIds])] },
     );
-    return json({ success: true, group: await groupChatForClient(env, groupId) });
+    return json({ success: true, group: await groupChatForClient(env, groupId, true, user.id) });
   }
 
   return null;

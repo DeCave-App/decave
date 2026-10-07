@@ -96,12 +96,15 @@ export function ReportDialog({ target, request, onClose, onSubmitted }: ReportDi
       if (blockAfter && subjectId) {
         await request(`/api/safety/blocks/${encodeURIComponent(subjectId)}`, { method: "PUT" });
       }
-      setNotice(
-        evidenceAttached
-          ? "Report submitted. Thank you for helping keep DeCave safe."
-          : "Report submitted, but encrypted evidence could not be attached. Your report was still received.",
-      );
-      onSubmitted?.();
+      if (evidenceAttached) {
+        setNotice("Report submitted. Thank you for helping keep DeCave safe.");
+        onSubmitted?.();
+      } else {
+        // Leave the dialog open: closing it would hide this before anyone reads it.
+        setNotice(
+          "Report submitted, but the reported message could not be attached, so the safety team can't read it. You can close this.",
+        );
+      }
     } catch {
       setNotice("Could not connect to DeCave.");
     } finally {

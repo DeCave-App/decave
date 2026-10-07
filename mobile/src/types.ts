@@ -1,3 +1,5 @@
+import type { DmEnvelope } from "@/src/lib/e2ee/dm-e2ee-format";
+import type { DmE2eeMark } from "@/src/lib/e2ee/dm-e2ee-session";
 export type PresenceStatus = "online" | "idle" | "dnd" | "invisible";
 
 export const REPORT_CATEGORIES = [
@@ -128,15 +130,21 @@ export type DirectMessage = {
   id: string;
   fromUserId: string;
   toUserId: string;
+  /** For an encrypted message, the decrypted text (empty until decrypted). */
   text: string;
   timestamp: string;
   replyToId?: string | null;
   reactions?: Record<string, string[]>;
+  envelope?: DmEnvelope | null;
+  /** Set once the message has been through decryption. */
+  e2ee?: DmE2eeMark;
 };
 
 export type DmConversation = {
   user: AccountUser;
   latestMessage: string;
+  latestMessageId?: string;
+  latestEnvelope?: DmEnvelope | null;
   latestTimestamp: string;
 };
 
@@ -151,6 +159,9 @@ export type GroupChatMessage = {
   replyToId?: string | null;
   reactions?: Record<string, string[]>;
   pinned?: boolean;
+  envelope?: DmEnvelope | null;
+  /** Set once the message has been through decryption. */
+  e2ee?: DmE2eeMark;
 };
 
 export type GroupChat = {
@@ -159,8 +170,11 @@ export type GroupChat = {
   ownerUserId: string;
   members: AccountUser[];
   latestMessage: string;
+  latestEnvelope?: DmEnvelope | null;
   latestTimestamp: string;
   memberCount: number;
+  /** Messages are end-to-end encrypted (and stay so). */
+  e2ee?: boolean;
 };
 
 export type ChatMessage = {

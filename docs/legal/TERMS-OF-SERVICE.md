@@ -1,19 +1,18 @@
 # DeCave Terms of Service
 
-**Effective date:** October 5, 2026
-**Last updated:** October 5, 2026
-**Status:** Implementation draft pending controller details, market-specific terms, and approval
-Publication status: Draft.
+- **Effective date:** September 8, 2026
+- **Last updated:** October 6, 2026
+- **Status:** Implementation draft pending legal and deployment review
 
-> Before publishing this document as a final contract, replace **[LEGAL ENTITY
-> NAME]**, **[CONTROLLER/CONTRACTING ADDRESS]**, and **[GOVERNING LAW AND
+> Before publishing this document as a final contract, confirm the contracting
+> party's registered legal name and replace **[CONTROLLER/CONTRACTING ADDRESS]** and **[GOVERNING LAW AND
 > COURTS]**. Confirm the consumer, arbitration, liability, subscription,
 > copyright, age, and jurisdiction terms with qualified counsel for the markets
 > where DeCave will be offered.
 
 These Terms of Service (the **Terms**) are an agreement between you and
-**[LEGAL ENTITY NAME]** ("DeCave", "we", "us", or "our") governing your use
-of the DeCave website, web application, Windows and Mac desktop clients, mobile client,
+**DeCave** ("we", "us", or "our") governing your use
+of the DeCave website, web application, Windows desktop client, mobile client,
 Hubs, rooms, direct messages, voice and video features, screen sharing,
 downloads, and related services (the **Service**).
 
@@ -24,21 +23,12 @@ represent that you have authority to accept these Terms for that organization.
 
 ## 1. Eligibility and accounts
 
-New registrations currently require you to be at least 18 years old. This is
-DeCave's conservative product rule while launch countries and their
-requirements remain undecided; it is not a statement that 18 is the legal
-minimum everywhere. Existing accounts are not retroactively required by this
-signup rule to re-confirm age. Where local law requires a higher minimum age
-or parental authorization, the applicable rule still applies. You are
-responsible for providing accurate information, protecting your password and
-recovery materials, and all activity under your account. Do not share
-credentials or use another person's account without permission.
-
-At registration, you must explicitly accept the current Terms and Privacy
-Policy. The registration record includes the acceptance time and document
-versions; the current versions are `2026-10` for both documents. Registration
-uses a self-attested birth date to derive an age band and eligibility status;
-the exact birth date is not stored.
+DeCave is for adults only. You must be at least 18 years old, or older if the
+law where you live sets a higher age of majority. The Service is not directed to
+anyone under 18. You are responsible for providing accurate information,
+protecting your password and recovery materials, and all activity under your
+account. Do not share credentials or use another person’s account without
+permission.
 
 We may require email verification, human verification, device approval, or
 other security checks. You must promptly update information that is no longer
@@ -115,17 +105,26 @@ may disclose the selected evidence to an authorized safety reviewer.
 
 ## 5. Messages, calls, and encryption
 
-The Service stores message content and attachments in readable form to deliver
-and moderate them. TLS protects web traffic to Cloudflare, and WebRTC media is
-encrypted in transit between participants. DeCave also processes account,
+Direct messages and group chats are end-to-end encrypted once everyone in
+them uses an up-to-date client, and DeCave cannot read them. You are responsible for keeping your
+recovery code: without it or another signed-in device, encrypted messages
+cannot be recovered. The Service stores other message content and attachments
+in readable form to deliver and moderate them. Voice, video and screen sharing
+in calls and voice rooms use DTLS-SRTP between participants' devices through
+Cloudflare TURN relays, which forward encrypted media. A direct call rejects an
+invalid signature, and rejects a missing signature when the peer's key is
+available or pinned. If no peer key is available or pinned, an unsigned
+description may proceed without a visible verification mark. Voice rooms may
+admit unverified participants, who appear without a lock. For an unverified
+participant, a signaling-level interception is not ruled out. TLS protects web
+traffic to Cloudflare.
+DeCave also processes account,
 participant, group, routing, timing, size, delivery, IP/network, and signalling
 metadata. Recipients can copy, screenshot, record, forward, or otherwise
 disclose content they receive.
 
-Voice, camera, and screen-sharing sessions are carried through a relay
-provider (Cloudflare TURN) rather than direct peer-to-peer connections, and
-DeCave does not record them by default. If the relay is unavailable, voice and
-calls may be temporarily unavailable.
+Voice, camera, and screen-sharing media uses Cloudflare TURN relays and is not
+guaranteed to be recorded.
 Participants, operating systems, browsers, network providers, relay providers,
 or capture tools may process or record the session. Do not use the Service for
 emergency or confidential situations requiring a guaranteed private channel.
@@ -150,16 +149,10 @@ with the decision.
 
 ## 7. Optional integrations and third-party services
 
-The Service may link to or display content from Discord, Steam, GIPHY,
-Cloudflare, Expo, Apple, Google, app stores, operating systems,
-game platforms, and other services. A Hub owner can choose to import the
-structure of a public Discord server template; DeCave does not connect a
-Discord account or import private Discord messages. GIPHY media
-is served through a DeCave proxy. Mobile push notifications use Expo's push
-service, which routes delivery through APNs or FCM; Apple CallKit can display
-active voice rooms in iOS system call UI. Those services have their own terms
-and privacy notices. DeCave does not control their availability, security,
-moderation, accuracy, or practices.
+The Service may link to or display content from Steam, GIPHY,
+Cloudflare, app stores, operating systems, game platforms, and other services.
+Those services have their own terms and privacy notices. DeCave does not
+control their availability, security, moderation, accuracy, or practices.
 
 If you connect Steam or enable automatic desktop activity, you authorize the
 selected integration to exchange the information needed for that feature. You
@@ -178,7 +171,7 @@ modify, distribute, publicly perform, or create derivative works from DeCave
 materials except as allowed by law or in writing by us.
 
 If you believe content on the Service infringes your copyright or other rights,
-send a sufficiently detailed notice to **security@example.invalid**. A final
+send a sufficiently detailed notice to **security@de-cave.com**. A final
 copyright-agent name, address, and formal notice process must be added before a
 jurisdiction-specific notice is relied on.
 
@@ -205,11 +198,10 @@ operating system, network connection, and permissions.
 
 ## 11. Suspension, termination, and account deletion
 
-You may stop using the Service and request account deletion in the app. A
-self-service deletion request is scheduled for completion after a 30-day
-grace period; an authorized administrator can execute an immediate erasure.
-We may suspend or terminate access for a breach of these Terms, security or
-safety risk, legal requirement, extended inactivity, or operational reasons.
+You may stop using the Service and request account deletion through the
+available account controls or by contacting **security@de-cave.com**. We may
+suspend or terminate access for a breach of these Terms, security or safety
+risk, legal requirement, extended inactivity, or operational reasons.
 
 After account erasure, the current process removes channel messages authored
 by the account and direct-message rows involving it. It deletes legacy
@@ -270,7 +262,7 @@ which DeCave operates:
 **Governing law and courts:** [GOVERNING LAW AND COURTS]  
 **Required informal-resolution or arbitration language:** [INSERT AFTER LEGAL REVIEW]
 
-Before bringing a formal claim, contact **security@example.invalid** with a clear
+Before bringing a formal claim, contact **security@de-cave.com** with a clear
 description of the issue and the relief requested. This informal step does not
 limit a non-waivable right to contact a regulator, bring a statutory consumer
 claim, or seek urgent relief where applicable law permits.
@@ -295,7 +287,7 @@ Service, except for written terms that expressly supplement them.
 
 ## 18. Contact
 
-**General support:** support@de-cave.com  
-**Legal, privacy, and security:** security@example.invalid  
-**Legal entity:** [LEGAL ENTITY NAME]  
-**Address:** [CONTROLLER/CONTRACTING ADDRESS]
+- **General support:** support@de-cave.com
+- **Legal, privacy, and security:** security@de-cave.com
+- **Legal entity:** DeCave
+- **Address:** [CONTROLLER/CONTRACTING ADDRESS]

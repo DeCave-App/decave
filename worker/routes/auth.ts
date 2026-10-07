@@ -203,7 +203,7 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
     const email = validateEmail(body.email);
     const username = validateUsername(body.username);
     const password = validatePassword(body.password);
-    const ageProfile = deriveAgeProfile(body.birthDate, new Date(), MINIMUM_SIGNUP_AGE);
+    const ageProfile = deriveAgeProfile(body.birthDate, new Date());
     if (!email) return json({ error: "Enter a valid email address" }, 400);
     if (!username) return json({ error: "Username must be 3-24 characters using letters, numbers, _, . or -" }, 400);
     if (!password) return json({ error: "Password must be 10-128 characters" }, 400);
@@ -250,8 +250,8 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
     const inserted = await env.DB.prepare(
       `INSERT INTO decave_users
          (id, public_id, username, password_salt, password_hash, created_at, email, email_normalized,
-          requires_email_verification, terms_accepted_at, terms_version, privacy_version)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+          requires_email_verification, terms_accepted_at, terms_version, privacy_version, activity_visibility)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, 'friends')`,
     )
       .bind(id, publicId, username, salt, hash, createdAt, email, email, createdAt, TERMS_VERSION, PRIVACY_VERSION)
       .run()

@@ -31,10 +31,12 @@ type Props = {
   baseUrl: string;
   authorizedFetch: (url: string, init?: RequestInit) => Promise<Response>;
   onDownload: () => void;
+  /** Decrypts an end-to-end encrypted image after download. */
+  decrypt?: ((bytes: Uint8Array) => Uint8Array) | null;
 };
 
 /** A photo inside a message: loads when scrolled into view, opens full size on click. */
-export function InlineImage({ attachment, baseUrl, authorizedFetch, onDownload }: Props) {
+export function InlineImage({ attachment, baseUrl, authorizedFetch, onDownload, decrypt }: Props) {
   const key = attachment.url;
   const [src, setSrc] = useState<string | null>(() => cache.get(key) ?? null);
   const [failed, setFailed] = useState(false);
@@ -53,11 +55,17 @@ export function InlineImage({ attachment, baseUrl, authorizedFetch, onDownload }
           method: "GET",
           cache: "force-cache",
           redirect: "error",
-          headers: { Accept: attachment.mimeType },
+          headers: { Accept: decrypt ? "application/octet-stream" : attachment.mimeType },
         });
         if (!response.ok) throw new Error(String(response.status));
-        const body = await readBoundedLegacyAttachmentBody(response, INLINE_IMAGE_MAX_BYTES);
-        const objectUrl = URL.createObjectURL(new Blob([body.buffer as ArrayBuffer], { type: attachment.mimeType }));
+        // An encrypted file is 16 bytes longer than the image (the authentication tag).
+        const downloaded = await readBoundedLegacyAttachmentBody(response, INLINE_IMAGE_MAX_BYTES + (decrypt ? 16 : 0));
+        const body = decrypt ? decrypt(downloaded) : downloaded;
+        const objectUrl = URL.createObjectURL(
+          new Blob([body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer], {
+            type: attachment.mimeType,
+          }),
+        );
         if (cancelled) {
           URL.revokeObjectURL(objectUrl);
           return;

@@ -1,5 +1,8 @@
 // Data shapes shared by the app shell (App.tsx) and its helper modules.
 
+import type { DmEnvelope } from "../../shared/dm-e2ee-format";
+import type { DmFileKey } from "../../shared/dm-e2ee";
+import type { DmE2eeMark } from "../../shared/dm-e2ee-session";
 import type { IconName } from "../components/Icon";
 import type { HubLayout } from "../../shared/streamer-mode";
 import type { ExtraSettings, NotifyLevels } from "../features/settings";
@@ -197,6 +200,8 @@ export type AttachmentMeta = {
   mimeType: string;
   size: number;
   url: string;
+  /** Present when the file was encrypted before upload (end-to-end encrypted DMs). */
+  fileKey?: DmFileKey;
 };
 
 export type ChatMessage = {
@@ -267,15 +272,23 @@ export type DirectMessage = {
   id: string;
   fromUserId: string;
   toUserId: string;
+  /** For an encrypted message, the decrypted text (empty until decrypted). */
   text: string;
   timestamp: string;
   replyToId?: string | null;
   reactions?: Record<string, string[]>;
+  /** Encrypted reactions, merged into `reactions` once decrypted. */
+  reactionEnvelopes?: DmEnvelope[] | null;
+  envelope?: DmEnvelope | null;
+  /** Set once the message has been through decryption. */
+  e2ee?: DmE2eeMark;
 };
 
 export type DmConversation = {
   user: SocialUser;
   latestMessage: string;
+  latestMessageId?: string;
+  latestEnvelope?: DmEnvelope | null;
   latestTimestamp: string;
 };
 
@@ -295,6 +308,9 @@ export type GroupChatMessage = {
   editedAt?: string | null;
   replyToId?: string | null;
   reactions?: Record<string, string[]>;
+  envelope?: DmEnvelope | null;
+  /** Set once the message has been through decryption. */
+  e2ee?: DmE2eeMark;
 };
 
 export type GroupChat = {
@@ -303,8 +319,11 @@ export type GroupChat = {
   ownerUserId: string;
   members: SocialUser[];
   latestMessage: string;
+  latestEnvelope?: DmEnvelope | null;
   latestTimestamp: string;
   memberCount: number;
+  /** Messages are end-to-end encrypted (and stay so). */
+  e2ee?: boolean;
 };
 
 export type DmNotice = {
@@ -397,8 +416,6 @@ export type DetectedDesktopGame = {
   source: "steam" | "epic";
   gameName: string;
   appId: string;
-  executable: string;
-  processId: number;
   startedAt: string | null;
   iconDataUrl?: string;
 };
@@ -445,7 +462,6 @@ export type VoiceMiniPlayerPosition = { x: number; y: number };
 export type VoiceMiniDragState = { pointerId: number; offsetX: number; offsetY: number; moved: boolean };
 
 export type AccountPreferences = {
-  phoneNumber: string;
   usernameChangedAt: string | null;
   usernameChangeAvailableAt: string | null;
   friendRequestPolicy: FriendRequestPolicy;

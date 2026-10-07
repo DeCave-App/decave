@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { CallVerificationMark } from "../e2ee/DmEncryptionUi";
+import { callDescriptionAuth, checkCallDescription, clearCallVerdict } from "../e2ee/call-verification";
 import { DESKTOP_VOICE_JOIN_TIMEOUT_MS } from "../voice/desktop-voice-reliability";
-import { hasUsableRelayIceServers } from "../../shared/rtc-relay";
-import { CALL_RELAY_UNAVAILABLE_MESSAGE } from "../app/voice";
 import {
   applyVoiceCodecPreferences,
   applyVoiceSenderParameters,
   VOICE_OPUS_BITRATE,
   withVoiceOpusBitrate,
 } from "../voice/voice-transport";
+import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "../voice/relay-policy";
 import { Icon } from "./Icon";
 import "./DirectCallOverlay.css";
 import type { RealtimeFrame, RealtimeSendWindow } from "../realtime/connection";
@@ -25,8 +26,6 @@ type DirectCallOverlayProps = {
   acquireMicrophone: () => Promise<DirectCallMicrophoneLease>;
   onOverlayChange?: (open: boolean) => void;
 };
-
-const fallbackIce: IceServer[] = [];
 
 function send(payload: Record<string, unknown>) {
   return (window as RealtimeSendWindow).__decaveRealtimeSend?.(payload) === true;
@@ -96,7 +95,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
   const microphoneLeaseRef = useRef<DirectCallMicrophoneLease | null>(null);
   const unsubscribeMicrophoneRef = useRef<(() => void) | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
-  const iceRef = useRef<IceServer[]>(fallbackIce);
+  const iceRef = useRef<IceServer[]>([]);
   const pendingIceRef = useRef<RTCIceCandidateInit[]>([]);
   const remoteDescriptionPendingRef = useRef(false);
   const connectedAtRef = useRef<number | null>(null);
@@ -162,6 +161,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
   };
 
   const reset = (keepError = false, keepPeer = false) => {
+    clearCallVerdict();
     clearCallTimeout();
     closePc();
     stopMedia();
@@ -181,14 +181,16 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
   const loadIce = async (): Promise<boolean> => {
     try {
       const iceServers = await loadIceServers();
-      if (!hasUsableRelayIceServers(iceServers)) throw new Error(CALL_RELAY_UNAVAILABLE_MESSAGE);
+      if (!Array.isArray(iceServers) || iceServers.length === 0)
+        throw new Error("No approved ICE configuration is available.");
+      // Calls are relay-only: without a TURN server no connection can ever
+      // form, so refuse up front instead of ringing into a call that hangs.
+      if (!hasRelayIceServer(iceServers)) throw new Error(RELAY_UNAVAILABLE_MESSAGE);
       iceRef.current = iceServers;
       return true;
     } catch (cause) {
-      // Calls are relay-only; never fall back to a direct connection that would expose IPs.
-      console.warn("Direct call relay unavailable", cause);
       iceRef.current = [];
-      setError(CALL_RELAY_UNAVAILABLE_MESSAGE);
+      setError(cause instanceof Error ? cause.message : "Calls are unavailable.");
       return false;
     }
   };
@@ -265,7 +267,8 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
 
   const ensurePc = (participant: Peer) => {
     if (pcRef.current) return pcRef.current;
-    if (!hasUsableRelayIceServers(iceRef.current)) throw new Error(CALL_RELAY_UNAVAILABLE_MESSAGE);
+    // Relay-only: peers never exchange host/srflx candidates, so neither side
+    // learns the other's IP address.
     const pc = new RTCPeerConnection({ iceServers: iceRef.current, iceTransportPolicy: "relay" });
     pcRef.current = pc;
     for (const track of localStreamRef.current?.getTracks() ?? []) {
@@ -285,7 +288,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
       }
     }
     pc.onicecandidate = (event) => {
-      if (!event.candidate) return;
+      if (!event.candidate || !isRelayIceCandidate(event.candidate)) return;
       send({
         type: "RTC_ICE_CANDIDATE",
         targetConnectionId: participant.connectionId,
@@ -300,9 +303,8 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
         if (!combined.getTracks().some((track) => track.id === event.track.id)) combined.addTrack(event.track);
         return combined;
       });
-      if (connectedAtRef.current === null) connectedAtRef.current = Date.now();
-      clearCallTimeout();
-      setCallPhase("connected");
+      // A remote track arrives with the answer, before any media can flow, so
+      // "connected" (and the call timer) waits for the connection state below.
     };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "connected") {
@@ -329,6 +331,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
       type: "RTC_DESCRIPTION",
       targetConnectionId: participant.connectionId,
       description: { type: pc.localDescription.type, sdp: pc.localDescription.sdp },
+      ...callDescriptionAuth(participant.userId, pc.localDescription.sdp),
     });
   };
 
@@ -504,6 +507,23 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
         void (async () => {
           if (!(await ensureMedia(videoRef.current))) return;
           const participant = data.from as Peer;
+          // Direct calls are strict: with a friend who has a key, the connection must be
+          // signed by it, or it could be the server in the middle.
+          // Remembered under one key: there is one direct call at a time.
+          const verdict = await checkCallDescription(
+            { connectionId: "direct-call", userId: participant.userId },
+            data.description as RTCSessionDescriptionInit,
+            data.auth,
+            true,
+          );
+          if (verdict === "rejected") {
+            send({ type: "DM_CALL_END" });
+            setError(
+              "This call couldn't be verified as end-to-end encrypted, so it wasn't connected. Both of you need an up-to-date DeCave that can read encrypted messages.",
+            );
+            reset(true, true);
+            return;
+          }
           const pc = ensurePc(participant);
           remoteDescriptionPendingRef.current = true;
           await pc.setRemoteDescription(
@@ -523,6 +543,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
         return;
       }
       if (data.type === "RTC_ICE_CANDIDATE" && phaseRef.current !== "idle" && data.candidate) {
+        if (!isRelayIceCandidate(data.candidate)) return;
         const pc = pcRef.current;
         if (!pc?.remoteDescription || remoteDescriptionPendingRef.current) {
           if (pendingIceRef.current.length >= 128) pendingIceRef.current.shift();
@@ -540,7 +561,9 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
         reset(true, true);
         return;
       }
-      if (data.type === "DM_CALL_ENDED") reset();
+      // Already ended here (for example a call refused for failing its encryption
+      // check): the server's confirmation must not wipe the explanation.
+      if (data.type === "DM_CALL_ENDED" && phaseRef.current !== "idle") reset();
     };
     window.addEventListener("decave-direct-call-start", startListener as EventListener);
     window.addEventListener("decave-realtime-event", realtimeListener as EventListener);
@@ -646,7 +669,10 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
           </button>
         )}
         <span className="ds-kicker">{video ? "Video call" : "Voice call"}</span>
-        <h2 className="direct-call-title">{peerName}</h2>
+        <h2 className="direct-call-title">
+          {peerName}
+          {live && <CallVerificationMark connectionId="direct-call" />}
+        </h2>
         <div className={`direct-call-status${phase === "idle" && error ? " ds-text-danger" : ""}`}>{status}</div>
         {video && phase !== "incoming" && (
           <div className="direct-call-video">

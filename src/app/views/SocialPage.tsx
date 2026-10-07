@@ -1,7 +1,15 @@
 // Messages and Friends: conversation list, the open DM or group chat, and the Friends view.
 
 import type { Dispatch, SetStateAction, MutableRefObject, JSX } from "react";
+import { Fragment } from "react";
 import { Icon } from "../../components/Icon";
+import {
+  DmEncryptionBadge,
+  DmEncryptionDivider,
+  DmEncryptionNotice,
+  GroupEncryptionBadge,
+} from "../../e2ee/DmEncryptionUi";
+import { dmE2ee } from "../../e2ee/dm-e2ee-client";
 import type { SafetyReportTarget } from "../../safety/types";
 import { ComposerPlusMenu } from "../../features/hub-sidebar/ComposerPlusMenu";
 import type {
@@ -462,6 +470,7 @@ export function SocialPage({
                         </small>
                       </div>
                       <div className="dc-dm-head-actions">
+                        <GroupEncryptionBadge group={activeGroupChat} />
                         {
                           <button
                             type="button"
@@ -494,92 +503,99 @@ export function SocialPage({
                       {groupMessages.length === 0 ? (
                         <div className="dc-dm-empty-reference">This is the beginning of {activeGroupChat.name}.</div>
                       ) : (
-                        groupMessages.map((message) => {
+                        groupMessages.map((message, index) => {
                           const mine = message.fromUserId === currentUser?.id;
+                          // Where history switches from pre-encryption messages to encrypted ones.
+                          const encryptionStarts =
+                            index > 0 &&
+                            message.e2ee !== undefined &&
+                            message.e2ee !== "plaintext" &&
+                            groupMessages[index - 1].e2ee === "plaintext";
                           const canDelete = mine || activeGroupChat.ownerUserId === currentUser?.id;
                           const replyTarget = message.replyToId
                             ? groupMessages.find((candidate) => candidate.id === message.replyToId)
                             : null;
                           return (
-                            <div
-                              key={message.id}
-                              className="chat-message group-chat-message"
-                              data-message-id={message.id}
-                            >
-                              <div className="message-avatar-context">
-                                <UserAvatar
-                                  username={mine ? (currentUser?.username ?? "You") : message.username}
-                                  avatarUrl={mine ? currentUser?.avatarUrl : message.avatarUrl}
-                                  className="message-avatar"
-                                />
-                              </div>
-                              <div className="chat-message-content">
-                                <div className="chat-message-header">
-                                  <strong>{mine ? "You" : message.username}</strong>
-                                  <span>{formatTimestamp(message.timestamp)}</span>
+                            <Fragment key={message.id}>
+                              {encryptionStarts && <DmEncryptionDivider />}
+                              <div className="chat-message group-chat-message" data-message-id={message.id}>
+                                <div className="message-avatar-context">
+                                  <UserAvatar
+                                    username={mine ? (currentUser?.username ?? "You") : message.username}
+                                    avatarUrl={mine ? currentUser?.avatarUrl : message.avatarUrl}
+                                    className="message-avatar"
+                                  />
                                 </div>
-                                {message.replyToId && (
-                                  <button
-                                    type="button"
-                                    className="chat-reply-ref"
-                                    onClick={() => scrollToMessage(message.replyToId!)}
-                                  >
-                                    ↳ Reply to{" "}
-                                    {replyTarget
-                                      ? `${replyTarget.username}: ${replyPreviewText(replyTarget.text)}`
-                                      : "message"}
-                                  </button>
-                                )}
-                                <div className="chat-message-text">{renderGroupMessageBody(message)}</div>
-                                <div
-                                  className="chat-message-hover-actions group-chat-message-actions"
-                                  style={{ display: undefined }}
-                                >
-                                  <button
-                                    type="button"
-                                    title="Reply"
-                                    aria-label="Reply"
-                                    onClick={() => setGroupReplyingTo(message)}
-                                  >
-                                    <Icon name="message" />
-                                  </button>
-                                  {!mine && (
+                                <div className="chat-message-content">
+                                  <div className="chat-message-header">
+                                    <strong>{mine ? "You" : message.username}</strong>
+                                    <span>{formatTimestamp(message.timestamp)}</span>
+                                  </div>
+                                  {message.replyToId && (
                                     <button
                                       type="button"
-                                      onClick={() =>
-                                        openSafetyReport({
-                                          targetType: "message",
-                                          targetId: message.id,
-                                          subjectUserId: message.fromUserId,
-                                          subjectUsername: message.username,
-                                          contextType: "group",
-                                          contextId: activeGroupChat.id,
-                                          contextLabel: activeGroupChat.name,
-                                          evidenceType: "message",
-                                          evidenceText: message.text,
-                                          evidenceLabel: `${message.username}'s group message`,
-                                        })
-                                      }
-                                      title="Report"
-                                      aria-label="Report message"
+                                      className="chat-reply-ref"
+                                      onClick={() => scrollToMessage(message.replyToId!)}
                                     >
-                                      <Icon name="flag" />
+                                      ↳ Reply to{" "}
+                                      {replyTarget
+                                        ? `${replyTarget.username}: ${replyPreviewText(replyTarget.text)}`
+                                        : "message"}
                                     </button>
                                   )}
-                                  {canDelete && (
+                                  <div className="chat-message-text">{renderGroupMessageBody(message)}</div>
+                                  <div
+                                    className="chat-message-hover-actions group-chat-message-actions"
+                                    style={{ display: undefined }}
+                                  >
                                     <button
                                       type="button"
-                                      className="danger"
-                                      onClick={() => void deleteGroupMessage(message)}
-                                      title={mine ? "Delete your message" : "Delete message as group owner"}
-                                      aria-label="Delete message"
+                                      title="Reply"
+                                      aria-label="Reply"
+                                      onClick={() => setGroupReplyingTo(message)}
                                     >
-                                      <Icon name="trash" />
+                                      <Icon name="message" />
                                     </button>
-                                  )}
+                                    {!mine && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          openSafetyReport({
+                                            targetType: "message",
+                                            targetId: message.id,
+                                            subjectUserId: message.fromUserId,
+                                            subjectUsername: message.username,
+                                            contextType: "group",
+                                            contextId: activeGroupChat.id,
+                                            contextLabel: activeGroupChat.name,
+                                            evidenceType: "message",
+                                            evidenceText: message.text,
+                                            evidenceLabel: `${message.username}'s group message`,
+                                            // Lets the safety team check an encrypted message really was sent.
+                                            e2eeProof: dmE2ee.reportProof(message, "group") ?? undefined,
+                                          })
+                                        }
+                                        title="Report"
+                                        aria-label="Report message"
+                                      >
+                                        <Icon name="flag" />
+                                      </button>
+                                    )}
+                                    {canDelete && (
+                                      <button
+                                        type="button"
+                                        className="danger"
+                                        onClick={() => void deleteGroupMessage(message)}
+                                        title={mine ? "Delete your message" : "Delete message as group owner"}
+                                        aria-label="Delete message"
+                                      >
+                                        <Icon name="trash" />
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            </Fragment>
                           );
                         })
                       )}
@@ -693,6 +709,7 @@ export function SocialPage({
                         </small>
                       </div>
                       <div className="dc-dm-head-actions">
+                        <DmEncryptionBadge peer={activeDmUser} />
                         <button
                           type="button"
                           className={`dc-dm-head-action ${dmPreferences[activeDmUser.id]?.favorite ? "active" : ""}`}
@@ -777,6 +794,8 @@ export function SocialPage({
                       )}
                     </div>
 
+                    <DmEncryptionNotice peer={activeDmUser} />
+
                     <div ref={dmMessageListRef} className="dc-dm-message-area messages">
                       {olderHistory.dm && (
                         <button
@@ -792,8 +811,11 @@ export function SocialPage({
                       {dmMessages.length === 0 ? (
                         <div className="dc-dm-empty-reference">This is the beginning of your private conversation.</div>
                       ) : (
-                        dmMessages.map((message) => {
+                        dmMessages.map((message, index) => {
                           const mine = message.fromUserId === currentUser?.id;
+                          // Where history switches from pre-encryption messages to encrypted ones.
+                          const encryptionStarts =
+                            index > 0 && message.e2ee !== "plaintext" && dmMessages[index - 1].e2ee === "plaintext";
                           const editing = dmEditingId === message.id;
                           const replyTarget = message.replyToId
                             ? dmMessages.find((candidate) => candidate.id === message.replyToId)
@@ -804,165 +826,170 @@ export function SocialPage({
                               : activeDmUser.username
                             : "message";
                           return (
-                            <div key={message.id} className="chat-message" data-message-id={message.id}>
-                              <div className="message-avatar-context">
-                                <UserAvatar
-                                  username={mine ? (currentUser?.username ?? "You") : activeDmUser.username}
-                                  avatarUrl={mine ? currentUser?.avatarUrl : activeDmUser.avatarUrl}
-                                  className="message-avatar"
-                                />
-                              </div>
-                              <div className="chat-message-content">
-                                <div className="chat-message-header">
-                                  <strong>{mine ? "You" : activeDmUser.username}</strong>
-                                  <span>{formatTimestamp(message.timestamp)}</span>
+                            <Fragment key={message.id}>
+                              {encryptionStarts && <DmEncryptionDivider />}
+                              <div className="chat-message" data-message-id={message.id}>
+                                <div className="message-avatar-context">
+                                  <UserAvatar
+                                    username={mine ? (currentUser?.username ?? "You") : activeDmUser.username}
+                                    avatarUrl={mine ? currentUser?.avatarUrl : activeDmUser.avatarUrl}
+                                    className="message-avatar"
+                                  />
                                 </div>
-                                {message.replyToId && (
-                                  <button
-                                    type="button"
-                                    className="chat-reply-ref"
-                                    onClick={() => scrollToMessage(message.replyToId!)}
-                                  >
-                                    ↳ Reply to{" "}
-                                    {replyTarget
-                                      ? `${replyTargetName}: ${replyPreviewText(replyTarget.text)}`
-                                      : "message"}
-                                  </button>
-                                )}
-                                {editing ? (
-                                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 6 }}>
-                                    <input
-                                      className="dc-ref-input"
-                                      value={dmEditingText}
-                                      onChange={(event) => setDmEditingText(event.target.value)}
-                                      onKeyDown={(event) => {
-                                        if (event.key === "Enter") void saveEditedDirectMessage();
-                                        if (event.key === "Escape") {
+                                <div className="chat-message-content">
+                                  <div className="chat-message-header">
+                                    <strong>{mine ? "You" : activeDmUser.username}</strong>
+                                    <span>{formatTimestamp(message.timestamp)}</span>
+                                  </div>
+                                  {message.replyToId && (
+                                    <button
+                                      type="button"
+                                      className="chat-reply-ref"
+                                      onClick={() => scrollToMessage(message.replyToId!)}
+                                    >
+                                      ↳ Reply to{" "}
+                                      {replyTarget
+                                        ? `${replyTargetName}: ${replyPreviewText(replyTarget.text)}`
+                                        : "message"}
+                                    </button>
+                                  )}
+                                  {editing ? (
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 6 }}>
+                                      <input
+                                        className="dc-ref-input"
+                                        value={dmEditingText}
+                                        onChange={(event) => setDmEditingText(event.target.value)}
+                                        onKeyDown={(event) => {
+                                          if (event.key === "Enter") void saveEditedDirectMessage();
+                                          if (event.key === "Escape") {
+                                            setDmEditingId(null);
+                                            setDmEditingText("");
+                                          }
+                                        }}
+                                        autoFocus
+                                      />
+                                      <button
+                                        type="button"
+                                        className="ds-btn ds-btn-primary ds-icon-btn ds-btn-sm"
+                                        title="Save edit"
+                                        aria-label="Save edit"
+                                        onClick={() => void saveEditedDirectMessage()}
+                                      >
+                                        <Icon name="check" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="ds-btn ds-btn-ghost ds-icon-btn ds-btn-sm"
+                                        title="Cancel edit"
+                                        aria-label="Cancel edit"
+                                        onClick={() => {
                                           setDmEditingId(null);
                                           setDmEditingText("");
-                                        }
-                                      }}
-                                      autoFocus
-                                    />
-                                    <button
-                                      type="button"
-                                      className="ds-btn ds-btn-primary ds-icon-btn ds-btn-sm"
-                                      title="Save edit"
-                                      aria-label="Save edit"
-                                      onClick={() => void saveEditedDirectMessage()}
-                                    >
-                                      <Icon name="check" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="ds-btn ds-btn-ghost ds-icon-btn ds-btn-sm"
-                                      title="Cancel edit"
-                                      aria-label="Cancel edit"
-                                      onClick={() => {
-                                        setDmEditingId(null);
-                                        setDmEditingText("");
-                                      }}
-                                    >
-                                      <Icon name="close" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="chat-message-text">{renderDmMessageBody(message)}</div>
-                                )}
-                                <div className="chat-message-reactions">
-                                  {Object.entries(message.reactions ?? {}).map(([emoji, users]) =>
-                                    users.length > 0 && !emoji.startsWith("poll_") ? (
-                                      <button
-                                        key={emoji}
-                                        type="button"
-                                        className="chat-reaction-pill"
-                                        onClick={() => void sendDmReaction(message, emoji)}
+                                        }}
                                       >
-                                        {emoji} {users.length}
+                                        <Icon name="close" />
                                       </button>
-                                    ) : null,
+                                    </div>
+                                  ) : (
+                                    <div className="chat-message-text">{renderDmMessageBody(message)}</div>
                                   )}
-                                </div>
-                                {!editing && (
-                                  <div
-                                    className="chat-message-hover-actions dm-chat-message-actions"
-                                    style={{ display: undefined }}
-                                  >
-                                    <div className="message-reaction-picker-anchor">
+                                  <div className="chat-message-reactions">
+                                    {Object.entries(message.reactions ?? {}).map(([emoji, users]) =>
+                                      users.length > 0 && !emoji.startsWith("poll_") ? (
+                                        <button
+                                          key={emoji}
+                                          type="button"
+                                          className="chat-reaction-pill"
+                                          onClick={() => void sendDmReaction(message, emoji)}
+                                        >
+                                          {emoji} {users.length}
+                                        </button>
+                                      ) : null,
+                                    )}
+                                  </div>
+                                  {!editing && (
+                                    <div
+                                      className="chat-message-hover-actions dm-chat-message-actions"
+                                      style={{ display: undefined }}
+                                    >
+                                      <div className="message-reaction-picker-anchor">
+                                        <button
+                                          type="button"
+                                          className="reaction-action-button"
+                                          title="Add reaction"
+                                          aria-label="Add reaction"
+                                          onClick={(event) => toggleMessageReactionPicker(message.id, event)}
+                                        >
+                                          <Icon name="smile" />
+                                        </button>
+                                        {renderMessageReactionPicker(
+                                          message.id,
+                                          (emoji) => void sendDmReaction(message, emoji),
+                                        )}
+                                      </div>
                                       <button
                                         type="button"
-                                        className="reaction-action-button"
-                                        title="Add reaction"
-                                        aria-label="Add reaction"
-                                        onClick={(event) => toggleMessageReactionPicker(message.id, event)}
+                                        title="Reply"
+                                        aria-label="Reply"
+                                        onClick={() => {
+                                          setDmEditingId(null);
+                                          setDmEditingText("");
+                                          setDmReplyingTo(message);
+                                        }}
                                       >
-                                        <Icon name="smile" />
+                                        <Icon name="message" />
                                       </button>
-                                      {renderMessageReactionPicker(
-                                        message.id,
-                                        (emoji) => void sendDmReaction(message, emoji),
+                                      {!mine && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            openSafetyReport({
+                                              targetType: "message",
+                                              targetId: message.id,
+                                              subjectUserId: activeDmUser.id,
+                                              subjectUsername: activeDmUser.username,
+                                              contextType: "dm",
+                                              contextId: [currentUser.id, activeDmUser.id].sort().join(":"),
+                                              contextLabel: `Private conversation with ${activeDmUser.username}`,
+                                              evidenceType: "message",
+                                              evidenceText: message.text,
+                                              evidenceLabel: `${activeDmUser.username}'s private message`,
+                                              // Lets the safety team check an encrypted message was really sent.
+                                              e2eeProof: dmE2ee.reportProof(message) ?? undefined,
+                                            })
+                                          }
+                                          title="Report"
+                                          aria-label="Report message"
+                                        >
+                                          <Icon name="flag" />
+                                        </button>
+                                      )}
+                                      {mine && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            title="Edit"
+                                            aria-label="Edit message"
+                                            onClick={() => startEditDirectMessage(message)}
+                                          >
+                                            <Icon name="edit" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="danger"
+                                            title="Delete"
+                                            aria-label="Delete message"
+                                            onClick={() => setDmDeleteConfirm(message)}
+                                          >
+                                            <Icon name="trash" />
+                                          </button>
+                                        </>
                                       )}
                                     </div>
-                                    <button
-                                      type="button"
-                                      title="Reply"
-                                      aria-label="Reply"
-                                      onClick={() => {
-                                        setDmEditingId(null);
-                                        setDmEditingText("");
-                                        setDmReplyingTo(message);
-                                      }}
-                                    >
-                                      <Icon name="message" />
-                                    </button>
-                                    {!mine && (
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          openSafetyReport({
-                                            targetType: "message",
-                                            targetId: message.id,
-                                            subjectUserId: activeDmUser.id,
-                                            subjectUsername: activeDmUser.username,
-                                            contextType: "dm",
-                                            contextId: [currentUser.id, activeDmUser.id].sort().join(":"),
-                                            contextLabel: `Private conversation with ${activeDmUser.username}`,
-                                            evidenceType: "message",
-                                            evidenceText: message.text,
-                                            evidenceLabel: `${activeDmUser.username}'s private message`,
-                                          })
-                                        }
-                                        title="Report"
-                                        aria-label="Report message"
-                                      >
-                                        <Icon name="flag" />
-                                      </button>
-                                    )}
-                                    {mine && (
-                                      <>
-                                        <button
-                                          type="button"
-                                          title="Edit"
-                                          aria-label="Edit message"
-                                          onClick={() => startEditDirectMessage(message)}
-                                        >
-                                          <Icon name="edit" />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="danger"
-                                          title="Delete"
-                                          aria-label="Delete message"
-                                          onClick={() => setDmDeleteConfirm(message)}
-                                        >
-                                          <Icon name="trash" />
-                                        </button>
-                                      </>
-                                    )}
-                                  </div>
-                                )}
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            </Fragment>
                           );
                         })
                       )}

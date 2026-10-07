@@ -242,7 +242,7 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
           .all<{ channel_id: number; n: number }>();
         for (const row of counts.results) threadCounts.set(Number(row.channel_id), Number(row.n));
       } catch (error) {
-        console.warn("Hub preview: forum counts unavailable", error);
+        console.warn("Hub preview: forum counts unavailable", error instanceof Error ? error.name : "UnknownError");
       }
     }
     const voiceCounts = hidePeople ? new Map<number, number>() : await voiceCountsForRooms(env, voiceIds);
@@ -262,7 +262,7 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
         nextEvent = { title: event.title, startsAt: Number(event.starts_at), going: Number(going?.n ?? 0) };
       }
     } catch (error) {
-      console.warn("Hub preview: events unavailable", error);
+      console.warn("Hub preview: events unavailable", error instanceof Error ? error.name : "UnknownError");
     }
     const signals = hidePeople ? null : await discoverSignals(env, user.id, [hubId]);
     const friendNames = signals?.friends.get(hubId) ?? [];

@@ -38,7 +38,6 @@ export function usePreferencesState() {
   const [accountPreferences, setAccountPreferences] = useState<AccountPreferences>(() => {
     const local = loadLanguageTimePreferences();
     return {
-      phoneNumber: "",
       usernameChangedAt: null,
       usernameChangeAvailableAt: null,
       friendRequestPolicy: "everyone",

@@ -16,6 +16,7 @@ import { handleSoundboardRoutes } from "./soundboard";
 import { handleSquadFinderRoutes } from "./squad";
 import { handleGroupChatRoutes } from "./group-chats";
 import { handleDirectMessageRoutes } from "./direct-messages";
+import { handleDmKeyRoutes } from "./dm-keys";
 import { handleFeedbackRoutes } from "./feedback";
 import { handleHubListRoutes, handleHubRoutes } from "./hubs";
 import { handleHubImportRoutes } from "./hub-import";
@@ -46,6 +47,7 @@ export const API_ROUTES: ApiRouteHandler[] = [
   handleFriendRoutes,
   handleSquadFinderRoutes,
   handleGroupChatRoutes,
+  handleDmKeyRoutes,
   handleDirectMessageRoutes,
   handleFeedbackRoutes,
   handleHubListRoutes,

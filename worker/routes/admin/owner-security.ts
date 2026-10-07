@@ -8,13 +8,12 @@ import {
   ownerRandomMfaSecret,
   ownerEncryptMfa,
   ownerDecryptMfa,
-  ownerMatchingTotpStep,
+  ownerVerifyTotp,
   ownerRecoveryCode,
   ownerVerifyMfaOrRecovery,
   ownerRequireReauth,
 } from "../../lib/mfa";
 import { verifyPassword, nowIso, tokenHash, createRawToken } from "../../db";
-import { securityEventIpHash } from "../../lib/sessions";
 import type { ApiContext } from "../context";
 
 export async function handleOwnerSecurityRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
@@ -71,7 +70,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
     const replaceEnabled = Boolean(existing?.enabled_at);
     const setupMutation = replaceEnabled
       ? env.DB.prepare(
-          `UPDATE decave_owner_mfa SET secret_ciphertext=?,enabled_at=NULL,last_totp_step=NULL,updated_at=?
+          `UPDATE decave_owner_mfa SET secret_ciphertext=?,enabled_at=NULL,updated_at=?
            WHERE user_id=? AND secret_ciphertext=? AND enabled_at=?
              AND EXISTS(SELECT 1 FROM decave_users WHERE id=? AND platform_role='owner')`,
         ).bind(encrypted, now, owner.id, existing!.secret_ciphertext, existing!.enabled_at, owner.id)
@@ -81,7 +80,6 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
            ON CONFLICT(user_id) DO UPDATE SET
              secret_ciphertext=excluded.secret_ciphertext,
              enabled_at=NULL,
-             last_totp_step=NULL,
              updated_at=excluded.updated_at
            WHERE decave_owner_mfa.enabled_at IS NULL`,
         ).bind(owner.id, encrypted, now, now, owner.id);
@@ -131,8 +129,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
       .first<{ secret_ciphertext: string }>();
     if (!row) return json({ error: "Start MFA setup first" }, 409);
     const secret = await ownerDecryptMfa(env, row.secret_ciphertext);
-    const matchedStep = await ownerMatchingTotpStep(secret, code);
-    if (matchedStep === null) {
+    if (!(await ownerVerifyTotp(secret, code))) {
       await platformAudit(env, owner.id, "platform.mfa_enable_failed", request);
       return json({ error: "Authenticator code is invalid" }, 403);
     }
@@ -140,28 +137,20 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
     const now = nowIso();
     const eventId = crypto.randomUUID();
     const event = "platform.mfa_enabled";
-    const ipHash = await securityEventIpHash(env, request);
     const witness = "EXISTS(SELECT 1 FROM decave_platform_audit WHERE id=? AND actor_user_id=? AND action=?)";
     const results = await env.DB.batch([
       env.DB.prepare(
-        `UPDATE decave_owner_mfa SET enabled_at=?,last_totp_step=?,updated_at=?
+        `UPDATE decave_owner_mfa SET enabled_at=?,updated_at=?
         WHERE user_id=? AND secret_ciphertext=? AND enabled_at IS NULL
         AND EXISTS(SELECT 1 FROM decave_users WHERE id=? AND platform_role='owner')`,
-      ).bind(now, matchedStep, now, owner.id, row.secret_ciphertext, owner.id),
+      ).bind(now, now, owner.id, row.secret_ciphertext, owner.id),
       // Only the primary CAS can create this unique witness. All dependent
       // inserts use it in the same transaction, not a chain of changes().
       // An insertion failure rolls back the primary update and the witness.
       env.DB.prepare(
         `INSERT INTO decave_platform_audit(id,actor_user_id,target_user_id,action,detail_json,request_ray,request_country,created_at)
         SELECT ?,?,NULL,?, '{"recoveryCodeCount":10}',?,?,? WHERE changes()=1`,
-      ).bind(
-        eventId,
-        owner.id,
-        event,
-        (request.headers.get("CF-Ray") ?? "").slice(0, 80) || null,
-        (request.headers.get("CF-IPCountry") ?? "").slice(0, 8) || null,
-        now,
-      ),
+      ).bind(eventId, owner.id, event, (request.headers.get("CF-Ray") ?? "").slice(0, 80) || null, null, now),
       ...codes.map((value) =>
         env.DB.prepare(
           `INSERT INTO decave_owner_recovery_codes(id,user_id,code_hash,used_at,created_at)
@@ -175,7 +164,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
         crypto.randomUUID(),
         owner.id,
         event,
-        ipHash,
+        "",
         (request.headers.get("user-agent") ?? "").slice(0, 240),
         "",
         now,
@@ -232,7 +221,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
         owner.id,
         JSON.stringify({ method: methodUsed }),
         (request.headers.get("CF-Ray") ?? "").slice(0, 80) || null,
-        (request.headers.get("CF-IPCountry") ?? "").slice(0, 8) || null,
+        null,
         now,
       ),
     ]);

@@ -355,7 +355,18 @@ async function scanActivity() {
     `[DeCave activity] scanned ${processes.length} ${process.platform === "darwin" ? "macOS" : "Windows"} processes, ${games.length} installed Steam/Epic games; ` +
       (detected ? `detected ${detected.gameName}` : "no running game detected"),
   );
-  return { supported: true, platform: process.platform, game: detected, scannedAt };
+  // The renderer only needs the game, not where it lives on disk: executable
+  // paths contain the OS user name, so they and process IDs stay in this process.
+  const game = detected
+    ? {
+        source: detected.source,
+        gameName: detected.gameName,
+        appId: detected.appId,
+        startedAt: detected.startedAt,
+        ...(detected.iconDataUrl ? { iconDataUrl: detected.iconDataUrl } : {}),
+      }
+    : null;
+  return { supported: true, platform: process.platform, game, scannedAt };
 }
 
 module.exports = { scanActivity };

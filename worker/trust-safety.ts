@@ -1,6 +1,8 @@
 import { nowIso, publicIdOf, type UserRow } from "./db";
 
-export const AGE_POLICY_VERSION = "2026-10-v1";
+export const AGE_POLICY_VERSION = "2026-10-v1-adults";
+// DeCave is for adults only. Anyone younger is ineligible.
+export const MINIMUM_AGE = 18;
 
 export const REPORT_CATEGORIES = [
   "HARASSMENT_BULLYING",
@@ -212,7 +214,6 @@ export async function ensureSafetyProfile(db: D1Database, userId: string, create
 export function deriveAgeProfile(
   birthDateValue: unknown,
   now = new Date(),
-  minimumAge = 13,
 ): {
   ageStatus: SafetyAgeStatus;
   ageBand: SafetyAgeBand;
@@ -238,11 +239,8 @@ export function deriveAgeProfile(
   const birthdayPassed = now.getUTCMonth() + 1 > month || (now.getUTCMonth() + 1 === month && now.getUTCDate() >= day);
   if (!birthdayPassed) age -= 1;
 
-  if (age < minimumAge) {
+  if (age < MINIMUM_AGE) {
     return { ageStatus: "ineligible", ageBand: "unknown", teenSafetyMode: true, ageAssuranceMethod: "self_attested" };
-  }
-  if (age < 18) {
-    return { ageStatus: "eligible", ageBand: "teen", teenSafetyMode: true, ageAssuranceMethod: "self_attested" };
   }
   return { ageStatus: "eligible", ageBand: "adult", teenSafetyMode: false, ageAssuranceMethod: "self_attested" };
 }
@@ -523,7 +521,6 @@ export function trustSafetyAuditStatement(
   },
 ): D1PreparedStatement {
   const ray = (input.request?.headers.get("CF-Ray") ?? "").slice(0, 80);
-  const country = (input.request?.headers.get("CF-IPCountry") ?? "").slice(0, 8);
   return db
     .prepare(
       `INSERT INTO decave_moderation_audit_log
@@ -543,7 +540,7 @@ export function trustSafetyAuditStatement(
       JSON.stringify(input.newValue ?? {}).slice(0, 2000),
       (input.reason ?? "").slice(0, 1000),
       ray || null,
-      country || null,
+      null,
       nowIso(),
     );
 }

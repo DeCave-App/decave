@@ -1,4 +1,5 @@
 import { useLocalSearchParams, router } from "expo-router";
+import { CallVerificationMark } from "@/src/providers/DmE2eeProvider";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useVoiceSettings } from "@/src/providers/VoiceSettingsProvider";
@@ -472,6 +473,7 @@ export default function VoiceRoomScreen() {
                       <Text style={styles.personName} numberOfLines={1}>
                         {participant.username}
                       </Text>
+                      <CallVerificationMark connectionId={participant.connectionId} />
                       {isSelf && (
                         <View style={styles.youChip}>
                           <Text style={styles.youChipText}>YOU</Text>

@@ -136,6 +136,7 @@ import {
   ROLE_ICON_CHOICES,
   HISTORY_PAGE_SIZE,
   EMPTY_SERVER,
+  REPORT_CONFIRMATION_MS,
 } from "./app/constants";
 import { POLL_PREFIX, parsePrefixedJson } from "./app/message-payloads";
 import { resolveAvatarUrl } from "./app/user-display";
@@ -272,6 +273,8 @@ import { useGameActivityTracking } from "./app/hooks/useGameActivityTracking";
 import { useHomePersistence } from "./app/hooks/useHomePersistence";
 import { usePreferencePersistence } from "./app/hooks/usePreferencePersistence";
 import { useTransientUiDismissal } from "./app/hooks/useTransientUiDismissal";
+import { dmE2ee, useDmE2ee } from "./e2ee/dm-e2ee-client";
+import { DmEncryptionDialogs } from "./e2ee/DmEncryptionUi";
 
 function App() {
   useInjectedStyle("decave-polished-skins-v1", POLISHED_SKINS_CSS);
@@ -317,7 +320,7 @@ function App() {
   const [securityNotice, setSecurityNotice] = useState("");
   const accountSessions = useAccountSessionsState();
   const [securityBusy, setSecurityBusy] = useState(false);
-  const [accountEditField, setAccountEditField] = useState<"username" | "email" | "phone" | "password" | null>(null);
+  const [accountEditField, setAccountEditField] = useState<"username" | "email" | "password" | null>(null);
   const accountEditOperationRef = useRef<{ accountId: string; controller: AbortController } | null>(null);
   const accountEditAccountIdRef = useRef<string | null>(currentUser?.id ?? null);
   accountEditAccountIdRef.current = currentUser?.id ?? null;
@@ -925,7 +928,8 @@ function App() {
   const socialStateInitializedRef = useRef(false);
   const friendRequestNoticeTimerRef = useRef<number | null>(null);
   const dmNoticeTimerRef = useRef<number | null>(null);
-  const iceServersRef = useRef<RTCIceServer[]>([{ urls: ["stun:stun.cloudflare.com:3478"] }]);
+  // Filled from /api/rtc/ice-servers; calls are relay-only and need TURN.
+  const iceServersRef = useRef<RTCIceServer[]>([]);
   const workspaceBackRef = useRef<WorkspaceHistoryEntry[]>([]);
   const workspaceForwardRef = useRef<WorkspaceHistoryEntry[]>([]);
   const workspaceLastRef = useRef<WorkspaceHistoryEntry | null>(null);
@@ -1203,6 +1207,29 @@ function App() {
     void accountActions.loadDesktopIntegrationSettings();
   }, [currentUser?.id]);
 
+  // DM encryption follows the signed-in account. Once this device can read
+  // encrypted messages (set up, unlocked or approved), decrypt what is on screen.
+  const dmE2eeState = useDmE2ee();
+  useEffect(() => {
+    if (currentUser?.id) void dmE2ee.start(currentUser.id);
+  }, [currentUser?.id]);
+  useEffect(() => {
+    if (dmE2eeState.status !== "ready") return;
+    void directMessages.loadDmConversations();
+    setDmMessages((current) => {
+      if (current.some((message) => message.e2ee === "locked" || message.e2ee === "failed")) {
+        void dmE2ee
+          .openAll(current)
+          .then((opened) =>
+            setDmMessages((latest) =>
+              latest.map((message) => opened.find((item) => item.id === message.id) ?? message),
+            ),
+          );
+      }
+      return current;
+    });
+  }, [dmE2eeState.status, dmE2eeState.keyId]);
+
   useEffect(
     () => () => {
       accountEditOperationRef.current?.controller.abort();
@@ -1427,7 +1454,7 @@ function App() {
         });
 
         if (response.status === 401 && !stopped) {
-          await logout();
+          await logout({ signedOutElsewhere: true });
           if (!stopped) {
             setAuthError("Your DeCave account was signed in on another browser or desktop app.");
           }
@@ -1674,7 +1701,8 @@ function App() {
         setDmError(data.error || "Could not open private messages.");
         return;
       }
-      const firstDmPage = Array.isArray(data.messages) ? data.messages : [];
+      const firstDmPage = await dmE2ee.openAll(Array.isArray(data.messages) ? data.messages : [], user.id);
+      if (loadGeneration !== dmHistoryLoadGenerationRef.current || activeDmUserRef.current?.id !== user.id) return;
       setDmMessages(firstDmPage);
       setOlderHistory((current) => ({ ...current, dm: firstDmPage.length >= HISTORY_PAGE_SIZE }));
       void directMessages.loadDmConversations();
@@ -3415,41 +3443,45 @@ function App() {
     );
 
     return (
-      <HubOnboardingScreen
-        currentUser={currentUser}
-        displaySkin={displaySkin}
-        setHubOnboardingSkipped={setHubOnboardingSkipped}
-        setShowHome={setShowHome}
-        showCreateServer={showCreateServer}
-        setShowCreateServer={setShowCreateServer}
-        newServerName={newServerName}
-        setNewServerName={setNewServerName}
-        newServerVisibility={newServerVisibility}
-        setNewServerVisibility={setNewServerVisibility}
-        newServerTemplate={newServerTemplate}
-        setNewServerTemplate={setNewServerTemplate}
-        creatingServer={creatingServer}
-        discordImportPreview={discordImportPreview}
-        setDiscordImportPreview={setDiscordImportPreview}
-        discordImportBusy={discordImportBusy}
-        discordImportError={discordImportError}
-        setDiscordImportError={setDiscordImportError}
-        serverCreateError={serverCreateError}
-        setServerCreateError={setServerCreateError}
-        showServerBrowser={showServerBrowser}
-        setShowServerBrowser={setShowServerBrowser}
-        discoverSearch={discoverSearch}
-        setDiscoverSearch={setDiscoverSearch}
-        discoverLoading={discoverLoading}
-        discoverError={discoverError}
-        streamerHubsEnabled={streamerHubsEnabled}
-        loadDiscoverServers={loadDiscoverServers}
-        openServerBrowser={openServerBrowser}
-        createServer={createServer}
-        loadDiscordTemplate={loadDiscordTemplate}
-        joinPublicServer={joinPublicServer}
-        filteredDiscoverServers={filteredDiscoverServers}
-      />
+      <>
+        {/* The recovery code and device approvals can't wait for a Hub to exist. */}
+        <DmEncryptionDialogs />
+        <HubOnboardingScreen
+          currentUser={currentUser}
+          displaySkin={displaySkin}
+          setHubOnboardingSkipped={setHubOnboardingSkipped}
+          setShowHome={setShowHome}
+          showCreateServer={showCreateServer}
+          setShowCreateServer={setShowCreateServer}
+          newServerName={newServerName}
+          setNewServerName={setNewServerName}
+          newServerVisibility={newServerVisibility}
+          setNewServerVisibility={setNewServerVisibility}
+          newServerTemplate={newServerTemplate}
+          setNewServerTemplate={setNewServerTemplate}
+          creatingServer={creatingServer}
+          discordImportPreview={discordImportPreview}
+          setDiscordImportPreview={setDiscordImportPreview}
+          discordImportBusy={discordImportBusy}
+          discordImportError={discordImportError}
+          setDiscordImportError={setDiscordImportError}
+          serverCreateError={serverCreateError}
+          setServerCreateError={setServerCreateError}
+          showServerBrowser={showServerBrowser}
+          setShowServerBrowser={setShowServerBrowser}
+          discoverSearch={discoverSearch}
+          setDiscoverSearch={setDiscoverSearch}
+          discoverLoading={discoverLoading}
+          discoverError={discoverError}
+          streamerHubsEnabled={streamerHubsEnabled}
+          loadDiscoverServers={loadDiscoverServers}
+          openServerBrowser={openServerBrowser}
+          createServer={createServer}
+          loadDiscordTemplate={loadDiscordTemplate}
+          joinPublicServer={joinPublicServer}
+          filteredDiscoverServers={filteredDiscoverServers}
+        />
+      </>
     );
   }
 
@@ -4169,7 +4201,7 @@ function App() {
           target={reportTarget}
           request={authorizedFetch}
           onClose={() => setReportTarget(null)}
-          onSubmitted={() => setTimeout(() => setReportTarget(null), 1400)}
+          onSubmitted={() => setTimeout(() => setReportTarget(null), REPORT_CONFIRMATION_MS)}
         />
       )}
       {showMyReports && (
@@ -4859,6 +4891,7 @@ function App() {
         />
       )}
       {showLogoutConfirm && <LogoutConfirmDialog setShowLogoutConfirm={setShowLogoutConfirm} logout={logout} />}
+      {currentUser && <DmEncryptionDialogs />}
       {resourceContextMenu && (
         <ResourceContextMenu
           mutedHubIds={preferences.mutedHubIds}

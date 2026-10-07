@@ -18,7 +18,7 @@ import { MessageImage } from "@/src/components/MessageMedia";
 import { SwipeToReply } from "@/src/components/SwipeToReply";
 import { gifMessageText, parseGif, type GiphyGif } from "@/src/lib/chat-media";
 import { errorHaptic, impactHaptic, tapHaptic } from "@/src/lib/haptics";
-import ReportSheet, { type MobileReportTarget } from "@/src/components/ReportSheet";
+import ReportSheet, { REPORT_CONFIRMATION_MS, type MobileReportTarget } from "@/src/components/ReportSheet";
 import { Screen } from "@/src/components/Screen";
 import { apiJson } from "@/src/lib/api";
 import { useSession } from "@/src/providers/SessionProvider";
@@ -33,6 +33,8 @@ import { colors } from "@/src/theme";
 import type { AccountUser, GroupChat, GroupChatMessage, SocialState } from "@/src/types";
 import { VoiceFloatingBar } from "@/src/components/VoiceFloatingBar";
 import { useDraftInput } from "@/src/lib/drafts";
+import { dmE2ee, groupSocketFrame, rememberGroup, useDmE2ee } from "@/src/lib/e2ee/client";
+import { GroupEncryptionBadge } from "@/src/providers/DmE2eeProvider";
 
 function previewMessage(text: string): string {
   const preview = text.replace(/\s+/g, " ").trim();
@@ -95,8 +97,11 @@ export default function GroupChatScreen() {
         apiJson<SocialState>("/api/social", {}, token),
       ]);
       if (generation !== loadGenerationRef.current) return;
+      // Encrypted messages are decrypted on the phone before they're shown.
+      const latest = await dmE2ee.openGroupAll(groupData.messages ?? [], groupId);
+      if (generation !== loadGenerationRef.current) return;
       setGroup(groupData.group);
-      const latest = groupData.messages ?? [];
+      rememberGroup(groupData.group);
       if (latest.length < 100) setHasOlder(false);
       setMessages((current) => {
         const latestIds = new Set(latest.map((item) => item.id));
@@ -148,7 +153,7 @@ export default function GroupChatScreen() {
         {},
         token,
       );
-      const older = data.messages ?? [];
+      const older = await dmE2ee.openGroupAll(data.messages ?? [], groupId);
       if (older.length === 0) setHasOlder(false);
       setMessages((current) => {
         const ids = new Set(current.map((item) => item.id));
@@ -161,11 +166,30 @@ export default function GroupChatScreen() {
     }
   };
 
-  const sendGif = (gif: GiphyGif) => {
+  // Re-read once this phone is unlocked (or its key changed).
+  const e2eeState = useDmE2ee();
+  useEffect(() => {
+    if (e2eeState.status === "ready") void load();
+  }, [e2eeState.status, e2eeState.keyId]);
+
+  /** The GROUP_MESSAGE frame: encrypted for every member when the group is encrypted. */
+  const groupFrame = async (text: string) => {
+    if (!group) throw new Error("The group is still loading.");
+    return groupSocketFrame(group, text, replyingTo?.id ?? null);
+  };
+
+  const sendGif = async (gif: GiphyGif) => {
     const text = gifMessageText(gif);
     setGifOpen(false);
     if (!text || !groupId) return;
-    if (send({ type: "GROUP_MESSAGE", groupId, text, replyToId: replyingTo?.id ?? null })) {
+    let frame: Record<string, unknown>;
+    try {
+      frame = await groupFrame(text);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not encrypt this message.");
+      return;
+    }
+    if (send(frame)) {
       impactHaptic();
       setReplyingTo(null);
     } else {
@@ -173,10 +197,18 @@ export default function GroupChatScreen() {
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = input.trim();
     if (!text || !groupId) return;
-    if (send({ type: "GROUP_MESSAGE", groupId, text, replyToId: replyingTo?.id ?? null })) {
+    let frame: Record<string, unknown>;
+    try {
+      frame = await groupFrame(text);
+    } catch (error) {
+      errorHaptic();
+      setNotice(error instanceof Error ? error.message : "Could not encrypt this message.");
+      return;
+    }
+    if (send(frame)) {
       impactHaptic();
       setInput("");
       setReplyingTo(null);
@@ -284,6 +316,7 @@ export default function GroupChatScreen() {
               {group ? `${group.memberCount} members` : connectionState === "connected" ? "Loading…" : "Connecting…"}
             </Text>
           </View>
+          {group ? <GroupEncryptionBadge group={group} /> : null}
           {<Pressable accessibilityRole="button" style={styles.membersButton} onPress={() => setMembersOpen(true)}>
             <Text style={styles.membersButtonText}>Members</Text>
           </Pressable>}
@@ -318,7 +351,11 @@ export default function GroupChatScreen() {
             !loaded ? <SkeletonRows variant="chat" rows={7} /> :
             <View style={styles.beginning}>
               <Text style={styles.beginningTitle}>Start the group</Text>
-              <Text style={styles.beginningText}>Messages here are shared with everyone in this group chat.</Text>
+              <Text style={styles.beginningText}>
+                {group?.e2ee
+                  ? "Messages here are end-to-end encrypted: only people in the group when a message is sent can read it."
+                  : "Messages here are shared with everyone in this group chat."}
+              </Text>
             </View>
           }
           renderItem={({ item, index }) => {
@@ -345,8 +382,16 @@ export default function GroupChatScreen() {
                     </Text>
                   </View>
                 )}
-                {parseGif(item.text) ? (
-                  <MessageImage url={parseGif(item.text)!.url} title={parseGif(item.text)!.title} token={token} authenticated />
+                {item.e2ee === "locked" || item.e2ee === "failed" ? (
+                  <Text style={styles.e2eePlaceholder}>
+                    {item.e2ee === "failed"
+                      ? "This message couldn't be decrypted."
+                      : e2eeState.status === "locked"
+                        ? "Encrypted message. Unlock encrypted messages on this phone to read it."
+                        : "Encrypted message you can't read: sent before you joined, or older than your account keeps."}
+                  </Text>
+                ) : parseGif(item.text) ? (
+                  <MessageImage url={parseGif(item.text)!.url} title={parseGif(item.text)!.title} token={token} authenticated={false} />
                 ) : (
                   <LinkifiedText style={styles.messageText} text={item.text} />
                 )}
@@ -488,7 +533,7 @@ export default function GroupChatScreen() {
               </Pressable>
             )}
             {actionMessage && actionMessage.fromUserId !== user?.id && (
-              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: "message", targetId: message.id, subjectUserId: message.fromUserId, subjectUsername: message.username, contextType: "group", contextId: groupId, contextLabel: group?.name || "Group chat" }); }}>
+              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: "message", targetId: message.id, subjectUserId: message.fromUserId, subjectUsername: message.username, contextType: "group", contextId: groupId, contextLabel: group?.name || "Group chat", evidenceType: "message", evidenceText: message.e2ee === "locked" || message.e2ee === "failed" ? undefined : message.text, e2eeProof: dmE2ee.reportProof(message, "group") ?? undefined }); }}>
                 <Text style={styles.sheetActionIcon}>⚑</Text>
                 <Text style={styles.sheetActionText}>Report message</Text>
               </Pressable>
@@ -507,7 +552,7 @@ export default function GroupChatScreen() {
         token={token}
         target={reportTarget}
         onClose={() => setReportTarget(null)}
-        onSubmitted={() => setTimeout(() => setReportTarget(null), 900)}
+        onSubmitted={() => setTimeout(() => setReportTarget(null), REPORT_CONFIRMATION_MS)}
       />
     </Screen>
   );
@@ -533,6 +578,7 @@ const styles = StyleSheet.create({
   messageOwn: { alignSelf: "flex-end", backgroundColor: "rgba(124,92,255,.18)", borderColor: "rgba(124,92,255,.36)" },
   author: { color: colors.cyan, fontSize: 12, fontWeight: "900", marginBottom: 3 },
   messageText: { color: colors.text, lineHeight: 20 },
+  e2eePlaceholder: { color: colors.muted, fontSize: 14, fontStyle: "italic", lineHeight: 20 },
   time: { color: colors.faint, fontSize: 11, marginTop: 4, alignSelf: "flex-end" },
   replyReference: { maxWidth: "100%", borderLeftWidth: 2, borderLeftColor: colors.cyan, paddingLeft: 7, marginBottom: 7 },
   replyReferenceText: { color: colors.muted, fontSize: 12, lineHeight: 14 },

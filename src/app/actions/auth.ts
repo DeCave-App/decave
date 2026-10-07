@@ -15,11 +15,12 @@ import type {
 } from "../types";
 import { HTTP_URL } from "../env";
 import { hasDesktopActivityBridge } from "../desktop";
-import { clearAccountDataOnLogout } from "./clear-account-storage";
+import { clearAccountDataOnLogout, clearAccountScopedStorage } from "./clear-account-storage";
+import { PRIVACY_VERSION, TERMS_VERSION } from "../../../shared/legal-consent";
 import type { AuthFormState } from "../state/auth-form";
 import type { OwnerSecurityState } from "../state/owner-security";
 import type { HubPanelsState } from "../state/hub-panels";
-import { MINIMUM_SIGNUP_AGE, PRIVACY_VERSION, TERMS_VERSION } from "../../../shared/legal-consent";
+import { dmE2ee } from "../../e2ee/dm-e2ee-client";
 
 export type AuthActionsDeps = {
   resetPrivateAccountState: () => void;
@@ -135,8 +136,9 @@ export function createAuthActions(deps: AuthActionsDeps) {
     setConfirmPasswordInput,
     birthDateInput,
     setBirthDateInput,
-    termsAccepted,
     staySignedIn,
+    acceptedTerms,
+    setAcceptedTerms,
     setAuthBusy,
     setLoginMfaKind,
   } = authForm;
@@ -175,10 +177,6 @@ export function createAuthActions(deps: AuthActionsDeps) {
     }
 
     if (authMode === "register") {
-      if (!termsAccepted) {
-        setAuthError("Agree to the Terms and acknowledge the Privacy Notice to create an account.");
-        return;
-      }
       if (!email) {
         setAuthError("Enter a valid email address.");
         return;
@@ -191,20 +189,12 @@ export function createAuthActions(deps: AuthActionsDeps) {
         setAuthError("Passwords do not match.");
         return;
       }
-      if (passwordInput.length < 10) {
-        setAuthError("Use a password with at least 10 characters.");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDateInput)) {
+        setAuthError("Enter your birth date to confirm you are 18 or older.");
         return;
       }
-      const birthDate = new Date(`${birthDateInput}T00:00:00Z`);
-      const ageDate = new Date();
-      ageDate.setUTCFullYear(ageDate.getUTCFullYear() - MINIMUM_SIGNUP_AGE);
-      if (
-        !/^\d{4}-\d{2}-\d{2}$/.test(birthDateInput) ||
-        Number.isNaN(birthDate.getTime()) ||
-        birthDate.toISOString().slice(0, 10) !== birthDateInput ||
-        birthDate > ageDate
-      ) {
-        setAuthError(`Enter your birth date to confirm you are ${MINIMUM_SIGNUP_AGE} or older.`);
+      if (!acceptedTerms) {
+        setAuthError("Confirm that you are 18 or older and agree to the Terms of Service and Privacy Policy.");
         return;
       }
     }
@@ -274,6 +264,7 @@ export function createAuthActions(deps: AuthActionsDeps) {
       setPasswordInput("");
       setConfirmPasswordInput("");
       setBirthDateInput("");
+      setAcceptedTerms(false);
       setAuthReady(true);
     } catch (error) {
       console.error("Authentication error:", error);
@@ -286,9 +277,16 @@ export function createAuthActions(deps: AuthActionsDeps) {
     }
   };
 
-  const logout = async () => {
+  /**
+   * `signedOutElsewhere`: the server ended this session (another sign-in, or a
+   * revoked session), so the person didn't choose to leave this device and it
+   * keeps its DM encryption key for when they sign back in.
+   */
+  const logout = async ({ signedOutElsewhere = false }: { signedOutElsewhere?: boolean } = {}) => {
     resetPrivateAccountState();
-    const localCleanup = clearAccountDataOnLogout();
+    const localCleanup = signedOutElsewhere
+      ? (clearAccountScopedStorage(), Promise.resolve())
+      : clearAccountDataOnLogout();
     storeToken("");
     setCurrentUser(null);
     setAuthReady(true);
@@ -302,6 +300,8 @@ export function createAuthActions(deps: AuthActionsDeps) {
     if (voiceChannelRef.current !== null) sendSocket({ type: "VOICE_LEAVE" });
     cleanupVoiceLocal(true);
     socketRef.current?.close();
+    // Choosing to sign out removes the DM encryption key from this device.
+    await dmE2ee.stop({ forget: !signedOutElsewhere }).catch(() => undefined);
 
     try {
       await fetch(`${HTTP_URL}/api/auth/logout`, {

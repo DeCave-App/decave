@@ -18,6 +18,7 @@ const { accountExportStatus } = await import("../../shared/account-export.ts");
 
 globalThis.window = { location: { origin: "https://client.example.test" } };
 const { createHubDirectoryActions } = await import("../../src/app/actions/hub-directory.ts");
+const webMediaModule = await import("../../src/app/message-payloads.ts");
 delete globalThis.window;
 
 const root = path.resolve(process.cwd());
@@ -494,25 +495,32 @@ test("logout purge removes only that account's notes and forum draft and rejects
   assert.deepEqual(JSON.parse(values.get(forum.forumDraftStorageKey("account-b", 9))), { body: "B private post" });
 });
 
-test("legacy and proxied GIPHY URLs resolve only to the authenticated same-origin media proxy", () => {
-  const apiBase = "https://api.example.test";
+test("legacy GIPHY sources are validated and proxied to the authenticated same-origin media endpoint", () => {
+  const apiBase = "https://client.example.test";
   const mobileMedia = compileClientModule("mobile/src/lib/chat-media.ts", { API_BASE: apiBase, URL });
-  const webMedia = compileClientModule("src/app/message-payloads.ts", { HTTP_URL: apiBase, URL });
+  const webMedia = webMediaModule;
   const legacy = "https://media.giphy.com/media/abc/giphy.webp";
-  const returnedProxy = "/api/giphy/media?url=https%3A%2F%2Fmedia.giphy.com%2Fmedia%2Fabc%2Fgiphy.webp";
   for (const media of [mobileMedia, webMedia]) {
-    assert.equal(new URL(media.safeGiphyUrl(legacy)).origin, apiBase);
-    assert.equal(new URL(media.safeGiphyUrl(returnedProxy)).pathname, "/api/giphy/media");
-    assert.equal(media.safeGiphyUrl("/api/giphy/media?url=https%3A%2F%2Fevil.example%2Fx.png"), null);
+    assert.equal(media.safeGiphyUrl(legacy), legacy);
+    const proxyUrl = new URL(media.giphyMediaProxyUrl(legacy));
+    assert.equal(proxyUrl.origin, apiBase);
+    assert.equal(proxyUrl.pathname, "/api/giphy/media");
+    assert.equal(proxyUrl.searchParams.has("u"), true);
+    assert.equal(media.safeGiphyUrl("/api/giphy/media?u=https%3A%2F%2Fevil.example%2Fx.png"), null);
     assert.equal(media.safeGiphyUrl("https://evil.example/api/giphy/media"), null);
     assert.equal(media.safeGiphyUrl("//evil.example/image.webp"), null);
+    assert.equal(media.giphyMediaProxyUrl("https://evil.example/image.webp"), null);
   }
+  const imageSource = mobileMedia.giphyImageSource(legacy, "session-token");
+  assert.equal(new URL(imageSource.uri).origin, apiBase);
+  assert.equal(imageSource.headers.Authorization, "Bearer session-token");
+  assert.equal(mobileMedia.giphyImageSource(legacy, null), null);
 
   const mediaSource = fs.readFileSync(path.join(root, "mobile/src/components/MessageMedia.tsx"), "utf8");
   const composerSource = fs.readFileSync(path.join(root, "mobile/src/components/ComposerMediaSheet.tsx"), "utf8");
-  assert.match(mediaSource, /isGiphyProxyUrl\(url\)[\s\S]*Authorization: `Bearer \$\{token\}`/);
-  assert.match(composerSource, /item\.previewUrl\.startsWith\("\/"\) \? `\$\{API_BASE\}\$\{item\.previewUrl\}`/);
-  assert.match(composerSource, /Authorization: `Bearer \$\{token\}`/);
+  assert.match(mediaSource, /const giphySource = authenticated \? null : giphyImageSource\(url, token\)/);
+  assert.match(mediaSource, /giphySource \?\? \(isGiphy \? undefined : \{ uri: url \}\)/);
+  assert.match(composerSource, /giphyImageSource\(item\.previewUrl, token\) \?\? giphyImageSource\(item\.url, token\)/);
 });
 
 test("account export clients recognize complete streams and surface interrupted exports", () => {

@@ -9,6 +9,8 @@ import { localeForLanguage } from "../../locale";
 import { hasDesktopActivityBridge } from "../../desktop";
 import { selectStyle, settingsSectionStyle, settingsSectionTitleStyle, settingsLabelStyle } from "../../inline-styles";
 import type { PreferencesState } from "../../state/preferences";
+import { DmEncryptionSettings } from "../../../e2ee/DmEncryptionUi";
+import { useDmE2ee } from "../../../e2ee/dm-e2ee-client";
 
 type Props = {
   currentUser: AccountUser;
@@ -35,9 +37,17 @@ export function PrivacySettingsSection({
   sendTypingState,
   preferences,
 }: Props) {
+  const dmE2eeAvailable = useDmE2ee().available;
   const { privacySettings, setPrivacySettings } = preferences;
   return (
     <>
+      {dmE2eeAvailable && (
+        <div style={settingsSectionStyle}>
+          <div style={settingsSectionTitleStyle}>ENCRYPTED MESSAGES</div>
+          <DmEncryptionSettings />
+        </div>
+      )}
+
       <div style={settingsSectionStyle}>
         <div style={settingsSectionTitleStyle}>NOTIFICATION PRIVACY</div>
         <div style={{ color: "var(--ds-muted)", fontSize: "12px", lineHeight: 1.55, marginBottom: "12px" }}>

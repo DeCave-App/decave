@@ -483,7 +483,7 @@ export async function handleTrustSafetyApi(
     await securityEvent(env, user.id, profile.ageStatus === "ineligible" ? "age.ineligible" : "age.confirmed", request);
     if (profile.ageStatus === "ineligible") {
       return json(
-        { error: "DeCave accounts are available only to people aged 13 or older.", code: "AGE_RESTRICTED" },
+        { error: "DeCave accounts are available only to adults aged 18 or older.", code: "AGE_RESTRICTED" },
         403,
       );
     }
@@ -802,7 +802,6 @@ export async function handleTrustSafetyApi(
       user.id,
     );
     const auditRay = (request.headers.get("CF-Ray") ?? "").slice(0, 80) || null;
-    const auditCountry = (request.headers.get("CF-IPCountry") ?? "").slice(0, 8) || null;
     const auditId = crypto.randomUUID();
     try {
       const commit = await env.DB.batch([
@@ -822,7 +821,7 @@ export async function handleTrustSafetyApi(
           evidenceId,
           JSON.stringify({ evidenceType, ciphertextSize: bytes.byteLength, keyId: key.key_id }).slice(0, 2000),
           auditRay,
-          auditCountry,
+          null,
           nowIso(),
           evidenceId,
         ),

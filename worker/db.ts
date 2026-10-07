@@ -88,6 +88,8 @@ export type GroupChatRow = {
   owner_user_id: string;
   created_at: string;
   updated_at: string;
+  /** When the group's messages became end-to-end encrypted; from then on they stay so. */
+  e2ee_since?: string | null;
 };
 
 type PasswordScryptOptions = { N: number; r: number; p: number; maxmem: number };
@@ -176,6 +178,14 @@ export function ensureGroupChatSchema(db: D1Database): Promise<void> {
       const columns = await db.prepare("PRAGMA table_info(decave_group_chat_messages)").all<{ name: string }>();
       if (!columns.results.some((column) => column.name === "reply_to_id")) {
         await db.prepare("ALTER TABLE decave_group_chat_messages ADD COLUMN reply_to_id TEXT").run();
+      }
+      // End-to-end encrypted group messages keep text='' and store their envelope.
+      if (!columns.results.some((column) => column.name === "envelope")) {
+        await db.prepare("ALTER TABLE decave_group_chat_messages ADD COLUMN envelope TEXT").run();
+      }
+      const groupColumns = await db.prepare("PRAGMA table_info(decave_group_chats)").all<{ name: string }>();
+      if (!groupColumns.results.some((column) => column.name === "e2ee_since")) {
+        await db.prepare("ALTER TABLE decave_group_chats ADD COLUMN e2ee_since TEXT").run();
       }
       await db
         .prepare(

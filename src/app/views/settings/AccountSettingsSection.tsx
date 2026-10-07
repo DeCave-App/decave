@@ -13,7 +13,7 @@ type Props = {
   securityNotice: string;
   securityBusy: boolean;
   effectiveStreamerMode: boolean;
-  openAccountEditor: (field: "username" | "email" | "phone" | "password") => void;
+  openAccountEditor: (field: "username" | "email" | "password") => void;
   startOwnerMfaSetup: () => Promise<void>;
   enableOwnerMfa: () => Promise<void>;
   ownerPrivilegedReauth: () => Promise<void>;
@@ -119,16 +119,6 @@ export function AccountSettingsSection({
             </span>
             <b>{effectiveStreamerMode ? "Hidden by Streamer Mode" : currentUser.email || "Not added"}</b>
             <button type="button" className="modal-secondary" onClick={() => openAccountEditor("email")}>
-              Edit
-            </button>
-          </div>
-          <div className="dc-account-detail-row">
-            <span>
-              <strong>Phone number</strong>
-              <small>Used for account information. SMS verification is not enabled yet.</small>
-            </span>
-            <b>{effectiveStreamerMode ? "Hidden by Streamer Mode" : accountPreferences.phoneNumber || "Not added"}</b>
-            <button type="button" className="modal-secondary" onClick={() => openAccountEditor("phone")}>
               Edit
             </button>
           </div>

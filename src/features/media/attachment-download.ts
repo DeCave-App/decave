@@ -220,6 +220,10 @@ export interface DesktopLegacyAttachmentDownloadOptions {
   documentRef?: Pick<Document, "createElement" | "body">;
   urlRef?: Pick<typeof URL, "createObjectURL" | "revokeObjectURL">;
   maxBytes?: number;
+  /** Decrypts an end-to-end encrypted file after download. */
+  decrypt?: ((bytes: Uint8Array) => Uint8Array) | null;
+  /** The real type of a decrypted file (the server only knows it as a blob). */
+  contentType?: string;
 }
 
 export interface LegacyAttachmentDownloadResult {
@@ -245,7 +249,8 @@ export async function downloadLegacyAttachmentDesktop(
     throw new LegacyAttachmentError("network-failure", "The attachment request failed.");
   }
   assertResponseForAttachment(response, options.baseUrl);
-  const body = await readBoundedLegacyAttachmentBody(response, options.maxBytes);
+  const downloaded = await readBoundedLegacyAttachmentBody(response, options.maxBytes);
+  const body = options.decrypt ? options.decrypt(downloaded) : downloaded;
   const documentRef =
     options.documentRef ?? (typeof globalThis.document !== "undefined" ? globalThis.document : undefined);
   const urlRef = options.urlRef ?? (typeof globalThis.URL !== "undefined" ? globalThis.URL : undefined);
@@ -253,7 +258,10 @@ export async function downloadLegacyAttachmentDesktop(
     throw new LegacyAttachmentError("export-unavailable", "Desktop file export is unavailable in this environment.");
   }
 
-  const objectUrl = urlRef.createObjectURL(new Blob([body.buffer as ArrayBuffer], { type: contentTypeFor(response) }));
+  const type = options.decrypt ? options.contentType || "application/octet-stream" : contentTypeFor(response);
+  const objectUrl = urlRef.createObjectURL(
+    new Blob([body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer], { type }),
+  );
   let anchor: HTMLAnchorElement | null = null;
   try {
     anchor = documentRef.createElement("a");

@@ -279,9 +279,10 @@ test("current-password checks are throttled per account, not per IP", async () =
   assert.deepEqual(recoveryKeys, ["change-password:pw-user", "change-password:pw-user"]);
 
   const account = source("worker/routes/account.ts");
-  for (const key of ["account-username", "account-phone", "account-state"]) {
+  for (const key of ["account-username", "account-state"]) {
     assert.match(account, new RegExp("key: `" + key + ":\\$\\{user\\.id\\}`"));
   }
+  assert.doesNotMatch(account, /account-phone/);
   assert.doesNotMatch(account, /requestKey\(request, `account-/);
   assert.match(source("worker/routes/auth.ts"), /key: `add-email:\$\{user\.id\}`/);
 });
@@ -332,10 +333,9 @@ test("writes reject browser cross-origin fetch metadata; /ws enforces an Origin 
 
 test("realtime admission keys never keep the raw client IP", () => {
   const hubRoom = source("worker/HubRoom.ts");
-  const fn = hubRoom.slice(hubRoom.indexOf("function peerAddressForRequest"));
-  const body = fn.slice(0, fn.indexOf("\n}\n") + 3);
-  assert.match(body, /peerAddressTag\(address, ipHashKey\)/);
-  assert.doesNotMatch(body, /\? address :/);
-  assert.match(hubRoom, /peerAddressForRequest\(request, this\.env\.SECURITY_IP_HASH_KEY\)/);
-  assert.match(hubRoom, /normalizedPeerAddress\(attached\.peerAddress, this\.env\.SECURITY_IP_HASH_KEY\)/);
+  assert.match(hubRoom, /securityIpAddressTag\(env, address, "decave-ws-peer-v1"\)/);
+  assert.match(hubRoom, /createHash\("sha256"\)\.update\(`decave-ws-peer-v1\\0\$\{address\}`\)/);
+  assert.match(hubRoom, /await peerAddressForRequest\(request, this\.env\)/);
+  assert.match(hubRoom, /normalizedPeerAddress\(attached\.peerAddress\)/);
+  assert.doesNotMatch(hubRoom, /peerAddress:\s*address/);
 });

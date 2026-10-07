@@ -36,6 +36,13 @@ import type { DirectMessageActions } from "../actions/direct-messages";
 import type { VoiceControlActions } from "../actions/voice-controls";
 import type { NotifyLevels } from "../../features/settings/notifyLevels";
 import type { NotificationPreview } from "../../privacy/notification-preview";
+import {
+  dmE2ee,
+  retryFrameAfterDmError,
+  retryGroupFrameAfterError,
+  settleDmSend,
+  settleGroupSend,
+} from "../../e2ee/dm-e2ee-client";
 
 export type RealtimeAppHandlersDeps = {
   currentUser: AccountUser | null;
@@ -135,13 +142,17 @@ export type RealtimeAppHandlersDeps = {
   closePeer: (connectionId: string) => void;
   ensurePeer: (participant: VoiceParticipant) => PeerSession;
   ensureVoicePeersFromState: (participants: VoiceParticipant[]) => void;
-  handleRtcDescription: (participant: VoiceParticipant, description: RTCSessionDescriptionInit) => Promise<void>;
+  handleRtcDescription: (
+    participant: VoiceParticipant,
+    description: RTCSessionDescriptionInit,
+    auth?: unknown,
+  ) => Promise<void>;
   handleRtcCandidate: (participant: VoiceParticipant, candidate: RTCIceCandidateInit) => Promise<void>;
   finishVoiceJoinAttempt: (channelId: number) => void;
   acceptsVoiceJoinAcknowledgement: (channelId: number) => boolean;
   rejoinVoiceAfterRealtimeReconnect: (channelId: number, socket: WebSocket) => Promise<void>;
   cancelVoiceJoinAttempt: (message?: string, _preserveRecoveryCounter?: boolean) => void;
-  logout: () => Promise<void>;
+  logout: (options?: { signedOutElsewhere?: boolean }) => Promise<void>;
   voiceControls: VoiceControlActions;
   realtimeAppRef: MutableRefObject<RealtimeAppHandlers | null>;
   loadHubMembers: (serverId: number) => Promise<void>;
@@ -314,6 +325,21 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
           loadDmConversations: directMessages.loadDmConversations,
           loadGroupChats: directMessages.loadGroupChats,
           openGroupChat: directMessages.openGroupChat,
+          sendSocket,
+          e2ee: {
+            handleEvent: (frame) => dmE2ee.handleRealtimeEvent(frame),
+            open: (message) => dmE2ee.open(message),
+            retryFrame: retryFrameAfterDmError,
+            settle: settleDmSend,
+            openGroup: (message, groupId) => dmE2ee.openGroup(message, groupId),
+            retryGroupFrame: (error) =>
+              retryGroupFrameAfterError(error, (groupId) =>
+                activeGroupChatRef.current?.id === groupId
+                  ? activeGroupChatRef.current
+                  : (groupChats.find((group) => group.id === groupId) ?? null),
+              ),
+            settleGroup: settleGroupSend,
+          },
         },
         chat: {
           currentUser,

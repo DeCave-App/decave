@@ -4,7 +4,6 @@ import type { StreamerEvent } from "../../../shared/streamer-mode";
 import { StreamerOverview } from "../../streamer/StreamerOverview";
 import type { StreamerTransport } from "../../streamer/api";
 import type { Server, AccountUser } from "../types";
-import { openDesktopExternalUrl } from "../desktop";
 import { streamerMediaUrl } from "../streamer";
 import type { HubPanelsState } from "../state/hub-panels";
 import type { PageNavigation } from "../actions/page-navigation";
@@ -69,9 +68,6 @@ export function HubStreamerOverview({
         composeAnnouncement: hubChat.composeAnnouncement,
         findSquad: pageNavigation.openSquadFinderWorkspace,
         manageHub: openManageServer,
-        openExternal: (url) => {
-          void openDesktopExternalUrl(url);
-        },
         mediaUrl: streamerMediaUrl,
       }}
       transport={streamerTransport}

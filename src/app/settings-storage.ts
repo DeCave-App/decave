@@ -85,7 +85,8 @@ export const ACCESSIBILITY_TEXT_SCALE_KEY = "decave_accessibility_text_scale_v1"
 export const ACTIVITY_SETTINGS_KEY = "decave_activity_settings_v1";
 export const DEFAULT_ACTIVITY_SETTINGS: ActivitySettings = {
   autoDetectLocal: false,
-  useSteamPresence: true,
+  // Off until the person turns it on: linking Steam alone does not share games.
+  useSteamPresence: false,
   publishAutomatic: true,
   excludedGames: [],
 };

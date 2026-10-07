@@ -5,7 +5,7 @@ import type { AccountEditState } from "../state/account-edit";
 import type { AccountActions } from "../actions/account";
 
 type Props = {
-  accountEditField: "username" | "email" | "phone" | "password";
+  accountEditField: "username" | "email" | "password";
   ownerLoginChallengeToken: string;
   ownerLoginMfaCode: string;
   setOwnerLoginMfaCode: Dispatch<SetStateAction<string>>;
@@ -53,9 +53,7 @@ export function AccountEditDialog({
             ? "Change username"
             : accountEditField === "email"
               ? "Change email"
-              : accountEditField === "phone"
-                ? "Edit phone number"
-                : "Change password"}
+              : "Change password"}
         </h2>
         {accountEditField === "username" && (
           <p>Your username must be unique across DeCave. After changing it, you cannot change it again for 30 days.</p>
@@ -63,7 +61,6 @@ export function AccountEditDialog({
         {accountEditField === "email" && (
           <p>We will send a verification link to the new email address. The address remains pending until verified.</p>
         )}
-        {accountEditField === "phone" && <p>Enter a phone number with country code. Leave it blank to remove it.</p>}
         {accountEditField === "password" ? (
           <div className="dc-account-edit-fields">
             <input
@@ -173,8 +170,7 @@ export function AccountEditDialog({
             disabled={
               accountEditBusy ||
               changePasswordBusy ||
-              (accountEditField !== "password" &&
-                (!accountEditPassword || (accountEditField !== "phone" && !accountEditValue.trim())))
+              (accountEditField !== "password" && (!accountEditPassword || !accountEditValue.trim()))
             }
             onClick={() => (accountEditField === "password" ? void changePassword() : void submitAccountIdentityEdit())}
           >

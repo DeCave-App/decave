@@ -49,14 +49,13 @@ export async function platformAudit(
   // no passwords, session tokens, reset tokens, message contents or raw IP.
   const detailJson = JSON.stringify(detail).slice(0, 1600);
   const ray = (request.headers.get("CF-Ray") ?? "").slice(0, 80);
-  const country = (request.headers.get("CF-IPCountry") ?? "").slice(0, 8);
 
   await env.DB.prepare(
     `INSERT INTO decave_platform_audit
      (id, actor_user_id, target_user_id, action, detail_json, request_ray, request_country, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   )
-    .bind(crypto.randomUUID(), actorUserId, targetUserId, action, detailJson, ray || null, country || null, nowIso())
+    .bind(crypto.randomUUID(), actorUserId, targetUserId, action, detailJson, ray || null, null, nowIso())
     .run();
 }
 

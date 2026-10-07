@@ -1,5 +1,6 @@
 // Input validation for usernames, passwords, email addresses and phone numbers.
 
+/** Kept for compatibility with existing callers; phone collection is retired. */
 export function cleanPhoneNumber(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();

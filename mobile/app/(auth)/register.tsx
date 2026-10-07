@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,8 +14,6 @@ import { router } from "expo-router";
 import { TurnstileModal } from "@/src/components/TurnstileModal";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
-import { Linking } from "react-native";
-import { MINIMUM_SIGNUP_AGE } from "../../../shared/legal-consent";
 
 export default function RegisterScreen() {
   const { register } = useSession();
@@ -23,7 +22,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [turnstileOpen, setTurnstileOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -37,13 +36,12 @@ export default function RegisterScreen() {
       setNotice("Fill in every field.");
       return;
     }
-    if (!termsAccepted) { setNotice("Agree to the Terms and acknowledge the Privacy Notice to create an account."); return; }
-    const enteredDate = new Date(`${birthDate}T00:00:00Z`);
-    const cutoff = new Date(); cutoff.setUTCFullYear(cutoff.getUTCFullYear() - MINIMUM_SIGNUP_AGE);
-    if (Number.isNaN(enteredDate.getTime()) || enteredDate.toISOString().slice(0, 10) !== birthDate || enteredDate > cutoff) { setNotice(`You must be at least ${MINIMUM_SIGNUP_AGE} to create an account.`); return; }
-    if (password.length < 10) { setNotice("Use a password with at least 10 characters."); return; }
     if (password !== confirm) {
       setNotice("The passwords do not match.");
+      return;
+    }
+    if (!acceptedTerms) {
+      setNotice("Confirm that you are 18 or older and agree to the Terms of Service and Privacy Policy.");
       return;
     }
     setNotice("");
@@ -110,7 +108,7 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             style={styles.input}
           />
-          <Text style={styles.ageHint}>Used only to confirm that DeCave is available to people aged {MINIMUM_SIGNUP_AGE} or older. We do not store the exact date.</Text>
+          <Text style={styles.ageHint}>Used only to confirm that DeCave is only for adults aged 18 or older. We do not store the exact date.</Text>
           <TextInput
             value={password}
             onChangeText={setPassword}
@@ -128,9 +126,26 @@ export default function RegisterScreen() {
             style={styles.input}
           />
 
-          <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: termsAccepted }} onPress={() => setTermsAccepted((value) => !value)} style={styles.consent}>
-            <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}><Text style={styles.checkmark}>{termsAccepted ? "✓" : ""}</Text></View>
-            <Text style={styles.consentText}>I agree to <Text accessibilityRole="link" style={styles.link} onPress={(event) => { event.stopPropagation(); void Linking.openURL("https://de-cave.com/terms"); }}>Terms</Text> and acknowledge <Text accessibilityRole="link" style={styles.link} onPress={(event) => { event.stopPropagation(); void Linking.openURL("https://de-cave.com/privacy"); }}>Privacy Notice</Text></Text>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: acceptedTerms }}
+            style={styles.consent}
+            onPress={() => setAcceptedTerms((value) => !value)}
+          >
+            <View style={[styles.checkbox, acceptedTerms && styles.checkboxOn]}>
+              {acceptedTerms && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.consentText}>
+              I am 18 or older and agree to the{" "}
+              <Text style={styles.link} onPress={() => void Linking.openURL("https://de-cave.com/terms")}>
+                Terms of Service
+              </Text>{" "}
+              and{" "}
+              <Text style={styles.link} onPress={() => void Linking.openURL("https://de-cave.com/privacy")}>
+                Privacy Policy
+              </Text>
+              .
+            </Text>
           </Pressable>
 
           <Pressable accessibilityRole="button"
@@ -184,13 +199,22 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 15,
   },
-  ageHint: { color: colors.faint, fontSize: 12, lineHeight: 15, marginTop: -3, marginBottom: 7 },
-  consent: { flexDirection: "row", alignItems: "flex-start", gap: 9, marginTop: 4, marginBottom: 9 },
-  checkbox: { width: 18, height: 18, borderWidth: 1, borderColor: colors.muted, borderRadius: 4, alignItems: "center", justifyContent: "center" },
-  checkboxChecked: { backgroundColor: colors.violet, borderColor: colors.violet },
+  consent: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 4, marginBottom: 8 },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
+  checkboxOn: { backgroundColor: colors.violet, borderColor: colors.violet },
   checkmark: { color: "#fff", fontSize: 13, fontWeight: "900" },
-  consentText: { flex: 1, color: colors.muted, fontSize: 12, lineHeight: 18 },
-  link: { color: colors.cyan, textDecorationLine: "underline", fontWeight: "700" },
+  consentText: { flex: 1, color: colors.muted, fontSize: 13, lineHeight: 19 },
+  link: { color: colors.cyan, fontWeight: "700" },
+  ageHint: { color: colors.faint, fontSize: 12, lineHeight: 15, marginTop: -3, marginBottom: 7 },
   button: {
     backgroundColor: colors.violet,
     borderRadius: 13,

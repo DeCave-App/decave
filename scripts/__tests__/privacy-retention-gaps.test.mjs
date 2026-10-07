@@ -10,7 +10,8 @@ import { fileURLToPath } from "node:url";
 register("../test-support/cloudflare-workers-test-loader.mjs", import.meta.url);
 const { D1Mock, MediaMock } = await import("../test-support/worker-sqlite-test-fixture.mjs");
 const { handleApi } = await import("../../worker/index.ts");
-const { ensureQrLoginSchema, securityEventIpHash } = await import("../../worker/lib/sessions.ts");
+const { ensureQrLoginSchema, securityEventIpHash, securityIpAddressTag } = await import("../../worker/lib/sessions.ts");
+const { ensureGroupChatSchema } = await import("../../worker/db.ts");
 const { ensureSquadFinderSchema } = await import("../../worker/lib/squad.ts");
 const { ensureCollaborationSchema } = await import("../../worker/lib/hub-schema.ts");
 const { maskPushToken } = await import("../../shared/account-export.ts");
@@ -236,10 +237,23 @@ test("security-event IP tags prefer the dedicated key, else a domain-separated M
   assert.notEqual(derived.slice("hmac:v1d:".length), direct.slice("hmac:v1:".length));
   assert.ok(!derived.includes("203.0.113.9"));
   assert.equal(await securityEventIpHash({}, request), "");
+  const addressTag = await securityIpAddressTag(
+    { SECURITY_IP_HASH_KEY: "dedicated-secret" },
+    "203.0.113.9",
+    "decave-peer-address-v1",
+  );
+  assert.match(addressTag, /^hmac:v1:[0-9a-f]{64}$/);
+  assert.notEqual(
+    addressTag,
+    await securityIpAddressTag({ SECURITY_IP_HASH_KEY: "dedicated-secret" }, "203.0.113.9", "decave-other-v1"),
+    "independent address-tag domains cannot be correlated",
+  );
+  assert.equal(await securityIpAddressTag({}, "203.0.113.9", "decave-peer-address-v1"), "");
 });
 
 async function seedSquadRoom({ hubId, roomId, groupId, members }) {
   await ensureSquadFinderSchema(env);
+  await ensureGroupChatSchema(db);
   db.exec(
     `INSERT INTO decave_hubs(id,name,icon,owner_id,visibility,created_at,updated_at,icon_key)
      VALUES(?,?,'S','u1','private',?,?,?)`,

@@ -415,7 +415,7 @@ export function AdminAccountsTab({
                 <>
                   <span style={{ color: "var(--ds-text-soft)", fontSize: "10px" }}>
                     If the birth date was entered incorrectly, an owner can review the corrected date. It must show the
-                    account holder is at least 13.
+                    account holder is at least 18.
                   </span>
                   <input
                     type="date"

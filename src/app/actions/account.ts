@@ -32,6 +32,7 @@ import type { AccountSessionsState } from "../state/account-sessions";
 import type { SettingsWindowState } from "../state/settings-window";
 import type { PreferencesState } from "../state/preferences";
 import type { OwnerSecurityState } from "../state/owner-security";
+import { dmE2ee } from "../../e2ee/dm-e2ee-client";
 
 export type AccountActionsDeps = {
   currentUser: AccountUser | null;
@@ -43,8 +44,8 @@ export type AccountActionsDeps = {
   setProfileAvatarError: Dispatch<SetStateAction<string>>;
   setSecurityNotice: Dispatch<SetStateAction<string>>;
   setSecurityBusy: Dispatch<SetStateAction<boolean>>;
-  setAccountEditField: Dispatch<SetStateAction<"username" | "email" | "phone" | "password" | null>>;
-  accountEditField: "username" | "email" | "phone" | "password" | null;
+  setAccountEditField: Dispatch<SetStateAction<"username" | "email" | "password" | null>>;
+  accountEditField: "username" | "email" | "password" | null;
   accountEditOperationRef: MutableRefObject<{ accountId: string; controller: AbortController } | null>;
   accountEditAccountIdRef: MutableRefObject<string | null>;
   setDangerPassword: Dispatch<SetStateAction<string>>;
@@ -231,7 +232,6 @@ export function createAccountActions(deps: AccountActionsDeps) {
 
       setAccountPreferences((current) => ({
         ...current,
-        phoneNumber: typeof data.phoneNumber === "string" ? data.phoneNumber : "",
         usernameChangedAt: typeof data.usernameChangedAt === "string" ? data.usernameChangedAt : null,
         usernameChangeAvailableAt:
           typeof data.usernameChangeAvailableAt === "string" ? data.usernameChangeAvailableAt : null,
@@ -366,7 +366,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
     setAccountEditField(null);
   };
 
-  const openAccountEditor = (field: "username" | "email" | "phone" | "password") => {
+  const openAccountEditor = (field: "username" | "email" | "password") => {
     accountEditOperationRef.current?.controller.abort();
     setAccountEditField(field);
     setAccountEditBusy(false);
@@ -374,7 +374,6 @@ export function createAccountActions(deps: AccountActionsDeps) {
     setAccountEditPassword("");
     if (field === "username") setAccountEditValue(currentUser?.username ?? "");
     if (field === "email") setAccountEditValue(currentUser?.email ?? "");
-    if (field === "phone") setAccountEditValue(accountPreferences.phoneNumber);
     if (field === "password") {
       setChangePasswordCurrentInput("");
       setChangePasswordNewInput("");
@@ -491,28 +490,6 @@ export function createAccountActions(deps: AccountActionsDeps) {
         setAccountEditField(null);
         return;
       }
-
-      const response = await editFetch(`${HTTP_URL}/api/account/phone`, {
-        method: "PUT",
-        redirect: "error",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: value, currentPassword: password }),
-      });
-      const data = (await response.json().catch(() => ({}))) as Partial<AccountPreferences> & {
-        error?: string;
-      };
-      assertCurrent();
-      if (!response.ok) {
-        setAccountEditNotice(data.error || "Could not update phone number. Verify your account and try again.");
-        return;
-      }
-      setAccountPreferences((current) => ({
-        ...current,
-        phoneNumber: typeof data.phoneNumber === "string" ? data.phoneNumber : value,
-      }));
-      setSecurityNotice("Phone number updated.");
-      setAccountEditField(null);
     } catch {
       if (isCurrent()) setAccountEditNotice("Could not confirm the account update. Verify your account and try again.");
     } finally {
@@ -598,6 +575,8 @@ export function createAccountActions(deps: AccountActionsDeps) {
       socketRef.current?.close();
 
       storeToken("");
+      // The key isn't tied to the password, so this device keeps it for the next sign-in.
+      void dmE2ee.stop({ forget: false });
       setCurrentUser(null);
       setServersReady(false);
       setServers([]);

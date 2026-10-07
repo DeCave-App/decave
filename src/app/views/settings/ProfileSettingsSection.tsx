@@ -23,7 +23,7 @@ import type { PreferencesState } from "../../state/preferences";
 type Props = {
   currentUser: AccountUser;
   profileAvatarError: string;
-  openAccountEditor: (field: "username" | "email" | "phone" | "password") => void;
+  openAccountEditor: (field: "username" | "email" | "password") => void;
   uploadProfileBanner: (file: File) => Promise<void>;
   removeProfileBanner: () => Promise<void>;
   uploadProfileAvatar: (file: File) => Promise<void>;

@@ -1,3 +1,5 @@
+import type { DmReportProof } from "../../shared/dm-e2ee";
+
 export const REPORT_CATEGORIES = [
   "HARASSMENT_BULLYING",
   "HATE_SPEECH",
@@ -34,6 +36,8 @@ export type SafetyReportTarget = {
   evidenceType?: "message" | "attachment" | "profile" | "context" | "voice_participant";
   evidenceText?: string;
   evidenceLabel?: string;
+  /** For an end-to-end encrypted DM: proof the sender sent it (shared/dm-e2ee.ts verifyReportProof). */
+  e2eeProof?: DmReportProof;
 };
 
 export type SafetyReport = {

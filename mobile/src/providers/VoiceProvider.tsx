@@ -1,4 +1,5 @@
 import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync } from "expo-audio";
+import { callDescriptionAuth, checkCallDescription, clearCallVerdict } from "@/src/lib/e2ee/call-verification";
 import { primePermission } from "@/src/lib/permission-primer";
 import {
   createContext,
@@ -19,13 +20,13 @@ import {
   mediaDevices,
 } from "react-native-webrtc";
 import { apiJson } from "@/src/lib/api";
+import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "@/src/lib/rtc-relay";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useVoiceSettings } from "@/src/providers/VoiceSettingsProvider";
 import type { RealtimeEvent, VoiceParticipant } from "@/src/types";
 import { requestIosBroadcast } from "@/src/components/IosBroadcastPicker";
 import { ScreenBroadcast } from "../../modules/decave-screen-broadcast";
-import { hasUsableRelayIceServers } from "../../../shared/rtc-relay";
 
 type VoiceStatus = "disconnected" | "joining" | "connected";
 export type VoiceCaptureStatus =
@@ -121,8 +122,6 @@ const MAX_PEER_RECOVERY_ATTEMPTS = 3;
 const PEER_RECOVERY_DELAYS_MS = [250, 750, 1_500] as const;
 const VOICE_RECOVERY_DELAYS_MS = [500, 1_500, 3_000] as const;
 
-const fallbackIceServers: IceServer[] = [];
-
 function errorMessage(cause: unknown, fallback: string): string {
   return cause instanceof Error && cause.message ? cause.message : fallback;
 }
@@ -209,7 +208,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
   const localCameraStreamRef = useRef<MediaStream | null>(null);
   const localScreenStreamRef = useRef<MediaStream | null>(null);
   const peerSessionsRef = useRef<Map<string, PeerSession>>(new Map());
-  const iceServersRef = useRef<IceServer[]>(fallbackIceServers);
+  const iceServersRef = useRef<IceServer[]>([]);
   const mutedRef = useRef(false);
   const deafenedRef = useRef(false);
   const serverMutedRef = useRef(false);
@@ -278,6 +277,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
   };
 
   const closePeer = (peerConnectionId: string) => {
+    clearCallVerdict(peerConnectionId);
     const session = peerSessionsRef.current.get(peerConnectionId);
     if (!session) return;
     if (session.recoveryTimer) clearTimeout(session.recoveryTimer);
@@ -395,7 +395,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     stopScreenShare();
     closeAllPeers();
     stopMicrophone();
-    iceServersRef.current = fallbackIceServers;
+    iceServersRef.current = [];
     voiceChannelRef.current = null;
     pendingVoiceChannelRef.current = null;
     participantsRef.current = [];
@@ -511,6 +511,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
   ): boolean => {
     if (!description) return false;
     
+    const peerUserId = participantsRef.current.find((item) => item.connectionId === targetConnectionId)?.userId;
     return send({
       type: "RTC_DESCRIPTION",
       targetConnectionId,
@@ -518,6 +519,8 @@ export function VoiceProvider({ children }: PropsWithChildren) {
         type: description.type,
         sdp: description.sdp,
       },
+      // Signed with the account key so the peer can check the DTLS fingerprints are ours.
+      ...callDescriptionAuth(peerUserId, description.sdp),
     });
   };
 
@@ -573,13 +576,10 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       return existing;
     }
 
-    if (!hasUsableRelayIceServers(iceServersRef.current)) {
-      setVoiceError("Voice is temporarily unavailable. We couldn't reach the secure voice relay. Please try again in a few minutes.");
-      throw new Error("Voice is temporarily unavailable. We couldn't reach the secure voice relay. Please try again in a few minutes.");
-    }
-
     
 
+    // Relay-only: media always flows through TURN so peers never learn each
+    // other's IP addresses. ICE restarts gather fresh relay candidates.
     const pc = new RTCPeerConnection({
       ...({}),
       iceServers: iceServersRef.current,
@@ -610,7 +610,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     peerSessionsRef.current.set(participant.connectionId, session);
 
     pc.onicecandidate = (event: { candidate: RTCIceCandidate | null }) => {
-      if (!event.candidate) return;
+      if (!event.candidate || !isRelayIceCandidate(event.candidate)) return;
       {
         send({
           type: "RTC_ICE_CANDIDATE",
@@ -737,12 +737,18 @@ export function VoiceProvider({ children }: PropsWithChildren) {
   const handleDescription = async (
     participant: VoiceParticipant,
     description: DescriptionPayload,
+    auth?: unknown,
   ) => {
-    
-    
     const session = ensurePeer(participant);
     await enqueuePeerSignaling(session, async () => {
       const { pc } = session;
+      // A description not signed by the participant's account key, when they have one,
+      // could be the server's: don't connect to it. Checked inside the signaling queue
+      // so candidates keep their order.
+      if ((await checkCallDescription(participant, description, auth, false)) === "rejected") {
+        console.warn("Ignored a voice description that failed its encryption check.");
+        return;
+      }
 
       try {
         // Local track installation can itself trigger negotiationneeded. Keep
@@ -787,8 +793,8 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     participant: VoiceParticipant,
     candidate: CandidatePayload,
   ) => {
-    
-    
+    // Relay-only: never apply a host/srflx candidate a peer may have sent.
+    if (!isRelayIceCandidate(candidate)) return;
     const session = ensurePeer(participant);
     await enqueuePeerSignaling(session, async () => {
       if (!session.pc.remoteDescription || session.remoteDescriptionPending) {
@@ -973,24 +979,28 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     }
   };
 
+  // Voice is relay-only. A STUN-only list (TURN not configured) or a failed
+  // fetch can never connect, so throw and let joinVoice surface the error and
+  // keep its existing recovery retries instead of joining a silent room.
   const loadIceServers = async () => {
-    if (!token) return;
-    try {
-      const data = await apiJson<{ iceServers?: IceServer[] }>(
-        "/api/rtc/ice-servers",
-        {},
-        token,
-      );
-      if (hasUsableRelayIceServers(data.iceServers)) {
-        iceServersRef.current = data.iceServers ?? [];
-      } else {
-        iceServersRef.current = [];
-        throw new Error("Voice is temporarily unavailable. We couldn't reach the secure voice relay. Please try again in a few minutes.");
+    let iceServers: IceServer[] = [];
+    if (token) {
+      try {
+        const data = await apiJson<{ iceServers?: IceServer[] }>(
+          "/api/rtc/ice-servers",
+          {},
+          token,
+        );
+        if (Array.isArray(data.iceServers)) iceServers = data.iceServers;
+      } catch (cause) {
+        console.warn("Could not load voice ICE servers.", cause);
       }
-    } catch {
-      iceServersRef.current = [];
-      throw new Error("Voice is temporarily unavailable. We couldn't reach the secure voice relay. Please try again in a few minutes.");
     }
+    if (!hasRelayIceServer(iceServers)) {
+      iceServersRef.current = [];
+      throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+    }
+    iceServersRef.current = iceServers;
   };
 
   const joinVoice = async (channelId: number): Promise<boolean> => {
@@ -1477,10 +1487,9 @@ export function VoiceProvider({ children }: PropsWithChildren) {
         console.warn("Ignored malformed voice session description.");
         return;
       }
-      void handleDescription(event.from as VoiceParticipant, {
-        type: description.type as DescriptionPayload["type"],
-        sdp: description.sdp,
-      });
+      const from = event.from as VoiceParticipant;
+      const payload = { type: description.type as DescriptionPayload["type"], sdp: description.sdp };
+      void handleDescription(from, payload, event.auth);
       return;
     }
 

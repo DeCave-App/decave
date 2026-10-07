@@ -240,6 +240,10 @@ export async function loadAuthenticatedAttachmentImage(
     token: string;
     apiFetch: (path: string, init?: RequestInit, token?: string | null) => Promise<Response>;
     signal?: AbortSignal;
+    /** Decrypts an end-to-end encrypted image; the server then only knows it as a blob. */
+    decrypt?: ((bytes: Uint8Array) => Uint8Array) | null;
+    /** The real type of an encrypted image. */
+    mimeType?: string;
   },
 ): Promise<string> {
   const attachmentUrl = validateLegacyAttachmentUrl(options.url, options.baseUrl);
@@ -256,11 +260,12 @@ export async function loadAuthenticatedAttachmentImage(
     throw new LegacyAttachmentError("network-failure", "The attachment image request failed.");
   }
   assertResponseForAttachment(response, options.baseUrl);
-  const mime = contentTypeFor(response).toLowerCase();
+  const mime = (options.decrypt ? options.mimeType ?? "" : contentTypeFor(response)).toLowerCase();
   if (!["image/png", "image/jpeg", "image/gif", "image/webp"].includes(mime)) {
     throw new LegacyAttachmentError("invalid-response", "The attachment response is not a supported image.");
   }
-  const bytes = await readBoundedLegacyAttachmentBody(response);
+  const downloaded = await readBoundedLegacyAttachmentBody(response);
+  const bytes = options.decrypt ? options.decrypt(downloaded) : downloaded;
   return `data:${mime};base64,${bytesToBase64(bytes)}`;
 }
 
@@ -287,6 +292,10 @@ export interface MobileLegacyAttachmentDownloadOptions {
   apiFetch: (path: string, init?: RequestInit, token?: string | null) => Promise<Response>;
   fileSystem?: MobileLegacyAttachmentFileSystem;
   maxBytes?: number;
+  /** Decrypts an end-to-end encrypted file after download. */
+  decrypt?: ((bytes: Uint8Array) => Uint8Array) | null;
+  /** The real type of a decrypted file (the server only knows it as a blob). */
+  contentType?: string;
 }
 
 export async function downloadLegacyAttachmentMobile(
@@ -312,7 +321,8 @@ export async function downloadLegacyAttachmentMobile(
     throw new LegacyAttachmentError("network-failure", "The attachment request failed.");
   }
   assertResponseForAttachment(response, options.baseUrl);
-  const body = await readBoundedLegacyAttachmentBody(response, options.maxBytes);
+  const downloaded = await readBoundedLegacyAttachmentBody(response, options.maxBytes);
+  const body = options.decrypt ? options.decrypt(downloaded) : downloaded;
   const fileSystem = options.fileSystem ??
     (await import("expo-file-system/legacy") as unknown as MobileLegacyAttachmentFileSystem);
   const encoding = fileSystem.EncodingType?.Base64 ?? "base64";
@@ -333,7 +343,7 @@ export async function downloadLegacyAttachmentMobile(
   if (!permissions.granted || !permissions.directoryUri) {
     throw new LegacyAttachmentError("export-unavailable", "Choose a folder to save the attachment.");
   }
-  const mimeType = contentTypeFor(response);
+  const mimeType = options.decrypt ? options.contentType || "application/octet-stream" : contentTypeFor(response);
   const fileUri = await fileSystem.StorageAccessFramework.createFileAsync(
     permissions.directoryUri,
     filename,

@@ -18,8 +18,17 @@ import type {
 import { HTTP_URL } from "../env";
 import { localeForLanguage, preferredTimeOptions } from "../locale";
 import { HISTORY_PAGE_SIZE } from "../constants";
-import { DM_ATTACHMENT_PREFIX } from "../message-payloads";
+import { DM_ATTACHMENT_PREFIX, dmPreviewText } from "../message-payloads";
 import type { NewConversationState } from "../state/new-conversation";
+import {
+  dmE2ee,
+  dmReactionBody,
+  dmSealedBody,
+  dmSocketFrame,
+  encryptFileForDm,
+  groupPreview,
+  groupSocketFrame,
+} from "../../e2ee/dm-e2ee-client";
 
 export type DirectMessageActionsDeps = {
   currentUser: AccountUser | null;
@@ -217,7 +226,31 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
         setDmConversations([]);
         return;
       }
-      setDmConversations(Array.isArray(data.conversations) ? data.conversations : []);
+      const conversations = Array.isArray(data.conversations) ? data.conversations : [];
+      // Encrypted previews are decrypted here, so every list shows the real text.
+      const previews = await Promise.all(
+        conversations.map((conversation) =>
+          dmE2ee.open(
+            {
+              id: conversation.latestMessageId ?? "",
+              fromUserId: conversation.latestEnvelope?.from ?? "",
+              toUserId: conversation.latestEnvelope?.to ?? "",
+              text: conversation.latestMessage,
+              envelope: conversation.latestEnvelope ?? null,
+            },
+            conversation.user.id,
+          ),
+        ),
+      );
+      setDmConversations(
+        conversations.map((conversation, index) => ({
+          ...conversation,
+          latestMessage:
+            previews[index].e2ee === "encrypted" || !conversation.latestEnvelope
+              ? dmPreviewText(previews[index].text)
+              : "🔒 Encrypted message",
+        })),
+      );
     } catch (error) {
       console.error("Could not load DM conversations:", error);
       setDmConversations([]);
@@ -236,7 +269,10 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
         setGroupChats([]);
         return;
       }
-      setGroupChats(Array.isArray(data.groups) ? data.groups : []);
+      const groups = Array.isArray(data.groups) ? data.groups : [];
+      // Encrypted previews are decrypted here, like DM previews.
+      const previews = await Promise.all(groups.map((group) => groupPreview(group)));
+      setGroupChats(groups.map((group, index) => ({ ...group, latestMessage: previews[index] })));
     } catch (error) {
       console.error("Could not load group chats:", error);
       setGroupChats([]);
@@ -277,7 +313,12 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       }
       setActiveGroupChat(data.group);
       activeGroupChatRef.current = data.group;
-      const firstGroupPage = Array.isArray(data.messages) ? data.messages : [];
+      const firstGroupPage = await dmE2ee.openGroupAll(
+        Array.isArray(data.messages) ? data.messages : [],
+        data.group.id,
+      );
+      if (loadGeneration !== groupHistoryLoadGenerationRef.current || activeGroupChatRef.current?.id !== group.id)
+        return;
       setGroupMessages(firstGroupPage);
       setOlderHistory((current) => ({ ...current, group: firstGroupPage.length >= HISTORY_PAGE_SIZE }));
       void loadGroupChats();
@@ -294,7 +335,14 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     const text = groupInput.trim();
     if (!group || !text) return;
     setGroupError("");
-    if (sendSocket({ type: "GROUP_MESSAGE", groupId: group.id, text, replyToId: groupReplyingTo?.id ?? null })) {
+    let frame: Record<string, unknown>;
+    try {
+      frame = await groupSocketFrame(group, text, groupReplyingTo?.id ?? null);
+    } catch (error) {
+      setGroupError(error instanceof Error ? error.message : "Could not encrypt this message.");
+      return;
+    }
+    if (sendSocket(frame)) {
       setGroupInput("");
       setGroupReplyingTo(null);
       return;
@@ -456,7 +504,14 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     const text = dmInput.trim();
     if (!target || !text) return;
     setDmError("");
-    if (sendSocket({ type: "DM_MESSAGE", targetUserId: target.id, text, replyToId: dmReplyingTo?.id ?? null })) {
+    let frame: Record<string, unknown>;
+    try {
+      frame = await dmSocketFrame(target.id, text, dmReplyingTo?.id ?? null);
+    } catch (error) {
+      setDmError(error instanceof Error ? error.message : "Could not encrypt this message.");
+      return;
+    }
+    if (sendSocket(frame)) {
       setDmInput("");
       setDmDrafts((current) => {
         const next = { ...current };
@@ -481,23 +536,35 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     setDmError("");
     setShowDmPlusMenu(false);
     try {
+      // In an encrypted conversation the file is encrypted first and the server only
+      // sees an anonymous blob; its name, type and key travel in the encrypted message.
+      const encrypted = (await dmE2ee.peerHasKey(target.id)) ? await encryptFileForDm(file) : null;
       const response = await authorizedFetch(`${HTTP_URL}/api/dms/${encodeURIComponent(target.id)}/attachments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/octet-stream",
-          "X-File-Name": encodeURIComponent(file.name),
-          "X-File-Type": file.type || "application/octet-stream",
+          "X-File-Name": encrypted ? "encrypted" : encodeURIComponent(file.name),
+          "X-File-Type": encrypted ? "application/octet-stream" : file.type || "application/octet-stream",
         },
         signal: controller.signal,
-        body: file,
+        body: encrypted ? encrypted.body : file,
       });
       const data = (await response.json()) as { attachment?: AttachmentMeta; error?: string };
       if (!response.ok || !data.attachment) {
         setDmError(data.error || "Could not upload attachment.");
         return;
       }
-      const text = `${DM_ATTACHMENT_PREFIX}${JSON.stringify(data.attachment)}`;
-      if (!sendSocket({ type: "DM_MESSAGE", targetUserId: target.id, text, replyToId: dmReplyingTo?.id ?? null })) {
+      const attachment: AttachmentMeta = encrypted
+        ? {
+            ...data.attachment,
+            name: file.name.slice(0, 180) || "attachment",
+            mimeType: file.type || "application/octet-stream",
+            size: file.size,
+            fileKey: encrypted.fileKey,
+          }
+        : data.attachment;
+      const text = `${DM_ATTACHMENT_PREFIX}${JSON.stringify(attachment)}`;
+      if (!sendSocket(await dmSocketFrame(target.id, text, dmReplyingTo?.id ?? null))) {
         setDmError("Realtime is reconnecting. Try the attachment again in a moment.");
         return;
       }
@@ -528,31 +595,47 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
   };
 
   const sendDmReaction = async (message: DirectMessage, emoji: string) => {
+    const peerId = activeDmUserRef.current?.id ?? "";
     try {
-      const response = await authorizedFetch(
-        `${HTTP_URL}/api/dms/messages/${encodeURIComponent(message.id)}/reactions`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ emoji }),
-        },
-      );
-      const data = (await response.json().catch(() => ({}))) as {
-        message?: DirectMessage;
-        error?: string;
+      // On an encrypted message the whole set of this account's reactions is sealed.
+      const send = async (refreshKeys: boolean) => {
+        const body = await dmReactionBody(message, currentUser?.id ?? "", peerId, emoji, refreshKeys);
+        const response = await authorizedFetch(
+          `${HTTP_URL}/api/dms/messages/${encodeURIComponent(message.id)}/reactions`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          },
+        );
+        const data = (await response.json().catch(() => ({}))) as {
+          message?: DirectMessage;
+          error?: string;
+          code?: string;
+        };
+        return { response, data };
       };
+      let { response, data } = await send(false);
+      if (data.code === "DM_E2EE_STALE_KEY") ({ response, data } = await send(true));
       if (!response.ok || !data.message) {
         setDmError(data.error || "Could not update reaction.");
         return;
       }
-      setDmMessages((current) => current.map((item) => (item.id === data.message!.id ? data.message! : item)));
-    } catch {
-      setDmError("Could not update reaction.");
+      const updated = await dmE2ee.open(data.message, peerId);
+      setDmMessages((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    } catch (error) {
+      setDmError(
+        error instanceof Error && error.name === "DmE2eeUnavailableError"
+          ? error.message
+          : "Could not update reaction.",
+      );
     }
   };
 
   const startEditDirectMessage = (message: DirectMessage) => {
     if (message.fromUserId !== currentUser?.id) return;
+    // A message this device can't decrypt has no text to edit.
+    if (message.e2ee === "locked" || message.e2ee === "failed") return;
     setDmReplyingTo(null);
     setDmEditingId(message.id);
     setDmEditingText(message.text);
@@ -564,21 +647,32 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     const text = dmEditingText.trim();
     if (!id || !text) return;
 
+    const target = activeDmUserRef.current;
+    if (!target) return;
     try {
-      const response = await authorizedFetch(`${HTTP_URL}/api/dms/messages/${encodeURIComponent(id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        message?: DirectMessage;
-        error?: string;
+      const send = async (refreshKeys: boolean) => {
+        const body = await dmSealedBody(target.id, text, { id, refreshKeys });
+        const response = await authorizedFetch(`${HTTP_URL}/api/dms/messages/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = (await response.json().catch(() => ({}))) as {
+          message?: DirectMessage;
+          error?: string;
+          code?: string;
+        };
+        return { response, data };
       };
+      let { response, data } = await send(false);
+      if (data.code === "DM_E2EE_STALE_KEY" || data.code === "DM_E2EE_REQUIRED")
+        ({ response, data } = await send(true));
       if (!response.ok || !data.message) {
         setDmError(data.error || "Could not edit message.");
         return;
       }
-      setDmMessages((current) => current.map((item) => (item.id === id ? data.message! : item)));
+      const edited = await dmE2ee.open(data.message, target.id);
+      setDmMessages((current) => current.map((item) => (item.id === id ? edited : item)));
       setDmEditingId(null);
       setDmEditingText("");
       void loadDmConversations();

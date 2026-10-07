@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_BASE } from "@/src/lib/api";
 import { loadAuthenticatedAttachmentImage } from "@/src/lib/legacy-attachment-download";
+import { giphyImageSource } from "@/src/lib/chat-media";
 import { colors } from "@/src/theme";
 
 type LoadedImage = { url: string; token: string; uri: string };
@@ -19,12 +20,17 @@ export function MessageImage({
   title,
   authenticated,
   onSave,
+  decrypt,
+  mimeType,
 }: {
   url: string;
   token: string | null;
   title?: string;
   authenticated: boolean;
   onSave?: () => void;
+  /** Decrypts an end-to-end encrypted image after download. */
+  decrypt?: ((bytes: Uint8Array) => Uint8Array) | null;
+  mimeType?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [ratio, setRatio] = useState(4 / 3);
@@ -33,10 +39,6 @@ export function MessageImage({
   const insets = useSafeAreaInsets();
   useEffect(() => {
     if (!authenticated || !token) {
-      setLoadedImage(null);
-      return;
-    }
-    if (isGiphyProxyUrl(url)) {
       setLoadedImage(null);
       return;
     }
@@ -53,6 +55,8 @@ export function MessageImage({
         return expoFetch(`${API_BASE}${path}`, { ...init, headers });
       },
       signal: controller.signal,
+      decrypt,
+      mimeType,
     })
       .then((uri) => {
         if (active) setLoadedImage({ url, token, uri });
@@ -68,10 +72,16 @@ export function MessageImage({
 
   const authenticatedUri =
     authenticated && token && loadedImage?.url === url && loadedImage.token === token ? loadedImage.uri : null;
-  const isGiphyProxy = isGiphyProxyUrl(url);
-  const source = isGiphyProxy && token
-    ? { uri: url.startsWith("/") ? `${API_BASE}${url}` : url, headers: { Authorization: `Bearer ${token}` } }
-    : { uri: authenticated ? authenticatedUri ?? "" : url };
+  // GIPHY media is never loaded from GIPHY directly: it goes through the
+  // authenticated DeCave proxy. Any other unauthenticated URL is rendered as-is.
+  const giphySource = authenticated ? null : giphyImageSource(url, token);
+  const isGiphy = !authenticated && /^https:\/\/[^/]*giphy\.com\//i.test(url);
+  // No source (not an empty uri, which React Native warns about) while loading.
+  const source = authenticated
+    ? authenticatedUri
+      ? { uri: authenticatedUri }
+      : undefined
+    : giphySource ?? (isGiphy ? undefined : { uri: url });
 
   return (
     <>
@@ -113,15 +123,6 @@ export function MessageImage({
       </Modal>
     </>
   );
-}
-
-function isGiphyProxyUrl(value: string): boolean {
-  try {
-    const parsed = new URL(value, `${API_BASE}/`);
-    return parsed.origin === API_BASE && parsed.pathname === "/api/giphy/media";
-  } catch {
-    return false;
-  }
 }
 
 const styles = StyleSheet.create({
