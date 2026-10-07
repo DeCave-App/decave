@@ -1,0 +1,274 @@
+/* Hub Home owner tools: setup checklist and the insights dialog. */
+.hot-checklist {
+  margin: 0 20px 14px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent) 40%, var(--ds-border));
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface-1);
+}
+.hot-checklist {
+  display: block;
+  box-sizing: border-box;
+  width: auto;
+}
+.hot-checklist header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 10px;
+}
+.hot-checklist header > div:first-child {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.hot-checklist header .hot-progress {
+  flex: 1 1 140px;
+  max-width: 220px;
+}
+.hot-checklist h2 {
+  margin: 0;
+  color: var(--ds-text);
+  font-size: 15px;
+}
+.hot-checklist header p {
+  margin: 2px 0 0;
+  color: var(--ds-muted);
+  font-size: 12px;
+}
+.hot-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ds-text) 10%, transparent);
+  overflow: hidden;
+}
+.hot-progress i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ds-accent);
+}
+.hot-checklist ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hot-checklist li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--ds-border);
+  border-radius: 10px;
+  background: var(--ds-surface-2);
+}
+.hot-checklist li.is-done {
+  opacity: 0.7;
+}
+.hot-tick {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--ds-border-strong, var(--ds-border));
+  color: #fff;
+}
+.is-done .hot-tick {
+  border-color: var(--ds-success);
+  background: var(--ds-success);
+}
+.hot-step {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.hot-step strong {
+  color: var(--ds-text);
+  font-size: 13px;
+}
+.hot-step small {
+  color: var(--ds-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.hot-done-label {
+  color: var(--ds-success);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hot-insights {
+  width: min(880px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+.hot-status {
+  color: var(--ds-muted);
+  font-size: 13px;
+}
+.hot-error {
+  color: var(--ds-danger);
+}
+.hot-body {
+  display: grid;
+  gap: 18px;
+}
+.hot-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+.hot-tile {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--ds-border);
+  border-radius: 12px;
+  background: var(--ds-surface-2);
+}
+.hot-tile span {
+  color: var(--ds-muted);
+  font-size: 12px;
+}
+.hot-tile strong {
+  color: var(--ds-text);
+  font-size: 26px;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.hot-tile small {
+  color: var(--ds-muted);
+  font-size: 12px;
+}
+.hot-chart {
+  margin: 0;
+}
+.hot-chart figcaption {
+  margin-bottom: 8px;
+  color: var(--ds-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.hot-bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 130px;
+  padding-top: 22px;
+  border-bottom: 1px solid var(--ds-border);
+}
+.hot-bar {
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+.hot-bar i {
+  display: block;
+  width: 100%;
+  max-width: 28px;
+  margin: 0 auto;
+  border-radius: 4px 4px 0 0;
+  background: var(--ds-accent);
+}
+.hot-bar.is-hover i,
+.hot-bar:focus-visible i {
+  background: var(--ds-accent-2, var(--ds-accent));
+}
+.hot-bar:focus-visible {
+  outline: 2px solid var(--ds-accent-2);
+  outline-offset: 1px;
+}
+.hot-tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--ds-surface-solid, #10141c);
+  border: 1px solid var(--ds-border);
+  color: var(--ds-text);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.hot-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: var(--ds-muted);
+  font-size: 11px;
+}
+.hot-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.hot-columns h3 {
+  margin: 0 0 8px;
+  color: var(--ds-text);
+  font-size: 13px;
+}
+.hot-rooms,
+.hot-top {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hot-rooms li,
+.hot-top li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  font-size: 13px;
+}
+.hot-rooms button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ds-accent-text, var(--ds-accent));
+  font: inherit;
+  cursor: pointer;
+}
+.hot-rooms li span,
+.hot-top li span:last-child {
+  color: var(--ds-muted);
+  font-variant-numeric: tabular-nums;
+}
+.hot-top {
+  counter-reset: top;
+}
+.hot-hint {
+  margin: 8px 0 0;
+  color: var(--ds-muted);
+  font-size: 12px;
+}
+
+/* Chart data tables for screen readers. */
+.hot-sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

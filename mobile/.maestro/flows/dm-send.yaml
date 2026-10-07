@@ -1,0 +1,19 @@
+# Send a DM and check the composer stays above the keyboard.
+# Needs: app already signed in; FRIEND = a friend's username with an existing DM.
+appId: com.example.decave
+---
+- launchApp:
+    clearState: false
+- tapOn: "DMs"
+- tapOn: ${FRIEND}
+- tapOn:
+    id: "dm-composer"
+- inputText: "ok"
+# Keyboard is up: the box and send button must still be on screen and tappable.
+- assertVisible:
+    id: "dm-composer"
+- assertVisible: "Send message"
+- tapOn: "Send message"
+# A short message must render whole, not split ("o / k").
+- assertVisible: "ok"
+- hideKeyboard

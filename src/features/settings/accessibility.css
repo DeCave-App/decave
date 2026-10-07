@@ -1,0 +1,81 @@
+/* App-wide effects of Settings → Appearance (see extraSettings.ts). The app
+   root carries data-motion / data-density / data-contrast / data-underline-links
+   / data-show-alt; these rules sit outside .dc-settings-page on purpose. */
+
+/* Reduce motion: honour the user's choice even when the OS allows motion. */
+.app[data-motion="reduce"] *,
+.app[data-motion="reduce"] *::before,
+.app[data-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Compact message density. */
+.app[data-density="compact"] .message-list > .chat-message,
+.app[data-density="compact"] .chat-message {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  gap: 8px !important;
+  min-height: 0 !important;
+}
+.app[data-density="compact"] .chat-message .message-avatar,
+.app[data-density="compact"] .chat-message .message-avatar-context {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  font-size: 12px !important;
+}
+.app[data-density="compact"] .chat-message-text {
+  line-height: 1.35 !important;
+}
+.app[data-density="compact"] .chat-message-header {
+  margin-bottom: 0 !important;
+}
+
+/* High contrast: stronger edges, brighter secondary text, unmistakable focus. */
+.app[data-contrast="high"] {
+  --ds-border: color-mix(in srgb, var(--ds-text) 42%, transparent);
+  --ds-border-strong: color-mix(in srgb, var(--ds-text) 62%, transparent);
+  --ds-muted: color-mix(in srgb, var(--ds-text) 82%, transparent);
+  --ds-text-soft: color-mix(in srgb, var(--ds-text) 92%, transparent);
+  --gc-border: color-mix(in srgb, var(--ds-text) 42%, transparent);
+  --gc-border-strong: color-mix(in srgb, var(--ds-text) 62%, transparent);
+  --gc-muted: color-mix(in srgb, var(--ds-text) 82%, transparent);
+  --dcx-muted: color-mix(in srgb, var(--ds-text) 82%, transparent);
+}
+.app[data-contrast="high"] :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--ds-accent-2) !important;
+  outline-offset: 2px !important;
+}
+
+/* Underline links everywhere text links appear. */
+.app[data-underline-links="true"]
+  :is(
+    .chat-message-text,
+    [class*="message-text"],
+    [class*="msg-text"],
+    [class*="message-body"],
+    [class*="post-body"],
+    .hh-about,
+    .hh-welcome,
+    .dcs-card
+  )
+  a {
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+}
+
+/* Image descriptions under GIFs. */
+.app[data-show-alt="true"] .dc-gif-message[data-alt] {
+  display: inline-grid;
+  gap: 4px;
+}
+.app[data-show-alt="true"] .dc-gif-message[data-alt]::after {
+  content: attr(data-alt);
+  max-width: 320px;
+  color: var(--ds-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}

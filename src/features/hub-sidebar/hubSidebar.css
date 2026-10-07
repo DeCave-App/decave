@@ -1,0 +1,537 @@
+/* Hub sidebar redesign (2026-10). Scoped under .hsb-sidebar so the selectors
+   outrank the legacy skin rules in app-rework.css and the inline \3c style> block.
+   Uses the skin tokens (--gc-*) so every data-skin keeps working. */
+
+/* ---------- Banner art: visible behind the header, dark below it ---------- */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar {
+  background-color: var(--gc-bg-1) !important;
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gc-bg-0) 30%, transparent) 0,
+      color-mix(in srgb, var(--gc-bg-0) 78%, transparent) 150px,
+      color-mix(in srgb, var(--gc-bg-1) 97%, transparent) 260px,
+      var(--gc-bg-1) 100%
+    ),
+    var(--hub-cover-image),
+    radial-gradient(circle at 30% 0%, color-mix(in srgb, var(--gc-accent-2) 26%, transparent), transparent 40%),
+    linear-gradient(180deg, var(--gc-bg-4), var(--gc-bg-1) 300px) !important;
+  background-size:
+    100% 100%,
+    100% auto,
+    cover,
+    cover !important;
+  background-position:
+    top,
+    top center,
+    top,
+    top !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0,
+    color-mix(in srgb, var(--gc-bg-0) 72%, transparent) 100%
+  ) !important;
+  background-color: transparent !important;
+  border-bottom: 0 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* ---------- Compact icon nav row ---------- */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .dc-hub-visible-actions.hsb-nav {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  padding: 8px 10px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--gc-border) !important;
+  background: color-mix(in srgb, var(--gc-bg-0) 55%, transparent) !important;
+  grid-template-columns: none !important;
+}
+
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .dc-hub-visible-actions.hsb-nav > button {
+  position: relative;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--gc-text-soft, var(--gc-text)) !important;
+  box-shadow: none !important;
+}
+
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .dc-hub-visible-actions.hsb-nav
+  > button
+  > span:not(.dc-hub-action-icon):not(.hsb-nav-badge) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+}
+
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .dc-hub-visible-actions.hsb-nav
+  > button:is(:hover, :focus-visible) {
+  background: var(--gc-hover) !important;
+  border-color: var(--gc-border-strong) !important;
+  color: var(--gc-text) !important;
+}
+
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .dc-hub-visible-actions.hsb-nav
+  > button:focus-visible {
+  outline: 2px solid var(--gc-accent-2) !important;
+  outline-offset: 1px !important;
+}
+
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .dc-hub-visible-actions.hsb-nav
+  > button[aria-current="page"],
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .dc-hub-visible-actions.hsb-nav
+  > button[aria-expanded="true"] {
+  background: var(--gc-active) !important;
+  border-color: color-mix(in srgb, var(--gc-accent) 55%, transparent) !important;
+  color: var(--gc-text) !important;
+}
+
+.hsb-nav-badge {
+  position: absolute;
+  top: 3px;
+  right: calc(50% - 22px);
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 15px;
+  text-align: center;
+}
+
+/* Tooltips for icon-only buttons (sidebar nav, section +, voice panel). */
+.hsb-sidebar :is(.hsb-nav > button, .hsb-section-add, .hsb-voice-panel-actions > button)[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%) translateY(2px);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--gc-bg-0);
+  border: 1px solid var(--gc-border-strong);
+  color: var(--gc-text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
+  z-index: 40;
+}
+.hsb-sidebar .hsb-nav > button[data-tooltip]::after {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
+.hsb-sidebar
+  :is(.hsb-nav > button, .hsb-section-add, .hsb-voice-panel-actions > button)[data-tooltip]:is(
+    :hover,
+    :focus-visible
+  )::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ---------- Room list ---------- */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .channel-section.hsb-rooms {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 8px 8px 12px !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+/* Flat 36px rows. Doubled class bumps specificity over legacy skin rules. */
+
+/* Nested live participants */
+
+.hsb-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, #ed4245 55%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, #ed4245 14%, var(--gc-bg-1));
+  color: var(--gc-text);
+  font-size: 12px;
+}
+.hsb-error span {
+  flex: 1 1 auto;
+}
+.hsb-error button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+/* Smaller create button kept for discoverability */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__footer {
+  padding: 6px 10px !important;
+  border-top: 1px solid var(--gc-border) !important;
+  background: color-mix(in srgb, var(--gc-bg-0) 50%, transparent) !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__footer .hub-c__create-room {
+  height: 30px !important;
+  min-height: 30px !important;
+  font-size: 12px !important;
+  border: 1px dashed var(--ds-border-strong) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--ds-text-soft) !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__footer .hub-c__create-room:hover {
+  border-color: var(--ds-accent) !important;
+  background: var(--ds-hover) !important;
+  color: var(--ds-text) !important;
+}
+/* The collapse chevron is absolutely positioned at the sidebar's bottom-right;
+   when the Create Room footer is the last row, reserve room for it and line it
+   up with the button instead of letting it overlap. */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar:has(> .hub-c__footer:last-child) .hub-c__footer {
+  padding-right: 44px !important;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar:has(> .hub-c__footer:last-child)
+  > .dc-hub-rail-fold {
+  bottom: 7px !important;
+  right: 8px !important;
+}
+/* When the voice voice panel is the last row, keep its controls clear of the chevron. */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar > .hsb-voice-panel {
+  padding-right: 44px;
+}
+
+/* ---------- Connected voice voice panel ---------- */
+.hsb-voice-panel {
+  flex: none;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--gc-border);
+  background: color-mix(in srgb, var(--gc-bg-0) 82%, transparent);
+  backdrop-filter: blur(10px);
+}
+.hsb-voice-panel-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--gc-text);
+  text-align: left;
+  cursor: pointer;
+}
+.hsb-voice-panel-info:hover {
+  background: var(--gc-hover);
+}
+.hsb-voice-panel-info:focus-visible {
+  outline: 2px solid var(--gc-accent-2);
+}
+.hsb-voice-panel-copy {
+  display: grid;
+  min-width: 0;
+}
+/* Who is in the connected room, stacked to the right of the room name. */
+.hsb-voice-panel-people {
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
+  padding-left: 4px;
+}
+.hsb-voice-panel-person {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--gc-bg-0);
+  background: var(--gc-bg-2);
+  color: var(--gc-text);
+  font-size: 10px;
+  font-weight: 700;
+  overflow: hidden;
+}
+.hsb-voice-panel-person + .hsb-voice-panel-person {
+  margin-left: -7px;
+}
+.hsb-voice-panel-person > div {
+  width: 100%;
+  height: 100%;
+}
+.hsb-voice-panel-person.speaking {
+  border-color: #3ddc97;
+}
+.hsb-voice-panel-person.more {
+  font-size: 9px;
+  color: var(--gc-text-soft, var(--gc-text));
+}
+.hsb-voice-panel-copy strong {
+  font-size: 13px;
+  color: #3ddc97;
+}
+.hsb-voice-panel-copy small {
+  font-size: 12px;
+  color: var(--gc-text-soft, var(--gc-text));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hsb-voice-panel-signal {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+  flex: none;
+}
+.hsb-voice-panel-signal i {
+  width: 3px;
+  border-radius: 1px;
+  background: currentColor;
+}
+.hsb-voice-panel-signal i:nth-child(1) {
+  height: 5px;
+}
+.hsb-voice-panel-signal i:nth-child(2) {
+  height: 9px;
+}
+.hsb-voice-panel-signal i:nth-child(3) {
+  height: 14px;
+}
+.hsb-voice-panel-signal.good {
+  color: #3ddc97;
+}
+.hsb-voice-panel-signal.fair {
+  color: #f5c451;
+}
+.hsb-voice-panel-signal.fair i:nth-child(3) {
+  opacity: 0.3;
+}
+.hsb-voice-panel-signal.poor {
+  color: #f2687a;
+}
+.hsb-voice-panel-signal.poor i:nth-child(n + 2) {
+  opacity: 0.3;
+}
+.hsb-voice-panel-signal.waiting {
+  color: var(--gc-muted, #8a93a6);
+  animation: hsb-pulse 1.2s infinite;
+}
+@keyframes hsb-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+.hsb-voice-panel-actions {
+  display: flex;
+  gap: 4px;
+}
+.hsb-voice-panel-actions > button {
+  position: relative;
+  flex: 1 1 0;
+  display: inline-grid;
+  place-items: center;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--gc-border);
+  border-radius: 8px;
+  background: var(--gc-bg-2);
+  color: var(--gc-text);
+  cursor: pointer;
+}
+.hsb-voice-panel-actions > button svg {
+  width: 18px;
+  height: 18px;
+}
+.hsb-voice-panel-actions > button:hover:not(:disabled) {
+  background: var(--gc-hover);
+  border-color: var(--gc-border-strong);
+}
+.hsb-voice-panel-actions > button:focus-visible {
+  outline: 2px solid var(--gc-accent-2);
+  outline-offset: 1px;
+}
+.hsb-voice-panel-actions > button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.hsb-voice-panel-actions > button.active {
+  color: #f2687a;
+  border-color: color-mix(in srgb, #f2687a 45%, transparent);
+  background: color-mix(in srgb, #f2687a 12%, var(--gc-bg-2));
+}
+.hsb-voice-panel-actions > button.active.live {
+  color: #3ddc97;
+  border-color: color-mix(in srgb, #3ddc97 45%, transparent);
+  background: color-mix(in srgb, #3ddc97 12%, var(--gc-bg-2));
+}
+.hsb-voice-panel-actions > button.hsb-voice-panel-leave {
+  color: #fff;
+  background: #d83c4a;
+  border-color: #d83c4a;
+}
+.hsb-voice-panel-actions > button.hsb-voice-panel-leave:hover {
+  background: #ed4245;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hsb-voice-panel-signal.waiting {
+    animation: none;
+  }
+}
+
+/* ---------- Centered identity: square logo, stacked title + member line ---------- */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover-shade {
+  /* Readability overlay: darken the middle where the identity sits. */
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 58%, color-mix(in srgb, var(--gc-bg-0) 58%, transparent), transparent 75%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gc-bg-0) 18%, transparent),
+      color-mix(in srgb, var(--gc-bg-0) 62%, transparent)
+    ) !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__identity {
+  position: absolute !important;
+  inset: 0 12px !important;
+  left: 12px !important;
+  right: 12px !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  text-align: center;
+  padding-top: 8px;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__avatar {
+  width: 68px !important;
+  height: 68px !important;
+  min-width: 68px !important;
+  flex: 0 0 68px !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid color-mix(in srgb, #fff 55%, transparent) !important;
+  border-radius: 16px !important;
+  object-fit: cover;
+  background: var(--gc-bg-2, #11182b) !important;
+  font-size: 30px !important;
+  line-height: 1 !important;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--gc-bg-0) 40%, transparent),
+    0 10px 26px rgba(0, 0, 0, 0.45),
+    0 0 22px color-mix(in srgb, var(--gc-accent-2, var(--ds-accent-2)) 22%, transparent) !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__identity .vadrion-hub-copy {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  max-width: 100%;
+  min-width: 0 !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__identity .vadrion-hub-copy strong {
+  max-width: 100%;
+  color: var(--ds-text) !important;
+  font-size: 16px !important;
+  font-weight: 800;
+  text-align: center;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__identity .vadrion-hub-copy > div {
+  margin-top: 0 !important;
+  font-size: 11px !important;
+  color: color-mix(in srgb, var(--ds-text) 78%, transparent) !important;
+  text-align: center;
+}
+
+/* Larger, clearer nav icons (skin accent, white on hover/active). */
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .dc-hub-visible-actions.hsb-nav
+  .dc-hub-action-icon {
+  width: 22px !important;
+  height: 22px !important;
+  flex: 0 0 22px !important;
+  color: var(--gc-accent-2, var(--gc-accent));
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .dc-hub-visible-actions.hsb-nav
+  .dc-hub-action-icon
+  svg {
+  width: 21px !important;
+  height: 21px !important;
+  stroke-width: 1.9;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .dc-hub-visible-actions.hsb-nav
+  > button:is(:hover, :focus-visible, [aria-current="page"], [aria-expanded="true"])
+  .dc-hub-action-icon {
+  color: var(--gc-text);
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .dc-hub-visible-actions.hsb-nav
+  > button:is([aria-current="page"], [aria-expanded="true"])::before {
+  content: "";
+  position: absolute;
+  left: 30%;
+  right: 30%;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--gc-accent);
+}

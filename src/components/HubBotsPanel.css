@@ -1,0 +1,524 @@
+.decave-bots-section {
+  display: grid;
+  gap: 12px;
+}
+
+.decave-bots-heading,
+.decave-bot-create-head,
+.decave-bot-create-actions,
+.decave-bot-summary,
+.decave-bot-subhead,
+.decave-bot-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.decave-bots-heading > div,
+.decave-bot-create-head > div,
+.decave-bot-subhead,
+.decave-bot-api-card > div,
+.decave-bots-security-note > div,
+.decave-bot-title-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.decave-bots-heading strong,
+.decave-bot-create-head strong {
+  color: var(--ds-text);
+  font-size: 13px;
+}
+
+.decave-bots-heading small,
+.decave-bot-create-head small,
+.decave-bot-title-copy small,
+.decave-bot-subhead small,
+.decave-bot-api-card small,
+.decave-bots-security-note small,
+.decave-bot-create-actions small,
+.decave-bot-token-card small {
+  color: var(--ds-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.decave-bots-heading > button,
+.decave-bot-primary,
+.decave-bot-token-card button,
+.decave-bot-api-card > button {
+  min-height: 31px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent-2) 28%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ds-accent-2) 16%, transparent);
+  color: var(--ds-text);
+  font-size: 9px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.decave-bots-heading > button:hover,
+.decave-bot-primary:hover,
+.decave-bot-token-card button:hover,
+.decave-bot-api-card > button:hover {
+  border-color: color-mix(in srgb, var(--ds-accent-2) 54%, transparent);
+  background: color-mix(in srgb, var(--ds-accent-2) 28%, transparent);
+}
+
+.decave-bots-heading > button:disabled,
+.decave-bot-primary:disabled,
+.decave-bot-token-card button:disabled,
+.decave-bot-api-card > button:disabled,
+.decave-bot-actions button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.decave-bots-security-note {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent-2) 16%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ds-accent-2) 13%, transparent);
+}
+
+.decave-bots-security-note > span {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ds-accent-2) 14%, transparent);
+  color: var(--ds-accent-2);
+  font-size: 15px;
+}
+
+.decave-bots-security-note strong {
+  color: var(--ds-accent-2);
+  font-size: 10px;
+}
+
+.decave-bot-create-card,
+.decave-bot-token-card,
+.decave-bot-api-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--ds-border) 18%, transparent);
+  border-radius: 10px;
+  background: var(--ds-surface-2);
+}
+
+.decave-bot-create-head > span {
+  color: var(--ds-accent);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.decave-bot-create-card > label {
+  display: grid;
+  gap: 5px;
+  color: var(--ds-text-soft);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.decave-bot-create-card > label > span {
+  color: var(--ds-muted);
+  font-weight: 600;
+}
+
+.decave-bot-create-card input,
+.decave-bot-create-card textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--ds-border) 25%, transparent);
+  border-radius: 7px;
+  outline: none;
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 10px;
+}
+
+.decave-bot-create-card textarea {
+  resize: vertical;
+}
+
+.decave-bot-create-card input:focus,
+.decave-bot-create-card textarea:focus {
+  border-color: color-mix(in srgb, var(--ds-accent-2) 42%, transparent);
+}
+
+.decave-bot-capability-title,
+.decave-bot-room-title {
+  color: var(--ds-muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.decave-bot-capability-list {
+  display: grid;
+  gap: 6px;
+}
+
+.decave-bot-capability-list > label {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--ds-border) 12%, transparent);
+  border-radius: 8px;
+  background: var(--ds-sink);
+}
+
+.decave-bot-capability-list > label.selected {
+  border-color: color-mix(in srgb, var(--ds-accent-2) 28%, transparent);
+  background: color-mix(in srgb, var(--ds-accent-2) 15%, transparent);
+}
+
+.decave-bot-capability-list label > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.decave-bot-capability-list strong {
+  color: var(--ds-text);
+  font-size: 10px;
+}
+
+.decave-bot-capability-list small {
+  color: var(--ds-muted);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.decave-bot-create-actions {
+  align-items: flex-end;
+}
+
+.decave-bot-create-actions small {
+  max-width: 230px;
+}
+
+.decave-bot-token-card {
+  border-color: color-mix(in srgb, var(--ds-warn) 30%, transparent);
+  background: color-mix(in srgb, var(--ds-warn) 16%, transparent);
+}
+
+.decave-bot-token-card strong {
+  color: var(--ds-warn);
+  font-size: 10px;
+}
+
+.decave-bot-token-card code,
+.decave-bot-api-card code {
+  display: block;
+  overflow: auto;
+  padding: 9px;
+  border-radius: 7px;
+  background: var(--ds-surface-2);
+  color: var(--ds-warn);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 9px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.decave-bot-token-card > div:last-child {
+  display: flex;
+  gap: 7px;
+}
+
+.decave-bot-token-card .decave-bot-muted-button {
+  border-color: color-mix(in srgb, var(--ds-border) 20%, transparent);
+  background: transparent;
+  color: var(--ds-text-soft);
+}
+
+.decave-bots-error,
+.decave-bots-notice {
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.decave-bots-error {
+  border: 1px solid color-mix(in srgb, var(--ds-danger) 23%, transparent);
+  background: color-mix(in srgb, var(--ds-danger) 10%, transparent);
+  color: var(--ds-danger);
+}
+
+.decave-bots-notice {
+  border: 1px solid color-mix(in srgb, var(--ds-accent-2) 20%, transparent);
+  background: color-mix(in srgb, var(--ds-accent-2) 10%, transparent);
+  color: var(--ds-accent-2);
+}
+
+.decave-bots-list {
+  display: grid;
+  gap: 8px;
+}
+
+.decave-bot-card {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ds-border) 16%, transparent);
+  border-radius: 10px;
+  background: var(--ds-hover);
+}
+
+.decave-bot-card.expanded {
+  border-color: color-mix(in srgb, var(--ds-accent-2) 24%, transparent);
+}
+
+.decave-bot-card-head {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.decave-bot-card-head:hover {
+  background: color-mix(in srgb, var(--ds-accent-2) 5%, transparent);
+}
+
+.decave-bot-avatar {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ds-accent) 16%, transparent);
+  font-size: 18px;
+}
+
+.decave-bot-title-copy strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ds-text);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.decave-bot-title-copy strong em {
+  flex: 0 0 auto;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ds-accent) 20%, transparent);
+  color: var(--ds-accent);
+  font-size: 7px;
+  font-style: normal;
+  letter-spacing: 0.05em;
+}
+
+.decave-bot-title-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.decave-bot-status {
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.decave-bot-status.enabled {
+  background: color-mix(in srgb, var(--ds-success) 12%, transparent);
+  color: var(--ds-success);
+}
+
+.decave-bot-status.disabled {
+  background: color-mix(in srgb, var(--ds-muted) 12%, transparent);
+  color: var(--ds-muted);
+}
+
+.decave-bot-card-head > b {
+  color: var(--ds-muted);
+  font-size: 14px;
+}
+
+.decave-bot-card-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 10px 11px;
+}
+
+.decave-bot-summary {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-top: 1px solid color-mix(in srgb, var(--ds-border) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ds-border) 12%, transparent);
+}
+
+.decave-bot-summary span {
+  color: var(--ds-muted);
+  font-size: 8px;
+}
+
+.decave-bot-summary span + span::before {
+  content: "·";
+  margin-right: 7px;
+  color: var(--ds-muted);
+}
+
+.decave-bot-subhead {
+  align-items: end;
+}
+
+.decave-bot-subhead strong {
+  color: var(--ds-text);
+  font-size: 10px;
+}
+
+.decave-bot-subhead small {
+  text-align: right;
+}
+
+.decave-bot-room-list {
+  display: grid;
+  gap: 5px;
+}
+
+.decave-bot-room-list > label {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--ds-border) 10%, transparent);
+  border-radius: 7px;
+  background: var(--ds-sink);
+  color: var(--ds-text-soft);
+  font-size: 9px;
+}
+
+.decave-bot-room-list > label.selected {
+  border-color: color-mix(in srgb, var(--ds-accent-2) 22%, transparent);
+  background: color-mix(in srgb, var(--ds-accent-2) 12%, transparent);
+}
+
+.decave-bot-room-list > label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.decave-bot-room-list b {
+  color: var(--ds-muted);
+}
+
+.decave-bot-no-rooms,
+.decave-bots-empty {
+  padding: 12px;
+  border: 1px dashed color-mix(in srgb, var(--ds-border) 18%, transparent);
+  border-radius: 8px;
+  color: var(--ds-muted);
+  font-size: 9px;
+}
+
+.decave-bots-empty {
+  display: grid;
+  gap: 3px;
+}
+
+.decave-bots-empty strong {
+  color: var(--ds-text);
+  font-size: 10px;
+}
+
+.decave-bots-empty span {
+  line-height: 1.45;
+}
+
+.decave-bot-api-card {
+  border-color: color-mix(in srgb, var(--ds-accent) 22%, transparent);
+  background: color-mix(in srgb, var(--ds-accent) 10%, transparent);
+}
+
+.decave-bot-api-card strong {
+  color: var(--ds-text);
+  font-size: 10px;
+}
+
+.decave-bot-api-card > button {
+  justify-self: start;
+  border-color: color-mix(in srgb, var(--ds-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--ds-accent) 15%, transparent);
+  color: var(--ds-text);
+}
+
+.decave-bot-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.decave-bot-actions button {
+  min-height: 29px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--ds-border) 20%, transparent);
+  border-radius: 7px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text-soft);
+  font-size: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.decave-bot-actions button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ds-accent-2) 35%, transparent);
+  color: var(--ds-text);
+}
+
+.decave-bot-actions button.danger {
+  border-color: color-mix(in srgb, var(--ds-danger) 24%, transparent);
+  color: var(--ds-danger);
+}
+
+@media (max-width: 560px) {
+  .decave-bots-heading,
+  .decave-bot-create-actions,
+  .decave-bot-subhead {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .decave-bots-heading > button,
+  .decave-bot-create-actions > button {
+    width: 100%;
+  }
+
+  .decave-bot-subhead small {
+    text-align: left;
+  }
+}

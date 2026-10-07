@@ -1,0 +1,888 @@
+/* =========================================================================
+   Hub sidebar: category boxes (2026-10, round 3).
+   Every room, forum and voice room is visible without a click. Boxes never
+   collapse; density steps from two-across tiles to three-across tiles to
+   chips (see roomBoxesModel.ts, BOX_METRICS must match the sizes here).
+   Tokens only (--ds-* / --gc-*) so every data-skin works.
+   ========================================================================= */
+
+/* ---------- 78px header strip (the full banner lives on Hub Home) ---------- */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip {
+  position: relative !important;
+  height: 78px !important;
+  min-height: 78px !important;
+  flex: 0 0 78px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  padding: 10px 44px 10px 12px !important;
+  overflow: hidden !important;
+  background-image:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--gc-bg-0) 70%, transparent),
+      color-mix(in srgb, var(--gc-bg-0) 35%, transparent)
+    ),
+    var(--hbx-strip-image, none) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip .hub-c__cover-shade {
+  display: none !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip .hub-c__identity {
+  position: static !important;
+  inset: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip .hub-c__avatar {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  flex: 0 0 44px !important;
+  border-radius: 12px !important;
+  font-size: 20px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hub-c__cover.hbx-strip
+  .hub-c__identity
+  .vadrion-hub-copy {
+  display: grid !important;
+  justify-items: start !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hub-c__cover.hbx-strip
+  .hub-c__identity
+  .vadrion-hub-copy
+  strong {
+  font-size: 15px !important;
+  text-align: left !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hub-c__cover.hbx-strip
+  .hsb-hub-copy
+  > .hsb-hub-stats {
+  justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+  max-width: 100%;
+  font-size: 11px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip .hsb-hub-stats > span {
+  gap: 4px;
+}
+/* Only the live "online" count fits beside the leave button; Hub Home shows both. */
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hub-c__cover.hbx-strip
+  .hsb-hub-stats
+  > span
+  + span {
+  display: none;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip .hsb-dot {
+  width: 6px;
+  height: 6px;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hub-c__cover.hbx-strip
+  .hsb-hub-copy
+  > .hsb-hub-badges {
+  justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
+  margin-top: 1px !important;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip .hsb-badge {
+  height: 17px;
+  padding: 0 6px;
+  font-size: 10px;
+}
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip .hub-c__leave-control {
+  position: absolute !important;
+  top: 50% !important;
+  right: 10px !important;
+  transform: translateY(-50%);
+  margin: 0 !important;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hub-c__cover.hbx-strip:has(.hub-c__leave-control) {
+  padding-right: 46px !important;
+}
+/* The sidebar fold button sits at the bottom-right of the sidebar, beside the
+   footer row, so the header keeps only the Hub name and badges. */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar > .dc-hub-rail-fold.dc-hub-rail-fold {
+  top: auto !important;
+  bottom: 8px !important;
+  right: 8px !important;
+  transform: none;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+/* ---------- Room area ---------- */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .channel-section.hbx-root {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding: 8px 8px 12px !important;
+}
+
+/* Empty Hub: the only way in is an obvious button. */
+.hbx-empty {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--ds-border-strong);
+  border-radius: 13px;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+}
+.hbx-empty-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ds-accent);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+  font-weight: 650;
+  cursor: pointer;
+}
+.hbx-root .hbx-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hbx-root button {
+  font: inherit;
+}
+.hbx-root button:focus-visible {
+  outline: 2px solid var(--ds-accent-2);
+  outline-offset: 1px;
+}
+
+/* Hub Home entry, sharing its row with the Hub actions (members, calendar, manage). */
+.hbx-homebar {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  flex: none;
+  min-width: 0;
+}
+.hbx-homebar > .hbx-home {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hbx-homebar
+  > .dc-hub-visible-actions.hsb-nav.hbx-actions {
+  display: flex !important;
+  flex: none !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hbx-homebar
+  > .dc-hub-visible-actions.hsb-nav.hbx-actions
+  > button {
+  flex: none !important;
+  width: 34px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: var(--ds-radius-md) !important;
+  background: color-mix(in srgb, var(--ds-surface-2) 85%, transparent) !important;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hbx-homebar
+  > .dc-hub-visible-actions.hsb-nav.hbx-actions
+  .dc-hub-action-icon,
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hbx-homebar
+  > .dc-hub-visible-actions.hsb-nav.hbx-actions
+  .dc-hub-action-icon
+  svg {
+  width: 17px !important;
+  height: 17px !important;
+  flex-basis: 17px !important;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hbx-homebar
+  > .dc-hub-visible-actions.hsb-nav.hbx-actions
+  .hsb-nav-badge {
+  top: -4px;
+  right: -4px;
+}
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar
+  .hbx-homebar
+  > .dc-hub-visible-actions.hsb-nav.hbx-actions
+  > button[data-tooltip]::after {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+.hbx-home {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 38px;
+  flex: none;
+  padding: 0 10px 0 8px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: color-mix(in srgb, var(--ds-surface-2) 85%, transparent);
+  color: var(--ds-text);
+  font-size: 13px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+.hbx-home:hover {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-hover);
+}
+.hbx-home.is-selected {
+  border-color: color-mix(in srgb, var(--ds-accent) 60%, var(--ds-border));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ds-accent) 22%, transparent),
+    color-mix(in srgb, var(--ds-accent) 6%, transparent)
+  );
+}
+.hbx-home-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-2);
+  flex: none;
+}
+
+/* Boxes */
+.hbx-box {
+  flex: none;
+  padding: 7px;
+  border: 1px solid var(--ds-border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--ds-text) 3%, transparent);
+}
+.hbx-box--forum {
+  border-color: color-mix(in srgb, var(--ds-accent-2) 28%, var(--ds-border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ds-accent-2) 6%, transparent),
+    color-mix(in srgb, var(--ds-text) 2%, transparent)
+  );
+}
+.hbx-box--voice {
+  border-color: color-mix(in srgb, var(--ds-success) 28%, var(--ds-border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ds-success) 6%, transparent),
+    color-mix(in srgb, var(--ds-text) 2%, transparent)
+  );
+}
+.hbx-box-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 2px 6px 4px;
+}
+.hbx-box-add {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ds-muted);
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity 0.12s,
+    background-color 0.12s;
+}
+.hbx-box-add .ds-icon {
+  width: 14px;
+  height: 14px;
+}
+.hbx-box:hover .hbx-box-add,
+.hbx-box-add:focus-visible {
+  opacity: 1;
+}
+.hbx-box-add:hover {
+  background: var(--ds-hover);
+  color: var(--ds-text);
+}
+.hbx-box-title {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  color: var(--ds-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.hbx-box-title > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hbx-box-title em {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--ds-muted);
+}
+
+/* Tiles wrap and are sized to their names, so names are never cut to fit a
+   column. Roomy: at least half the box. Compact: smaller tiles that fill the
+   row. Chips: smallest pills. */
+.hbx-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.hbx--roomy .hbx-grid > .hbx-tile {
+  flex: 1 1 calc(50% - 2px);
+  min-width: fit-content;
+  max-width: 100%;
+}
+.hbx--compact .hbx-grid > .hbx-tile {
+  flex: 1 1 auto;
+  max-width: 100%;
+}
+.hbx--chips .hbx-grid > .hbx-tile {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+.hbx-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 7px;
+  border: 1px solid var(--ds-border);
+  border-radius: 9px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text-soft);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+.hbx--compact .hbx-tile {
+  height: 28px;
+  padding: 0 7px;
+  gap: 5px;
+  font-size: 12px;
+}
+.hbx--chips .hbx-tile {
+  height: 26px;
+  padding: 0 9px;
+  gap: 5px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.hbx--compact .hbx-forum {
+  padding: 5px 8px;
+}
+.hbx--compact .hbx-voice-live,
+.hbx--chips .hbx-voice-live {
+  padding-block: 2px;
+}
+.hbx-tile:hover {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-hover);
+  color: var(--ds-text);
+}
+.hbx-tile.is-new {
+  color: var(--ds-text);
+  font-weight: 650;
+  border-color: color-mix(in srgb, var(--ds-accent) 45%, var(--ds-border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ds-accent) 14%, transparent), var(--ds-surface-2));
+}
+.hbx-tile.is-selected,
+.hbx-forum.is-selected,
+.hbx-voice-live.is-selected {
+  color: var(--ds-text);
+  border-color: var(--ds-accent) !important;
+  background: color-mix(in srgb, var(--ds-accent) 24%, var(--ds-surface-2)) !important;
+}
+.hbx-tile.is-selected {
+  font-weight: 650;
+}
+.hbx-tile.is-dragging,
+.hbx-forum.is-dragging {
+  opacity: 0.45;
+}
+.hbx-tile--voice {
+  border-style: dashed;
+  background: transparent;
+  color: var(--ds-muted);
+}
+.hbx-tile--voice:hover {
+  color: var(--ds-text);
+}
+
+.hbx-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 16px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ds-muted);
+}
+.hbx-icon .ds-icon {
+  width: 15px;
+  height: 15px;
+}
+.hbx-tile.is-selected .hbx-icon:not(.custom),
+.hbx-forum.is-selected .hbx-icon:not(.custom) {
+  color: var(--ds-accent-2);
+}
+.hbx-lockwrap {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: var(--ds-muted);
+}
+.hbx-lock {
+  width: 11px;
+  height: 11px;
+}
+.hbx-badge {
+  flex: none;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--ds-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+.hbx-badge.accent {
+  margin-left: auto;
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+.hbx-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ds-text);
+}
+
+/* Forum tiles: name plus the newest thread. */
+.hbx-forums {
+  display: grid;
+  gap: 4px;
+}
+.hbx--chips .hbx-forums {
+  display: flex;
+  flex-wrap: wrap;
+}
+.hbx-forum {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--ds-border);
+  border-radius: 10px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  text-align: left;
+  cursor: pointer;
+}
+.hbx-forum:hover {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-hover);
+}
+.hbx-forum.is-fresh {
+  border-color: color-mix(in srgb, var(--ds-accent-2) 40%, var(--ds-border));
+}
+.hbx-forum-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.hbx-fresh,
+.hbx-quiet {
+  flex: none;
+  font-style: normal;
+  font-size: 10.5px;
+}
+.hbx-fresh {
+  color: var(--ds-accent-2);
+  font-weight: 700;
+}
+.hbx-quiet {
+  color: var(--ds-muted);
+  font-weight: 500;
+}
+.hbx-thread {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--ds-text-soft);
+}
+.hbx-thread-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hbx-thread-title.is-empty {
+  color: var(--ds-muted);
+  font-style: italic;
+}
+.hbx-thread-meta {
+  flex: none;
+  color: var(--ds-muted);
+  font-size: 10.5px;
+}
+
+/* Live voice rooms: wide tile with the people inside. */
+.hbx-voice-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  padding: 4px 6px 4px 4px;
+  border: 1px solid color-mix(in srgb, var(--ds-success) 45%, var(--ds-border));
+  border-radius: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ds-success) 12%, transparent), var(--ds-surface-2));
+}
+.hbx-voice-live.is-connected {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-success) 55%, transparent);
+}
+.hbx-voice-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px 4px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ds-text);
+  text-align: left;
+  cursor: pointer;
+}
+.hbx-voice-main:hover {
+  background: var(--ds-hover);
+}
+.hbx-voice-main .hbx-icon {
+  color: var(--ds-success);
+}
+.hbx-voice-copy {
+  display: grid;
+  min-width: 0;
+}
+.hbx-voice-copy .hbx-name {
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.hbx-voice-copy small {
+  overflow: hidden;
+  color: var(--ds-success);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hbx-people {
+  display: flex;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hbx-person {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: -6px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.hbx-person:first-child {
+  margin-left: 0;
+}
+.hbx-person > :first-child,
+.hbx-person > :first-child img {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--ds-surface-2);
+}
+.hbx-person.speaking > :first-child {
+  box-shadow:
+    0 0 0 2px var(--ds-success),
+    0 0 8px color-mix(in srgb, var(--ds-success) 70%, transparent);
+}
+.hbx-person.muted > :first-child {
+  opacity: 0.7;
+}
+.hbx-live {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 3px;
+  border-radius: 4px;
+  background: var(--ds-danger);
+  color: #fff;
+  font-size: 7.5px;
+  font-weight: 800;
+  line-height: 11px;
+}
+.hbx-more {
+  width: auto;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ds-surface-3);
+  color: var(--ds-text-soft);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Banner-as-background: boxes sit on artwork, so give them a solid floor. */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar[data-hub-banner="on"] .hbx-box {
+  background: color-mix(in srgb, var(--gc-bg-1) 82%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+@media (hover: none) {
+  .hbx-box-add {
+    opacity: 0.9;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hbx-tile {
+    transition: none;
+  }
+}
+
+/* ---------- Tight density: short screens, before anything scrolls ---------- */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .channel-section.hbx-root.hbx--tight {
+  gap: 6px !important;
+  padding-top: 6px !important;
+}
+.hbx--tight .hbx-home {
+  height: 32px;
+  font-size: 12.5px;
+}
+.hbx--tight .hbx-home-icon {
+  width: 20px;
+  height: 20px;
+}
+/* The box title becomes the first chip of its row, so a box costs no extra line. */
+.hbx--tight .hbx-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 4px;
+  border-radius: 10px;
+  border-color: color-mix(in srgb, var(--ds-border) 70%, transparent);
+}
+.hbx--tight .hbx-box-head,
+.hbx--tight .hbx-grid,
+.hbx--tight .hbx-forums {
+  display: contents;
+}
+.hbx--tight .hbx-box-title {
+  flex: 0 0 auto;
+  gap: 4px;
+  height: 22px;
+  padding: 0 2px 0 4px;
+  font-size: 11px;
+  color: var(--ds-muted);
+}
+.hbx--tight .hbx-box-title em {
+  font-size: 10px;
+}
+.hbx--tight .hbx-box-add {
+  width: 18px;
+  height: 18px;
+  margin-right: 2px;
+}
+.hbx--tight .hbx-voice-live {
+  flex: 1 1 100%;
+}
+.hbx--tight .hbx-tile {
+  flex: 0 1 auto;
+  max-width: 100%;
+  height: 22px;
+  padding: 0 7px;
+  gap: 4px;
+  border-radius: 999px;
+  font-size: 11.5px;
+}
+.hbx--tight .hbx-icon {
+  width: 13px;
+  font-size: 11px;
+}
+.hbx--tight .hbx-badge {
+  min-width: 14px;
+  height: 14px;
+  font-size: 9px;
+  line-height: 14px;
+}
+.hbx--tight .hbx-voice-live {
+  margin-bottom: 0;
+  padding: 1px 4px 1px 2px;
+}
+.hbx--tight .hbx-voice-copy small {
+  font-size: 9.5px;
+  line-height: 1.2;
+}
+.hbx--tight .hbx-voice-copy .hbx-name {
+  font-size: 11.5px;
+}
+
+/* ---------- Short laptop screens (768–820px tall): slimmer header and nav ---------- */
+@media (max-height: 820px) {
+  .app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip {
+    height: 60px !important;
+    min-height: 60px !important;
+    flex-basis: 60px !important;
+    padding-block: 8px !important;
+  }
+  .app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip .hub-c__avatar {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    flex-basis: 38px !important;
+    font-size: 17px !important;
+    border-radius: 10px !important;
+  }
+  .app[data-skin][data-workspace="hub"]
+    > .channel-sidebar.hsb-sidebar
+    .hub-c__cover.hbx-strip
+    .hsb-hub-copy
+    > .hsb-hub-badges {
+    display: none !important;
+  }
+}
+
+/* ---------- Shell widths that follow the screen ----------
+   The Hub sidebar and the friends rail grow with the window (within limits)
+   instead of staying fixed, so laptops keep a usable chat column and wide or
+   ultrawide screens give the room boxes and friends rail more space.
+   1280px: 248 / 240 · 1440px: 249 / 256 · 1920px: 306 / 304 · 2560px+: 360 / 340 */
+@media (min-width: 821px) {
+  .app[data-skin][data-workspace="hub"]:not([data-hub-rail-collapsed="true"]) {
+    --hbx-rooms-width: clamp(248px, calc(12vw + 76px), 360px);
+    --hbx-friends-width: clamp(240px, calc(10vw + 112px), 340px);
+    --hub-c-compact-width: var(--hbx-rooms-width);
+    grid-template-columns: var(--dc-global-rail-width) var(--hbx-rooms-width) minmax(0, 1fr) var(--hbx-friends-width) !important;
+  }
+  .app[data-skin][data-workspace="hub"][data-right-rail-collapsed="true"]:not([data-hub-rail-collapsed="true"]) {
+    grid-template-columns: var(--dc-global-rail-width) var(--hbx-rooms-width) minmax(0, 1fr) 44px !important;
+  }
+  .app[data-skin][data-workspace="hub"]:not([data-hub-rail-collapsed="true"]) > .channel-sidebar {
+    width: var(--hbx-rooms-width) !important;
+    min-width: 0 !important;
+    max-width: var(--hbx-rooms-width) !important;
+  }
+  .app[data-skin][data-workspace="hub"]:not([data-hub-rail-collapsed="true"]):not([data-right-rail-collapsed="true"])
+    > .dc-global-friends-sidebar {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+}
+
+/* Short and fairly narrow screens (laptops): a slightly wider sidebar packs
+   more room chips per row, so every room stays on screen without scrolling.
+   The chat column keeps at least ~690px at 1366px wide. */
+@media (min-width: 821px) and (max-height: 820px) {
+  .app[data-skin][data-workspace="hub"]:not([data-hub-rail-collapsed="true"]) {
+    --hbx-rooms-width: clamp(276px, calc(12vw + 76px), 360px);
+  }
+}
+@media (max-height: 700px) {
+  .app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar .hub-c__cover.hbx-strip {
+    height: 52px !important;
+    min-height: 52px !important;
+    flex-basis: 52px !important;
+    padding-block: 6px !important;
+  }
+}

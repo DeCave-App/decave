@@ -1,0 +1,1067 @@
+/* Skin polish added to <head> after the bundled CSS so it wins cascade ties. */
+
+/* FINAL DECAVE LOGO RESET — LOGIN + WEB APP */
+.vadrion-brand,
+.vadrion-brand::before,
+.vadrion-brand::after,
+.vadrion-brand img,
+.vadrion-brand-mark,
+.vadrion-auth-brand-wrap,
+.decave-top-brand,
+.decave-top-brand::before,
+.decave-top-brand::after,
+.decave-top-brand img {
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+.vadrion-brand::before,
+.vadrion-brand::after,
+.decave-top-brand::before,
+.decave-top-brand::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Keep the login/connecting DeCave lockup horizontal even if an older
+   app.css still has legacy vertical-brand rules. */
+.vadrion-auth-brand-wrap .vadrion-brand,
+.vadrion-connecting-card .vadrion-brand,
+.vadrion-empty-card .vadrion-brand {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: auto !important;
+}
+.vadrion-brand-mark {
+  flex: 0 0 auto !important;
+  transform: none !important;
+  image-rendering: auto !important;
+}
+
+/* FINAL DECAVE BRAND RESET */
+.vadrion-brand,
+.vadrion-brand::before,
+.vadrion-brand::after,
+.vadrion-brand img,
+.vadrion-brand-mark,
+.decave-top-brand,
+.decave-top-brand img {
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+}
+.vadrion-brand::before,
+.vadrion-brand::after {
+  content: none !important;
+}
+
+:where(html, .app, .username-screen)[data-skin="nebula"] {
+  --dc-skin-rgb: 112, 89, 255;
+  --dc-skin-accent: #7c66ff;
+  --dc-skin-accent-2: #55d8ff;
+  --dc-skin-glow: rgba(124, 102, 255, 0.32);
+  --dc-skin-panel: rgba(10, 15, 31, 0.72);
+  --dc-skin-panel-2: rgba(18, 22, 48, 0.62);
+  --dc-skin-edge: rgba(129, 119, 255, 0.24);
+  --dc-skin-bg: #070b17;
+}
+
+:where(html, .app, .username-screen)[data-skin="arctic"] {
+  --dc-skin-rgb: 72, 186, 255;
+  --dc-skin-accent: #54c7ff;
+  --dc-skin-accent-2: #d8f7ff;
+  --dc-skin-glow: rgba(84, 199, 255, 0.28);
+  --dc-skin-panel: rgba(8, 18, 29, 0.74);
+  --dc-skin-panel-2: rgba(18, 37, 52, 0.6);
+  --dc-skin-edge: rgba(105, 211, 255, 0.22);
+  --dc-skin-bg: #061018;
+}
+
+:where(html, .app, .username-screen)[data-skin="crimson"] {
+  --dc-skin-rgb: 234, 55, 78;
+  --dc-skin-accent: #ef4059;
+  --dc-skin-accent-2: #ff8798;
+  --dc-skin-glow: rgba(239, 64, 89, 0.34);
+  --dc-skin-panel: rgba(20, 8, 14, 0.76);
+  --dc-skin-panel-2: rgba(46, 14, 23, 0.62);
+  --dc-skin-edge: rgba(255, 92, 115, 0.28);
+  --dc-skin-bg: #0c0508;
+}
+
+:where(html, .app, .username-screen)[data-skin="royal"] {
+  --dc-skin-rgb: 155, 78, 255;
+  --dc-skin-accent: #9a55ff;
+  --dc-skin-accent-2: #d59cff;
+  --dc-skin-glow: rgba(154, 85, 255, 0.36);
+  --dc-skin-panel: rgba(13, 7, 25, 0.77);
+  --dc-skin-panel-2: rgba(34, 15, 57, 0.64);
+  --dc-skin-edge: rgba(177, 109, 255, 0.28);
+  --dc-skin-bg: #08050e;
+}
+
+:where(html, .app, .username-screen)[data-skin="pearl"] {
+  --dc-skin-rgb: 232, 238, 248;
+  --dc-skin-accent: #f2f5fb;
+  --dc-skin-accent-2: #aeb9ca;
+  --dc-skin-glow: rgba(235, 241, 250, 0.22);
+  --dc-skin-panel: rgba(20, 24, 31, 0.76);
+  --dc-skin-panel-2: rgba(40, 46, 56, 0.58);
+  --dc-skin-edge: rgba(238, 244, 255, 0.24);
+  --dc-skin-bg: #0b0d11;
+}
+
+:where(html, .app, .username-screen)[data-skin="obsidian"] {
+  --dc-skin-rgb: 45, 49, 57;
+  --dc-skin-accent: #2f333b;
+  --dc-skin-accent-2: #8d96a5;
+  --dc-skin-glow: rgba(94, 103, 118, 0.23);
+  --dc-skin-panel: rgba(3, 4, 6, 0.86);
+  --dc-skin-panel-2: rgba(13, 15, 19, 0.78);
+  --dc-skin-edge: rgba(139, 151, 171, 0.16);
+  --dc-skin-bg: #010203;
+}
+
+:where(html, .app, .username-screen)[data-skin="verdant"] {
+  --dc-skin-rgb: 62, 211, 143;
+  --dc-skin-accent: #218f61;
+  --dc-skin-accent-2: #43c986;
+  --dc-skin-glow: rgba(53, 211, 139, 0.28);
+  --dc-skin-panel: rgba(7, 29, 23, 0.82);
+  --dc-skin-panel-2: rgba(13, 52, 39, 0.72);
+  --dc-skin-edge: rgba(104, 231, 164, 0.28);
+  --dc-skin-bg: #061713;
+}
+
+:where(html, .app, .username-screen)[data-skin="bright"] {
+  --dc-skin-rgb: 83, 101, 121;
+  --dc-skin-accent: #536579;
+  --dc-skin-accent-2: #5e6f84;
+  --dc-skin-glow: rgba(83, 101, 121, 0.18);
+  --dc-skin-panel: rgba(255, 255, 255, 0.94);
+  --dc-skin-panel-2: rgba(246, 248, 251, 0.96);
+  --dc-skin-edge: rgba(73, 87, 104, 0.28);
+  --dc-skin-bg: #e2e6eb;
+  color-scheme: light;
+}
+
+/* The original four skins predate the --gc-* token system. Normalize
+   their legacy palette here so newer controls do not fall back to the
+   default violet/blue colors. */
+:where(html, .app, .username-screen)[data-skin="crimson"],
+:where(html, .app, .username-screen)[data-skin="royal"],
+:where(html, .app, .username-screen)[data-skin="pearl"],
+:where(html, .app, .username-screen)[data-skin="obsidian"] {
+  --gc-bg-0: var(--dc-skin-bg);
+  --gc-bg-1: var(--dc-skin-panel);
+  --gc-bg-2: var(--dc-skin-panel);
+  --gc-bg-3: var(--dc-skin-panel-2);
+  --gc-bg-4: color-mix(in srgb, var(--dc-skin-panel-2) 84%, var(--dc-skin-accent) 16%);
+  --gc-hover: color-mix(in srgb, var(--dc-skin-accent) 18%, var(--dc-skin-panel-2));
+  --gc-active: color-mix(in srgb, var(--dc-skin-accent) 28%, var(--dc-skin-panel-2));
+  --gc-border: var(--dc-skin-edge);
+  --gc-border-strong: color-mix(in srgb, var(--dc-skin-edge) 76%, var(--dc-skin-accent) 24%);
+  --gc-text: #f5f7fb;
+  --gc-text-soft: #d8e0eb;
+  --gc-muted: #94a2b5;
+  --gc-muted-2: #6e7d91;
+  --gc-accent: var(--dc-skin-accent);
+  --gc-accent-2: var(--dc-skin-accent-2);
+  --gc-accent-soft: color-mix(in srgb, var(--dc-skin-accent) 18%, transparent);
+  --gc-green: #52e39a;
+  --gc-red: #ff7489;
+}
+
+/* Bridge the older workspace tokens to the active skin tokens so
+   widgets, menus, settings, and chat surfaces all follow one palette. */
+:where(html, .app, .username-screen)[data-skin] {
+  --dc-page-bg: var(--gc-bg-0);
+  --dc-panel: var(--gc-bg-1);
+  --dc-panel-2: var(--gc-bg-3);
+  --dc-border: var(--gc-border);
+  --dc-border-strong: var(--gc-border-strong);
+  --dc-text: var(--gc-text);
+  --dc-muted: var(--gc-muted);
+  --dc-cyan: var(--gc-accent-2);
+  --dc-violet: var(--gc-accent);
+  --dc-green: var(--gc-green);
+}
+
+:where(.app, .username-screen)[data-skin="crimson"],
+:where(.app, .username-screen)[data-skin="royal"],
+:where(.app, .username-screen)[data-skin="pearl"],
+:where(.app, .username-screen)[data-skin="obsidian"] {
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.018), transparent 35%, rgba(255, 255, 255, 0.012)),
+    radial-gradient(circle at 18% 8%, rgba(var(--dc-skin-rgb), 0.17), transparent 31%),
+    radial-gradient(circle at 82% 22%, rgba(var(--dc-skin-rgb), 0.1), transparent 33%),
+    radial-gradient(circle at 50% 120%, rgba(var(--dc-skin-rgb), 0.12), transparent 42%),
+    linear-gradient(145deg, var(--dc-skin-bg), #070a10 58%, var(--dc-skin-bg)) !important;
+}
+
+.app[data-skin="crimson"]
+  :is(
+    .server-bar,
+    .channels,
+    .members,
+    .vadrion-topbar,
+    .modal,
+    .username-card,
+    .vadrion-auth-card,
+    .vadrion-connecting-card,
+    .composer-shell,
+    .dm-panel,
+    .social-sidebar,
+    .voice-stage,
+    .settings-audio-card
+  ),
+.app[data-skin="royal"]
+  :is(
+    .server-bar,
+    .channels,
+    .members,
+    .vadrion-topbar,
+    .modal,
+    .username-card,
+    .vadrion-auth-card,
+    .vadrion-connecting-card,
+    .composer-shell,
+    .dm-panel,
+    .social-sidebar,
+    .voice-stage,
+    .settings-audio-card
+  ),
+.app[data-skin="pearl"]
+  :is(
+    .server-bar,
+    .channels,
+    .members,
+    .vadrion-topbar,
+    .modal,
+    .username-card,
+    .vadrion-auth-card,
+    .vadrion-connecting-card,
+    .composer-shell,
+    .dm-panel,
+    .social-sidebar,
+    .voice-stage,
+    .settings-audio-card
+  ),
+.app[data-skin="obsidian"]
+  :is(
+    .server-bar,
+    .channels,
+    .members,
+    .vadrion-topbar,
+    .modal,
+    .username-card,
+    .vadrion-auth-card,
+    .vadrion-connecting-card,
+    .composer-shell,
+    .dm-panel,
+    .social-sidebar,
+    .voice-stage,
+    .settings-audio-card
+  ),
+.username-screen[data-skin="crimson"] :is(.username-card, .vadrion-auth-card, .vadrion-connecting-card),
+.username-screen[data-skin="royal"] :is(.username-card, .vadrion-auth-card, .vadrion-connecting-card),
+.username-screen[data-skin="pearl"] :is(.username-card, .vadrion-auth-card, .vadrion-connecting-card),
+.username-screen[data-skin="obsidian"] :is(.username-card, .vadrion-auth-card, .vadrion-connecting-card) {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 44%),
+    linear-gradient(155deg, var(--dc-skin-panel-2), var(--dc-skin-panel)) !important;
+  border-color: var(--dc-skin-edge) !important;
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.36),
+    0 0 0 1px rgba(255, 255, 255, 0.025) inset,
+    0 0 36px var(--dc-skin-glow) !important;
+  backdrop-filter: blur(22px) saturate(125%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(125%) !important;
+}
+
+.app[data-skin="crimson"]
+  :is(
+    .modal-primary,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button
+  ),
+.app[data-skin="royal"]
+  :is(
+    .modal-primary,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button
+  ),
+.app[data-skin="pearl"]
+  :is(
+    .modal-primary,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button
+  ),
+.app[data-skin="obsidian"]
+  :is(
+    .modal-primary,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button
+  ),
+.username-screen[data-skin="crimson"] button,
+.username-screen[data-skin="royal"] button,
+.username-screen[data-skin="pearl"] button,
+.username-screen[data-skin="obsidian"] button {
+  border-color: var(--dc-skin-edge) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.085),
+    rgba(var(--dc-skin-rgb), 0.14) 48%,
+    rgba(255, 255, 255, 0.025)
+  ) !important;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 0 18px rgba(var(--dc-skin-rgb), 0.08) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease !important;
+}
+
+.app[data-skin="crimson"]
+  :is(
+    .modal-primary,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button
+  ):hover:not(:disabled),
+.app[data-skin="royal"]
+  :is(
+    .modal-primary,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button
+  ):hover:not(:disabled),
+.app[data-skin="pearl"]
+  :is(
+    .modal-primary,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button
+  ):hover:not(:disabled),
+.app[data-skin="obsidian"]
+  :is(
+    .modal-primary,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button
+  ):hover:not(:disabled),
+.username-screen[data-skin="crimson"] button:hover:not(:disabled),
+.username-screen[data-skin="royal"] button:hover:not(:disabled),
+.username-screen[data-skin="pearl"] button:hover:not(:disabled),
+.username-screen[data-skin="obsidian"] button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(var(--dc-skin-rgb), 0.62) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(var(--dc-skin-rgb), 0.24) 52%,
+    rgba(255, 255, 255, 0.04)
+  ) !important;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.11) inset,
+    0 0 24px var(--dc-skin-glow) !important;
+}
+
+.app[data-skin="crimson"] :is(.modal-primary, .appearance-card.active),
+.app[data-skin="royal"] :is(.modal-primary, .appearance-card.active),
+.app[data-skin="pearl"] :is(.modal-primary, .appearance-card.active),
+.app[data-skin="obsidian"] :is(.modal-primary, .appearance-card.active),
+.username-screen[data-skin="crimson"] .modal-primary,
+.username-screen[data-skin="royal"] .modal-primary,
+.username-screen[data-skin="pearl"] .modal-primary,
+.username-screen[data-skin="obsidian"] .modal-primary {
+  background: linear-gradient(135deg, var(--dc-skin-accent), var(--dc-skin-accent-2)) !important;
+  border-color: rgba(var(--dc-skin-rgb), 0.75) !important;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    0 0 25px var(--dc-skin-glow),
+    0 1px 0 rgba(255, 255, 255, 0.22) inset !important;
+}
+
+.app[data-skin="crimson"] :is(input, textarea, select),
+.app[data-skin="royal"] :is(input, textarea, select),
+.app[data-skin="pearl"] :is(input, textarea, select),
+.app[data-skin="obsidian"] :is(input, textarea, select),
+.username-screen[data-skin="crimson"] :is(input, textarea, select),
+.username-screen[data-skin="royal"] :is(input, textarea, select),
+.username-screen[data-skin="pearl"] :is(input, textarea, select),
+.username-screen[data-skin="obsidian"] :is(input, textarea, select) {
+  background: rgba(3, 7, 14, 0.58) !important;
+  border-color: var(--dc-skin-edge) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.025) inset !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.app[data-skin="crimson"] :is(input, textarea, select):focus,
+.app[data-skin="royal"] :is(input, textarea, select):focus,
+.app[data-skin="pearl"] :is(input, textarea, select):focus,
+.app[data-skin="obsidian"] :is(input, textarea, select):focus,
+.username-screen[data-skin="crimson"] :is(input, textarea, select):focus,
+.username-screen[data-skin="royal"] :is(input, textarea, select):focus,
+.username-screen[data-skin="pearl"] :is(input, textarea, select):focus,
+.username-screen[data-skin="obsidian"] :is(input, textarea, select):focus {
+  border-color: rgba(var(--dc-skin-rgb), 0.75) !important;
+  box-shadow:
+    0 0 0 3px rgba(var(--dc-skin-rgb), 0.12),
+    0 0 20px var(--dc-skin-glow) !important;
+  outline: none !important;
+}
+
+.app[data-skin="crimson"] :is(.section-title, .social-kicker, .settings-audio-kicker, .vadrion-kicker),
+.app[data-skin="royal"] :is(.section-title, .social-kicker, .settings-audio-kicker, .vadrion-kicker),
+.app[data-skin="pearl"] :is(.section-title, .social-kicker, .settings-audio-kicker, .vadrion-kicker),
+.app[data-skin="obsidian"] :is(.section-title, .social-kicker, .settings-audio-kicker, .vadrion-kicker),
+.username-screen[data-skin="crimson"] :is(.vadrion-kicker, .vadrion-mini-label),
+.username-screen[data-skin="royal"] :is(.vadrion-kicker, .vadrion-mini-label),
+.username-screen[data-skin="pearl"] :is(.vadrion-kicker, .vadrion-mini-label),
+.username-screen[data-skin="obsidian"] :is(.vadrion-kicker, .vadrion-mini-label) {
+  color: var(--dc-skin-accent-2) !important;
+}
+
+.skin-swatch.crimson {
+  background: linear-gradient(135deg, #5c0714, #ef4059 55%, #ff9dac) !important;
+  box-shadow: 0 0 16px rgba(239, 64, 89, 0.45);
+}
+.skin-swatch.royal {
+  background: linear-gradient(135deg, #32105c, #9a55ff 54%, #d7a6ff) !important;
+  box-shadow: 0 0 16px rgba(154, 85, 255, 0.48);
+}
+.skin-swatch.pearl {
+  background: linear-gradient(135deg, #3d424c, #f6f8fc 58%, #aab4c5) !important;
+  box-shadow: 0 0 16px rgba(240, 245, 255, 0.24);
+}
+.skin-swatch.obsidian {
+  background: linear-gradient(135deg, #010203, #171a20 58%, #646d7c) !important;
+  box-shadow: 0 0 16px rgba(80, 90, 105, 0.28);
+}
+
+.appearance-card.crimson .appearance-preview {
+  background:
+    radial-gradient(circle at 70% 28%, rgba(255, 125, 143, 0.42), transparent 30%),
+    linear-gradient(145deg, #24070d, #7e1326 55%, #120408) !important;
+}
+.appearance-card.royal .appearance-preview {
+  background:
+    radial-gradient(circle at 70% 28%, rgba(213, 156, 255, 0.44), transparent 30%),
+    linear-gradient(145deg, #16072a, #5a1ca0 56%, #09040f) !important;
+}
+.appearance-card.pearl .appearance-preview {
+  background:
+    radial-gradient(circle at 68% 28%, rgba(255, 255, 255, 0.46), transparent 28%),
+    linear-gradient(145deg, #11151b, #555e6d 54%, #080a0d) !important;
+}
+.appearance-card.obsidian .appearance-preview {
+  background:
+    radial-gradient(circle at 68% 28%, rgba(130, 141, 158, 0.25), transparent 30%),
+    linear-gradient(145deg, #000, #121419 56%, #020304) !important;
+}
+
+.appearance-card.crimson.active {
+  border-color: rgba(239, 64, 89, 0.62) !important;
+  box-shadow: 0 0 28px rgba(239, 64, 89, 0.18) !important;
+}
+.appearance-card.royal.active {
+  border-color: rgba(154, 85, 255, 0.66) !important;
+  box-shadow: 0 0 28px rgba(154, 85, 255, 0.2) !important;
+}
+.appearance-card.pearl.active {
+  border-color: rgba(235, 241, 250, 0.52) !important;
+  box-shadow: 0 0 26px rgba(235, 241, 250, 0.13) !important;
+}
+.appearance-card.obsidian.active {
+  border-color: rgba(139, 151, 171, 0.38) !important;
+  box-shadow: 0 0 26px rgba(80, 90, 105, 0.15) !important;
+}
+
+/* Shared skin layer: every selectable skin now reaches workspace pages,
+   widgets, menus, controls, and nested text surfaces consistently. */
+:where(.app, .username-screen)[data-skin] {
+  color: var(--gc-text);
+  font-size: 14px;
+}
+
+.app[data-skin] .dc-workspace-page {
+  color: var(--gc-text) !important;
+  background:
+    radial-gradient(circle at 72% -8%, rgba(var(--dc-skin-rgb), 0.14), transparent 38%),
+    radial-gradient(circle at 16% 12%, rgba(var(--dc-skin-rgb), 0.08), transparent 30%),
+    linear-gradient(145deg, var(--gc-bg-0), var(--gc-bg-2) 48%, var(--gc-bg-0)) !important;
+}
+
+.app[data-skin]
+  :is(
+    .server-bar,
+    .channel-sidebar,
+    .main,
+    .members,
+    .vadrion-topbar,
+    .channel-header,
+    .user-panel,
+    .message-input,
+    .voice-panel,
+    .modal,
+    .username-card,
+    .vadrion-auth-layout,
+    .vadrion-auth-card,
+    .vadrion-connecting-card,
+    .composer-shell,
+    .dm-panel,
+    .social-sidebar,
+    .voice-stage,
+    .settings-audio-card,
+    .dc-social-shell,
+    .dc-settings-shell,
+    .dc-command-palette,
+    .dc-inbox-panel,
+    .dc-account-menu,
+    .dc-dm-reference-shell,
+    .dc-hub-calendar-popover,
+    .dc-home-overview > div,
+    .dc-discover-stats > div,
+    .dc-discover-card,
+    .dc-forum-post-card,
+    .dc-forum-thread-root,
+    .dc-forum-replies article,
+    .dc-forum-settings-box,
+    .dc-hub-profile-card,
+    .dc-hub-live-preview
+  ),
+.username-screen[data-skin] :is(.username-card, .vadrion-auth-layout, .vadrion-auth-card, .vadrion-connecting-card) {
+  color: var(--gc-text) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 44%),
+    linear-gradient(155deg, var(--dc-skin-panel-2), var(--dc-skin-panel)) !important;
+  border-color: var(--dc-skin-edge) !important;
+  box-shadow:
+    0 20px 58px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.025) inset,
+    0 0 28px var(--dc-skin-glow) !important;
+}
+
+.app[data-skin]
+  :is(
+    .dc-discover-empty,
+    .dc-settings-support-card,
+    .dc-settings-about-list,
+    .dc-dm-list-pane,
+    .dc-inbox-list > button,
+    .dc-dm-recent-contacts button,
+    .dc-soundboard-panel
+  ) {
+  border-color: color-mix(in srgb, var(--dc-skin-edge) 78%, var(--gc-border) 22%) !important;
+  background: color-mix(in srgb, var(--gc-bg-3) 78%, transparent) !important;
+  color: var(--gc-text-soft) !important;
+}
+
+.app[data-skin]
+  :is(
+    .vadrion-top-actions > button,
+    .vadrion-top-user,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button,
+    .dc-top-hub-button,
+    .dc-top-hub-add,
+    .dc-hub-calendar-footer button,
+    .dc-global-tools button,
+    .dc-friend-actions > button,
+    .dc-hub-rail-fold,
+    .dc-hub-rail-restore
+  ) {
+  border-color: var(--dc-skin-edge) !important;
+  background: linear-gradient(145deg, var(--dc-skin-panel-2), var(--dc-skin-panel)) !important;
+  color: var(--gc-text-soft) !important;
+}
+
+.app[data-skin] :is(.dc-settings-header, .dc-settings-nav, .dc-discover-search, .dc-dm-filter-tabs) {
+  border-color: var(--dc-skin-edge) !important;
+  background: color-mix(in srgb, var(--gc-bg-1) 88%, transparent) !important;
+}
+.app[data-skin] :is(.dc-settings-nav button, .dc-dm-filter-tabs button) {
+  color: var(--gc-muted) !important;
+}
+.app[data-skin] :is(.dc-settings-nav button:hover, .dc-dm-filter-tabs button:hover) {
+  color: var(--gc-text) !important;
+  background: color-mix(in srgb, var(--gc-accent) 10%, transparent) !important;
+}
+.app[data-skin] :is(.dc-settings-nav button[aria-selected="true"], .dc-dm-filter-tabs button.active) {
+  color: var(--gc-text) !important;
+  border-color: var(--dc-skin-edge) !important;
+  background: linear-gradient(135deg, rgba(var(--dc-skin-rgb), 0.18), rgba(var(--dc-skin-rgb), 0.08)) !important;
+}
+.app[data-skin] :is(.dc-dm-messenger-header, .dc-inbox-panel > header, .social-modal-header) {
+  border-color: var(--dc-skin-edge) !important;
+  background: linear-gradient(145deg, var(--dc-skin-panel-2), var(--dc-skin-panel)) !important;
+}
+.app[data-skin] .server-header > .vadrion-hub-copy > div {
+  color: var(--gc-muted) !important;
+}
+
+.app[data-skin] :is(.modal-primary, .join-button, .message-input button, .dc-hub-calendar-footer button.primary) {
+  border-color: rgba(var(--dc-skin-rgb), 0.7) !important;
+  background: linear-gradient(135deg, var(--dc-skin-accent), var(--dc-skin-accent-2)) !important;
+  box-shadow: 0 9px 24px rgba(var(--dc-skin-rgb), 0.18) !important;
+}
+
+.app[data-skin] :is(input, textarea, select),
+.username-screen[data-skin] :is(input, textarea, select) {
+  border-color: var(--dc-skin-edge) !important;
+  background: color-mix(in srgb, var(--gc-bg-1) 88%, transparent) !important;
+  color: var(--gc-text) !important;
+}
+.app[data-skin] :is(input, textarea, select):focus,
+.username-screen[data-skin] :is(input, textarea, select):focus {
+  border-color: rgba(var(--dc-skin-rgb), 0.72) !important;
+  box-shadow:
+    0 0 0 3px rgba(var(--dc-skin-rgb), 0.12),
+    0 0 18px var(--dc-skin-glow) !important;
+}
+
+.app[data-skin]
+  :is(
+    .dc-home-toolbar h1,
+    .dc-discover-hero h1,
+    .social-modal-header h2,
+    .dc-settings-header h2,
+    .dc-dm-header-copy strong,
+    .settings-audio-header h3,
+    .server-header strong,
+    .channel-name,
+    .dc-discover-card-top strong
+  ) {
+  color: var(--gc-text) !important;
+}
+.app[data-skin] :is(.dc-home-overview > div > strong, .dc-discover-stats strong) {
+  color: var(--gc-accent-2) !important;
+}
+.app[data-skin]
+  :is(
+    .dc-home-toolbar p,
+    .dc-discover-hero p,
+    .social-modal-header p,
+    .dc-settings-header p,
+    .settings-audio-header p,
+    .channel-subtitle,
+    .dc-dm-header-copy small,
+    .dc-discover-card-top small,
+    .dc-discover-card-body > p,
+    .dc-discover-card-footer > span,
+    .dc-dm-history-intro
+  ) {
+  color: var(--gc-muted) !important;
+}
+.app[data-skin] :is(.section-title, .social-kicker, .settings-audio-kicker, .vadrion-kicker, .manage-hub-kicker) {
+  color: var(--gc-accent-2) !important;
+}
+
+/* Shared heading rhythm: page heroes, modal headers, and DM headers use
+   deliberate levels instead of competing one-off sizes. */
+.app[data-skin] :is(.dc-home-toolbar h1, .dc-discover-hero h1) {
+  margin: 4px 0 7px !important;
+  font-size: clamp(28px, 2.25vw, 36px) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em !important;
+}
+.app[data-skin] :is(.social-modal-header h2, .dc-settings-header h2) {
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.025em !important;
+}
+.app[data-skin] > .vadrion-topbar,
+.app[data-skin] .channel-header,
+.app[data-skin] :is(.social-modal-header, .dc-settings-header) {
+  min-height: 68px !important;
+}
+.app[data-skin] :is(.social-modal-header, .dc-settings-header) {
+  padding: 14px 20px !important;
+}
+.app[data-skin] :is(.dc-home-toolbar p, .dc-discover-hero p, .social-modal-header p, .dc-settings-header p) {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+.app[data-skin] :is(.social-kicker, .section-title, .settings-audio-kicker, .vadrion-kicker, .manage-hub-kicker) {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.13em !important;
+}
+
+.app[data-skin]
+  :is(
+    .dc-home-overview span,
+    .dc-discover-stats span,
+    .dc-discover-card-top small,
+    .dc-discover-card-body > p,
+    .dc-discover-card-footer > span,
+    .dc-discover-tags span,
+    .dc-discover-empty,
+    .dc-settings-about-list span,
+    .dc-settings-about-list strong,
+    .dc-dm-history-intro,
+    .dc-inbox-list small
+  ) {
+  color: var(--gc-muted) !important;
+}
+.app[data-skin] :is(.dc-discover-card-top strong, .dc-discover-empty strong, .dc-settings-support-card strong) {
+  color: var(--gc-text) !important;
+}
+.app[data-skin]
+  :is(.dc-discover-card-footer b, .dc-live-pill, .dc-home-overview > div > strong, .dc-discover-stats strong) {
+  color: var(--gc-accent-2) !important;
+}
+
+.app[data-skin]
+  :is(
+    .dc-account-menu .user-context-details > div,
+    .dc-account-menu .user-context-self-actions button,
+    .dc-account-menu .user-context-settings-button,
+    .dc-account-menu > .user-context-volume,
+    .dc-account-menu > .user-context-self-latency,
+    .dc-settings-about-list > div,
+    .dc-dm-reference-meta > span,
+    .dc-command-results > button,
+    .dc-inbox-list > button,
+    .dc-discover-controls .invite-join-row,
+    .dc-discover-filter-row,
+    .dc-keybind-actions,
+    .dc-notification-permission
+  ) {
+  border-color: color-mix(in srgb, var(--dc-skin-edge) 78%, var(--gc-border) 22%) !important;
+  background: color-mix(in srgb, var(--gc-bg-3) 78%, transparent) !important;
+  color: var(--gc-text-soft) !important;
+}
+
+/* Keep the green Verdant Raid look and add a readable bright-grey light skin. */
+:where(.app, .username-screen)[data-skin="verdant"] {
+  background:
+    radial-gradient(circle at 16% 4%, rgba(79, 225, 151, 0.16), transparent 30%),
+    radial-gradient(circle at 84% 86%, rgba(24, 132, 91, 0.18), transparent 34%),
+    linear-gradient(145deg, #061713, #0b2b21 58%, #07120f) !important;
+  color: #effff6;
+}
+
+:where(.app, .username-screen)[data-skin="bright"] {
+  background:
+    radial-gradient(circle at 16% 2%, rgba(255, 255, 255, 0.9), transparent 31%),
+    radial-gradient(circle at 88% 86%, rgba(157, 173, 190, 0.3), transparent 35%),
+    linear-gradient(145deg, #f5f7fa, #dce2e9 58%, #ffffff) !important;
+  color: #1f2b39;
+}
+
+.app[data-skin="verdant"]
+  :is(
+    .server-bar,
+    .channel-sidebar,
+    .main,
+    .members,
+    .vadrion-topbar,
+    .channel-header,
+    .user-panel,
+    .message-input,
+    .voice-panel,
+    .modal,
+    .username-card,
+    .vadrion-auth-layout,
+    .vadrion-auth-card,
+    .vadrion-connecting-card,
+    .composer-shell,
+    .dm-panel,
+    .social-sidebar,
+    .voice-stage,
+    .settings-audio-card,
+    .dc-hub-calendar-popover
+  ),
+.username-screen[data-skin="verdant"]
+  :is(.username-card, .vadrion-auth-layout, .vadrion-auth-card, .vadrion-connecting-card) {
+  color: var(--gc-text) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.045), transparent 44%),
+    linear-gradient(155deg, var(--dc-skin-panel-2), var(--dc-skin-panel)) !important;
+  border-color: var(--dc-skin-edge) !important;
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(255, 255, 255, 0.025) inset,
+    0 0 36px var(--dc-skin-glow) !important;
+}
+
+.app[data-skin="bright"]
+  :is(
+    .server-bar,
+    .channel-sidebar,
+    .main,
+    .members,
+    .vadrion-topbar,
+    .channel-header,
+    .user-panel,
+    .message-input,
+    .voice-panel,
+    .modal,
+    .username-card,
+    .vadrion-auth-layout,
+    .vadrion-auth-card,
+    .vadrion-connecting-card,
+    .composer-shell,
+    .dm-panel,
+    .social-sidebar,
+    .voice-stage,
+    .settings-audio-card,
+    .dc-hub-calendar-popover
+  ),
+.username-screen[data-skin="bright"]
+  :is(.username-card, .vadrion-auth-layout, .vadrion-auth-card, .vadrion-connecting-card) {
+  color: #1f2b39 !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.68) 44%),
+    linear-gradient(155deg, #f9fbfd, #e7ecf2) !important;
+  border-color: rgba(73, 87, 104, 0.26) !important;
+  box-shadow:
+    0 22px 70px rgba(55, 70, 87, 0.14),
+    0 0 0 1px rgba(255, 255, 255, 0.72) inset,
+    0 0 36px rgba(83, 101, 121, 0.1) !important;
+}
+
+.app[data-skin="verdant"] .server-header,
+.app[data-skin="bright"] .server-header {
+  border-color: var(--dc-skin-edge) !important;
+  background-color: var(--gc-bg-3) !important;
+}
+.app[data-skin="bright"] .server-header > .vadrion-hub-copy > div {
+  color: #617184 !important;
+}
+
+.app[data-skin="verdant"]
+  :is(
+    .vadrion-top-actions > button,
+    .vadrion-top-user,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button,
+    .dc-hub-calendar-footer button
+  ),
+.username-screen[data-skin="verdant"] button:not(.skin-chip) {
+  border-color: var(--dc-skin-edge) !important;
+  background: linear-gradient(145deg, rgba(40, 113, 79, 0.28), rgba(5, 30, 23, 0.68)) !important;
+  color: #eafff3 !important;
+}
+
+.app[data-skin="bright"]
+  :is(
+    .vadrion-top-actions > button,
+    .vadrion-top-user,
+    .modal-secondary,
+    .composer-tool-button,
+    .header-actions button,
+    .dm-message-hover-actions button,
+    .chat-message-hover-actions button,
+    .dc-hub-calendar-footer button
+  ),
+.username-screen[data-skin="bright"] button:not(.skin-chip) {
+  border-color: rgba(73, 87, 104, 0.24) !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(225, 231, 238, 0.84)) !important;
+  color: #263547 !important;
+  box-shadow:
+    0 7px 18px rgba(55, 70, 87, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+}
+
+.app[data-skin="verdant"]
+  :is(.modal-primary, .join-button, .message-input button, .dc-hub-calendar-footer button.primary),
+.username-screen[data-skin="verdant"] .modal-primary {
+  border-color: rgba(90, 227, 157, 0.54) !important;
+  background: linear-gradient(135deg, #168457, #2fbd7d) !important;
+  color: #f5fff9 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.42) !important;
+}
+
+.app[data-skin="bright"]
+  :is(.modal-primary, .join-button, .message-input button, .dc-hub-calendar-footer button.primary),
+.username-screen[data-skin="bright"] .modal-primary {
+  border-color: rgba(83, 101, 121, 0.42) !important;
+  background: linear-gradient(135deg, #7b8c9f, #c1cad4) !important;
+  color: #1b2a3a !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.46) !important;
+}
+
+.app[data-skin="bright"] :is(input, textarea, select),
+.username-screen[data-skin="bright"] :is(input, textarea, select) {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(73, 87, 104, 0.25) !important;
+  color: #1f2b39 !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
+}
+.app[data-skin="bright"] :is(input, textarea, select)::placeholder,
+.username-screen[data-skin="bright"] :is(input, textarea, select)::placeholder {
+  color: #788798 !important;
+}
+.app[data-skin="bright"] :is(input, textarea, select):focus,
+.username-screen[data-skin="bright"] :is(input, textarea, select):focus {
+  border-color: rgba(83, 101, 121, 0.62) !important;
+  box-shadow:
+    0 0 0 3px rgba(83, 101, 121, 0.12),
+    0 0 18px rgba(83, 101, 121, 0.13) !important;
+}
+
+.app[data-skin="bright"]
+  :is(
+    .server-header strong,
+    .channel-name,
+    .channel-name-copy,
+    .channel-subtitle,
+    .chat-message-header strong,
+    .chat-message-text,
+    .members-title,
+    .member,
+    .member strong,
+    .vadrion-context-copy strong,
+    .vadrion-top-user,
+    .modal h2,
+    .modal label,
+    .appearance-card strong
+  ) {
+  color: #263547 !important;
+}
+.app[data-skin="bright"]
+  :is(
+    .section-title,
+    .members-title,
+    .social-kicker,
+    .settings-audio-kicker,
+    .vadrion-kicker,
+    .channel-subtitle,
+    .chat-message-header span,
+    .member small,
+    .appearance-card small,
+    .modal p
+  ) {
+  color: #617184 !important;
+}
+
+.app[data-skin="bright"] :is(.channel:hover, .member:hover, .chat-message:hover) {
+  background: rgba(83, 101, 121, 0.09) !important;
+  border-color: rgba(83, 101, 121, 0.22) !important;
+}
+.app[data-skin="bright"] .channel.selected {
+  background: linear-gradient(90deg, rgba(83, 101, 121, 0.18), rgba(141, 154, 170, 0.1)) !important;
+  border-color: rgba(83, 101, 121, 0.3) !important;
+  box-shadow:
+    inset 3px 0 0 #536579,
+    0 0 18px rgba(83, 101, 121, 0.1) !important;
+}
+
+.app[data-skin="bright"] :is(.dc-top-hub-button, .dc-top-hub-add) {
+  border-color: rgba(73, 87, 104, 0.3) !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(218, 225, 233, 0.9)) !important;
+  color: #405267 !important;
+  box-shadow:
+    0 7px 16px rgba(55, 70, 87, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+}
+.app[data-skin="bright"] .dc-top-hub-button.active {
+  border-color: rgba(83, 101, 121, 0.6) !important;
+  background: linear-gradient(145deg, #d2dbe4, #aebbc8) !important;
+  box-shadow:
+    0 0 0 2px rgba(83, 101, 121, 0.12),
+    0 8px 20px rgba(55, 70, 87, 0.18) !important;
+}
+.app[data-skin="bright"] .dc-top-hub-button.active::after {
+  background: linear-gradient(90deg, #536579, #a7b3c0);
+  box-shadow: 0 0 10px rgba(83, 101, 121, 0.42);
+}
+
+.skin-swatch.verdant {
+  background: linear-gradient(135deg, #073b2b, #2bbf7f 54%, #b0f4cb) !important;
+  box-shadow: 0 0 16px rgba(43, 191, 127, 0.42);
+}
+.skin-swatch.bright {
+  background: linear-gradient(135deg, #b7c1cc, #fbfcfd 56%, #7f8d9d) !important;
+  box-shadow: 0 0 16px rgba(109, 126, 146, 0.28);
+}
+.appearance-card.verdant .appearance-preview {
+  background:
+    radial-gradient(circle at 70% 28%, rgba(133, 245, 183, 0.42), transparent 30%),
+    linear-gradient(145deg, #092b20, #16784f 56%, #04120d) !important;
+}
+.appearance-card.bright .appearance-preview {
+  background:
+    radial-gradient(circle at 70% 28%, rgba(255, 255, 255, 0.76), transparent 31%),
+    linear-gradient(145deg, #aeb9c5, #f8fafc 56%, #748293) !important;
+}
+.appearance-card.verdant.active {
+  border-color: rgba(43, 191, 127, 0.62) !important;
+  box-shadow: 0 0 28px rgba(43, 191, 127, 0.18) !important;
+}
+.appearance-card.bright.active {
+  border-color: rgba(83, 101, 121, 0.48) !important;
+  box-shadow: 0 0 28px rgba(83, 101, 121, 0.16) !important;
+}
+
+/* The reference header is one uninterrupted surface. Keep this last
+   in the runtime skin layer so no palette can reintroduce gradients. */
+.app[data-skin] > .vadrion-topbar {
+  background: var(--gc-bg-1) !important;
+  background-image: none !important;
+}
+.app[data-skin] > .vadrion-topbar > .vadrion-top-actions.dc-top-hub-switcher {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.app[data-skin] > .vadrion-topbar > .vadrion-top-actions.dc-top-hub-switcher > .dc-top-hub-button,
+.app[data-skin] > .vadrion-topbar > .vadrion-top-actions.dc-top-hub-switcher > .dc-top-hub-add {
+  background: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.app[data-skin] > .vadrion-topbar > .vadrion-top-actions.dc-top-hub-switcher > .dc-top-hub-button.active {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--gc-bg-2) 88%, var(--gc-accent) 12%),
+    var(--gc-bg-2)
+  ) !important;
+  box-shadow:
+    0 7px 16px rgba(0, 0, 0, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.045) inset !important;
+}

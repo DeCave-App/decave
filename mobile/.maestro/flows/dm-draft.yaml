@@ -1,0 +1,16 @@
+# Unsent text survives leaving and reopening the conversation.
+appId: com.example.decave
+---
+- launchApp:
+    clearState: false
+- tapOn: "DMs"
+- tapOn: ${FRIEND}
+- tapOn:
+    id: "dm-composer"
+- inputText: "maestro draft check"
+- hideKeyboard
+- tapOn: "Back"
+- assertVisible: "Draft: maestro draft check"
+- tapOn: ${FRIEND}
+- assertVisible: "maestro draft check"
+- eraseText: 30

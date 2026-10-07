@@ -1,0 +1,238 @@
+/* User Settings redesign (2026-10). The legacy shell grid stays in charge of
+   placement: header spans both columns, #dcs-nav owns column 1 and every
+   following sibling lands in column 2. ID selectors are used deliberately to
+   win over the skin's high-specificity :is() rules without !important wars. */
+
+.dc-settings-shell > .dcs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.dc-settings-shell > .dcs-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: var(--dcx-text);
+}
+.dc-settings-shell > .dcs-header p {
+  margin: 4px 0 0;
+  color: var(--dcx-muted);
+  font-size: 13px;
+}
+.dc-settings-shell > .dcs-header p strong {
+  color: var(--dcx-text);
+}
+.dc-settings-shell > .dcs-header .dcs-close {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  font-size: 22px;
+}
+
+/* Navigation */
+#dcs-nav {
+  gap: 14px;
+  padding: 16px 12px !important;
+}
+#dcs-nav .dcs-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+#dcs-nav .dcs-search-icon {
+  position: absolute;
+  left: 11px;
+  color: var(--dcx-muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+#dcs-nav .dcs-search input {
+  padding-left: 30px;
+  min-height: 38px;
+  font-size: 13px !important;
+}
+#dcs-nav .dcs-search button {
+  flex: 0 0 auto;
+}
+#dcs-nav .dcs-nav-groups {
+  display: grid;
+  gap: 14px;
+}
+#dcs-nav .dcs-nav-group {
+  display: grid;
+  gap: 2px;
+}
+#dcs-nav .dcs-nav-group-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 4px;
+  color: color-mix(in srgb, var(--dcx-muted) 70%, transparent);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: default;
+  user-select: none;
+}
+#dcs-nav .dcs-nav-group-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--dcx-border);
+}
+#dcs-nav .dcx-nav-item {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0 !important;
+  border-radius: 8px;
+  background: transparent !important;
+  color: var(--dcx-muted) !important;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+}
+#dcs-nav .dcx-nav-item:hover {
+  background: color-mix(in srgb, var(--ds-text) 6%, transparent) !important;
+  color: var(--dcx-text) !important;
+}
+#dcs-nav .dcx-nav-item.is-active {
+  background: color-mix(in srgb, var(--dcx-accent) 22%, transparent) !important;
+  color: var(--dcx-text) !important;
+  box-shadow: inset 3px 0 var(--dcx-accent);
+}
+#dcs-nav .dcx-nav-item:focus-visible {
+  outline: none;
+  box-shadow: var(--dcx-focus);
+}
+#dcs-nav .dcs-dirty-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dcx-warn);
+}
+#dcs-nav .dcs-nav-empty {
+  margin: 0;
+  padding: 4px 10px;
+  color: var(--dcx-muted);
+  font-size: 13px;
+}
+
+/* Section header */
+.dc-settings-shell > .dcs-section-intro {
+  padding-top: 22px;
+}
+.dc-settings-shell > .dcs-section-intro h3 {
+  margin: 0;
+  color: var(--dcx-text);
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+.dc-settings-shell > .dcs-section-intro p {
+  margin: 4px 0 0;
+  color: var(--dcx-muted);
+  font-size: 13px !important;
+}
+
+/* Cards and rows inside existing sections: readable sizes and consistent rows. */
+.app .dc-settings-page .dc-settings-shell small,
+.app .dc-settings-page .dc-settings-shell p {
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+.app[data-skin][data-workspace] .dc-settings-page .dc-settings-shell small,
+.app[data-skin][data-workspace] .dc-settings-page .dc-settings-shell p {
+  font-size: 12px !important;
+}
+.dc-settings-page .dc-settings-shell .settings-toggle-row {
+  min-height: 56px;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+.dc-settings-page .dc-settings-shell .settings-toggle-row strong {
+  font-size: 13px;
+}
+.dc-settings-page .dc-settings-shell .settings-toggle-row select {
+  font-size: 12px !important;
+}
+.dc-settings-page .dc-settings-shell .settings-toggle-row button {
+  font-size: 12px !important;
+}
+.dc-settings-page .dc-settings-shell input[type="checkbox"]:focus-visible,
+.dc-settings-page .dc-settings-shell button:focus-visible,
+.dc-settings-page .dc-settings-shell select:focus-visible,
+.dc-settings-page .dc-settings-shell input:focus-visible,
+.dc-settings-page .dc-settings-shell textarea:focus-visible {
+  outline: 2px solid var(--dcx-accent-2) !important;
+  outline-offset: 2px;
+}
+
+/* Footer / sticky save bar */
+.dc-settings-shell > .dcs-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px 0 20px;
+  border-top: 1px solid var(--ds-border);
+  color: var(--dcx-muted);
+  font-size: 12px;
+}
+.dc-settings-shell > .dcs-savebar {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 900px), (min-resolution: 1.25dppx) {
+  #dcs-nav {
+    position: sticky !important;
+    top: 0;
+    z-index: 5;
+    padding: 10px 12px !important;
+    background: var(--ds-surface-solid) !important;
+    border-bottom: 1px solid var(--ds-border) !important;
+  }
+  #dcs-nav .dcs-nav-groups {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    padding-bottom: 2px;
+  }
+  #dcs-nav .dcs-nav-group {
+    display: flex;
+    gap: 4px;
+  }
+  #dcs-nav .dcs-nav-group-label {
+    display: none;
+  }
+  #dcs-nav .dcx-nav-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  #dcs-nav .dcx-nav-item.is-active {
+    box-shadow: inset 0 -2px var(--dcx-accent);
+  }
+}
+@media (max-width: 560px) {
+  .dc-settings-shell > .dcs-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dc-settings-shell > .dcs-savebar > div {
+    width: 100%;
+  }
+  .dc-settings-shell > .dcs-savebar > div > button {
+    flex: 1 1 120px;
+  }
+}

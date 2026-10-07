@@ -1,0 +1,3 @@
+# Maestro UI tests for the DeCave iOS app. See README.md.
+flows:
+  - "flows/*.yaml"

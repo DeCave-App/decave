@@ -1,0 +1,682 @@
+/* Hub events (2026-10): detail drawer, 2-step composer sheet, RSVP, chat card. Prefix evx-. */
+.evx-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--ds-surface-2);
+  backdrop-filter: blur(4px);
+  color: var(--dcx-text);
+  font-size: 13px;
+}
+.evx-overlay.center {
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+.evx-overlay button:focus-visible,
+.evx-overlay input:focus-visible,
+.evx-overlay select:focus-visible,
+.evx-overlay textarea:focus-visible,
+.evx-chat-card button:focus-visible {
+  outline: none;
+  box-shadow: var(--dcx-focus);
+}
+
+.evx-kicker {
+  margin: 0;
+  color: var(--dcx-accent-2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.evx-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--dcx-border-strong);
+  border-radius: 9px;
+  background: var(--ds-surface-2);
+  color: var(--dcx-text);
+  font-size: 18px;
+  cursor: pointer;
+}
+.evx-icon-btn:hover:not(:disabled) {
+  border-color: var(--dcx-accent-2);
+}
+.evx-error,
+.evx-field-error {
+  color: var(--ds-danger);
+  font-size: 12px;
+}
+.evx-error {
+  margin: 8px 0 0;
+}
+.evx-note {
+  color: var(--dcx-muted);
+  font-size: 12px;
+}
+.evx-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--dcx-border-strong);
+  border-radius: 999px;
+  color: var(--dcx-text);
+  font-size: 12px;
+}
+.evx-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.evx-chip-row .evx-chip {
+  margin-left: 0;
+}
+.evx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--ds-surface-2);
+  border: 1px solid var(--dcx-border-strong);
+  color: var(--dcx-text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.evx-badge.live {
+  border-color: color-mix(in srgb, var(--ds-danger) 60%, transparent);
+  color: var(--ds-danger);
+}
+.evx-badge.live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ds-danger);
+}
+.evx-badge.cancelled {
+  border-color: color-mix(in srgb, var(--ds-danger) 40%, transparent);
+  color: var(--ds-danger);
+}
+
+/* ---------- Drawer ---------- */
+.evx-drawer {
+  width: min(440px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  border-left: 1px solid var(--dcx-border-strong);
+  background: var(--dcx-surface);
+  box-shadow: -24px 0 60px rgba(0, 0, 0, 0.5);
+  outline: none;
+  animation: evx-slide 0.18s ease-out;
+}
+@keyframes evx-slide {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+.evx-cover {
+  position: relative;
+  flex: none;
+  height: 150px;
+  background:
+    radial-gradient(
+      circle at 20% 20%,
+      color-mix(in srgb, var(--evx-accent, var(--ds-accent)) 55%, transparent),
+      transparent 60%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--evx-accent, var(--ds-accent)) 35%, var(--ds-surface-1)),
+      var(--ds-surface-1)
+    );
+}
+.evx-cover.has-image {
+  height: 190px;
+}
+.evx-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.evx-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, var(--ds-surface-2));
+  pointer-events: none;
+}
+.evx-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+}
+.evx-cover-badges {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.evx-drawer-body {
+  padding: 14px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.evx-drawer-body h2 {
+  margin: 2px 0 0;
+  font-size: 22px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.evx-facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.evx-facts > div {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 10px;
+}
+.evx-facts dt {
+  color: var(--dcx-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-top: 2px;
+}
+.evx-facts dd {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.evx-facts dd small {
+  color: var(--dcx-muted);
+  font-size: 12px;
+}
+.evx-alt-tz {
+  color: var(--dcx-accent-2) !important;
+}
+.evx-where {
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  gap: 6px !important;
+}
+.evx-description {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+  color: var(--ds-text);
+}
+.evx-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--dcx-border);
+  border-radius: 12px;
+  background: var(--dcx-surface-2);
+}
+.evx-section h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.evx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.evx-confirm {
+  display: inline-flex;
+  gap: 6px;
+}
+
+/* ---------- RSVP ---------- */
+.evx-rsvp {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.evx-rsvp-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.evx-rsvp-btn {
+  flex: 1 1 0;
+  min-width: 84px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--dcx-border-strong);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ds-text) 4%, transparent);
+  color: var(--dcx-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.evx-rsvp-btn b {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ds-text) 8%, transparent);
+  font-size: 12px;
+}
+.evx-rsvp-btn:hover:not(:disabled) {
+  border-color: var(--dcx-accent-2);
+}
+.evx-rsvp-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.evx-rsvp-btn.going.active {
+  border-color: var(--dcx-ok);
+  background: color-mix(in srgb, var(--ds-success) 16%, transparent);
+}
+.evx-rsvp-btn.maybe.active {
+  border-color: var(--dcx-warn);
+  background: color-mix(in srgb, var(--ds-warn) 16%, transparent);
+}
+.evx-rsvp-btn.declined.active {
+  border-color: var(--dcx-danger);
+  background: color-mix(in srgb, var(--ds-danger) 14%, transparent);
+}
+.evx-rsvp.compact .evx-rsvp-btn {
+  min-height: 30px;
+  min-width: 70px;
+  flex: 0 1 auto;
+  font-size: 12px;
+}
+.evx-attendees {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.evx-attendees small {
+  color: var(--dcx-muted);
+  font-size: 12px;
+}
+.evx-avatar-stack {
+  display: flex;
+}
+.evx-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  overflow: hidden;
+  border: 2px solid var(--dcx-surface);
+  border-radius: 50%;
+  background: var(--ds-surface-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+.evx-avatar:first-child {
+  margin-left: 0;
+}
+.evx-avatar > * {
+  width: 100% !important;
+  height: 100% !important;
+}
+.evx-avatar.sm {
+  width: 22px;
+  height: 22px;
+  margin-left: 0;
+  border-width: 0;
+}
+
+/* ---------- Composer sheet ---------- */
+.evx-sheet {
+  width: min(900px, 100%);
+  max-height: min(860px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--dcx-border-strong);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--dcx-accent) 16%, transparent), transparent 45%),
+    var(--dcx-surface);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  outline: none;
+}
+.evx-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--dcx-border);
+}
+.evx-sheet-head > div {
+  flex: 1;
+  min-width: 0;
+}
+.evx-sheet-head h2 {
+  margin: 2px 0 0;
+  font-size: 20px;
+}
+.evx-steps {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 3px;
+  list-style: none;
+  border: 1px solid var(--dcx-border);
+  border-radius: 10px;
+}
+.evx-steps button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dcx-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.evx-steps li.active button {
+  background: color-mix(in srgb, var(--dcx-accent) 70%, transparent);
+  color: var(--ds-on-accent);
+}
+.evx-steps li.done button {
+  color: var(--dcx-ok);
+}
+.evx-sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 20px;
+  padding: 18px 20px;
+}
+.evx-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.evx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.evx-field > span,
+.evx-field > legend {
+  color: var(--ds-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+.evx-field em {
+  color: var(--dcx-muted);
+  font-style: normal;
+  font-weight: 400;
+}
+.evx-field input,
+.evx-field select,
+.evx-field textarea,
+.evx-search {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--dcx-border-strong);
+  border-radius: 9px;
+  background: var(--ds-surface-2);
+  color: var(--dcx-text);
+  font: inherit;
+  font-size: 13px;
+  color-scheme: dark;
+  box-sizing: border-box;
+}
+.evx-field textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+.evx-field [aria-invalid="true"] {
+  border-color: var(--dcx-danger);
+}
+.evx-counter {
+  align-self: flex-end;
+  color: var(--dcx-muted);
+  font-size: 12px;
+}
+.evx-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.evx-segment {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px;
+  border: 1px solid var(--dcx-border);
+  border-radius: 10px;
+}
+.evx-segment button {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dcx-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.evx-segment button.active {
+  background: color-mix(in srgb, var(--dcx-accent) 70%, transparent);
+  color: var(--ds-on-accent);
+}
+.evx-pick-list {
+  max-height: 220px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--dcx-border);
+  border-radius: 10px;
+}
+.evx-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.evx-pick:hover {
+  background: color-mix(in srgb, var(--ds-text) 5%, transparent);
+}
+.evx-pick input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--dcx-accent);
+}
+.evx-role-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.evx-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.evx-preview-card {
+  overflow: hidden;
+  border: 1px solid var(--dcx-border-strong);
+  border-radius: 14px;
+  background: var(--dcx-surface-2);
+}
+.evx-preview-cover {
+  height: 96px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--dcx-accent) 50%, var(--ds-surface-1)),
+    var(--ds-surface-1)
+  );
+}
+.evx-preview-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.evx-preview-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+}
+.evx-preview-copy strong {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.evx-preview-copy small {
+  color: var(--dcx-muted);
+}
+.evx-preview-copy p {
+  margin: 0;
+  color: var(--ds-text-soft);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.evx-sheet-error {
+  margin: 0 20px 8px;
+}
+.evx-sheet-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--dcx-border);
+}
+
+/* ---------- Chat card additions ---------- */
+.evx-chat-card .dc-poll-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.evx-chat-card.cancelled .evx-chat-title {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+.evx-chat-title {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+.evx-chat-title:hover {
+  text-decoration: underline;
+}
+.evx-chat-card .evx-rsvp {
+  margin-top: 8px;
+}
+.evx-chat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.evx-chat-actions .dcx-btn {
+  min-height: 30px;
+  font-size: 12px;
+  padding: 0 10px;
+}
+
+@media (max-width: 760px) {
+  .evx-sheet-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .evx-preview {
+    order: -1;
+  }
+  .evx-preview-cover {
+    height: 64px;
+  }
+}
+@media (max-width: 520px) {
+  .evx-overlay.center {
+    padding: 0;
+    align-items: stretch;
+  }
+  .evx-sheet {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  .evx-sheet-head {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+  .evx-steps {
+    order: 3;
+    width: 100%;
+  }
+  .evx-steps li {
+    flex: 1;
+  }
+  .evx-steps button {
+    width: 100%;
+  }
+  .evx-sheet-body {
+    padding: 14px 16px;
+  }
+  .evx-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .evx-drawer {
+    width: 100%;
+    border-left: 0;
+  }
+  .evx-facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .evx-drawer {
+    animation: none;
+  }
+}

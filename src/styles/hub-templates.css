@@ -1,0 +1,146 @@
+.dc-discord-import {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ds-border);
+}
+.dc-discord-import-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dc-discord-import-head > div {
+  display: grid;
+  gap: 3px;
+}
+.dc-discord-import-head span {
+  color: var(--ds-accent-text);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+.dc-discord-import-head strong {
+  color: var(--ds-text);
+  font-size: 13px;
+}
+.dc-discord-import-head small {
+  color: var(--ds-text-soft);
+  font-size: 11px;
+}
+.dc-discord-import-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+.dc-discord-import-form input {
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--ds-border);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ds-surface-1) 86%, transparent);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 13px;
+}
+.dc-discord-import-form input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--ds-accent) 54%, transparent);
+  box-shadow: 0 0 0 3px rgba(193, 140, 255, 0.08);
+}
+.dc-discord-import-form button {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 11px;
+}
+.dc-discord-import-error {
+  margin: 0;
+  color: var(--ds-danger);
+  font-size: 11px;
+}
+.dc-discord-import-preview {
+  display: grid;
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent) 24%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ds-surface-1) 33%, transparent);
+}
+.dc-discord-import-preview-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+.dc-discord-import-preview-title strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ds-text);
+  font-size: 12px;
+}
+.dc-discord-import-preview-title button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text-soft);
+  font-size: 9px;
+  cursor: pointer;
+}
+.dc-discord-import-preview-title button:hover {
+  color: var(--ds-text);
+}
+.dc-discord-import-preview p {
+  margin: 0;
+  color: var(--ds-text-soft);
+  font-size: 10px;
+}
+.dc-discord-import-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+}
+.dc-discord-import-stats span {
+  color: var(--ds-text-soft);
+  font-size: 10px;
+}
+.dc-discord-import-stats b {
+  color: var(--ds-text);
+}
+.dc-discord-import-warning {
+  color: var(--ds-warn);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.dc-discord-import-note {
+  color: var(--ds-text-soft);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.dc-discord-import-review-list {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ds-warn) 6%, transparent);
+  color: var(--ds-text-soft);
+  font-size: 10px;
+}
+.dc-discord-import-review-list strong {
+  color: var(--ds-warn);
+  font-size: 10px;
+}
+.dc-discord-import-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+  padding-top: 3px;
+}
+.dc-discord-import-review-actions button {
+  min-height: 32px;
+  padding: 0 11px;
+  font-size: 11px;
+}

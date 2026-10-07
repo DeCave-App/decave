@@ -1,0 +1,272 @@
+/* Shared dcx- primitives (settings, Manage Hub, room settings, calendar,
+   events, forum). Tokens, buttons, inputs and tabs now live in
+   src/styles/design-system.css (.dcx-btn/.dcx-input/.dcx-tab are aliases of
+   .ds-btn/.ds-input/.ds-tab there). */
+
+.dcx-switch input:focus-visible + span,
+.dcx-nav-item:focus-visible {
+  outline: none;
+  box-shadow: var(--dcx-focus);
+}
+
+/* Accessible switch: a real checkbox with a visual track. */
+.dcx-switch {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.dcx-switch input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  cursor: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.dcx-switch input:disabled {
+  cursor: not-allowed;
+}
+.dcx-switch span {
+  width: 40px;
+  height: 22px;
+  display: inline-block;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ds-muted) 40%, transparent);
+  transition: background 0.15s ease;
+  position: relative;
+}
+.dcx-switch span::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ds-on-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+.dcx-switch input:checked + span {
+  background: var(--dcx-accent);
+}
+.dcx-switch input:checked + span::after {
+  transform: translateX(18px);
+}
+.dcx-switch input:disabled + span {
+  opacity: 0.5;
+}
+
+.dcx-card {
+  border: 1px solid var(--dcx-border);
+  border-radius: 14px;
+  background: var(--dcx-surface-2);
+  overflow: hidden;
+}
+.dcx-card + .dcx-card {
+  margin-top: 14px;
+}
+.dcx-card-head {
+  padding: 14px 16px 4px;
+}
+.dcx-card-head h4 {
+  margin: 0;
+  color: var(--dcx-text);
+  font-size: var(--ds-text-md);
+}
+.dcx-card-head p {
+  margin: 4px 0 0;
+  color: var(--dcx-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.dcx-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--ds-border) 60%, transparent);
+}
+.dcx-card > .dcx-row:first-child {
+  border-top: 0;
+}
+.dcx-row-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.dcx-row-copy strong,
+.dcx-row-copy label {
+  color: var(--dcx-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dcx-row-copy small {
+  color: var(--dcx-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.dcx-row-control {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dcx-row-control .dcx-input {
+  min-width: 180px;
+}
+.dcx-row-stack {
+  display: grid;
+  gap: 8px;
+  padding: 13px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--ds-border) 60%, transparent);
+}
+.dcx-card > .dcx-row-stack:first-child {
+  border-top: 0;
+}
+.dcx-field-label {
+  color: var(--dcx-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dcx-hint {
+  color: var(--dcx-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.dcx-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.dcx-notice-warn {
+  border: 1px solid color-mix(in srgb, var(--ds-warn) 40%, transparent);
+  background: color-mix(in srgb, var(--ds-warn) 10%, transparent);
+  color: var(--ds-text);
+}
+.dcx-notice-error {
+  border: 1px solid color-mix(in srgb, var(--ds-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--ds-danger) 10%, transparent);
+  color: var(--ds-text);
+}
+.dcx-notice-info {
+  border: 1px solid color-mix(in srgb, var(--ds-accent-2) 30%, transparent);
+  background: color-mix(in srgb, var(--ds-accent-2) 7%, transparent);
+  color: var(--ds-text-soft);
+}
+
+/* Sticky unsaved-changes bar. */
+.dcx-dirtybar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--ds-warn) 45%, transparent);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface-1);
+  box-shadow: var(--ds-shadow-md);
+  color: var(--dcx-text);
+  font-size: 13px;
+}
+.dcx-dirtybar > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.dcx-dirtybar > span::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dcx-warn);
+}
+.dcx-dirtybar > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Type-to-confirm dialog */
+.dcx-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 14000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--ds-overlay);
+  backdrop-filter: blur(10px);
+}
+.dcx-confirm {
+  width: min(440px, 100%);
+  box-sizing: border-box;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--ds-danger) 35%, transparent);
+  border-radius: var(--ds-radius-xl);
+  background: var(--dcx-surface);
+  color: var(--dcx-text);
+  box-shadow: var(--ds-shadow-lg);
+}
+.dcx-confirm:focus {
+  outline: none;
+}
+.dcx-confirm h2 {
+  margin: 0 0 8px;
+  font-size: var(--ds-text-xl);
+}
+.dcx-confirm p {
+  margin: 0 0 16px;
+  color: var(--dcx-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.dcx-confirm-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--dcx-muted);
+  font-size: 12px;
+}
+.dcx-confirm-label strong {
+  color: var(--dcx-text);
+}
+.dcx-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dcx-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcx-switch span,
+  .dcx-switch span::after {
+    transition: none;
+  }
+}

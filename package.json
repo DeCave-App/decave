@@ -1,0 +1,177 @@
+{
+  "name": "decave",
+  "private": true,
+  "version": "0.1.129",
+  "description": "DeCave gaming chat and voice desktop client",
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "npm run brand:prepare && vite",
+    "build:web": "npm run brand:prepare && tsc --noEmit && vite build",
+    "test": "node --experimental-transform-types --loader ./scripts/test-support/cloudflare-workers-test-loader.mjs --test \"scripts/__tests__/*.test.mjs\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p worker/tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
+    "preview": "vite preview",
+    "cf:types": "wrangler types ./worker/worker-configuration.d.ts",
+    "cf:migrate:local": "wrangler d1 migrations apply decave-review-example --local",
+    "cf:migrate:remote": "wrangler d1 migrations apply decave-review-example --remote",
+    "cf:dev": "npm run build:web && wrangler dev",
+    "publication:check": "node scripts/release/publication-readiness.mjs",
+    "windows:signing:check": "node scripts/release/windows-signing-readiness.mjs",
+    "cf:deploy": "npm run publication:check && npm run build:web && wrangler deploy",
+    "desktop:run": "npm run build:web && electron .",
+    "desktop:dir": "npm run build:web && electron-builder --win --x64 --dir",
+    "desktop:build": "npm run windows:signing:check && npm run build:web && node scripts/release/build-windows.mjs",
+    "desktop:icon": "npm run brand:prepare",
+    "brand:prepare": "node scripts/dev/prepare-brand-assets.mjs",
+    "electron:dev": "node scripts/dev/electron-dev.mjs",
+    "test:clearvoice": "node --test --test-isolation=none scripts/__tests__/clearvoice-dsp.test.mjs scripts/__tests__/clearvoice-stft.test.mjs scripts/__tests__/clearvoice-transient.test.mjs scripts/__tests__/clearvoice-streaming.test.mjs scripts/__tests__/voice-peer-recovery.test.mjs scripts/__tests__/voice-playback-runtime.test.mjs scripts/__tests__/voice-activity.test.mjs scripts/__tests__/voice-transport.test.mjs scripts/__tests__/input-meter.test.mjs",
+    "test:workspace-qol": "node --test --test-isolation=none scripts/__tests__/workspace-qol-regression.test.mjs",
+    "e2e:voice": "node scripts/e2e/voice-smoke.mjs",
+    "e2e:voice:reconnect": "node scripts/e2e/voice-smoke.mjs --reconnect",
+    "test:hub-templates": "node --test --experimental-strip-types --test-isolation=none scripts/__tests__/hub-templates.test.mjs",
+    "test:discord-import": "node --test --experimental-strip-types --test-isolation=none scripts/__tests__/discord-template.test.mjs",
+    "test:desktop-browser": "node --test --test-isolation=none scripts/__tests__/desktop-browser-security.test.mjs",
+    "test:media-removal": "node --test --test-isolation=none scripts/__tests__/media-integrations-removed.test.mjs",
+    "test:external-widgets": "node --test --test-isolation=none scripts/__tests__/external-home-widget-security.test.mjs",
+    "test:trust-safety": "node --test --test-isolation=none scripts/__tests__/trust-safety-boundaries.test.mjs",
+    "test:worker-reliability": "node --experimental-transform-types --test --test-isolation=none scripts/__tests__/worker-reliability-boundaries.test.mjs",
+    "release:next": "node scripts/release/prepare-next-release-version.mjs",
+    "release:upload": "npm run publication:check && node website/scripts/upload-release.mjs",
+    "release": "npm run publication:check && npm run release:upload && npm run cf:deploy && npm --prefix website run deploy",
+    "desktop:dir:mac": "npm run build:web && electron-builder --mac --dir",
+    "desktop:build:mac": "npm run build:web && electron-builder --mac dmg zip --arm64 --x64",
+    "release:upload:mac": "npm run publication:check && node website/scripts/upload-release-mac.mjs"
+  },
+  "dependencies": {
+    "@sapphi-red/web-noise-suppressor": "^0.3.5",
+    "electron-updater": "^6.8.9",
+    "js-yaml": "^4.3.1",
+    "onnxruntime-web": "^1.29.0",
+    "qrcode": "^1.5.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react-swc": "^4.3.3",
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "png-to-ico": "^3.0.2",
+    "prettier": "^3.9.9",
+    "sharp": "^0.35.4",
+    "simple-icons": "^16.33.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.71.0",
+    "vite": "^8.2.2",
+    "wrangler": "^4.124.0"
+  },
+  "build": {
+    "appId": "com.decave.desktop",
+    "productName": "DeCave",
+    "asar": true,
+    "icon": "build/decave.ico",
+    "files": [
+      "electron/main.cjs",
+      "electron/game-classification.cjs",
+      "electron/capture-apps.cjs",
+      "electron/activity-scan.cjs",
+      "electron/source-picker.cjs",
+      "electron/turnstile.cjs",
+      "electron/app-icon.cjs",
+      "electron/voice-overlay.cjs",
+      "electron/preload.cjs",
+      "electron/picker-preload.cjs",
+      "electron/security-boundary.cjs",
+      "electron/windows-update-trust.cjs",
+      "electron/turnstile-preload.cjs",
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/decave.ico",
+        "to": "decave.ico"
+      },
+      {
+        "from": "build/decave-icon-512.png",
+        "to": "decave-icon-512.png"
+      }
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "verifyUpdateCodeSignature": true,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/decave.ico",
+      "artifactName": "DeCaveSetup-${version}-${arch}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://downloads.de-cave.com/updates/windows/"
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DeCave",
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "build/decave-icon-1024.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "artifactName": "DeCave-${version}-${arch}.${ext}",
+      "publish": [
+        {
+          "provider": "generic",
+          "url": "https://downloads.de-cave.com/updates/mac/"
+        }
+      ]
+    },
+    "dmg": {
+      "title": "DeCave ${version}",
+      "sign": true
+    },
+    "afterAllArtifactBuild": "scripts/release/notarize-dmg.cjs"
+  }
+}

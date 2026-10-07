@@ -1,0 +1,165 @@
+/* Top-bar Hub switcher fit modes (see HubSwitcher.tsx).
+   full: icon + name. compact: icon only, the active Hub keeps its name.
+   overflow: compact plus a "+N" menu for the Hubs that do not fit.
+   Selectors extend the hubPolish.css chain so they win without new !important wars. */
+
+.app[data-skin][data-workspace]
+  > .vadrion-topbar
+  > .vadrion-top-actions.dc-top-hub-switcher.dc-top-hub-switcher:is([data-fit="compact"], [data-fit="overflow"])
+  > .dc-top-hub-button.dc-top-hub-button:not(.active) {
+  gap: 0 !important;
+  padding: 0 6px !important;
+}
+.app[data-skin][data-workspace]
+  > .vadrion-topbar
+  > .vadrion-top-actions.dc-top-hub-switcher.dc-top-hub-switcher:is([data-fit="compact"], [data-fit="overflow"])
+  > .dc-top-hub-button.dc-top-hub-button:not(.active)
+  > .dc-top-hub-name {
+  display: none !important;
+}
+.app[data-skin][data-workspace]
+  > .vadrion-topbar
+  > .vadrion-top-actions.dc-top-hub-switcher.dc-top-hub-switcher:is([data-fit="compact"], [data-fit="overflow"])
+  > .dc-top-hub-button.dc-top-hub-button.active
+  > .dc-top-hub-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app[data-skin][data-workspace]
+  > .vadrion-topbar
+  > .vadrion-top-actions.dc-top-hub-switcher.dc-top-hub-switcher
+  > .dc-top-hub-more {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  min-width: 40px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+.app[data-skin][data-workspace]
+  > .vadrion-topbar
+  > .vadrion-top-actions.dc-top-hub-switcher.dc-top-hub-switcher
+  > .dc-top-hub-more:hover {
+  background: var(--ds-hover);
+}
+.app[data-skin][data-workspace]
+  > .vadrion-topbar
+  > .vadrion-top-actions.dc-top-hub-switcher.dc-top-hub-switcher
+  > .dc-top-hub-more:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus);
+}
+.dc-top-hub-more > .dc-hub-unread-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border: 2px solid var(--ds-bg);
+  border-radius: 999px;
+  background: var(--ds-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  box-sizing: border-box;
+}
+.dc-top-hub-more > .dc-hub-unread-badge.dot {
+  min-width: 11px;
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  background: var(--ds-text);
+}
+
+.dc-hub-more-menu {
+  position: fixed;
+  z-index: 30000;
+  display: grid;
+  gap: 2px;
+  width: 280px;
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface-solid);
+  box-shadow: var(--ds-shadow-md);
+}
+.dc-hub-more-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.dc-hub-more-item:is(:hover, :focus-visible) {
+  background: var(--ds-hover);
+  outline: none;
+}
+.dc-hub-more-item.muted {
+  opacity: 0.65;
+}
+.dc-hub-more-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: var(--ds-surface-3);
+  font-size: 14px;
+}
+.dc-hub-more-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dc-hub-more-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dc-hub-more-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ds-danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.dc-hub-more-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ds-text);
+}

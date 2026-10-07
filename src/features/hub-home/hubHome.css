@@ -1,0 +1,662 @@
+/* Hub Home: the landing page of a Hub, shown in the room pane.
+   Tokens only (--ds-*) so every data-skin works. */
+
+.hh-root {
+  container-type: inline-size;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 100%;
+  padding: 0 0 20px;
+  color: var(--ds-text);
+}
+
+/* Banner: the full Hub banner lives here, landscape crop. */
+.hh-banner {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 168px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--ds-border);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ds-bg) 82%, transparent),
+      color-mix(in srgb, var(--ds-bg) 30%, transparent) 65%,
+      color-mix(in srgb, var(--ds-bg) 55%, transparent)
+    ),
+    radial-gradient(120% 140% at 85% 0%, color-mix(in srgb, var(--hh-accent) 45%, transparent), transparent 60%),
+    linear-gradient(135deg, color-mix(in srgb, var(--hh-accent) 30%, var(--ds-surface-2)), var(--ds-surface-1));
+}
+.hh-banner.has-image {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ds-bg) 84%, transparent),
+      color-mix(in srgb, var(--ds-bg) 25%, transparent) 65%,
+      color-mix(in srgb, var(--ds-bg) 55%, transparent)
+    ),
+    var(--hh-banner) center 30% / cover no-repeat,
+    var(--ds-surface-2);
+}
+.hh-identity {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  min-width: 0;
+}
+.hh-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border: 3px solid var(--ds-bg);
+  border-radius: 18px;
+  background: var(--ds-surface-3);
+  font-size: 32px;
+  line-height: 1;
+  box-shadow: var(--ds-shadow-sm);
+}
+.hh-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hh-title {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.hh-kicker {
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-xs);
+  font-weight: 700;
+  letter-spacing: var(--ds-kicker-tracking, 0.12em);
+  text-transform: uppercase;
+}
+.hh-title h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(22px, 3.2cqi, 30px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.hh-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-sm);
+}
+.hh-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.hh-online {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ds-success);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--ds-success) 70%, transparent);
+}
+.hh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: color-mix(in srgb, var(--ds-surface-3) 85%, transparent);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hh-btn:hover {
+  background: var(--ds-hover);
+}
+.hh-btn:focus-visible,
+.hh-link:focus-visible,
+.hh-row:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus);
+}
+.hh-btn.primary {
+  border-color: var(--ds-accent);
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+.hh-btn.primary:hover {
+  filter: brightness(1.08);
+}
+.hh-btn.ghost {
+  background: color-mix(in srgb, var(--ds-bg) 45%, transparent);
+}
+.hh-btn.sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: var(--ds-text-xs);
+}
+
+/* Sections flow into as many columns as fit: one on narrow windows, two on
+   laptops, up to four on ultrawide screens. Nothing is hidden or cut. */
+.hh-sections {
+  columns: 320px 4;
+  column-gap: 14px;
+  padding: 0 20px;
+}
+.hh-card {
+  break-inside: avoid;
+  display: block;
+  width: 100%;
+  margin: 0 0 14px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface-1);
+}
+.hh-card--welcome {
+  border-color: color-mix(in srgb, var(--hh-accent, var(--ds-accent)) 40%, var(--ds-border));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ds-accent) 12%, transparent), var(--ds-surface-1) 70%);
+}
+.hh-welcome-text {
+  margin: 0;
+  color: var(--ds-text);
+  font-size: var(--ds-text-md);
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.hh-rules {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 22px;
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-sm);
+  line-height: 1.45;
+}
+.hh-rules li::marker {
+  color: var(--ds-accent-2);
+  font-weight: 700;
+}
+.hh-nothing {
+  padding: 0 20px;
+}
+.hh-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.hh-card-head h2 {
+  margin: 0;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.hh-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ds-accent-2);
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  font-weight: 650;
+  cursor: pointer;
+}
+.hh-quiet {
+  margin: 0;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+}
+
+.hh-now {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.hh-now-card {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-2);
+}
+.hh-now-card.live {
+  border-color: color-mix(in srgb, var(--ds-success) 38%, var(--ds-border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ds-success) 9%, transparent), var(--ds-surface-2));
+}
+.hh-now-card.event {
+  border-color: color-mix(in srgb, var(--ds-accent) 42%, var(--ds-border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ds-accent) 12%, transparent), var(--ds-surface-2));
+}
+.hh-tag {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hh-now-card.live .hh-tag {
+  color: var(--ds-success);
+}
+.hh-now-card.event .hh-tag {
+  color: var(--ds-accent-2);
+}
+.hh-now-card strong {
+  overflow: hidden;
+  font-size: var(--ds-text-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hh-now-card small {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+.hh-now-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.hh-rsvp {
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-xs);
+}
+.hh-empty {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 6px 2px;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+}
+.hh-empty strong {
+  color: var(--ds-text);
+}
+
+.hh-faces {
+  display: inline-flex;
+}
+.hh-face {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: -6px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ds-accent) 30%, var(--ds-surface-3, #151d28));
+  box-shadow: 0 0 0 2px var(--ds-surface-1);
+  color: var(--ds-text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* The members row sits side by side: overlapped transparent logos read as one blob. */
+.hh-faces.big {
+  gap: 6px;
+}
+.hh-faces.big .hh-face {
+  margin-left: 0;
+  font-size: 13px;
+}
+.hh-face:first-child {
+  margin-left: 0;
+}
+.hh-face > *,
+.hh-face img {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  border-radius: 50%;
+}
+.hh-face.speaking {
+  box-shadow: 0 0 0 2px var(--ds-success);
+}
+.hh-faces.big .hh-face,
+.hh-faces.big .hh-face > *,
+.hh-faces.big .hh-face img {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+}
+
+.hh-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hh-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hh-row:hover {
+  border-color: var(--ds-border);
+  background: var(--ds-hover);
+}
+.hh-row-icon,
+.hh-date {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-2);
+  font-size: 14px;
+}
+.hh-date {
+  gap: 0;
+  line-height: 1;
+}
+.hh-date b {
+  font-size: 13px;
+}
+.hh-date small {
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.hh-row-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.hh-row-copy strong {
+  overflow: hidden;
+  font-size: var(--ds-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hh-row-copy small {
+  overflow: hidden;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hh-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ds-danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.hh-badge.soft {
+  background: var(--ds-surface-3);
+  color: var(--ds-text);
+}
+.hh-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ds-text);
+}
+
+.hh-about {
+  margin: 0;
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-sm);
+  line-height: var(--ds-leading, 1.45);
+  white-space: pre-line;
+}
+.hh-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+.hh-tags span {
+  padding: 3px 8px;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+.hh-members {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.hh-members small {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+
+@media (max-width: 760px) {
+  .hh-banner {
+    padding: 14px;
+    min-height: 140px;
+  }
+  .hh-sections,
+  .hh-nothing {
+    padding: 0 12px;
+  }
+  .hh-avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
+  }
+}
+/* Short laptop screens: a slimmer banner so more of Home fits above the fold. */
+@media (max-height: 820px) {
+  .hh-banner {
+    min-height: 128px;
+    padding-block: 12px;
+  }
+  .hh-avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
+    border-radius: 15px;
+  }
+}
+
+/* ---------- Customize mode ---------- */
+.hh-editbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 0 20px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent) 45%, var(--ds-border));
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface-solid);
+  box-shadow: var(--ds-shadow-md);
+}
+.hh-editbar > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.hh-editbar strong {
+  color: var(--ds-text);
+  font-size: var(--ds-text-md);
+}
+.hh-editbar span {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+.hh-editbar .hh-error {
+  color: var(--ds-danger);
+  font-weight: 600;
+}
+.hh-editbar-actions {
+  display: flex;
+  gap: 8px;
+}
+.hh-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.hh-card.is-editing {
+  border-style: dashed;
+}
+.hh-card.is-hidden {
+  opacity: 0.55;
+  background: transparent;
+}
+.hh-card.is-hidden .hh-card-head h2 {
+  text-decoration: line-through;
+}
+.hh-hint {
+  margin: -4px 0 10px;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+.hh-edit-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.hh-tool {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: 7px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text-soft);
+  cursor: pointer;
+}
+.hh-tool:hover:not(:disabled) {
+  color: var(--ds-text);
+  border-color: var(--ds-border-strong);
+}
+.hh-tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.hh-tool:focus-visible,
+.hh-show input:focus-visible + span {
+  outline: none;
+  box-shadow: var(--ds-focus);
+}
+.hh-show {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text-soft);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.hh-show input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.hh-show:has(input:checked) {
+  border-color: color-mix(in srgb, var(--ds-success) 45%, var(--ds-border));
+  color: var(--ds-success);
+}
+.hh-editor {
+  display: grid;
+  gap: 4px;
+}
+.hh-textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  line-height: 1.45;
+}
+.hh-textarea:focus {
+  outline: none;
+  box-shadow: var(--ds-focus);
+}
+.hh-count {
+  justify-self: end;
+  color: var(--ds-muted);
+  font-size: 11px;
+}
+.hh-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .hh-editbar {
+    margin: 0 12px;
+  }
+}
+
+/* While Hub Home covers the room, hide the room's own chrome. It stays mounted
+   (CSS only) so drafts, voice surfaces and focus refs keep working. */
+.main[data-hub-home="true"]
+  :is(.composer-shell, .composer-context, .chat-live-status-row, .voice-panel, .dc-load-older) {
+  display: none !important;
+}
+.main[data-hub-home="true"] > .messages {
+  padding: 0 !important;
+}

@@ -1,0 +1,42 @@
+/* Hub banner as full-height sidebar background.
+   App.tsx sets data-hub-banner="on" (and --hub-cover-image) only when the Hub's
+   "Use banner as background" flag is enabled; "off" paints no banner at all.
+   Banner spec: 600x1800 px portrait (1:3), see shared/hub-media-specs.ts. The
+   image covers the whole rail; a skin-tinted scrim keeps the room list readable
+   while leaving the header area brighter so the artwork reads at the top. */
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar[data-hub-banner="on"] {
+  background-color: var(--gc-bg-1) !important;
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gc-bg-0) 18%, transparent) 0,
+      color-mix(in srgb, var(--gc-bg-0) 52%, transparent) 180px,
+      color-mix(in srgb, var(--gc-bg-1) 78%, transparent) 300px,
+      color-mix(in srgb, var(--gc-bg-1) 84%, transparent) 100%
+    ),
+    var(--hub-cover-image) !important;
+  background-size:
+    100% 100%,
+    cover !important;
+  background-position:
+    top left,
+    center top !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+}
+
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar[data-hub-banner="on"] .hub-c__cover.hub-c__cover {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app[data-skin][data-workspace="hub"] > .channel-sidebar.hsb-sidebar[data-hub-banner="on"] .hub-c__cover-shade {
+  background: transparent !important;
+}
+
+/* Rows and section labels sit on the photo: give them a hint of surface. */
+.app[data-skin][data-workspace="hub"]
+  > .channel-sidebar.hsb-sidebar[data-hub-banner="on"]
+  :is(.channel, .hsb-room-category, .channel-category-label) {
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--gc-bg-0) 80%, transparent);
+}

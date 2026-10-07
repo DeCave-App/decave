@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+# This hook is enabled locally with: git config core.hooksPath .githooks
+# Set DECAVE_SKIP_AUTO_PUSH=1 for a one-off commit that should not push.
+if [ "${DECAVE_SKIP_AUTO_PUSH:-}" = "1" ]; then
+  exit 0
+fi
+
+branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
+upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
+
+if [ -z "$branch" ] || [ -z "$upstream" ]; then
+  echo "Auto-push skipped: the current branch has no upstream." >&2
+  exit 0
+fi
+
+echo "Auto-pushing $branch to $upstream..." >&2
+git push

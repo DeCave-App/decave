@@ -1,0 +1,122 @@
+/* Legacy bridge: snaps the older, widely used control classes onto the
+   design-system metrics (src/styles/design-system.css) without touching their
+   skin colors. Loaded after app-rework.css. New UI should use .ds-* classes
+   directly instead of adding to this file. */
+
+/* Buttons: one height, radius, type size and icon gap everywhere. */
+:is(.app, .username-screen)[data-skin] :is(.modal-primary, .modal-secondary, .dc-ref-primary, .dc-ref-secondary) {
+  min-height: var(--ds-control-md);
+  padding-inline: var(--ds-space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  border-radius: var(--ds-radius-md);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-semibold);
+  line-height: 1;
+}
+:is(.app, .username-screen)[data-skin] :is(.modal-primary, .modal-secondary, .dc-ref-primary, .dc-ref-secondary) > svg {
+  width: var(--ds-icon-sm);
+  height: var(--ds-icon-sm);
+  flex: 0 0 auto;
+}
+
+/* Legacy modals: same overlay tint, radius, heading scale and actions row. */
+.app[data-skin] .modal-overlay {
+  background: var(--ds-overlay);
+}
+.app[data-skin] .modal {
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-surface-solid);
+  color: var(--ds-text);
+}
+.app[data-skin] .modal h2 {
+  font-size: var(--ds-text-xl);
+  line-height: var(--ds-leading-tight);
+}
+.app[data-skin] .modal :is(.modal-actions, .modal-buttons) {
+  gap: var(--ds-space-2);
+}
+
+/* Generic modals (create hub, invite, report, poll, account edits...):
+   shared kicker, field, input and error treatment from the design system. */
+.app[data-skin] .modal :is(.social-kicker, .manage-hub-kicker) {
+  color: var(--ds-accent-2);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-bold);
+  letter-spacing: var(--ds-kicker-tracking);
+  text-transform: uppercase;
+}
+.app[data-skin] .modal > p {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+  line-height: var(--ds-leading);
+}
+.app[data-skin]
+  .modal
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+    select,
+    textarea
+  ):not(.ds-input) {
+  min-height: var(--ds-control-lg);
+  box-sizing: border-box;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-sink);
+  color: var(--ds-text);
+  font-size: var(--ds-text-sm);
+}
+.app[data-skin] .modal :is(input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus);
+}
+.app[data-skin] .modal .dc-modal-error {
+  color: var(--ds-danger);
+  margin-top: var(--ds-space-2);
+}
+.app[data-skin] .modal .ds-modal-actions {
+  margin-top: var(--ds-space-4);
+}
+
+/* ---------- Visual QA 2026-10 (docs/redesign-2026-10/visual-qa.md) ---------- */
+
+/* Primary rail: buttons follow the rail width instead of a fixed 116px so the
+   nav never grows a horizontal scrollbar, and compact on short windows. */
+.app[data-skin][data-workspace] > .server-bar > nav.dc-primary-navigation {
+  overflow-x: hidden !important;
+}
+.app[data-skin][data-workspace] > .server-bar > nav > .dc-rail-page-button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 116px;
+  justify-self: center;
+}
+@media (max-height: 860px) {
+  .app[data-skin][data-workspace] > .server-bar > nav.dc-primary-navigation {
+    gap: 4px !important;
+  }
+  .app[data-skin][data-workspace] > .server-bar > nav > .dc-rail-page-button {
+    min-height: 60px !important;
+    padding: 6px !important;
+    gap: 3px !important;
+  }
+}
+
+/* The Settings rail button sits outside the nav; give its active state the
+   same treatment as the other rail pages instead of the old gradient. */
+.app[data-skin][data-workspace] > .server-bar > button.dc-rail-page-button.active {
+  border-color: transparent !important;
+  background: var(--ds-active) !important;
+  box-shadow: inset 3px 0 var(--ds-accent) !important;
+}
+
+/* Squad / Discover / Settings overlays mark the hub workspace "secondary";
+   keep it in the hub's main track behind the overlay instead of squeezing it
+   into the 240px room-list column. */
+@media (min-width: 821px) {
+  .app[data-skin][data-workspace="hub"] > main.dc-primary-workspace[data-primary-workspace="secondary"] {
+    grid-column: 3 !important;
+  }
+}

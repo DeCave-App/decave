@@ -1,0 +1,919 @@
+/* =========================================================================
+   DeCave design system (2026-10)
+   One token set + shared component classes for every page, popup and
+   overlay. Imported once from src/main.tsx.
+
+   Skin resolution: every skin palette (--gc-*, --dc-skin-*) is declared on
+   `html[data-skin]` as well as `.app[data-skin]`. App mirrors the active
+   skin onto <html> and <body>, so overlays portaled to document.body
+   (calendar, event drawer/composer, forum compose, confirm dialogs) resolve
+   the same tokens as in-app surfaces.
+
+   Tokens are re-declared on every `[data-skin]` scope (not only :root) so
+   that var() references resolve against the closest skin, never against
+   the default palette inherited from :root.
+   ========================================================================= */
+
+:root,
+[data-skin] {
+  /* ---- type scale ---- */
+  --ds-text-xs: 12px;
+  --ds-text-sm: 13px;
+  --ds-text-md: 14px;
+  --ds-text-lg: 16px;
+  --ds-text-xl: 20px;
+  --ds-text-2xl: 28px;
+  --ds-weight-regular: 400;
+  --ds-weight-medium: 500;
+  --ds-weight-semibold: 600;
+  --ds-weight-bold: 700;
+  --ds-leading-tight: 1.25;
+  --ds-leading: 1.45;
+  --ds-kicker-tracking: 0.12em;
+
+  /* ---- icon sizes ---- */
+  --ds-icon-sm: 16px;
+  --ds-icon-md: 18px;
+  --ds-icon-lg: 20px;
+  --ds-icon-xl: 24px;
+
+  /* ---- spacing (4px grid) ---- */
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 20px;
+  --ds-space-6: 24px;
+  --ds-space-8: 32px;
+
+  /* ---- radii ---- */
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 10px;
+  --ds-radius-lg: 14px;
+  --ds-radius-xl: 18px;
+  --ds-radius-pill: 999px;
+
+  /* ---- control + list metrics ---- */
+  --ds-control-sm: 32px;
+  --ds-control-md: 36px;
+  --ds-control-lg: 40px;
+  --ds-avatar-sm: 32px;
+  --ds-avatar-md: 40px;
+  --ds-avatar-lg: 56px;
+  --ds-row-height: 56px;
+
+  /* ---- colors (derived from the active skin) ---- */
+  --ds-accent: var(--gc-accent, #7c6cff);
+  --ds-accent-2: var(--gc-accent-2, #55d9ff);
+  --ds-on-accent: #ffffff;
+  /* Accent used as a text/icon color; skins whose accent is too dark or too
+     close to the panels to read as text swap it below. */
+  --ds-accent-text: var(--ds-accent);
+  --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 16%, transparent);
+  --ds-bg: var(--gc-bg-0, #090c11);
+  --ds-surface-1: var(--gc-bg-1, #0d1118);
+  --ds-surface-2: var(--gc-bg-2, #111720);
+  --ds-surface-3: var(--gc-bg-3, #151d28);
+  /* Opaque panel for modals/drawers/popovers (some skins use translucent panels). */
+  --ds-surface-solid: color-mix(in srgb, var(--ds-surface-1) 55%, var(--ds-bg));
+  --ds-surface-raised: color-mix(in srgb, var(--ds-surface-3) 88%, var(--ds-accent) 12%);
+  --ds-sink: color-mix(in srgb, var(--ds-bg) 70%, transparent);
+  --ds-hover: color-mix(in srgb, var(--ds-text) 6%, transparent);
+  --ds-active: color-mix(in srgb, var(--ds-accent) 20%, transparent);
+  --ds-border: var(--gc-border, rgba(126, 145, 181, 0.18));
+  --ds-border-strong: var(--gc-border-strong, rgba(126, 145, 181, 0.32));
+  --ds-text: var(--gc-text, #eef4ff);
+  --ds-text-soft: var(--gc-text-soft, #d4dae3);
+  --ds-muted: var(--gc-muted, #9aa8bd);
+  --ds-muted-2: var(--gc-muted-2, #687585);
+  --ds-success: var(--gc-green, #64e6a6);
+  --ds-danger: var(--gc-red, #ff6b7d);
+  --ds-warn: #f1bc65;
+  --ds-overlay: color-mix(in srgb, var(--ds-bg) 72%, transparent);
+
+  /* ---- elevation ---- */
+  --ds-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.22);
+  --ds-shadow-md: 0 14px 40px rgba(0, 0, 0, 0.38);
+  --ds-shadow-lg: var(--gc-shadow, 0 28px 80px rgba(0, 0, 0, 0.5));
+  --ds-focus: 0 0 0 2px var(--ds-bg), 0 0 0 4px var(--ds-accent-2);
+
+  /* ---- legacy dcx-* aliases (settings / manage hub / calendar / events /
+         forum / room settings). Kept so those features follow the skin. ---- */
+  --dcx-accent: var(--ds-accent);
+  --dcx-accent-2: var(--ds-accent-2);
+  --dcx-surface: var(--ds-surface-solid);
+  --dcx-surface-2: color-mix(in srgb, var(--ds-surface-3) 80%, transparent);
+  --dcx-border: var(--ds-border);
+  --dcx-border-strong: var(--ds-border-strong);
+  --dcx-text: var(--ds-text);
+  --dcx-muted: var(--ds-muted);
+  --dcx-danger: var(--ds-danger);
+  --dcx-warn: var(--ds-warn);
+  --dcx-ok: var(--ds-success);
+  --dcx-focus: var(--ds-focus);
+  --dcx-on-accent: var(--ds-on-accent);
+}
+
+/* Light-accent skins need dark text on filled accent controls. */
+[data-skin="pearl"] {
+  --ds-on-accent: #10141b;
+}
+/* Pearl tints hover/active rows with its near-white accent, so muted text needs
+   a lighter grey to stay readable on those mid-grey surfaces. */
+html[data-skin="pearl"],
+.app[data-skin="pearl"] {
+  --gc-muted: #aab6c7;
+}
+[data-skin="obsidian"] {
+  --ds-accent-text: var(--ds-accent-2);
+}
+[data-skin="verdant"] {
+  --ds-on-accent: #04130d;
+}
+[data-skin="bright"] {
+  --ds-warn: #9a6512;
+  --ds-shadow-sm: 0 2px 8px rgba(55, 70, 87, 0.12);
+  --ds-shadow-md: 0 14px 40px rgba(55, 70, 87, 0.16);
+  --ds-overlay: rgba(40, 52, 66, 0.38);
+}
+
+/* ========================= icons ========================= */
+.ds-icon {
+  width: var(--ds-icon-md);
+  height: var(--ds-icon-md);
+  flex: 0 0 auto;
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ds-icon-sm {
+  width: var(--ds-icon-sm);
+  height: var(--ds-icon-sm);
+}
+.ds-icon-lg {
+  width: var(--ds-icon-lg);
+  height: var(--ds-icon-lg);
+}
+.ds-icon-xl {
+  width: var(--ds-icon-xl);
+  height: var(--ds-icon-xl);
+}
+
+/* ========================= buttons ========================= */
+:is(.ds-btn, .dcx-btn) {
+  min-height: var(--ds-control-md);
+  padding: 0 var(--ds-space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: color-mix(in srgb, var(--ds-surface-3) 80%, transparent);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+:is(.ds-btn, .dcx-btn):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ds-accent) 60%, var(--ds-border-strong));
+  background: color-mix(in srgb, var(--ds-accent) 14%, var(--ds-surface-3));
+}
+:is(.ds-btn, .dcx-btn):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+:is(.ds-btn, .dcx-btn):focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus);
+}
+:is(.ds-btn, .dcx-btn) > .ds-icon {
+  width: var(--ds-icon-sm);
+  height: var(--ds-icon-sm);
+}
+
+:is(.ds-btn-primary, .dcx-btn-primary) {
+  border-color: transparent;
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+:is(.ds-btn-primary, .dcx-btn-primary):hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--ds-accent) 86%, var(--ds-on-accent));
+}
+:is(.ds-btn-danger, .dcx-btn-danger) {
+  border-color: color-mix(in srgb, var(--ds-danger) 45%, transparent);
+  background: color-mix(in srgb, var(--ds-danger) 12%, transparent);
+  color: var(--ds-danger);
+}
+:is(.ds-btn-danger, .dcx-btn-danger):hover:not(:disabled) {
+  border-color: var(--ds-danger);
+  background: color-mix(in srgb, var(--ds-danger) 22%, transparent);
+}
+:is(.ds-btn-ghost, .dcx-btn-ghost) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ds-muted);
+}
+:is(.ds-btn-ghost, .dcx-btn-ghost):hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--ds-hover);
+  color: var(--ds-text);
+}
+:is(.ds-btn-sm, .dcx-btn-sm) {
+  min-height: var(--ds-control-sm);
+  padding: 0 var(--ds-space-3);
+  font-size: var(--ds-text-xs);
+}
+.ds-btn-lg {
+  min-height: var(--ds-control-lg);
+  padding: 0 var(--ds-space-5);
+  font-size: var(--ds-text-md);
+}
+.ds-btn-block {
+  width: 100%;
+}
+
+/* Square icon button. Pair with ds-btn-ghost for toolbar actions. */
+.ds-icon-btn {
+  width: var(--ds-control-md);
+  height: var(--ds-control-md);
+  min-height: 0;
+  padding: 0;
+  flex: 0 0 auto;
+}
+.ds-icon-btn.ds-btn-sm {
+  width: var(--ds-control-sm);
+  height: var(--ds-control-sm);
+}
+.ds-icon-btn.ds-btn-lg {
+  width: var(--ds-control-lg);
+  height: var(--ds-control-lg);
+}
+.ds-icon-btn > .ds-icon {
+  width: var(--ds-icon-md);
+  height: var(--ds-icon-md);
+}
+.ds-icon-btn[aria-pressed="true"] {
+  color: var(--ds-accent-2);
+}
+
+/* ========================= inputs ========================= */
+:is(.ds-input, .dcx-input) {
+  width: 100%;
+  min-height: var(--ds-control-lg);
+  box-sizing: border-box;
+  padding: 0 var(--ds-space-3);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-sink);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  outline: none;
+}
+textarea:is(.ds-input, .dcx-input) {
+  min-height: 84px;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  resize: vertical;
+  line-height: var(--ds-leading);
+}
+:is(.ds-input, .dcx-input)::placeholder {
+  color: var(--ds-muted-2);
+}
+:is(.ds-input, .dcx-input):focus {
+  border-color: var(--ds-accent-2);
+}
+:is(.ds-input, .dcx-input):focus-visible {
+  box-shadow: var(--ds-focus);
+}
+
+/* Input with a leading icon (search fields). */
+.ds-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.ds-search > .ds-icon {
+  position: absolute;
+  left: var(--ds-space-3);
+  width: var(--ds-icon-sm);
+  height: var(--ds-icon-sm);
+  color: var(--ds-muted);
+  pointer-events: none;
+}
+.ds-search > .ds-input {
+  padding-left: calc(var(--ds-space-3) + var(--ds-icon-sm) + var(--ds-space-2));
+  min-height: var(--ds-control-md);
+}
+
+/* ========================= tabs / segmented ========================= */
+:is(.ds-tabs, .dcx-tabs) {
+  display: flex;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-sink);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+:is(.ds-tab, .dcx-tab) {
+  flex: 0 0 auto;
+  min-height: var(--ds-control-sm);
+  padding: 0 var(--ds-space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+:is(.ds-tab, .dcx-tab):hover {
+  color: var(--ds-text);
+  background: var(--ds-hover);
+}
+:is(.ds-tab, .dcx-tab):is([aria-selected="true"], .active) {
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+:is(.ds-tab, .dcx-tab):focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus);
+}
+.ds-tab > .ds-icon {
+  width: var(--ds-icon-sm);
+  height: var(--ds-icon-sm);
+}
+
+/* ========================= badges / chips ========================= */
+.ds-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+  font-size: 11px;
+  font-weight: var(--ds-weight-bold);
+  line-height: 1;
+}
+.ds-badge-muted {
+  background: var(--ds-surface-3);
+  color: var(--ds-text-soft);
+}
+
+/* ========================= cards / panels ========================= */
+.ds-card {
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  background: color-mix(in srgb, var(--ds-surface-2) 86%, transparent);
+  box-shadow: var(--ds-shadow-sm);
+}
+.ds-panel {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  background: color-mix(in srgb, var(--ds-surface-1) 92%, transparent);
+}
+.ds-kicker {
+  color: var(--ds-accent-2);
+  font-size: 11px;
+  font-weight: var(--ds-weight-bold);
+  letter-spacing: var(--ds-kicker-tracking);
+  text-transform: uppercase;
+}
+.ds-section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-2);
+  margin: var(--ds-space-3) 0 var(--ds-space-1);
+  color: var(--ds-muted);
+  font-size: 11px;
+  font-weight: var(--ds-weight-bold);
+  letter-spacing: var(--ds-kicker-tracking);
+  text-transform: uppercase;
+}
+
+/* ========================= page header ========================= */
+.ds-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  flex-wrap: wrap;
+}
+.ds-page-header-copy {
+  min-width: 0;
+  display: grid;
+  gap: var(--ds-space-1);
+}
+.ds-page-header h2 {
+  margin: 0;
+  color: var(--ds-text);
+  font-size: var(--ds-text-2xl);
+  font-weight: var(--ds-weight-bold);
+  line-height: var(--ds-leading-tight);
+}
+.ds-page-header p {
+  margin: 0;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+  line-height: var(--ds-leading);
+}
+.ds-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  flex-wrap: wrap;
+}
+
+/* ========================= list rows ========================= */
+.ds-list {
+  display: grid;
+  gap: var(--ds-space-1);
+}
+.ds-row {
+  width: 100%;
+  min-height: var(--ds-row-height);
+  box-sizing: border-box;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  display: grid;
+  grid-template-columns: var(--ds-avatar-md) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ds-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-md);
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+}
+button.ds-row {
+  cursor: pointer;
+}
+.ds-row:hover {
+  background: var(--ds-hover);
+}
+.ds-row:is(.active, [aria-current="true"]) {
+  border-color: color-mix(in srgb, var(--ds-accent) 40%, transparent);
+  background: var(--ds-active);
+}
+.ds-row-boxed {
+  border-color: var(--ds-border);
+  background: color-mix(in srgb, var(--ds-surface-2) 70%, transparent);
+}
+.ds-row-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.ds-row-title {
+  overflow: hidden;
+  color: var(--ds-text);
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-semibold);
+  line-height: var(--ds-leading-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ds-row-sub {
+  overflow: hidden;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  line-height: var(--ds-leading-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ds-row-meta,
+.ds-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ds-space-2);
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+
+/* ========================= avatars ========================= */
+.ds-avatar-wrap {
+  position: relative;
+  width: var(--ds-avatar-md);
+  height: var(--ds-avatar-md);
+  flex: 0 0 auto;
+}
+.ds-avatar-wrap > :first-child,
+.ds-avatar {
+  width: var(--ds-avatar-md) !important;
+  height: var(--ds-avatar-md) !important;
+  min-width: var(--ds-avatar-md);
+  border-radius: 50% !important;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--ds-surface-3);
+  color: var(--ds-text);
+  font-size: var(--ds-text-md) !important;
+  font-weight: var(--ds-weight-bold);
+}
+.ds-avatar-wrap > .ds-icon {
+  width: var(--ds-icon-md);
+  height: var(--ds-icon-md);
+}
+.ds-presence {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--ds-surface-solid);
+}
+
+/* ========================= menus / popovers ========================= */
+.ds-menu {
+  min-width: 180px;
+  padding: var(--ds-space-1);
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-solid);
+  box-shadow: var(--ds-shadow-md);
+  color: var(--ds-text);
+}
+.ds-menu > button {
+  min-height: var(--ds-control-sm);
+  padding: 0 var(--ds-space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.ds-menu > button:hover {
+  background: var(--ds-hover);
+}
+.ds-menu > button.danger {
+  color: var(--ds-danger);
+}
+
+/* ========================= modals / drawers ========================= */
+.ds-modal {
+  width: min(480px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: var(--ds-space-6);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-surface-solid);
+  color: var(--ds-text);
+  box-shadow: var(--ds-shadow-lg);
+}
+.ds-modal h2 {
+  margin: 0 0 var(--ds-space-2);
+  font-size: var(--ds-text-xl);
+}
+.ds-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ds-space-2);
+  margin-top: var(--ds-space-4);
+}
+
+/* ========================= empty states ========================= */
+.ds-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-8) var(--ds-space-4);
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+  text-align: center;
+}
+.ds-empty-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ds-border);
+  border-radius: 50%;
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-2);
+}
+.ds-empty-icon > .ds-icon {
+  width: var(--ds-icon-xl);
+  height: var(--ds-icon-xl);
+}
+.ds-empty h3 {
+  margin: var(--ds-space-1) 0 0;
+  color: var(--ds-text);
+  font-size: var(--ds-text-lg);
+}
+.ds-empty p {
+  margin: 0;
+  max-width: 360px;
+  line-height: var(--ds-leading);
+}
+
+.ds-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-semibold);
+}
+.ds-notice.ok {
+  color: var(--ds-success);
+}
+.ds-notice.danger {
+  color: var(--ds-danger);
+}
+
+/* Text color utilities (replace inline hex colors). */
+.ds-text-accent {
+  color: var(--ds-accent-2);
+}
+.ds-text-muted {
+  color: var(--ds-muted);
+}
+.ds-text-danger {
+  color: var(--ds-danger);
+}
+.ds-field {
+  display: grid;
+  gap: var(--ds-space-1);
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-semibold);
+}
+.ds-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  margin-bottom: var(--ds-space-3);
+}
+.ds-modal-head h2 {
+  margin: 0;
+}
+
+/* ========================= row helpers ========================= */
+/* A row whose whole surface opens something while it also hosts its own
+   action buttons (avoids nesting <button> inside <button>). */
+
+/* ================= Friends + Messages (shared social layout) ================= */
+.dc-social-page .dc-social-header {
+  padding: var(--ds-space-5) var(--ds-space-6) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-border);
+}
+.dc-social-page .ds-social-list {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-3);
+  overflow: hidden;
+  border-right: 1px solid var(--ds-border);
+  background: color-mix(in srgb, var(--ds-surface-1) 80%, transparent) !important;
+}
+.dc-social-page .dc-dm-list-pane.ds-social-list {
+  display: grid;
+}
+.dc-social-page .ds-social-list .ds-section-label:first-child {
+  margin-top: 0;
+}
+.dc-social-page .ds-social-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-2);
+}
+.dc-social-page .ds-social-list-head .ds-section-label {
+  margin: 0;
+}
+.dc-social-page .ds-social-list .ds-tabs {
+  flex-wrap: wrap;
+  overflow: hidden;
+  scrollbar-width: none;
+  flex: none;
+}
+.dc-social-page .ds-social-list .ds-tabs::-webkit-scrollbar {
+  display: none;
+}
+.dc-social-page .ds-social-list .ds-tabs > .ds-tab {
+  flex: 1 1 auto;
+  justify-content: center;
+  padding: 0 var(--ds-space-2);
+  font-size: var(--ds-text-xs);
+}
+.dc-social-page .dc-dm-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+  padding: 0 !important;
+}
+.dc-social-page .ds-social-list-foot {
+  border-top: 1px solid var(--ds-border);
+  padding-top: var(--ds-space-2);
+}
+.dc-social-page .ds-social-list-foot > .ds-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+.dc-social-page .dc-friend-actions {
+  position: relative;
+  display: inline-flex;
+}
+.dc-social-page .dc-friend-actions-menu.ds-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+}
+.dc-social-page .dc-dm-chat-head .ds-avatar-wrap {
+  margin-right: var(--ds-space-1);
+}
+.dc-social-page .dc-dm-head-action > .ds-icon {
+  width: var(--ds-icon-md);
+  height: var(--ds-icon-md);
+}
+.dc-social-page .dc-dm-start-actions .ds-btn {
+  min-width: 0;
+}
+@media (max-width: 760px) {
+  .dc-social-page .dc-social-header {
+    padding: var(--ds-space-4);
+  }
+}
+
+/* ================= Discover ================= */
+.dc-discover-page .dc-discover-notice {
+  margin-bottom: var(--ds-space-3);
+  color: var(--ds-danger);
+}
+
+/* ========================= consistency leftovers ========================= */
+.dc-owner-security-modal {
+  width: min(440px, 94vw);
+}
+.dc-owner-security-modal .ds-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+}
+.dc-owned-hubs-list {
+  margin: var(--ds-space-3) 0 var(--ds-space-1);
+}
+.dc-owned-hubs-list .ds-row-boxed {
+  color: var(--ds-text-soft);
+}
+.dc-owned-hubs-list .ds-row-boxed > .ds-icon {
+  color: var(--ds-warn);
+}
+.modal .ds-field + .ds-btn,
+.modal .ds-input + .ds-btn {
+  margin-top: var(--ds-space-2);
+}
+.dc-social-modal {
+  width: min(680px, 94vw);
+  max-height: 86vh;
+  overflow: auto;
+}
+.dc-social-modal-lead {
+  margin: 0 0 var(--ds-space-3);
+  font-size: var(--ds-text-sm);
+}
+.dc-social-modal-list {
+  margin-bottom: var(--ds-space-4);
+}
+.dc-social-modal .ds-row-sub .ds-icon {
+  vertical-align: -3px;
+}
+.dc-social-group-create {
+  display: grid;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-4);
+}
+.dc-social-group-create-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+.dc-social-modal-empty,
+.dc-social-modal-note {
+  padding: var(--ds-space-2) 0;
+  font-size: var(--ds-text-xs);
+}
+.dc-social-modal-danger {
+  padding-top: var(--ds-space-3);
+  border-top: 1px solid color-mix(in srgb, var(--ds-danger) 20%, transparent);
+}
+/* Message hover toolbar: icon-only buttons. */
+.chat-message-hover-actions > button {
+  display: inline-grid;
+  place-items: center;
+}
+.chat-message-hover-actions > button > .ds-icon {
+  width: var(--ds-icon-sm);
+  height: var(--ds-icon-sm);
+}
+.chat-message-hover-actions > button.danger:hover {
+  color: var(--ds-danger) !important;
+  background: color-mix(in srgb, var(--ds-danger) 14%, transparent) !important;
+}
+.chat-message-hover-actions > button[aria-pressed="true"] {
+  color: var(--ds-accent-2) !important;
+}
+/* Left rail page buttons (were inline style objects in App.tsx). Skin
+   overrides in app-rework.css still set sizes and colors. */
+.dc-rail-page-button {
+  position: relative;
+  width: 100%;
+  min-height: 86px;
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  border: 0;
+  border-radius: var(--ds-radius-lg);
+  background: transparent;
+  color: var(--ds-text-soft);
+  box-shadow: none;
+  cursor: pointer;
+}
+.dc-rail-feedback-button {
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+.dc-rail-icon {
+  display: grid;
+  place-items: center;
+  color: var(--ds-accent-2);
+  line-height: 1;
+}
+.dc-rail-label {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-text-soft);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.dc-rail-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ds-bg);
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-danger);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ds-danger) 30%, transparent);
+}

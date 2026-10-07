@@ -1,0 +1,74 @@
+/* Photos inside messages (InlineImage.tsx). */
+.dc-inline-image {
+  display: block;
+  max-width: min(420px, 100%);
+  margin-top: 6px;
+  padding: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ds-surface-2);
+  cursor: zoom-in;
+}
+.dc-inline-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 360px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.dc-inline-image:not(.is-loaded) {
+  width: 260px;
+  height: 160px;
+  cursor: default;
+}
+.dc-inline-image-placeholder {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  height: 100%;
+  color: var(--ds-muted);
+  font-size: 12px;
+}
+.dc-inline-image:focus-visible {
+  outline: 2px solid var(--ds-accent-2);
+  outline-offset: 2px;
+}
+.dc-image-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 40000;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  padding: 24px;
+  background: rgba(3, 5, 10, 0.9);
+  cursor: zoom-out;
+}
+.dc-image-viewer img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: default;
+}
+.dc-image-viewer-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--ds-surface-solid, #10141c);
+  color: var(--ds-text);
+  cursor: default;
+}
+.dc-image-viewer-bar span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}

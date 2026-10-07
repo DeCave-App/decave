@@ -1,0 +1,29 @@
+{
+  "name": "decave-website",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "brand:copy": "node scripts/copy-brand.mjs",
+    "dev": "npm run brand:copy && vite --host 127.0.0.1",
+    "build": "npm run brand:copy && tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "deploy": "npm --prefix .. run publication:check && npm run build && wrangler deploy",
+    "release:upload": "npm --prefix .. run release:upload"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "decave": "file:..",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sharp": "^0.35.4",
+    "typescript": "^5.7.3",
+    "vite": "^8.2.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "wrangler": "^4.124.0"
+  }
+}

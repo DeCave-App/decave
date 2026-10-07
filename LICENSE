@@ -1,0 +1,57 @@
+DeCave Source Review License
+Version 1.0, October 7, 2026
+
+Copyright (c) 2026 DeCave contributors. All rights reserved.
+
+This license applies only to project materials in this repository that DeCave
+contributors have the right to license. It does not replace a separate license
+or notice included with a file, and it does not grant rights to third-party
+software, fonts, artwork, models, or other materials. Those materials remain
+subject to their own terms. Nothing here claims ownership of them.
+
+Permission for review
+
+You may view and download the covered materials, make private copies, and build
+and run those copies locally for the sole purpose of evaluating the code or
+conducting a security review. You may make private modifications as needed for
+that evaluation or review. This permission applies to paid and unpaid
+independent reviewers and security auditors.
+
+You may publish your independent review, audit conclusions, and security
+findings without asking for approval or signing a confidentiality agreement.
+You may reproduce brief excerpts of covered source code only to the extent
+reasonably necessary to explain your analysis. Please avoid publishing secrets,
+personal data, or exploitable details before responsible disclosure when
+appropriate. The reporting guidance in SECURITY.md describes a private channel;
+using it does not impose a gag obligation or prevent lawful reporting.
+
+Limits
+
+Except for the review permissions above and rights that cannot lawfully be
+restricted, you may not redistribute or sublicense substantial portions of the
+covered materials, publish or distribute a modified copy, use them in a product
+or service, operate a hosted service from them, or otherwise use them for
+commercial purposes without separate written permission from the applicable
+rights holder. You may not claim that DeCave endorses your review or product.
+
+Security testing is authorized only on systems you own or have explicit
+permission to test. This license does not authorize access to DeCave production
+systems, accounts, data, or infrastructure.
+
+GitHub platform terms
+
+If this repository is hosted publicly on GitHub, GitHub's Terms of Service and
+platform functionality may permit viewing, copying, or forking the repository
+on GitHub. Any such permissions are governed by those terms and apply only as
+they provide. This license grants no additional right to redistribute or use
+the materials outside those platform permissions.
+
+No other rights are granted. This license does not affect rights or exceptions
+provided by applicable law.
+
+Disclaimer
+
+The covered materials are provided "AS IS", without warranties or conditions
+of any kind, to the extent permitted by law. The contributors are not liable
+for claims or damages arising from use of the materials, to the extent
+permitted by law.

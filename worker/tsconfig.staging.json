@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["./staging-entrypoint.ts", "./staging-access.ts", "./worker-configuration.d.ts"]
+}

@@ -1,0 +1,108 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.tools/
+.venv-clearvoice/
+.clearvoice-training/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.dev.vars
+.env*
+
+# Credentials and signing material
+Turn.txt
+*.pfx
+*.p12
+*.pem
+*.key
+*.jks
+*.keystore
+*.p8
+*.mobileprovision
+*.cer
+*.crt
+credentials.json
+secrets.json
+service-account.json
+serviceAccountKey.json
+firebase-service-account.json
+google-services.json
+GoogleService-Info.plist
+key.properties
+local.properties
+
+# Local data and native build products
+backups/
+*.dump
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+mobile/android/.cxx/
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+mobile/ios/build/
+
+# Local Cloudflare/Wrangler state
+.wrangler/
+.wrangler-*/
+/wrangler.local.jsonc
+
+# Generated build and release artifacts (build/ also holds the generated app icons)
+build/
+/release/
+release-build-*/
+
+# Windows metadata
+desktop.ini
+
+# Generated marketing renders
+marketing/output/
+
+# Nested local checkout used for comparison/review
+/decave/
+
+# Local scratch, evidence and review output
+.tmp/
+.tmp-*/
+evidence/
+.audit-input/
+.v5-package-review-*/
+experiments/
+*.wav
+
+# Local refactoring helpers
+scripts/.*.tmp.*
+/.*/launch.json
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Local dev test account credentials
+.dev-test-account.txt
+mobile/.local-test-accounts.json
+
+# Generated standalone website mockups (website/designs/midnight/build.mjs)
+website/designs/midnight/out/

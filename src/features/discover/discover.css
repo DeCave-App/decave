@@ -1,0 +1,631 @@
+/* Discover (2026-10): filter column, sort tabs, live signals on cards and a
+   preview sheet before joining. Hub pills stay in the top bar.
+   The outer .dc-discover-page / .dc-discover-shell sizing comes from app-rework.css. */
+
+.dc-discover-shell.dsc-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px;
+  padding: 18px 20px 0 !important;
+}
+
+/* Header */
+.dsc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex: none;
+}
+.dsc-head-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.dsc-head-copy h2 {
+  margin: 0;
+  color: var(--ds-text);
+  font-size: var(--ds-text-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.dsc-head-copy p {
+  margin: 0;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+}
+.dsc-head-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.dsc-search {
+  min-width: min(320px, 100%);
+}
+.dsc-invite {
+  display: flex;
+  gap: 6px;
+}
+.dsc-invite .ds-input {
+  width: 190px;
+}
+
+/* Body: filters + results, each scrolls on its own */
+.dsc-body {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.dsc-filters {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 4px 20px 0;
+}
+.dsc-filter-group {
+  display: grid;
+  gap: 2px;
+}
+.dsc-filter-group h3 {
+  margin: 0 0 6px;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.dsc-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  background: transparent;
+  color: var(--ds-text-soft);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.dsc-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dsc-option small {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+.dsc-option:hover {
+  background: var(--ds-hover);
+  color: var(--ds-text);
+}
+.dsc-option.is-on {
+  background: var(--ds-active);
+  color: var(--ds-text);
+  font-weight: 650;
+}
+.dsc-option:focus-visible,
+.dsc-sort button:focus-visible,
+.dsc-card-hit:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus);
+}
+.dsc-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--ds-radius-sm);
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-sm);
+  cursor: pointer;
+}
+.dsc-toggle:hover {
+  background: var(--ds-hover);
+}
+.dsc-toggle.is-disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.dsc-toggle input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.dsc-toggle i {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 17px;
+  border-radius: 999px;
+  background: var(--ds-surface-3);
+  border: 1px solid var(--ds-border-strong);
+  transition: background-color 0.12s;
+}
+.dsc-toggle i::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--ds-text-soft);
+  transition: transform 0.12s;
+}
+.dsc-toggle input:checked + i {
+  background: var(--ds-accent);
+  border-color: var(--ds-accent);
+}
+.dsc-toggle input:checked + i::after {
+  transform: translateX(13px);
+  background: var(--ds-on-accent);
+}
+.dsc-toggle input:focus-visible + i {
+  box-shadow: var(--ds-focus);
+}
+.dsc-clear {
+  justify-self: start;
+}
+
+.dsc-results {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 2px 24px;
+}
+.dsc-results-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.dsc-results-head h3 {
+  margin: 0;
+  color: var(--ds-text);
+  font-size: var(--ds-text-lg);
+  font-weight: 750;
+}
+.dsc-sort {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-1);
+}
+.dsc-sort button {
+  height: 28px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  font-weight: 650;
+  cursor: pointer;
+}
+.dsc-sort button:hover {
+  color: var(--ds-text);
+}
+.dsc-sort button.is-on {
+  background: var(--ds-surface-3);
+  color: var(--ds-text);
+}
+
+/* Cards */
+.dsc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+.dsc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface-1);
+  transition:
+    border-color 0.12s,
+    transform 0.12s;
+}
+.dsc-card:hover,
+.dsc-card.is-open {
+  border-color: color-mix(in srgb, var(--hub-accent) 55%, var(--ds-border));
+}
+.dsc-card-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: inherit;
+}
+.dsc-card-body,
+.dsc-banner {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+.dsc-card-body button,
+.dsc-card-body a {
+  pointer-events: auto;
+}
+.dsc-banner {
+  height: 72px;
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--hub-accent) 45%, var(--ds-surface-2)),
+    var(--ds-surface-2)
+  );
+}
+.dsc-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dsc-live,
+.dsc-joined {
+  position: absolute;
+  top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ds-bg) 72%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 11px;
+  font-weight: 700;
+}
+.dsc-live {
+  left: 8px;
+  color: var(--ds-success);
+}
+.dsc-live i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ds-success);
+  box-shadow: 0 0 6px var(--ds-success);
+}
+.dsc-joined {
+  right: 8px;
+  color: var(--ds-text-soft);
+}
+.dsc-card-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+  flex: 1 1 auto;
+  align-content: start;
+}
+.dsc-card-top {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+.dsc-card-top > div {
+  display: grid;
+  min-width: 0;
+  padding-bottom: 1px;
+}
+.dsc-card-top strong {
+  overflow: hidden;
+  color: var(--ds-text);
+  font-size: var(--ds-text-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dsc-card-top small {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+.dsc-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  margin-top: -20px;
+  overflow: hidden;
+  border: 3px solid var(--ds-surface-1);
+  border-radius: 12px;
+  background: var(--ds-surface-3);
+  font-size: 19px;
+}
+.dsc-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dsc-card-body > p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-sm);
+  line-height: 1.4;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.dsc-signal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-xs);
+}
+.dsc-signal.friends {
+  color: var(--ds-accent-2);
+  font-weight: 600;
+}
+.dsc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dsc-tags span {
+  padding: 2px 7px;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  color: var(--ds-muted);
+  font-size: 11px;
+}
+.dsc-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+.dsc-card-foot b {
+  color: var(--ds-text);
+}
+.dsc-card-actions {
+  display: inline-flex;
+  gap: 4px;
+  flex: none;
+}
+
+/* Preview sheet */
+.dsc-sheet-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+  background: color-mix(in srgb, var(--ds-bg) 45%, transparent);
+}
+.dsc-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(380px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  border-left: 1px solid var(--ds-border-strong);
+  background: var(--ds-surface-solid);
+  box-shadow: var(--ds-shadow-lg);
+  outline: none;
+}
+.dsc-sheet:focus,
+.dsc-sheet:focus-visible {
+  outline: none !important;
+  box-shadow: var(--ds-shadow-lg) !important;
+}
+.dsc-sheet-banner {
+  position: relative;
+  flex: none;
+  height: 120px;
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--hub-accent) 45%, var(--ds-surface-2)),
+    var(--ds-surface-2)
+  );
+}
+.dsc-sheet-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dsc-sheet-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: color-mix(in srgb, var(--ds-bg) 65%, transparent) !important;
+}
+.dsc-sheet-body {
+  display: grid;
+  gap: 14px;
+  padding: 0 16px 18px;
+}
+.dsc-sheet-id {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: -26px;
+}
+.dsc-sheet-id > div {
+  display: grid;
+  min-width: 0;
+}
+.dsc-sheet-id strong {
+  overflow: hidden;
+  color: var(--ds-text);
+  font-size: var(--ds-text-lg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dsc-sheet-id small {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+.dsc-sheet-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  border: 3px solid var(--ds-surface-solid);
+  border-radius: 15px;
+  background: var(--ds-surface-3);
+  font-size: 25px;
+}
+.dsc-sheet-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dsc-sheet-desc {
+  margin: 0;
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-sm);
+  line-height: 1.45;
+}
+.dsc-sheet-body h4 {
+  margin: 0 0 6px;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.dsc-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-sm);
+}
+.dsc-facts li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dsc-facts li .ds-icon {
+  color: var(--ds-muted);
+  flex: none;
+}
+.dsc-facts li.live,
+.dsc-facts li.live .ds-icon {
+  color: var(--ds-success);
+}
+.dsc-muted {
+  margin: 0;
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+}
+.dsc-rooms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 10px;
+}
+.dsc-room {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text-soft);
+  font-size: 12px;
+}
+.dsc-room--voice {
+  border-style: dashed;
+  background: transparent;
+}
+.dsc-room.is-live {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--ds-success) 45%, var(--ds-border));
+  color: var(--ds-text);
+}
+.dsc-room small {
+  color: var(--ds-success);
+  font-weight: 700;
+}
+.dsc-room.more {
+  color: var(--ds-muted);
+}
+.dsc-rules {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ds-text-soft);
+  font-size: var(--ds-text-sm);
+  line-height: 1.4;
+}
+.dsc-sheet-actions {
+  display: flex;
+  gap: 8px;
+}
+.dsc-sheet-actions .ds-btn {
+  flex: 1;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .dsc-body {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+  .dsc-filters {
+    overflow: visible;
+    grid-auto-flow: row;
+    padding: 0;
+  }
+  .dsc-results {
+    overflow: visible;
+  }
+  .dsc-invite .ds-input {
+    width: 150px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsc-card,
+  .dsc-toggle i,
+  .dsc-toggle i::after {
+    transition: none;
+  }
+}

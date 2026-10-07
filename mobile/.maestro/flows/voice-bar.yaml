@@ -1,0 +1,22 @@
+# Join a voice room, leave the screen, and drive the floating voice bar.
+# Needs: HUB = a Hub name; VOICE_ROOM = a voice room in it.
+appId: com.example.decave
+---
+- launchApp:
+    clearState: false
+- tapOn: "Hubs"
+- tapOn: ${HUB}
+- tapOn: ${VOICE_ROOM}
+- tapOn: "Join voice"
+- extendedWaitUntil:
+    visible: "Leave"
+    timeout: 15000
+- back
+- assertVisible: "Mute microphone"
+- tapOn: "Mute microphone"
+- assertVisible: "Unmute microphone"
+- tapOn: "Deafen"
+- assertVisible: "Undeafen"
+- tapOn: "Undeafen"
+- tapOn: "Leave voice room"
+- assertNotVisible: "Mute microphone"

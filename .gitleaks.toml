@@ -1,0 +1,28 @@
+title = "DeCave Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+  [[rules.allowlists]]
+  description = "Known non-secret browser preference setting key; exact path and line only"
+  condition = "AND"
+  regexTarget = "line"
+  paths = ["^src/app/settings-storage\\.ts$"]
+  regexes = ["\\Qexport const MUTED_HUBS_KEY = \"decave_muted_hubs_v1\";\\E"]
+
+  [[rules.allowlists]]
+  description = "Known non-secret browser notification setting key; exact path and line only"
+  condition = "AND"
+  regexTarget = "line"
+  paths = ["^src/app/settings-storage\\.ts$"]
+  regexes = ["\\Qexport const NOTIFICATION_SETTINGS_KEY = \"vadrion_notifications_v1\";\\E"]
+
+  [[rules.allowlists]]
+  description = "Known non-secret R2 object locator copied from an owned attachment record; exact path and line only"
+  condition = "AND"
+  regexTarget = "line"
+  paths = ["^worker/HubRoom\\.ts$"]
+  regexes = ["\\Q        attachmentKey = ownedAttachment.r2_key;\\E"]

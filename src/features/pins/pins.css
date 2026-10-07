@@ -1,0 +1,88 @@
+/* Pinned messages panel (PinnedMessagesPanel.tsx). */
+.pins-panel .pinned-message-list {
+  display: grid;
+  gap: 8px;
+  max-height: min(70vh, 640px);
+  overflow-y: auto;
+}
+.pins-panel .pins-status {
+  margin: 8px 0;
+  color: var(--ds-muted);
+  font-size: 13px;
+}
+.pins-panel .pins-error {
+  color: var(--ds-danger);
+}
+.pins-panel .pins-card {
+  display: grid !important;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+.pins-panel .pins-avatar > * {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.pins-panel .pins-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ds-text) !important;
+}
+.pins-panel .pins-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 560px) {
+  .pins-panel .pins-card {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+  .pins-panel .pins-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+}
+
+/* Jumped-to message flashes briefly. */
+.chat-message.is-jump-target {
+  animation: pin-jump-flash 1.6s ease-out;
+}
+@keyframes pin-jump-flash {
+  from {
+    background: color-mix(in srgb, var(--ds-accent) 26%, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+/* Outbox rows (features/outbox): your messages until the server confirms them. */
+.chat-message.dc-outbox-row.is-sending,
+.chat-message.dc-outbox-row.is-queued {
+  opacity: 0.6;
+}
+.chat-message.dc-outbox-row .dc-outbox-state {
+  color: var(--ds-muted);
+  font-size: 12px;
+}
+.chat-message.dc-outbox-row.is-failed .dc-outbox-state {
+  color: var(--ds-danger);
+  font-weight: 700;
+}
+.chat-message.dc-outbox-row.is-failed .chat-message-text {
+  color: var(--ds-text-soft, var(--ds-text));
+}
+.dc-outbox-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.dc-outbox-actions small {
+  color: var(--ds-danger);
+  font-size: 12px;
+}

@@ -1,0 +1,94 @@
+// Source review example only. Replace example.invalid hosts and placeholder resource IDs before deployment.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "decave",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-08-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "triggers": {
+    "crons": ["0 * * * *"],
+  },
+  "routes": [
+    {
+      "pattern": "app.example.invalid",
+      "custom_domain": true,
+    },
+  ],
+  "vars": {
+    "STREAMER_HUBS_ENABLED": "true",
+    "STREAMER_GIVEAWAYS_ENABLED": "true",
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    "traces": {
+      "enabled": false,
+    },
+  },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Route the HTML shell through Worker securityHeaders as well as API paths.
+    "run_worker_first": true,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "decave-review-example",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+      "migrations_pattern": "migrations/*.sql",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "example-example-decave-media",
+    },
+    {
+      "bucket_name": "example-example-decave-downloads",
+      "binding": "decave_downloads",
+    },
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["security@example.invalid"],
+      "remote": false,
+    },
+  ],
+  "ratelimits": [
+    {
+      "name": "AUTH_RATE_LIMITER",
+      "namespace_id": "0",
+      "simple": {
+        "limit": 8,
+        "period": 60,
+      },
+    },
+    {
+      "name": "RECOVERY_RATE_LIMITER",
+      "namespace_id": "0",
+      "simple": {
+        "limit": 4,
+        "period": 60,
+      },
+    },
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "HUB_ROOM",
+        "class_name": "HubRoom",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["HubRoom"],
+    },
+  ],
+}

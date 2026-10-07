@@ -1,0 +1,190 @@
+.direct-call-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: var(--ds-overlay);
+  backdrop-filter: blur(10px);
+}
+.direct-call-card {
+  position: relative;
+  width: min(620px, 94vw);
+  box-sizing: border-box;
+  padding: var(--ds-space-6);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-surface-solid);
+  box-shadow: var(--ds-shadow-lg);
+  color: var(--ds-text);
+}
+.direct-call-minimize {
+  position: absolute;
+  top: var(--ds-space-4);
+  right: var(--ds-space-4);
+}
+.direct-call-title {
+  margin: var(--ds-space-2) 0 2px;
+  font-size: var(--ds-text-2xl);
+}
+.direct-call-status {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+}
+.direct-call-error {
+  margin-top: var(--ds-space-3);
+}
+.direct-call-video {
+  position: relative;
+  margin-top: var(--ds-space-4);
+  height: min(46vh, 360px);
+  border-radius: var(--ds-radius-lg);
+  overflow: hidden;
+  background: var(--ds-sink);
+}
+.direct-call-video-remote {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.direct-call-video-local {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 128px;
+  height: 94px;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  object-fit: cover;
+  background: var(--ds-surface-3);
+}
+.direct-call-mini {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 12000;
+  width: 280px;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: 11px 13px;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-surface-solid);
+  box-shadow: var(--ds-shadow-lg);
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.direct-call-mini-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+.direct-call-mini-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.direct-call-mini-copy strong {
+  font-size: var(--ds-text-sm);
+}
+.direct-call-mini-copy small {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+}
+.direct-call-mini-live {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ds-success);
+}
+.direct-call-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+.direct-call-round {
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: 50%;
+  background: var(--ds-surface-3);
+  color: var(--ds-text);
+  cursor: pointer;
+  box-shadow: var(--ds-shadow-sm);
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.direct-call-round:hover {
+  transform: translateY(-2px);
+  background: var(--ds-hover);
+  border-color: var(--ds-accent-2);
+}
+.direct-call-round.active {
+  background: color-mix(in srgb, var(--ds-danger) 52%, transparent);
+  border-color: var(--ds-danger);
+}
+.direct-call-round.accept {
+  background: var(--ds-success);
+  border-color: var(--ds-success);
+  color: var(--ds-on-accent);
+}
+.direct-call-round.danger {
+  background: var(--ds-danger);
+  border-color: var(--ds-danger);
+  color: #fff;
+}
+.direct-call-round svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.direct-call-round svg.end-icon {
+  transform: rotate(135deg);
+}
+.direct-call-control-wrap {
+  position: relative;
+}
+.direct-call-volume {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  width: 210px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface-solid);
+  box-shadow: var(--ds-shadow-md);
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  z-index: 3;
+}
+.direct-call-volume input {
+  min-width: 0;
+}

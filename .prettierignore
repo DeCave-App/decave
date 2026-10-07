@@ -1,0 +1,15 @@
+# Generated, vendored, or owned by another toolchain.
+dist
+release
+build
+node_modules
+.wrangler
+mobile
+website
+ml
+docs
+migrations
+marketing
+worker/worker-configuration.d.ts
+src/audio/clearvoice/legacy-onnxruntime
+package-lock.json
