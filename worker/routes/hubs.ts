@@ -1,6 +1,7 @@
 // Hubs: listing, discovery, creating, joining and leaving, share links,
 // settings, Hub home, members, roles, invites, moderation and creating rooms.
 
+import { hubCommunityFeatures } from "../lib/hubs";
 import { requireUser } from "../lib/sessions";
 import {
   type HubRow,
@@ -13,13 +14,16 @@ import {
   type ServerRole,
   publicIdOf,
   publicUser,
-  activityTextFor,
+  presenceFieldsFor,
+  presenceOnline,
   userByReference,
   usersAreFriends,
   hasPermission,
   createRawToken,
 } from "../db";
 import { streamerHubIdsForUserSafe, streamerHubsEnabled } from "../lib/streamer";
+import { queueBotEvent } from "../bots/events";
+import { botsEnabled } from "../bots/flags";
 import { json, bodyJson, idFromPath } from "../lib/http";
 import {
   hubForUser,
@@ -44,12 +48,17 @@ import { STREAMER_HUB_TEMPLATE } from "../../shared/streamer-mode";
 import { getHubTemplate } from "../../shared/hub-templates";
 import { sanitizeDiscordImport } from "../../shared/discord-template";
 import { ensureCollaborationSchema, ensureHubFeatureSchema } from "../lib/hub-schema";
-import { realtimeBroadcast, realtimeFetch, realtimeRecheckAccess } from "../lib/realtime";
+import { connectedUserIds, realtimeBroadcast, realtimeRecheckAccess } from "../lib/realtime";
 import { normalizeHubHomeConfig } from "../../shared/hub-home";
 import { officialHubMembershipPrivate } from "../lib/official-hubs";
 import { safeJsonStringArray, normalizeForumTags } from "../../shared/forum";
 import { ensureSoundboardSchema } from "../lib/soundboard";
-import { attemptQueuedMediaDeletion } from "../lib/media";
+import {
+  deleteQueuedMedia,
+  ensureMediaDeletionQueueSchema,
+  hubMediaObjectKeys,
+  queueMediaDeletionStatements,
+} from "../lib/media";
 import type { ApiContext } from "./context";
 
 export async function handleHubListRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
@@ -70,7 +79,15 @@ export async function handleHubListRoutes({ request, env, p, method }: ApiContex
   return null;
 }
 
-export async function handleHubRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
+export async function handleHubRoutes({ request, env, p, method, ctx }: ApiContext): Promise<Response | null> {
+  const waitUntil = ctx ? (work: Promise<unknown>) => ctx.waitUntil(work) : undefined;
+  // Membership and role changes the hub's bots react to (background, never fails the request).
+  const memberEvent = (hubId: number, userId: string, kind: "memberJoin" | "memberLeave", data = {}) =>
+    queueBotEvent(
+      env,
+      { hubId, roomId: null, kind, actorId: userId, actorIsBot: false, chainDepth: 0, data },
+      waitUntil,
+    );
   if (method === "GET" && p === "/api/servers/discover") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
@@ -203,11 +220,12 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
     if (banned) return json({ error: "You are banned from this Hub" }, 403);
     if (hub.visibility !== "public")
       return json({ error: "This server is private. You need an invite or access grant." }, 403);
-    await env.DB.prepare(
+    const joined = await env.DB.prepare(
       "INSERT OR IGNORE INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(?,?, 'member', ?)",
     )
       .bind(hubId, user.id, nowIso())
       .run();
+    if (joined.meta?.changes) memberEvent(hubId, user.id, "memberJoin");
     await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { userIds: [user.id] });
     return json(await hubForUser(env, hub, user.id));
   }
@@ -297,7 +315,10 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
     if (!hub) return json({ error: "Server not found" }, 404);
     if (hub.owner_id === user.id)
       return json({ error: "The server owner cannot leave. Delete the server or transfer ownership first." }, 400);
-    await env.DB.prepare("DELETE FROM decave_hub_members WHERE hub_id=? AND user_id=?").bind(hubId, user.id).run();
+    const left = await env.DB.prepare("DELETE FROM decave_hub_members WHERE hub_id=? AND user_id=?")
+      .bind(hubId, user.id)
+      .run();
+    if (left.meta?.changes) memberEvent(hubId, user.id, "memberLeave", { reason: "left" });
     const fallback = await env.DB.prepare(
       `SELECT h.id FROM decave_hubs h JOIN decave_hub_members hm ON hm.hub_id=h.id WHERE hm.user_id=? ORDER BY h.id LIMIT 1`,
     )
@@ -348,35 +369,16 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
     if (hub.owner_id !== user.id) return json({ error: "Only the server owner can do this" }, 403);
     await ensureHubFeatureSchema(env);
     await ensureSoundboardSchema(env);
-    const mediaRows = await env.DB.prepare(
-      `SELECT attachment_key AS object_key FROM decave_messages WHERE hub_id=? AND attachment_key IS NOT NULL
-       UNION SELECT r2_key AS object_key FROM decave_attachment_access WHERE hub_id=?
-       UNION SELECT r2_key AS object_key FROM decave_hub_assets WHERE hub_id=?
-       UNION SELECT r2_key AS object_key FROM decave_soundboard_sounds WHERE hub_id=?
-       UNION SELECT icon_key AS object_key FROM decave_hubs WHERE id=? AND icon_key IS NOT NULL
-       UNION SELECT banner_key AS object_key FROM decave_hubs WHERE id=? AND banner_key IS NOT NULL
-       UNION SELECT chat_background_key AS object_key FROM decave_hubs WHERE id=? AND chat_background_key IS NOT NULL`,
-    )
-      .bind(hubId, hubId, hubId, hubId, hubId, hubId, hubId)
-      .all<{ object_key: string }>();
-    const mediaKeys = [...new Set(mediaRows.results.map((row) => row.object_key))];
+    await ensureMediaDeletionQueueSchema(env.DB);
+    // Queue every R2 object the Hub owns in the same batch that deletes it.
+    const mediaKeys = await hubMediaObjectKeys(env.DB, hubId);
+    const deletedAt = nowIso();
     await env.DB.batch([
-      env.DB.prepare(
-        `INSERT OR IGNORE INTO decave_media_deletion_queue(object_key,queued_at,attempts,last_attempt_at)
-         SELECT object_key,?,0,NULL FROM (
-           SELECT attachment_key AS object_key FROM decave_messages WHERE hub_id=? AND attachment_key IS NOT NULL
-           UNION SELECT r2_key AS object_key FROM decave_attachment_access WHERE hub_id=?
-           UNION SELECT r2_key AS object_key FROM decave_hub_assets WHERE hub_id=?
-           UNION SELECT r2_key AS object_key FROM decave_soundboard_sounds WHERE hub_id=?
-           UNION SELECT icon_key AS object_key FROM decave_hubs WHERE id=? AND icon_key IS NOT NULL
-           UNION SELECT banner_key AS object_key FROM decave_hubs WHERE id=? AND banner_key IS NOT NULL
-           UNION SELECT chat_background_key AS object_key FROM decave_hubs WHERE id=? AND chat_background_key IS NOT NULL
-         )`,
-      ).bind(nowIso(), hubId, hubId, hubId, hubId, hubId, hubId, hubId),
+      ...queueMediaDeletionStatements(env.DB, mediaKeys, deletedAt),
       env.DB.prepare("DELETE FROM decave_hubs WHERE id=?").bind(hubId),
       env.DB.prepare("DELETE FROM decave_attachment_access WHERE hub_id=?").bind(hubId),
     ]);
-    await attemptQueuedMediaDeletion(env, mediaKeys);
+    await deleteQueuedMedia(env, mediaKeys);
     await realtimeBroadcast(
       env,
       { type: "SERVER_DELETED", serverId: hubId, fallbackServerId: 0, fallbackChannelId: 0 },
@@ -543,9 +545,22 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
       .all<{ friend_id: string }>();
     const friendIds = new Set(friendshipRows.results.map((row) => row.friend_id));
 
-    const onlineResponse = await realtimeFetch(env, "/internal/online-users");
-    const onlineData = onlineResponse.ok ? ((await onlineResponse.json()) as { userIds?: string[] }) : {};
-    const online = new Set(onlineData.userIds ?? []);
+    const online = await connectedUserIds(env);
+    // FACEIT level badges are a custom per-Hub feature.
+    const faceitLevels = new Map<string, number>();
+    if ((await hubCommunityFeatures(env.DB, hubId)).faceitBadges) {
+      try {
+        const levels = await env.DB.prepare(
+          `SELECT f.user_id,f.level FROM decave_faceit_links f
+           JOIN decave_hub_members m ON m.user_id=f.user_id AND m.hub_id=? WHERE f.level IS NOT NULL`,
+        )
+          .bind(hubId)
+          .all<{ user_id: string; level: number }>();
+        for (const row of levels.results) faceitLevels.set(row.user_id, Number(row.level));
+      } catch {
+        /* no FACEIT table yet: no badges */
+      }
+    }
 
     const result = [] as unknown[];
     for (const row of rows.results) {
@@ -563,7 +578,10 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
       const isSelf = row.id === user.id;
       const isFriend = friendIds.has(row.id);
       const canSeePresence = isSelf || isFriend;
-      const isOnline = canSeePresence && online.has(row.id) && row.status !== "invisible";
+      const relation = isSelf ? "self" : isFriend ? "friend" : "other";
+      // Hub members only see presence of friends (and themselves).
+      const isOnline = canSeePresence && presenceOnline(row, online.has(row.id));
+      const presence = presenceFieldsFor(row, isOnline, relation);
 
       result.push({
         userId: publicIdOf(row),
@@ -581,10 +599,11 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
         isFriend,
         // Hub membership date only. Do not expose account creation or last-seen timestamps.
         joinedAt: row.joinedAt,
-        status: isOnline ? row.status : "offline",
-        statusText: isOnline ? row.status_text : "",
-        activityText: isOnline ? activityTextFor(row, isSelf ? "self" : isFriend ? "friend" : "other") : "",
+        status: isOnline ? presence.status : "offline",
+        statusText: isOnline ? presence.statusText : "",
+        activityText: isOnline ? presence.activityText : "",
         online: isOnline,
+        ...(faceitLevels.has(row.id) ? { faceitLevel: faceitLevels.get(row.id) } : {}),
       });
     }
     return json(result);
@@ -641,11 +660,12 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
         .bind(hubId, targetId)
         .first();
       if (banned) return json({ error: "This user is banned from the Hub" }, 409);
-      await env.DB.prepare(
+      const added = await env.DB.prepare(
         "INSERT OR IGNORE INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(?,?, 'member', ?)",
       )
         .bind(hubId, targetId, nowIso())
         .run();
+      if (added.meta?.changes) memberEvent(hubId, targetId, "memberJoin");
       await audit(env.DB, hubId, user.id, "member.add_friend", targetId);
       await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { userIds: [targetId] });
       return json({ success: true, userId: publicIdOf(targetUser!), role: await getRole(env.DB, hubId, targetId) });
@@ -659,7 +679,7 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
       const canRemove =
         actorRole === "owner" ? targetRole === "admin" || targetRole === "member" : targetRole === "member";
       if (!canRemove) return json({ error: "You cannot remove this Hub member" }, 403);
-      await env.DB.batch([
+      const removed = await env.DB.batch([
         env.DB.prepare("DELETE FROM decave_member_roles WHERE hub_id=? AND user_id=?").bind(hubId, targetId),
         env.DB.prepare(
           "DELETE FROM decave_room_members WHERE user_id=? AND room_id IN (SELECT id FROM decave_rooms WHERE hub_id=?)",
@@ -667,6 +687,7 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
         env.DB.prepare("DELETE FROM decave_hub_members WHERE hub_id=? AND user_id=?").bind(hubId, targetId),
       ]);
       await audit(env.DB, hubId, user.id, "member.remove", targetId);
+      if (removed[2]?.meta?.changes) memberEvent(hubId, targetId, "memberLeave", { reason: "removed" });
       await realtimeBroadcast(
         env,
         { type: "ACCESS_REVOKED", serverId: hubId, message: "You were removed from this Hub." },
@@ -703,6 +724,9 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
     const roleIds = Array.isArray(body.roleIds)
       ? body.roleIds.filter((x): x is string => typeof x === "string").slice(0, 8)
       : [];
+    // Role diffs only feed bot role triggers; skip the reads when bots are off.
+    const watchRoles = botsEnabled(env);
+    const rolesBefore = watchRoles ? await memberRoleIds(env.DB, hubId, targetId) : new Set<string>();
     const stmts = [
       env.DB.prepare("DELETE FROM decave_member_roles WHERE hub_id=? AND user_id=?").bind(hubId, targetId),
     ];
@@ -714,6 +738,18 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
       );
     await env.DB.batch(stmts);
     await audit(env.DB, hubId, user.id, "role.assign", targetId, roleIds.join(","));
+    const rolesAfter = watchRoles ? await memberRoleIds(env.DB, hubId, targetId) : new Set<string>();
+    for (const [ids, other, kind] of [
+      [rolesAfter, rolesBefore, "roleAdded"],
+      [rolesBefore, rolesAfter, "roleRemoved"],
+    ] as const)
+      for (const roleId of ids)
+        if (!other.has(roleId))
+          queueBotEvent(
+            env,
+            { hubId, roomId: null, kind, actorId: targetId, actorIsBot: false, chainDepth: 0, data: { roleId } },
+            waitUntil,
+          );
     await realtimeRecheckAccess(env, hubId);
     return json({ success: true, roleIds });
   }
@@ -857,11 +893,12 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
         .bind(code, nowIso())
         .first<{ hub_id: number }>();
       if (!claimed) return json({ error: "Invite has expired or reached its use limit" }, 410);
-      await env.DB.prepare(
+      const joined = await env.DB.prepare(
         "INSERT OR IGNORE INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(?,?, 'member', ?)",
       )
         .bind(invite.hub_id, user.id, nowIso())
         .run();
+      if (joined.meta?.changes) memberEvent(invite.hub_id, user.id, "memberJoin");
     }
     const hub = await getHub(env.DB, invite.hub_id);
     await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { userIds: [user.id] });
@@ -907,7 +944,7 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
       ? streamerRevokeParticipantStatements(env.DB, hubId, targetId)
       : [];
     if (action === "kick") {
-      await env.DB.batch([
+      const kicked = await env.DB.batch([
         env.DB.prepare(
           "DELETE FROM decave_room_members WHERE user_id=? AND room_id IN (SELECT id FROM decave_rooms WHERE hub_id=?)",
         ).bind(targetId, hubId),
@@ -915,6 +952,7 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
         ...streamerCleanup,
       ]);
       await audit(env.DB, hubId, user.id, "member.kick", targetId, reason);
+      if (kicked[1]?.meta?.changes) memberEvent(hubId, targetId, "memberLeave", { reason: "kicked" });
       await realtimeBroadcast(
         env,
         { type: "ACCESS_REVOKED", serverId: hubId, message: "You were kicked from this Hub." },
@@ -923,7 +961,7 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
       return json({ success: true });
     }
     if (action === "ban") {
-      await env.DB.batch([
+      const banned = await env.DB.batch([
         env.DB.prepare(
           "DELETE FROM decave_room_members WHERE user_id=? AND room_id IN (SELECT id FROM decave_rooms WHERE hub_id=?)",
         ).bind(targetId, hubId),
@@ -934,6 +972,7 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
         ...streamerCleanup,
       ]);
       await audit(env.DB, hubId, user.id, "member.ban", targetId, reason);
+      if (banned[1]?.meta?.changes) memberEvent(hubId, targetId, "memberLeave", { reason: "banned" });
       await realtimeBroadcast(
         env,
         { type: "ACCESS_REVOKED", serverId: hubId, message: "You were banned from this Hub." },
@@ -1089,4 +1128,12 @@ export async function handleHubRoutes({ request, env, p, method }: ApiContext): 
   }
 
   return null;
+}
+
+async function memberRoleIds(db: D1Database, hubId: number, userId: string): Promise<Set<string>> {
+  const rows = await db
+    .prepare("SELECT role_id FROM decave_member_roles WHERE hub_id=? AND user_id=?")
+    .bind(hubId, userId)
+    .all<{ role_id: string }>();
+  return new Set(rows.results.map((row) => row.role_id));
 }

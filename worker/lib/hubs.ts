@@ -1,3 +1,5 @@
+import { parseCommunityFeatures } from "../../shared/streamer-mode";
+import { canPostInChatRoom, type RoomRow } from "../db";
 // Hubs and rooms: access checks, room members, Hubs as sent to the client,
 // voice counts, discovery signals and custom roles.
 
@@ -136,7 +138,7 @@ export async function replaceRoomMembers(
 export async function roomsForHub(db: D1Database, hubId: number, userId: string) {
   const result = await db
     .prepare(
-      `SELECT id, hub_id, name, type, category, position, private, icon, kind,forum_guidelines,forum_post_policy,forum_post_role_ids_json,forum_post_member_ids_json,forum_tags_json
+      `SELECT id, hub_id, name, type, category, position, private, icon, kind, user_limit, post_policy, post_role_ids_json,forum_guidelines,forum_post_policy,forum_post_role_ids_json,forum_post_member_ids_json,forum_tags_json
        FROM decave_rooms
        WHERE hub_id = ?
        ORDER BY position, id`,
@@ -157,6 +159,9 @@ export async function roomsForHub(db: D1Database, hubId: number, userId: string)
       forum_post_role_ids_json: string;
       forum_post_member_ids_json: string;
       forum_tags_json: string;
+      user_limit: number | null;
+      post_policy: string | null;
+      post_role_ids_json: string | null;
     }>();
   const visible = [];
   for (const room of result.results) {
@@ -170,6 +175,13 @@ export async function roomsForHub(db: D1Database, hubId: number, userId: string)
         forumPostRoleIds: safeJsonStringArray(room.forum_post_role_ids_json),
         forumPostMemberIds: safeJsonStringArray(room.forum_post_member_ids_json),
         forumTags: safeJsonStringArray(room.forum_tags_json),
+        userLimit: Number(room.user_limit ?? 0),
+        postPolicy: room.post_policy ?? "everyone",
+        postRoleIds: safeJsonStringArray(room.post_role_ids_json ?? "[]"),
+        canPost:
+          room.kind === "forum" || (room.post_policy ?? "everyone") === "everyone"
+            ? true
+            : await canPostInChatRoom(db, room as unknown as RoomRow, userId),
       });
   }
   return visible;
@@ -239,11 +251,13 @@ export async function hubForUser(env: Env, hub: HubRow, userId: string, streamer
     slowModeSeconds: hub.slow_mode_seconds,
     iconUrl: mediaUrl(hub.icon_key),
     bannerUrl: mediaUrl(hub.banner_key),
+    headerUrl: mediaUrl(hub.header_key ?? null),
     chatBackgroundUrl: mediaUrl(ringRow?.chat_background_key ?? null),
     iconRing: Number(ringRow?.icon_ring ?? 0) === 1,
     theme: ringRow?.theme ?? "midnight",
     useBannerBackground: Number(ringRow?.use_banner_background ?? 0) === 1,
     useChatBackground: Number(ringRow?.use_chat_background ?? 0) === 1,
+    ...(layout === "streamer" ? { communityFeatures: await clientCommunityFeatures(env.DB, hub.id) } : {}),
     isSquad: Boolean(squadRow?.found),
     ownerOnlyPosting: postingPolicy.status === "unavailable" ? true : postingPolicy.ownerOnly,
     membershipPrivate,
@@ -355,6 +369,7 @@ export const CUSTOM_ROLE_PERMISSIONS = [
   "createInvites",
   "viewAudit",
   "manageEvents",
+  "manageBots",
 ] as const;
 
 /** B12: forum policy role ids must be custom roles of this Hub. Returns null when any id is foreign. */
@@ -393,4 +408,23 @@ export async function validatedHubMemberPublicIds(
   if (requested.length !== value.length || requested.length > max) return null;
   const valid = await normalizedForumPostMemberIds(db, hubId, requested);
   return valid.length === requested.length ? valid : null;
+}
+
+/** Custom per-Hub features (Streamer Hubs only; DeCave staff set them). */
+export async function hubCommunityFeatures(db: D1Database, hubId: number) {
+  try {
+    const row = await db
+      .prepare("SELECT community_features FROM decave_streamer_hubs WHERE hub_id=?")
+      .bind(hubId)
+      .first<{ community_features: string | null }>();
+    return parseCommunityFeatures(row?.community_features);
+  } catch {
+    return parseCommunityFeatures(null);
+  }
+}
+
+/** The subset of custom features the client UI needs. */
+async function clientCommunityFeatures(db: D1Database, hubId: number) {
+  const features = await hubCommunityFeatures(db, hubId);
+  return { voiceLimits: features.voiceLimits, subRoles: features.subRoles, faceitBadges: features.faceitBadges };
 }

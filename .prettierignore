@@ -12,4 +12,6 @@ migrations
 marketing
 worker/worker-configuration.d.ts
 src/audio/clearvoice/legacy-onnxruntime
+src/audio/deepfilter/vendor
+vendor/**
 package-lock.json

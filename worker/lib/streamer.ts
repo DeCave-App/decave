@@ -1,10 +1,10 @@
-// Streamer Mode: feature flags and the access and mutation guards the
+// Streamer Mode: feature flags and the access, mutation and image guards the
 // streamer API is given.
 
 import type { Env } from "./env";
 import { streamerMigrationExists, streamerHubIdsForUser } from "../streamer/index.ts";
 import { json, sameOriginWriteAllowed, requestKey } from "./http";
-import { getHub, type ServerRole, nowIso } from "../db";
+import { getHub, type ServerRole, nowIso, getRole } from "../db";
 import { getSafetyProfile } from "../trust-safety";
 import { requireUser } from "./sessions";
 import { requireHubPostingPermission } from "./official-hubs";
@@ -149,4 +149,51 @@ export async function streamerMutationGuard(
   }
 
   return null;
+}
+
+export async function authorizeStreamerHubImage(
+  request: Request,
+  env: Env,
+  hubId: number,
+  userId: string,
+  path: string,
+): Promise<boolean> {
+  void request;
+  if (!path.startsWith("/api/media/")) return false;
+  const rawPath = path.split("?", 1)[0];
+  const encodedKey = rawPath.slice("/api/media/".length);
+  let key: string;
+  try {
+    key = decodeURIComponent(encodedKey);
+  } catch {
+    return false;
+  }
+  if (!/^[a-zA-Z0-9_./~-]+$/.test(key) || key.split("/").some((part) => !part || part === "." || part === "..")) {
+    return false;
+  }
+
+  const parts = key.split("/");
+  const keyHubId = Number(parts[1]);
+  if (keyHubId !== hubId || (parts[0] !== "hub-media" && parts[0] !== "hub-assets")) return false;
+  if (!(await getRole(env.DB, hubId, userId))) return false;
+
+  const hub = await getHub(env.DB, hubId);
+  if (!hub) return false;
+  if (parts[0] === "hub-media") {
+    if (parts.length !== 4 || !["icon", "banner", "header", "chat-background"].includes(parts[2])) return false;
+    return key === hub.icon_key || key === hub.banner_key || key === hub.header_key || key === hub.chat_background_key;
+  }
+
+  // Only an existing image Hub asset is eligible. This excludes attachments,
+  // avatars, DMs, and arbitrary bucket keys even when their path is guessed.
+  try {
+    const asset = await env.DB.prepare(
+      "SELECT 1 FROM decave_hub_assets WHERE hub_id=? AND r2_key=? AND mime_type LIKE 'image/%' LIMIT 1",
+    )
+      .bind(hubId, key)
+      .first();
+    return Boolean(asset);
+  } catch {
+    return false;
+  }
 }

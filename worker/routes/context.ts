@@ -9,7 +9,7 @@ export type ApiContext = {
   url: URL;
   p: string;
   method: string;
-  /** Worker execution context, for work that may finish after the response (waitUntil). */
+  /** Present in the deployed Worker; lets a route finish work after responding. */
   ctx?: ExecutionContext;
 };
 

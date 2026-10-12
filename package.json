@@ -1,8 +1,9 @@
 {
   "name": "decave",
   "private": true,
-  "version": "0.1.132",
+  "version": "0.1.149",
   "description": "DeCave gaming chat and voice desktop client",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -30,12 +31,14 @@
     "electron:dev": "node scripts/dev/electron-dev.mjs",
     "test:clearvoice": "node --test --test-isolation=none scripts/__tests__/clearvoice-dsp.test.mjs scripts/__tests__/clearvoice-stft.test.mjs scripts/__tests__/clearvoice-transient.test.mjs scripts/__tests__/clearvoice-streaming.test.mjs scripts/__tests__/voice-peer-recovery.test.mjs scripts/__tests__/voice-playback-runtime.test.mjs scripts/__tests__/voice-activity.test.mjs scripts/__tests__/voice-transport.test.mjs scripts/__tests__/input-meter.test.mjs",
     "test:workspace-qol": "node --test --test-isolation=none scripts/__tests__/workspace-qol-regression.test.mjs",
+    "e2e:bots": "node scripts/e2e/bots.mjs",
     "e2e:voice": "node scripts/e2e/voice-smoke.mjs",
     "e2e:voice:reconnect": "node scripts/e2e/voice-smoke.mjs --reconnect",
     "test:hub-templates": "node --test --experimental-strip-types --test-isolation=none scripts/__tests__/hub-templates.test.mjs",
     "test:discord-import": "node --test --experimental-strip-types --test-isolation=none scripts/__tests__/discord-template.test.mjs",
     "test:desktop-browser": "node --test --test-isolation=none scripts/__tests__/desktop-browser-security.test.mjs",
     "test:media-removal": "node --test --test-isolation=none scripts/__tests__/media-integrations-removed.test.mjs",
+    "test:screen-share-dock": "node --test --test-isolation=none scripts/__tests__/screen-share-dock.test.mjs",
     "test:external-widgets": "node --test --test-isolation=none scripts/__tests__/external-home-widget-security.test.mjs",
     "test:trust-safety": "node --test --test-isolation=none scripts/__tests__/trust-safety-boundaries.test.mjs",
     "test:worker-reliability": "node --experimental-transform-types --test --test-isolation=none scripts/__tests__/worker-reliability-boundaries.test.mjs",
@@ -47,16 +50,15 @@
     "release:upload:mac": "npm run publication:check && node website/scripts/upload-release-mac.mjs"
   },
   "dependencies": {
-    "@sapphi-red/web-noise-suppressor": "^0.3.5",
+    "@noble/ciphers": "^2.4.0",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
     "electron-updater": "^6.8.9",
     "js-yaml": "^4.3.1",
     "onnxruntime-web": "^1.29.0",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@noble/ciphers": "^2.4.0",
-    "@noble/curves": "^2.4.0",
-    "@noble/hashes": "^2.4.0"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -73,10 +75,15 @@
     "prettier": "^3.9.9",
     "sharp": "^0.35.4",
     "simple-icons": "^16.33.0",
+    "braces": "file:vendor/braces",
+    "sprintf-js": "file:vendor/sprintf-js",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.71.0",
     "vite": "^8.2.2",
     "wrangler": "^4.124.0"
+  },
+  "overrides": {
+    "sprintf-js": "$sprintf-js"
   },
   "build": {
     "appId": "com.decave.desktop",
@@ -88,6 +95,7 @@
       "electron/game-classification.cjs",
       "electron/capture-apps.cjs",
       "electron/activity-scan.cjs",
+      "electron/foreground-game.cjs",
       "electron/source-picker.cjs",
       "electron/turnstile.cjs",
       "electron/app-icon.cjs",
@@ -175,6 +183,5 @@
       "sign": true
     },
     "afterAllArtifactBuild": "scripts/release/notarize-dmg.cjs"
-  },
-  "license": "SEE LICENSE IN LICENSE"
+  }
 }

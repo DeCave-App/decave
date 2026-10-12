@@ -43,6 +43,7 @@ import { VoiceFloatingBar } from "@/src/components/VoiceFloatingBar";
 import { useDraftInput } from "@/src/lib/drafts";
 import {
   attachmentDecrypter,
+  discardDmSend,
   dmE2ee,
   dmReactionBody,
   dmSealedBody,
@@ -449,7 +450,9 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         ? await uploadEncryptedAsset(targetId, asset, token)
         : await uploadAsset({ kind: "dm", userId: targetId }, asset, token);
       const text = `${MEDIA_ATTACHMENT_PREFIX}${JSON.stringify(attachment)}`;
-      if (!send(await dmSocketFrame(targetId, text, replyingTo?.id ?? null))) {
+      const frame = await dmSocketFrame(targetId, text, replyingTo?.id ?? null);
+      if (!send(frame)) {
+        discardDmSend(frame.clientMessageId);
         throw new Error("Realtime is reconnecting. Try again in a moment.");
       }
       successHaptic();
@@ -476,6 +479,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       impactHaptic();
       setReplyingTo(null);
     } else {
+      discardDmSend(frame.clientMessageId);
       Alert.alert("Could not send GIF", "Realtime is reconnecting. Try again in a moment.");
     }
   };
@@ -501,6 +505,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       setReplyingTo(null);
       setSendFailed(false);
     } else {
+      discardDmSend(frame.clientMessageId);
       errorHaptic();
       setSendFailed(true);
     }

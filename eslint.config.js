@@ -8,6 +8,8 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   {
     ignores: [
+      ".tmp/**",
+      "decave/**",
       "dist/**",
       ".wrangler/**",
       ".tools/**",
@@ -23,6 +25,8 @@ export default tseslint.config(
       "**/node_modules/**",
       "worker/worker-configuration.d.ts",
       "src/audio/clearvoice/legacy-onnxruntime/**",
+      "src/audio/deepfilter/vendor/**",
+      "vendor/**",
     ],
   },
   js.configs.recommended,

@@ -117,10 +117,10 @@ SELECT 'official-seed-0066-patch-notes-4',
   o.hub_id,h.owner_id,
   'Release 0.1.125 – 0.1.128
 
-• Voice: clearer controls during calls
+• Voice: one voice control, the Hub sidebar dock
 • Voice: muting someone''s stream no longer silences their voice
 • iOS: speaker toggle and screen broadcast; echo-prone system audio stays out of streams
-• Hubs: Hub Home, streamer overview and message composer have clearer views
+• Hubs: Hub Home, streamer overview and composer dock are split into clearer views
 • Security and privacy fixes from the latest audit
 
 The desktop apps update automatically. Restart when prompted to install.',

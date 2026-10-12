@@ -53,6 +53,18 @@ const sourceTemplates = new Map([
 ]);
 
 const sourceTextTransforms = new Map([
+  [".npmrc", (contents) => {
+    if (contents.replace(/\r\n/g, "\n") !== "install-links=true\n") {
+      throw new Error("Refusing to export an .npmrc that contains configuration beyond install-links=true.");
+    }
+    return "install-links=true\n";
+  }],
+  ["mobile/.npmrc", (contents) => {
+    if (contents.replace(/\r\n/g, "\n") !== "install-links=true\n") {
+      throw new Error("Refusing to export mobile/.npmrc that contains configuration beyond install-links=true.");
+    }
+    return "install-links=true\n";
+  }],
   ["docs/release/PUBLICATION-READINESS.md", (contents) => {
     const privateStatus = "The source-review repository exists at `https://github.com/DeCave-App/decave` and is currently private.";
     if (!contents.includes(privateStatus)) {
@@ -170,11 +182,12 @@ const sourceTextTransforms = new Map([
 ]);
 
 const fixedExclusions = [
-  /^(?!\.(?:github|githooks)(?:\/|$)|\.(?:editorconfig|gitignore|prettierignore|prettierrc(?:\.json)?|gitleaks\.toml)$)\.[^/]+(?:\/|$)/i,
+  /^(?!\.(?:github|githooks)(?:\/|$)|\.(?:editorconfig|gitignore|npmrc|prettierignore|prettierrc(?:\.json)?|gitleaks\.toml)$)\.[^/]+(?:\/|$)/i,
   /^decave(?:\/|$)/i,
   /^docs\/design(?:\/|$)/i,
   /^docs\/operations(?:\/|$)/i,
   /^docs\/history(?:\/|$)/i,
+  /^docs\/superpowers(?:\/|$)/i,
   /^docs\/release\/open-source-audit\.md$/i,
   /^docs\/legal\/compliance\/[^/]+\.(?:docx|xlsx)$/i,
   /^docs\/redesign-[^/]+\/(?:audit|smoke-test-findings|visual-qa)\.md$/i,

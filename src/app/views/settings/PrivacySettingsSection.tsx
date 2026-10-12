@@ -185,6 +185,7 @@ export function PrivacySettingsSection({
                     sendSocket({
                       type: "VOICE_SCREEN_STATE",
                       screenSharing: true,
+                      screenStreamId: localScreenStreamRef.current.id,
                       allowStreamPreview: allowStreamPreviews,
                     });
                   }

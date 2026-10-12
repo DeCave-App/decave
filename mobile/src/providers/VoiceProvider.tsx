@@ -576,6 +576,11 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       return existing;
     }
 
+    if (!hasRelayIceServer(iceServersRef.current)) {
+      setVoiceError(RELAY_UNAVAILABLE_MESSAGE);
+      throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+    }
+
     
 
     // Relay-only: media always flows through TURN so peers never learn each
@@ -1221,8 +1226,26 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     }
     if (localCameraStreamRef.current) return true;
 
+    const operationGeneration = voiceOperationGenerationRef.current;
+    const channelId = voiceChannelRef.current;
+    const captureIdentity = sessionIdentity;
+    const captureSessionGeneration = sessionGeneration;
+    const isCurrentCapture = () =>
+      voiceOperationGenerationRef.current === operationGeneration &&
+      voiceChannelRef.current === channelId &&
+      sessionScopeRef.current.identity === captureIdentity &&
+      sessionScopeRef.current.generation === captureSessionGeneration;
+
     if (localScreenStreamRef.current) stopScreenShare();
-    const allowed = await requestCamera();
+    let allowed: boolean;
+    try {
+      allowed = await requestCamera();
+    } catch (cause) {
+      if (!isCurrentCapture()) return false;
+      setVoiceError(errorMessage(cause, "Camera permission could not be requested."));
+      return false;
+    }
+    if (!isCurrentCapture()) return false;
     if (!allowed) {
       setVoiceError("Camera permission is required to turn on video.");
       return false;
@@ -1235,10 +1258,29 @@ export function VoiceProvider({ children }: PropsWithChildren) {
         video: { facingMode: "user" } as any,
       });
     } catch (cause) {
+      if (!isCurrentCapture()) return false;
       console.warn("Could not open camera for Hub voice.", cause);
       setVoiceError(errorMessage(cause, "DeCave could not open your camera."));
       return false;
     }
+
+    if (!isCurrentCapture()) {
+      for (const track of camera.getTracks()) { try { track.stop(); } catch {} }
+      return false;
+    }
+
+    const discardCamera = () => {
+      if (localCameraStreamRef.current === camera) localCameraStreamRef.current = null;
+      const tracks = camera.getTracks();
+      for (const session of peerSessionsRef.current.values()) {
+        for (const sender of session.pc.getSenders()) {
+          if (sender.track && tracks.includes(sender.track)) {
+            try { session.pc.removeTrack(sender); } catch {}
+          }
+        }
+      }
+      for (const track of tracks) { try { track.stop(); } catch {} }
+    };
 
     const videoTrack = camera.getVideoTracks()[0];
     if (!videoTrack) {
@@ -1248,6 +1290,10 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     }
 
     try {
+      if (!isCurrentCapture()) {
+        for (const track of camera.getTracks()) { try { track.stop(); } catch {} }
+        return false;
+      }
       if (!send({ type: "VOICE_CAMERA_STATE", cameraSharing: true })) {
         throw new Error("Realtime disconnected before camera state was published.");
       }
@@ -1256,15 +1302,25 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       setCameraSharing(true);
       setVoiceError("");
       for (const session of peerSessionsRef.current.values()) {
+        if (!isCurrentCapture()) {
+          discardCamera();
+          return false;
+        }
         await queueLocalTracksToPeer(session);
+        if (!isCurrentCapture()) {
+          discardCamera();
+          return false;
+        }
       }
 
       const cameraTrack = videoTrack as MediaStreamTrack & { onended?: (() => void) | null };
-      cameraTrack.onended = () => stopCamera();
+      cameraTrack.onended = () => {
+        if (isCurrentCapture() && localCameraStreamRef.current === camera) stopCamera();
+      };
       return true;
     } catch (cause) {
-      for (const track of camera.getTracks()) { try { track.stop(); } catch {} }
-      localCameraStreamRef.current = null;
+      discardCamera();
+      if (!isCurrentCapture()) return false;
       setCameraSharing(false);
       {
         setVoiceError(errorMessage(cause, "Could not start camera."));
@@ -1279,6 +1335,16 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       return false;
     }
     if (localScreenStreamRef.current) return true;
+    const operationGeneration = voiceOperationGenerationRef.current;
+    const channelId = voiceChannelRef.current;
+    const captureIdentity = sessionIdentity;
+    const captureSessionGeneration = sessionGeneration;
+    const isCurrentCapture = () =>
+      voiceOperationGenerationRef.current === operationGeneration &&
+      voiceChannelRef.current === channelId &&
+      sessionScopeRef.current.identity === captureIdentity &&
+      sessionScopeRef.current.generation === captureSessionGeneration;
+
     if (localCameraStreamRef.current) stopCamera();
 
     setScreenShareError("");
@@ -1292,9 +1358,17 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       // iOS shares the whole screen through the ReplayKit broadcast extension.
       // Wait until the person starts it in the system sheet; getDisplayMedia
       // then opens the socket the extension streams its frames into.
-      const started = await requestIosBroadcast();
+      let started: boolean;
+      try {
+        started = await requestIosBroadcast();
+      } catch (cause) {
+        if (!isCurrentCapture()) return false;
+        setScreenShareError(errorMessage(cause, "Could not start screen sharing."));
+        return false;
+      }
+      if (!isCurrentCapture()) return false;
       if (!started) return false;
-      if (voiceChannelRef.current === null || localScreenStreamRef.current) return false;
+      if (localScreenStreamRef.current) return false;
     }
 
     let screen: MediaStream;
@@ -1302,10 +1376,29 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       // Android MediaProjection consent remains an explicit user action here.
       screen = (await (mediaDevices as any).getDisplayMedia(constraints)) as MediaStream;
     } catch (cause) {
+      if (!isCurrentCapture()) return false;
       console.warn("Could not start mobile screen sharing.", cause);
       setScreenShareError(errorMessage(cause, "Could not start screen sharing."));
       return false;
     }
+
+    if (!isCurrentCapture()) {
+      for (const track of screen.getTracks()) { try { track.stop(); } catch {} }
+      return false;
+    }
+
+    const discardScreen = () => {
+      if (localScreenStreamRef.current === screen) localScreenStreamRef.current = null;
+      const tracks = screen.getTracks();
+      for (const session of peerSessionsRef.current.values()) {
+        for (const sender of session.pc.getSenders()) {
+          if (sender.track && tracks.includes(sender.track)) {
+            try { session.pc.removeTrack(sender); } catch {}
+          }
+        }
+      }
+      for (const track of tracks) { try { track.stop(); } catch {} }
+    };
 
     const videoTrack = screen.getVideoTracks()[0];
     if (!videoTrack) {
@@ -1315,6 +1408,10 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     }
 
     try {
+      if (!isCurrentCapture()) {
+        for (const track of screen.getTracks()) { try { track.stop(); } catch {} }
+        return false;
+      }
       {
         send({ type: "VOICE_SCREEN_STATE", screenSharing: true });
       }
@@ -1322,15 +1419,25 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       localScreenStreamRef.current = screen;
       setScreenSharing(true);
       for (const session of peerSessionsRef.current.values()) {
+        if (!isCurrentCapture()) {
+          discardScreen();
+          return false;
+        }
         await queueLocalTracksToPeer(session);
+        if (!isCurrentCapture()) {
+          discardScreen();
+          return false;
+        }
       }
 
       const screenTrack = videoTrack as MediaStreamTrack & { onended?: (() => void) | null };
-      screenTrack.onended = () => stopScreenShare();
+      screenTrack.onended = () => {
+        if (isCurrentCapture() && localScreenStreamRef.current === screen) stopScreenShare();
+      };
       return true;
     } catch (cause) {
-      for (const track of screen.getTracks()) { try { track.stop(); } catch {} }
-      localScreenStreamRef.current = null;
+      discardScreen();
+      if (!isCurrentCapture()) return false;
       setScreenSharing(false);
       {
         setScreenShareError(errorMessage(cause, "Could not start screen sharing."));

@@ -7,10 +7,14 @@ import {
   useRef,
   useState,
 } from "react";
+import { AppState } from "react-native";
 import { clearPushMemory, drainPendingPushActions, queuePushSessionRevocation, revokePushSession } from "@/src/lib/push";
+import { createPushRevocationRetryLifecycle, type PushRevocationRetryLifecycle } from "@/src/lib/push-revocation-retry";
 import { setDraftAccount } from "@/src/lib/drafts";
 import { setLastVoiceRoomAccount } from "@/src/lib/last-voice-room";
+import { claimAccountLocalData, forgetSignedOutAccount } from "@/src/lib/account-local-data";
 import { apiFetch } from "@/src/lib/api";
+import { currentLegalConsent } from "@/src/lib/legal-consent";
 import { AgeGate } from "@/src/components/AgeGate";
 import {
   clearSessionToken,
@@ -22,7 +26,6 @@ import { MobileAuthOperationCoordinator } from "@/src/lib/auth-operations";
 import type { AccountUser, AuthResponse } from "@/src/types";
 import { dmE2ee } from "@/src/lib/e2ee/client";
 import { clearKeychainLeftoversAfterReinstall } from "@/src/lib/fresh-install";
-import { PRIVACY_VERSION, TERMS_VERSION } from "../../../shared/legal-consent";
 
 type LoginResult =
   | { ok: true; mfaRequired: false }
@@ -59,7 +62,7 @@ type SessionContextValue = {
   ) => Promise<{ ok: boolean; message: string }>;
   refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
-  invalidate: (notice?: string) => Promise<void>;
+  invalidate: (notice?: string, expectedToken?: string) => Promise<boolean>;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -68,10 +71,13 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<AccountUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
   const [pendingChallenge, setPendingChallenge] = useState<{ token: string; kind: MfaKind } | null>(null);
   const [sessionNotice, setSessionNotice] = useState("");
   const authOperationsRef = useRef(new MobileAuthOperationCoordinator());
   const mfaFlightRef = useRef<{ generation: number; controller: AbortController } | null>(null);
+  const pushRetryLifecycleRef = useRef<PushRevocationRetryLifecycle | null>(null);
   const beginAuthOperation = () => {
     const operation = authOperationsRef.current.begin();
     mfaFlightRef.current = null;
@@ -86,8 +92,26 @@ export function SessionProvider({ children }: PropsWithChildren) {
     mfaFlightRef.current = null;
   }, []);
 
-  const invalidate = async (notice = "") => {
-    beginAuthOperation();
+  useEffect(() => {
+    const lifecycle = createPushRevocationRetryLifecycle({
+      drain: drainPendingPushActions,
+      active: AppState.currentState === "active",
+    });
+    pushRetryLifecycleRef.current = lifecycle;
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      lifecycle.setActive(state === "active");
+    });
+    lifecycle.start();
+    return () => {
+      appStateSubscription.remove();
+      lifecycle.stop();
+      if (pushRetryLifecycleRef.current === lifecycle) pushRetryLifecycleRef.current = null;
+    };
+  }, []);
+
+  const invalidate = async (notice = "", expectedToken?: string) => {
+    if (expectedToken && tokenRef.current !== expectedToken) return false;
+    const operation = beginAuthOperation();
     settleRestoreLoading();
     const tokenVersion = beginSessionTokenMutation();
     clearPushMemory();
@@ -98,6 +122,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     setPendingChallenge(null);
     setSessionNotice(notice);
     await clearSessionToken(tokenVersion);
+    return ownsAuthOperation(operation);
   };
 
   const restore = async () => {
@@ -125,6 +150,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       }
       setDraftAccount(data.user.id);
       setLastVoiceRoomAccount(data.user.id);
+      void claimAccountLocalData(data.user.id);
       setToken(saved);
       setUser({ ...data.user, safety: data.safety ?? data.user.safety });
     } finally {
@@ -147,6 +173,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     if (!persisted) return false;
     setDraftAccount(data.user.id);
     setLastVoiceRoomAccount(data.user.id);
+    void claimAccountLocalData(data.user.id);
     setToken(sessionToken);
     setUser({ ...data.user, safety: data.safety ?? data.user.safety });
     setPendingChallenge(null);
@@ -165,6 +192,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     const previousToken = token;
     if (previousToken) {
       const queued = await queuePushSessionRevocation(previousToken).catch(() => false);
+      if (queued) pushRetryLifecycleRef.current?.retryNow();
       if (!queued) return { ok: false, error: "Could not securely save this device's sign-out for retry. Please try again." };
     }
     if (!ownsAuthOperation(operation)) return { ok: false, error: "Sign in was superseded." };
@@ -262,9 +290,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
           password,
           birthDate,
           turnstileToken,
-          termsAccepted: true,
-          termsVersion: TERMS_VERSION,
-          privacyVersion: PRIVACY_VERSION,
+          ...currentLegalConsent(),
         }),
       });
       const data = (await response.json().catch(() => ({}))) as AuthResponse;
@@ -334,24 +360,32 @@ export function SessionProvider({ children }: PropsWithChildren) {
     const operation = beginAuthOperation();
     settleRestoreLoading();
     const previousToken = token;
+    const previousUserId = user?.id ?? null;
     const tokenVersion = beginSessionTokenMutation();
     clearPushMemory();
     setDraftAccount(null);
     setLastVoiceRoomAccount(null);
+    // ...and this account's drafts, last voice room and notification settings.
+    if (previousUserId) void forgetSignedOutAccount(previousUserId);
     setToken(null);
     setUser(null);
     setPendingChallenge(null);
+    // Clear this device's saved credential independently from push-session
+    // revocation. If SecureStore is briefly unavailable, retry after the
+    // revocation attempt settles; a newer login's mutation version wins.
+    const clearLocalCredential = () => clearSessionToken(tokenVersion).catch(() => undefined);
+    void clearLocalCredential();
     const queued = previousToken
       ? await queuePushSessionRevocation(previousToken).catch(() => false)
       : true;
+    await clearLocalCredential();
+    if (queued && previousToken) pushRetryLifecycleRef.current?.retryNow();
     if (!ownsAuthOperation(operation)) return;
-    if (queued) {
-      await clearSessionToken(tokenVersion);
-      if (previousToken) void drainPendingPushActions().catch(() => undefined);
-    } else if (previousToken) {
-      void revokePushSession(previousToken).then((acknowledged) => {
-        if (acknowledged) return clearSessionToken(tokenVersion);
-      }).catch(() => undefined);
+    if (!queued && previousToken) {
+      void revokePushSession(previousToken).then(
+        () => clearLocalCredential(),
+        () => clearLocalCredential(),
+      );
     }
     if (ownsAuthOperation(operation)) setSessionNotice("");
   };

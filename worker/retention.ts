@@ -6,8 +6,14 @@
 
 import type { Env } from "./lib/env";
 import { nowIso } from "./db";
-import { queueOrphanedUploads } from "./lib/retention";
-import { drainMediaDeletionQueue } from "./lib/media";
+import { BOT_LIMITS } from "../shared/bots/types";
+import {
+  CHANNEL_UPLOAD_REFERENCED_SQL,
+  DM_UPLOAD_REFERENCED_SQL,
+  deleteQueuedMedia,
+  ensureMediaDeletionQueueSchema,
+  queueMediaDeletionStatements,
+} from "./lib/media";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -34,11 +40,32 @@ export const RETENTION_DAYS = {
   /** Accounts found to be under 18 are scheduled for deletion after this grace
    * period, which leaves time to correct a mistyped birth date. */
   underageAccountGrace: 30,
+  /** No-code bot run log (rule, trigger type, outcome, short detail). Long
+   * enough for a Hub admin to debug a bot over a few weeks; it holds no
+   * message text. */
+  botRuns: BOT_LIMITS.runLogDays,
+  /** Uploads never sent in a message (DM or Hub channel). */
+  unsentUploads: 1,
+  /** "Last online" time shown to friends; forgotten after six months away. */
+  presenceLastSeen: 180,
 } as const;
 
 const before = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
 
 const BATCH = 500;
+/** Rows one retention step deletes per hourly run, so the cron stays within
+ * the Worker CPU limit; a backlog drains over the following runs. */
+export const SWEEP_LIMIT = 1000;
+/** Queued R2 deletions retried per run. */
+export const MEDIA_QUEUE_BATCH = 200;
+
+/** Bounded DELETE: at most `limit` matching rows of `table`. */
+function boundedDelete(env: Env, table: string, where: string, binds: unknown[] = [], limit = SWEEP_LIMIT) {
+  return env.DB.prepare(`DELETE FROM ${table} WHERE rowid IN (SELECT rowid FROM ${table} WHERE ${where} LIMIT ?)`).bind(
+    ...binds,
+    limit,
+  );
+}
 
 /** Delete evidence objects (encrypted files in R2) and their rows for closed
  * cases past the evidence retention period. */
@@ -55,10 +82,15 @@ async function pruneClosedCaseEvidence(env: Env): Promise<void> {
     .all<{ id: string; object_key: string }>();
   const evidence = rows.results ?? [];
   if (!evidence.length) return;
-  await env.MEDIA.delete(evidence.map((row) => row.object_key));
-  await env.DB.batch(
-    evidence.map((row) => env.DB.prepare("DELETE FROM decave_report_evidence WHERE id=?").bind(row.id)),
-  );
+  // Queue the files in the batch that drops their rows; the R2 delete is retried
+  // from the queue until it succeeds.
+  await ensureMediaDeletionQueueSchema(env.DB);
+  const keys = evidence.map((row) => row.object_key);
+  await env.DB.batch([
+    ...queueMediaDeletionStatements(env.DB, keys, nowIso()),
+    ...evidence.map((row) => env.DB.prepare("DELETE FROM decave_report_evidence WHERE id=?").bind(row.id)),
+  ]);
+  await deleteQueuedMedia(env, keys);
 }
 
 /** Delete closed cases (and their reports, actions and notes) past the record
@@ -79,6 +111,49 @@ async function pruneClosedCases(env: Env): Promise<void> {
       env.DB.prepare("DELETE FROM decave_moderation_cases WHERE id=?").bind(id),
     ]);
   }
+}
+
+/** Delete uploads that no message refers to (an upload that was never sent,
+ * or whose message was deleted) a day after upload.
+ *
+ * DM uploads: plaintext DMs name them in `text`; end-to-end encrypted DMs list
+ * them in `attachment_refs` next to the envelope (the server cannot read the
+ * ciphertext, so these refs are the only server-visible reference and are
+ * checked for every DM either way between owner and peer). Hub channel
+ * uploads: referenced by `decave_messages.attachment_key`. Anything else
+ * (group chats carry no uploads) is never treated as orphaned. Files are
+ * queued for R2 deletion in the batch that drops their access rows. */
+async function pruneOrphanedUploads(env: Env): Promise<void> {
+  const rows = await env.DB.prepare(
+    `SELECT access.r2_key FROM decave_attachment_access access
+     WHERE access.created_at<?
+       AND ((access.kind='dm' AND NOT ${DM_UPLOAD_REFERENCED_SQL})
+         OR (access.kind='channel' AND NOT ${CHANNEL_UPLOAD_REFERENCED_SQL}))
+     LIMIT 100`,
+  )
+    .bind(before(RETENTION_DAYS.unsentUploads))
+    .all<{ r2_key: string }>();
+  const keys = (rows.results ?? []).map((row) => row.r2_key);
+  if (!keys.length) return;
+  await ensureMediaDeletionQueueSchema(env.DB);
+  await env.DB.batch([
+    ...queueMediaDeletionStatements(env.DB, keys, nowIso()),
+    ...keys.map((key) => env.DB.prepare("DELETE FROM decave_attachment_access WHERE r2_key=?").bind(key)),
+  ]);
+  await deleteQueuedMedia(env, keys);
+}
+
+/** Retry R2 deletions that did not go through when first tried. */
+async function drainMediaDeletionQueue(env: Env): Promise<void> {
+  const rows = await env.DB.prepare(
+    "SELECT object_key FROM decave_media_deletion_queue ORDER BY attempts, queued_at LIMIT ?",
+  )
+    .bind(MEDIA_QUEUE_BATCH)
+    .all<{ object_key: string }>();
+  await deleteQueuedMedia(
+    env,
+    (rows.results ?? []).map((row) => row.object_key),
+  );
 }
 
 /** Schedule deletion of accounts found to be under 18, through the normal
@@ -103,120 +178,103 @@ export const UNDERAGE_DELETION_REASON = "Under the minimum age (18)";
 export async function pruneExpiredPersonalData(env: Env): Promise<string[]> {
   const now = nowIso();
   const steps: Array<[string, () => Promise<unknown>]> = [
+    [
+      "bot-runs",
+      () => env.DB.prepare("DELETE FROM decave_bot_runs WHERE created_at<?").bind(before(RETENTION_DAYS.botRuns)).run(),
+    ],
     // Short-lived credentials: deleted as soon as they expire or are used.
     [
       "sessions",
       () =>
         env.DB.batch([
-          env.DB.prepare("DELETE FROM decave_sessions WHERE expires_at<=?").bind(now),
-          env.DB.prepare(
-            "DELETE FROM decave_session_clients WHERE token_hash NOT IN (SELECT token_hash FROM decave_sessions)",
-          ),
-          env.DB.prepare(
-            "DELETE FROM decave_push_tokens WHERE session_hash IS NOT NULL AND session_hash NOT IN (SELECT token_hash FROM decave_sessions)",
+          boundedDelete(env, "decave_sessions", "expires_at<=?", [now]),
+          boundedDelete(env, "decave_session_clients", "token_hash NOT IN (SELECT token_hash FROM decave_sessions)"),
+          boundedDelete(
+            env,
+            "decave_push_tokens",
+            "session_hash IS NOT NULL AND session_hash NOT IN (SELECT token_hash FROM decave_sessions)",
           ),
         ]),
     ],
+    // Push tokens registered before tokens were bound to a sign-in (session_hash
+    // NULL) are never used for delivery any more (worker/push.ts), so they go.
+    ["legacy-push-tokens", () => boundedDelete(env, "decave_push_tokens", "session_hash IS NULL").run()],
     [
       "tokens",
       () =>
         env.DB.batch([
-          env.DB.prepare("DELETE FROM decave_ws_tokens WHERE used_at IS NOT NULL OR expires_at<=?").bind(now),
-          env.DB.prepare("DELETE FROM decave_auth_tokens WHERE consumed_at IS NOT NULL OR expires_at<=?").bind(now),
-          env.DB.prepare("DELETE FROM decave_secure_account_tokens WHERE used_at IS NOT NULL OR expires_at<=?").bind(
-            now,
-          ),
-          env.DB.prepare("DELETE FROM decave_owner_reauth WHERE expires_at<=?").bind(now),
+          boundedDelete(env, "decave_ws_tokens", "used_at IS NOT NULL OR expires_at<=?", [now]),
+          boundedDelete(env, "decave_auth_tokens", "consumed_at IS NOT NULL OR expires_at<=?", [now]),
+          boundedDelete(env, "decave_secure_account_tokens", "used_at IS NOT NULL OR expires_at<=?", [now]),
+          boundedDelete(env, "decave_owner_reauth", "expires_at<=?", [now]),
         ]),
     ],
+    // Pending password-then-MFA sign-in steps (created lazily).
     [
       "login-challenges",
       () =>
-        env.DB.batch(
-          ["decave_user_login_challenges", "decave_owner_login_challenges"].map((table) =>
-            env.DB.prepare(
-              `DELETE FROM ${table} WHERE rowid IN (
-                 SELECT rowid FROM ${table} WHERE expires_at<=? ORDER BY expires_at,rowid LIMIT ?
-               )`,
-            ).bind(now, BATCH),
-          ),
-        ),
+        env.DB.batch([
+          boundedDelete(env, "decave_user_login_challenges", "expires_at<=?", [now]),
+          boundedDelete(env, "decave_owner_login_challenges", "expires_at<=?", [now]),
+        ]),
     ],
+    // Steam account-link states expire after a few minutes (created lazily).
+    ["steam-link-states", () => boundedDelete(env, "decave_steam_link_states", "expires_at<=?", [now]).run()],
+    ["faceit-link-states", () => boundedDelete(env, "decave_faceit_link_states", "expires_at<=?", [now]).run()],
+    ["twitch-link-states", () => boundedDelete(env, "decave_twitch_member_link_states", "expires_at<=?", [now]).run()],
     // Created by the Worker on first QR sign-in, so it may not exist yet.
     [
       "qr-challenges",
-      () =>
-        env.DB.prepare("DELETE FROM decave_qr_login_challenges WHERE expires_at<=? OR claimed_at IS NOT NULL")
-          .bind(now)
-          .run(),
+      () => boundedDelete(env, "decave_qr_login_challenges", "expires_at<=? OR claimed_at IS NOT NULL", [now]).run(),
     ],
     // Device-link requests for DM encryption last ten minutes; an approved one that was
     // never collected holds a sealed key, so it goes too (docs/security/DM-E2EE.md).
-    [
-      "dm-link-requests",
-      () => env.DB.prepare("DELETE FROM decave_dm_link_requests WHERE expires_at<=?").bind(now).run(),
-    ],
-    ["squad-searches", () => env.DB.prepare("DELETE FROM decave_squad_searches WHERE expires_at<=?").bind(now).run()],
+    ["dm-link-requests", () => boundedDelete(env, "decave_dm_link_requests", "expires_at<=?", [now]).run()],
+    ["squad-searches", () => boundedDelete(env, "decave_squad_searches", "expires_at<=?", [now]).run()],
     // Logs and records with a fixed retention period.
     [
       "security-events",
-      () =>
-        env.DB.prepare("DELETE FROM decave_security_events WHERE created_at<?")
-          .bind(before(RETENTION_DAYS.securityEvents))
-          .run(),
+      () => boundedDelete(env, "decave_security_events", "created_at<?", [before(RETENTION_DAYS.securityEvents)]).run(),
     ],
     [
       "known-devices",
-      () =>
-        env.DB.prepare("DELETE FROM decave_known_devices WHERE last_seen_at<?")
-          .bind(before(RETENTION_DAYS.knownDevices))
-          .run(),
+      () => boundedDelete(env, "decave_known_devices", "last_seen_at<?", [before(RETENTION_DAYS.knownDevices)]).run(),
     ],
+    // "Last online" times of accounts not seen for six months (created lazily).
     [
-      "presence-activity",
-      () => env.DB.prepare("DELETE FROM decave_presence_activity WHERE last_seen_at<?").bind(before(180)).run(),
-    ],
-    [
-      "push-tokens",
+      "presence",
       () =>
-        env.DB.prepare("DELETE FROM decave_push_tokens WHERE session_hash IS NULL AND created_at<?")
-          .bind(before(90))
-          .run(),
-    ],
-    [
-      "push-subscriptions",
-      () =>
-        env.DB.prepare(
-          `DELETE FROM decave_push_subscriptions WHERE rowid IN (
-             SELECT p.rowid FROM decave_push_subscriptions p
-             WHERE (p.hub_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM decave_hubs h WHERE h.id=p.hub_id))
-                OR (p.room_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM decave_rooms r WHERE r.id=p.room_id))
-             ORDER BY p.rowid LIMIT ?
-           )`,
-        )
-          .bind(BATCH)
-          .run(),
+        boundedDelete(env, "decave_presence_activity", "last_seen_at<?", [
+          before(RETENTION_DAYS.presenceLastSeen),
+        ]).run(),
     ],
     [
       "audit-logs",
       () =>
         env.DB.batch([
-          env.DB.prepare("DELETE FROM decave_platform_audit WHERE created_at<?").bind(before(RETENTION_DAYS.auditLogs)),
-          env.DB.prepare("DELETE FROM decave_moderation_audit_log WHERE created_at<?").bind(
-            before(RETENTION_DAYS.auditLogs),
-          ),
-          env.DB.prepare("DELETE FROM decave_audit WHERE created_at<?").bind(before(RETENTION_DAYS.hubAuditLog)),
+          boundedDelete(env, "decave_platform_audit", "created_at<?", [before(RETENTION_DAYS.auditLogs)]),
+          boundedDelete(env, "decave_moderation_audit_log", "created_at<?", [before(RETENTION_DAYS.auditLogs)]),
+          boundedDelete(env, "decave_audit", "created_at<?", [before(RETENTION_DAYS.hubAuditLog)]),
         ]),
     ],
+    // "All messages" push subscriptions pointing at a deleted Hub or room.
     [
-      "feedback",
+      "push-subscriptions",
       () =>
-        env.DB.prepare("DELETE FROM decave_feedback WHERE created_at<?").bind(before(RETENTION_DAYS.feedback)).run(),
+        boundedDelete(
+          env,
+          "decave_push_subscriptions",
+          `(hub_id IS NOT NULL AND hub_id NOT IN (SELECT id FROM decave_hubs))
+           OR (room_id IS NOT NULL AND room_id NOT IN (SELECT id FROM decave_rooms))`,
+        ).run(),
     ],
-    ["orphaned-uploads", () => queueOrphanedUploads(env)],
-    ["media-deletion-queue", () => drainMediaDeletionQueue(env)],
+    ["feedback", () => boundedDelete(env, "decave_feedback", "created_at<?", [before(RETENTION_DAYS.feedback)]).run()],
+    ["uploads", () => pruneOrphanedUploads(env)],
     ["case-evidence", () => pruneClosedCaseEvidence(env)],
     ["cases", () => pruneClosedCases(env)],
+    // Last, so files queued by the steps above (or by message deletes and
+    // earlier runs) are retried in this same run.
+    ["media-queue", () => drainMediaDeletionQueue(env)],
     ["underage-accounts", () => scheduleUnderageAccountDeletion(env)],
   ];
   const failures: string[] = [];

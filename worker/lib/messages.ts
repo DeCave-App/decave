@@ -59,10 +59,58 @@ export type ChannelMessageRow = {
   avatar_key: string | null;
   avatar_updated_at: string | null;
   role: ServerRole | null;
+  bot_id?: string | null;
+  card_json?: string | null;
+  visible_to_user_id?: string | null;
 };
 
-/** Load and format channel messages in two queries, preserving the order of `messageIds`. */
-export async function messagesForClient(env: Env, messageIds: readonly string[]) {
+export type ClientMessageBot = { id: string; name: string; color: string | null; avatarEmoji: string | null };
+
+async function botsFor(env: Env, botIds: readonly string[]): Promise<Map<string, ClientMessageBot>> {
+  const bots = new Map<string, ClientMessageBot>();
+  for (const ids of chunked([...new Set(botIds)])) {
+    const placeholders = ids.map(() => "?").join(",");
+    let rows: { id: string; name: string; color?: string | null; avatar_emoji?: string | null }[];
+    try {
+      rows = (
+        await env.DB.prepare(`SELECT id,name,color,avatar_emoji FROM decave_hub_bots WHERE id IN (${placeholders})`)
+          .bind(...ids)
+          .all<{ id: string; name: string; color: string | null; avatar_emoji: string | null }>()
+      ).results;
+    } catch {
+      // Builder columns are added lazily; fall back to the token-bot columns.
+      rows = (
+        await env.DB.prepare(`SELECT id,name FROM decave_hub_bots WHERE id IN (${placeholders})`)
+          .bind(...ids)
+          .all<{ id: string; name: string }>()
+      ).results;
+    }
+    for (const row of rows)
+      bots.set(row.id, {
+        id: row.id,
+        name: row.name,
+        color: row.color ?? null,
+        avatarEmoji: row.avatar_emoji ?? null,
+      });
+  }
+  return bots;
+}
+
+function parseCard(value: string | null | undefined): unknown {
+  if (!value) return null;
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Load and format channel messages in two queries, preserving the order of `messageIds`.
+ * A bot's private notice (visible_to_user_id) is returned only when `viewerId`
+ * is that user; without a viewer it is always left out.
+ */
+export async function messagesForClient(env: Env, messageIds: readonly string[], viewerId?: string | null) {
   const rowsById = new Map<string, ChannelMessageRow>();
   for (const ids of chunked([...new Set(messageIds)])) {
     const rows = await env.DB.prepare(
@@ -76,12 +124,23 @@ export async function messagesForClient(env: Env, messageIds: readonly string[])
     )
       .bind(...ids)
       .all<ChannelMessageRow>();
-    for (const row of rows.results) rowsById.set(row.id, row);
+    for (const row of rows.results)
+      if (!row.visible_to_user_id || row.visible_to_user_id === viewerId) rowsById.set(row.id, row);
   }
   const reactions = await reactionMapsFor(env, "decave_message_reactions", [...rowsById.keys()]);
+  const botIds = [...rowsById.values()].flatMap((row) => (row.bot_id ? [row.bot_id] : []));
+  const bots = botIds.length ? await botsFor(env, botIds) : new Map<string, ClientMessageBot>();
   return messageIds.flatMap((id) => {
     const row = rowsById.get(id);
     if (!row) return [];
+    // Only bot messages carry bot fields, so other messages keep their shape.
+    const botFields = row.bot_id
+      ? {
+          bot: bots.get(row.bot_id) ?? { id: row.bot_id, name: "Bot", color: null, avatarEmoji: null },
+          card: parseCard(row.card_json),
+          ...(row.visible_to_user_id ? { privateNotice: true } : {}),
+        }
+      : {};
     return [
       {
         id: row.id,
@@ -108,13 +167,14 @@ export async function messagesForClient(env: Env, messageIds: readonly string[])
                 url: `/uploads/${row.attachment_key}`,
               }
             : null,
+        ...botFields,
       },
     ];
   });
 }
 
-export async function messageForClient(env: Env, messageId: string) {
-  return (await messagesForClient(env, [messageId]))[0] ?? null;
+export async function messageForClient(env: Env, messageId: string, viewerId?: string | null) {
+  return (await messagesForClient(env, [messageId], viewerId))[0] ?? null;
 }
 
 export type ClientDirectMessage = {

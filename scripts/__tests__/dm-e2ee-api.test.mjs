@@ -269,6 +269,48 @@ test("reactions and poll votes on encrypted DMs are encrypted too", async () => 
   );
 });
 
+test("attachment uploads are typed from their bytes, and encrypted ones stay opaque", async () => {
+  const upload = (body, fileType) =>
+    handleApi(
+      new Request(`https://test.invalid/api/dms/${publicId("u2")}/attachments`, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token-u1-a",
+          "Content-Type": "application/octet-stream",
+          "X-File-Name": "file",
+          "X-File-Type": fileType,
+        },
+        body,
+      }),
+      env,
+    );
+  const stored = async (response) => {
+    const { attachment } = await response.json();
+    const key = attachment.url.replace("/uploads/", "");
+    return { attachment, key, metadata: env.MEDIA.metadata.get(key), bytes: env.MEDIA.objects.get(key) };
+  };
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
+
+  // An encrypted photo: ciphertext declared as an opaque blob is stored untouched.
+  const { fileKey, ciphertext } = crypto.encryptAttachment(png);
+  const encrypted = await stored(await upload(ciphertext, "application/octet-stream"));
+  assert.equal(encrypted.attachment.mimeType, "application/octet-stream");
+  assert.equal(encrypted.metadata.contentType, "application/octet-stream");
+  assert.deepEqual(crypto.decryptAttachment(new Uint8Array(encrypted.bytes), fileKey), png);
+  // Even ciphertext that happens to start like an MP3 frame is not relabelled.
+  const lookalike = await stored(await upload(new Uint8Array([0xff, 0xfb, 9, 9, 9]), "application/octet-stream"));
+  assert.equal(lookalike.metadata.contentType, "application/octet-stream");
+
+  // Plaintext uploads: the declared type is not trusted.
+  const html = new TextEncoder().encode("<html><script>alert(1)</script></html>");
+  const spoofed = await upload(html, "image/png");
+  assert.equal(spoofed.status, 415);
+  assert.equal((await stored(await upload(html, "text/html"))).metadata.contentType, "application/octet-stream");
+  const realPng = await stored(await upload(png, "text/html"));
+  assert.equal(realPng.metadata.contentType, "image/png");
+  assert.equal(realPng.attachment.mimeType, "image/png");
+});
+
 test("encrypted DMs list their uploads so cleanup keeps them, and deleting removes them", async () => {
   const upload = async (userId, target) => {
     const response = await handleApi(
@@ -314,59 +356,219 @@ test("encrypted DMs list their uploads so cleanup keeps them, and deleting remov
   assert.equal(await env.MEDIA.get(key), null);
 });
 
-test("the WebSocket send path enforces the same rules", async () => {
-  class FakeSocket {
-    constructor(state) {
-      this.attachment = state;
-      this.sent = [];
-    }
-    serializeAttachment(value) {
-      this.attachment = value;
-    }
-    deserializeAttachment() {
-      return this.attachment;
-    }
-    send(value) {
-      this.sent.push(JSON.parse(value));
-    }
-    close() {}
-  }
-  const socket = new FakeSocket({
-    connectionId: randomUUID(),
-    peerAddress: "test",
-    authDeadlineAt: 0,
-    client: "web",
-    userId: "u1",
-    sessionHash: hashToken("token-u1-a"),
-    username: "user-u1",
-    serverId: null,
-    channelId: null,
-    voiceChannelId: null,
-    identifiedAt: Date.now(),
-    identifyFailures: 0,
-    rateLimitViolations: 0,
-    lastPresenceTouchAt: Date.now(),
-  });
-  const pushes = [];
-  const ctx = {
-    getWebSockets: () => [socket],
-    acceptWebSocket() {},
-    waitUntil: (promise) => pushes.push(promise),
-    storage: { async setAlarm() {}, async deleteAlarm() {}, async get() {}, async put() {} },
+test("an upload revoked after validation cannot be attached by a racing DM send", async () => {
+  const upload = await handleApi(
+    new Request(`https://test.invalid/api/dms/${publicId("u2")}/attachments`, {
+      method: "POST",
+      headers: { authorization: "Bearer token-u1-a", "X-File-Name": "racing-upload" },
+      body: new Uint8Array([7, 8, 9]),
+    }),
+    env,
+  );
+  const key = (await upload.json()).attachment.url.replace("/uploads/", "");
+  const envelope = sealFor("u1", "u2", "racing attachment");
+  const originalPrepare = db.prepare;
+  const accessSql =
+    "SELECT 1 FROM decave_attachment_access WHERE r2_key=? AND kind='dm' AND owner_user_id=? AND peer_user_id=?";
+  let revoked = false;
+  db.prepare = function (sql) {
+    const statement = originalPrepare.call(this, sql);
+    if (sql !== accessSql) return statement;
+    let bound;
+    return {
+      bind(...values) {
+        bound = statement.bind(...values);
+        return this;
+      },
+      async first() {
+        const row = await bound.first();
+        if (row && !revoked) {
+          // Simulate deletion committing after ownership validation and before
+          // the conditional message insert executes.
+          db.exec(
+            "DELETE FROM decave_attachment_access WHERE r2_key=? AND kind='dm' AND owner_user_id=? AND peer_user_id=?",
+            key,
+            "u1",
+            "u2",
+          );
+          revoked = true;
+        }
+        return row;
+      },
+    };
   };
-  const room = new HubRoom(ctx, env);
+  let result;
+  try {
+    result = await api(`/api/dms/${publicId("u2")}`, "u1", {
+      method: "POST",
+      body: { envelope, attachmentKeys: [key] },
+    });
+  } finally {
+    db.prepare = originalPrepare;
+  }
+  assert.equal(revoked, true, "the test removed the access row between validation and insertion");
+  assert.equal(result.status, 400);
+  assert.equal(result.data.code, "DM_E2EE_INVALID");
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_direct_messages WHERE id=?", envelope.id), 0);
+});
 
-  await room.webSocketMessage(socket, JSON.stringify({ type: "DM_MESSAGE", targetUserId: publicId("u2"), text: "hi" }));
+test("deleting one of two encrypted DMs that carry the same upload keeps the file", async () => {
+  const response = await handleApi(
+    new Request(`https://test.invalid/api/dms/${publicId("u2")}/attachments`, {
+      method: "POST",
+      headers: { authorization: `Bearer token-u1-a`, "X-File-Name": "encrypted" },
+      body: new Uint8Array([4, 5, 6]),
+    }),
+    env,
+  );
+  const key = (await response.json()).attachment.url.replace("/uploads/", "");
+  const first = sealFor("u1", "u2", "photo");
+  const second = sealFor("u1", "u2", "photo again");
+  for (const envelope of [first, second])
+    assert.equal(
+      (await api(`/api/dms/${publicId("u2")}`, "u1", { method: "POST", body: { envelope, attachmentKeys: [key] } }))
+        .status,
+      201,
+    );
+  await api(`/api/dms/messages/${first.id}`, "u1", { method: "DELETE" });
+  assert.ok(await env.MEDIA.get(key), "the other message still carries the file");
+  await api(`/api/dms/messages/${second.id}`, "u1", { method: "DELETE" });
+  assert.equal(await env.MEDIA.get(key), null);
+  assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS n FROM decave_media_deletion_queue").get().n, 0);
+});
+
+test("DM deletion retries when an edit changes attachment refs after its pre-read", async () => {
+  const upload = async () => {
+    const response = await handleApi(
+      new Request(`https://test.invalid/api/dms/${publicId("u2")}/attachments`, {
+        method: "POST",
+        headers: { authorization: "Bearer token-u1-a", "X-File-Name": "delete-race" },
+        body: new Uint8Array([1, 2, 3]),
+      }),
+      env,
+    );
+    return (await response.json()).attachment.url.replace("/uploads/", "");
+  };
+  const originalKey = await upload();
+  const editedKey = await upload();
+  const original = sealFor("u1", "u2", "original attachment");
+  assert.equal(
+    (
+      await api(`/api/dms/${publicId("u2")}`, "u1", {
+        method: "POST",
+        body: { envelope: original, attachmentKeys: [originalKey] },
+      })
+    ).status,
+    201,
+  );
+
+  const originalPrepare = db.prepare;
+  let editCommitted = false;
+  db.prepare = function (sql) {
+    const statement = originalPrepare.call(this, sql);
+    if (
+      editCommitted ||
+      !sql.includes("SELECT id, from_user_id, to_user_id, text, envelope, created_at, attachment_refs") ||
+      !sql.includes("FROM decave_direct_messages")
+    )
+      return statement;
+    let bound;
+    return {
+      bind(...values) {
+        bound = statement.bind(...values);
+        return this;
+      },
+      async first() {
+        const row = await bound.first();
+        if (row && !editCommitted) {
+          editCommitted = true;
+          const edited = sealFor("u1", "u2", "edited attachment", original.id);
+          const result = await api(`/api/dms/messages/${original.id}`, "u1", {
+            method: "PATCH",
+            body: { envelope: edited, attachmentKeys: [editedKey] },
+          });
+          assert.equal(result.status, 200, JSON.stringify(result.data));
+        }
+        return row;
+      },
+    };
+  };
+  let deletion;
+  try {
+    deletion = await api(`/api/dms/messages/${original.id}`, "u1", { method: "DELETE" });
+  } finally {
+    db.prepare = originalPrepare;
+  }
+
+  assert.equal(editCommitted, true, "the edit commits after deletion's pre-read");
+  assert.equal(deletion.status, 409, "deletion detects that its attachment snapshot is stale");
+  assert.equal(db.scalar("SELECT attachment_refs FROM decave_direct_messages WHERE id=?", original.id), editedKey);
+  assert.ok(await env.MEDIA.get(editedKey), "the edited upload remains accessible until retry");
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_media_deletion_queue"), 0);
+
+  const retried = await api(`/api/dms/messages/${original.id}`, "u1", { method: "DELETE" });
+  assert.equal(retried.status, 200);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_direct_messages WHERE id=?", original.id), 0);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_attachment_access WHERE r2_key=?", editedKey), 0);
+  assert.equal(await env.MEDIA.get(editedKey), null);
+});
+
+test("the WebSocket send path enforces the same rules", async () => {
+  const { socket, room, sockets } = socketFor("u1");
+  const senderOtherDevice = socketFor("u1", "b").socket;
+  const recipient = socketFor("u2").socket;
+  sockets.push(senderOtherDevice, recipient);
+
+  const dmClientMessageId = "dm-attempt-9a8b";
+  await room.webSocketMessage(
+    socket,
+    JSON.stringify({
+      type: "DM_MESSAGE",
+      targetUserId: publicId("u2"),
+      text: "hi",
+      clientMessageId: dmClientMessageId,
+    }),
+  );
   const refused = socket.sent.find((event) => event.type === "DM_ERROR");
   assert.equal(refused?.code, "DM_E2EE_REQUIRED");
+  assert.equal(refused?.targetUserId, publicId("u2"));
+  assert.equal(refused?.clientMessageId, dmClientMessageId);
+  assert.equal("peerAddress" in socket.attachment, false, "legacy peer addresses are stripped from socket attachments");
 
-  socket.sent.length = 0;
+  for (const candidate of sockets) candidate.sent.length = 0;
   const envelope = sealFor("u1", "u2", "over the socket");
-  await room.webSocketMessage(socket, JSON.stringify({ type: "DM_MESSAGE", targetUserId: publicId("u2"), envelope }));
+  await room.webSocketMessage(
+    socket,
+    JSON.stringify({
+      type: "DM_MESSAGE",
+      targetUserId: publicId("u2"),
+      envelope,
+      clientMessageId: dmClientMessageId,
+    }),
+  );
   const delivered = socket.sent.find((event) => event.type === "DM_MESSAGE");
   assert.equal(delivered?.message.id, envelope.id);
   assert.equal(delivered.message.text, "");
   assert.equal(delivered.message.envelope.c, envelope.c);
+  assert.equal(delivered?.clientMessageId, dmClientMessageId);
+  assert.equal(senderOtherDevice.sent.find((event) => event.type === "DM_MESSAGE")?.clientMessageId, dmClientMessageId);
+  const recipientDelivery = recipient.sent.find((event) => event.type === "DM_MESSAGE");
+  assert.equal(recipientDelivery?.message.id, envelope.id);
+  assert.equal("clientMessageId" in recipientDelivery, false, "the sender's retry token is not sent to the peer");
+
+  for (const candidate of sockets) candidate.sent.length = 0;
+  await room.webSocketMessage(
+    socket,
+    JSON.stringify({
+      type: "DM_MESSAGE",
+      targetUserId: publicId("u2"),
+      text: "hi",
+      clientMessageId: "not a valid client id",
+    }),
+  );
+  const uncorrelated = socket.sent.find((event) => event.type === "DM_ERROR");
+  assert.equal(uncorrelated?.code, "DM_E2EE_REQUIRED");
+  assert.equal("clientMessageId" in uncorrelated, false, "unbounded/unsafe retry ids are ignored");
 });
 
 test("a new device gets the key from an existing device, once", async () => {
@@ -453,6 +655,11 @@ test("the data export never contains encrypted message text", async () => {
   const body = JSON.stringify(exported.data);
   assert.ok(body.includes("[end-to-end encrypted]"));
   assert.ok(body.includes("before encryption"));
+  // Encrypted messages are exported as their stored envelope (ciphertext), never decrypted.
+  assert.ok(
+    exported.data.directMessagesSent.some((message) => typeof message.envelope === "string" && message.envelope),
+  );
+  assert.equal(exported.data.complete, true);
 });
 
 test("push notifications for encrypted DMs never quote the message", async () => {
@@ -874,7 +1081,7 @@ test("encrypted reactions round-trip through the session", async () => {
   assert.deepEqual((await u6.open(moved, publicId("u7"))).reactions, {});
 });
 
-function socketFor(userId) {
+function socketFor(userId, device = "a") {
   const socket = {
     attachment: {
       connectionId: randomUUID(),
@@ -882,7 +1089,7 @@ function socketFor(userId) {
       authDeadlineAt: 0,
       client: "web",
       userId,
-      sessionHash: hashToken(`token-${userId}-a`),
+      sessionHash: hashToken(`token-${userId}-${device}`),
       username: `user-${userId}`,
       serverId: null,
       channelId: null,
@@ -904,17 +1111,102 @@ function socketFor(userId) {
     },
     close() {},
   };
+  const sockets = [socket];
   const ctx = {
-    getWebSockets: () => [socket],
+    getWebSockets: () => sockets,
     acceptWebSocket() {},
     waitUntil() {},
     storage: { async setAlarm() {}, async deleteAlarm() {}, async get() {}, async put() {} },
   };
-  return { socket, room: new HubRoom(ctx, env) };
+  return { socket, room: new HubRoom(ctx, env), sockets };
 }
+
+test("restored sockets keep IDENTIFY failures isolated without persisted peer addresses", async () => {
+  const restoredSocket = () => {
+    let attachment = {
+      connectionId: randomUUID(),
+      authDeadlineAt: Date.now() + 30_000,
+      client: "web",
+      userId: null,
+      sessionHash: null,
+      username: null,
+      serverId: 0,
+      channelId: 0,
+      voiceChannelId: null,
+      voiceMuted: false,
+      voiceDeafened: false,
+      voiceServerMuted: false,
+      voiceServerDeafened: false,
+      screenSharing: false,
+      allowStreamPreview: true,
+      cameraSharing: false,
+      dmCallId: null,
+      dmCallPeerUserId: null,
+      dmCallPeerConnectionId: null,
+      dmCallIncoming: false,
+      dmCallAccepted: false,
+      dmCallVideo: false,
+      identifiedAt: 0,
+      identifyFailures: 0,
+      rateLimitViolations: 0,
+      lastPresenceTouchAt: 0,
+    };
+    return {
+      sent: [],
+      closed: null,
+      serializeAttachment(value) {
+        attachment = value;
+      },
+      deserializeAttachment() {
+        return attachment;
+      },
+      send(value) {
+        this.sent.push(JSON.parse(value));
+      },
+      close(code, reason) {
+        this.closed = { code, reason };
+      },
+    };
+  };
+  const sockets = Array.from({ length: 16 }, restoredSocket);
+  const ctx = {
+    getWebSockets: () => sockets,
+    acceptWebSocket() {},
+    waitUntil() {},
+    storage: { async setAlarm() {}, async deleteAlarm() {}, async get() {}, async put() {} },
+  };
+  // A new Durable Object instance has empty in-memory peer-address maps, as it
+  // does after hibernation. Restored attachments intentionally hold no address.
+  const room = new HubRoom(ctx, env);
+  for (const socket of sockets.slice(0, 15)) {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await room.webSocketMessage(socket, JSON.stringify({ type: "IDENTIFY", token: "expired-token" }));
+    }
+    assert.equal(socket.closed?.code, 4003);
+  }
+
+  const wsToken = await api("/api/auth/ws-token", "u1", { method: "POST" });
+  assert.equal(wsToken.status, 200);
+  await room.webSocketMessage(
+    sockets[15],
+    JSON.stringify({ type: "IDENTIFY", token: wsToken.data.wsToken, client: "web" }),
+  );
+  assert.equal(sockets[15].closed, null);
+  assert.ok(
+    sockets[15].sent.some((event) => event.type === "IDENTIFIED"),
+    "failures on other restored sockets must not block this socket's valid token",
+  );
+});
 
 test("group chats encrypt once every member has a key, and stay encrypted", async () => {
   for (const id of ["u8", "u9"]) addUser(id);
+  db.exec(
+    "INSERT OR IGNORE INTO decave_sessions(token_hash,user_id,expires_at,created_at) VALUES(?,?,?,?)",
+    hashToken("token-u6-b"),
+    "u6",
+    "2100-01-01T00:00:00.000Z",
+    now,
+  );
   befriend("u6", "u8");
   befriend("u6", "u9");
   befriend("u6", "u7");
@@ -926,9 +1218,12 @@ test("group chats encrypt once every member has a key, and stay encrypted", asyn
   const groupId = created.data.group.id;
   const members = [publicId("u6"), publicId("u7"), publicId("u8")];
   const u6 = await ready("u6", "phone");
-  const { socket, room } = socketFor("u6");
+  const { socket, room, sockets } = socketFor("u6");
+  const senderOtherDevice = socketFor("u6", "b").socket;
+  const groupRecipient = socketFor("u7").socket;
+  sockets.push(senderOtherDevice, groupRecipient);
   const send = async (frame) => {
-    socket.sent.length = 0;
+    for (const candidate of sockets) candidate.sent.length = 0;
     await room.webSocketMessage(socket, JSON.stringify({ type: "GROUP_MESSAGE", groupId, ...frame }));
     return socket.sent;
   };
@@ -945,13 +1240,33 @@ test("group chats encrypt once every member has a key, and stay encrypted", asyn
 
   // Once u8 has a key, plaintext is refused and envelopes for all three are required.
   const u8 = await ready("u8", "phone");
-  assert.equal((await send({ text: "leak?" })).find((event) => event.type === "GROUP_ERROR")?.code, "DM_E2EE_REQUIRED");
+  const groupClientMessageId = "group-attempt-7f3e";
+  const groupRefusal = (await send({ text: "leak?", clientMessageId: groupClientMessageId })).find(
+    (event) => event.type === "GROUP_ERROR",
+  );
+  assert.equal(groupRefusal?.code, "DM_E2EE_REQUIRED");
+  assert.equal(groupRefusal?.groupId, groupId);
+  assert.equal(groupRefusal?.clientMessageId, groupClientMessageId);
   const sealed = await u6.sealGroup(groupId, members, "encrypted hello", { markedEncrypted: false, refreshKeys: true });
   assert.ok(sealed.envelope);
   assert.equal(sealed.envelope.w.length, 3);
-  const delivered = (await send({ envelope: sealed.envelope })).find((event) => event.type === "GROUP_MESSAGE");
+  const delivered = (await send({ envelope: sealed.envelope, clientMessageId: groupClientMessageId })).find(
+    (event) => event.type === "GROUP_MESSAGE",
+  );
   assert.equal(delivered?.message.text, "");
   assert.equal(delivered.message.id, sealed.envelope.id);
+  assert.equal(delivered?.clientMessageId, groupClientMessageId);
+  assert.equal(
+    senderOtherDevice.sent.find((event) => event.type === "GROUP_MESSAGE")?.clientMessageId,
+    groupClientMessageId,
+  );
+  const groupRecipientDelivery = groupRecipient.sent.find((event) => event.type === "GROUP_MESSAGE");
+  assert.equal(groupRecipientDelivery?.message.id, sealed.envelope.id);
+  assert.equal(
+    "clientMessageId" in groupRecipientDelivery,
+    false,
+    "the sender's retry token is not sent to group peers",
+  );
 
   // Leaving someone out is refused.
   const partial = await u6.sealGroup(groupId, [publicId("u6"), publicId("u7")], "not for u8", {

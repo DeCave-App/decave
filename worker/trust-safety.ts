@@ -214,6 +214,7 @@ export async function ensureSafetyProfile(db: D1Database, userId: string, create
 export function deriveAgeProfile(
   birthDateValue: unknown,
   now = new Date(),
+  minimumAge = MINIMUM_AGE,
 ): {
   ageStatus: SafetyAgeStatus;
   ageBand: SafetyAgeBand;
@@ -239,7 +240,8 @@ export function deriveAgeProfile(
   const birthdayPassed = now.getUTCMonth() + 1 > month || (now.getUTCMonth() + 1 === month && now.getUTCDate() >= day);
   if (!birthdayPassed) age -= 1;
 
-  if (age < MINIMUM_AGE) {
+  // Callers may raise the bar, never lower it below the adults-only floor.
+  if (age < Math.max(minimumAge, MINIMUM_AGE)) {
     return { ageStatus: "ineligible", ageBand: "unknown", teenSafetyMode: true, ageAssuranceMethod: "self_attested" };
   }
   return { ageStatus: "eligible", ageBand: "adult", teenSafetyMode: false, ageAssuranceMethod: "self_attested" };

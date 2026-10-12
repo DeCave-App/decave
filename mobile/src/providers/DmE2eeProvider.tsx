@@ -10,7 +10,11 @@ import { useSession } from "@/src/providers/SessionProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import {
   dmE2ee,
+  discardDmSend,
+  discardGroupSend,
   knownGroup,
+  settleDmSend,
+  settleGroupSend,
   retryFrameAfterDmError,
   retryGroupFrameAfterError,
   setDmE2eeToken,
@@ -59,25 +63,56 @@ export function DmE2eeProvider({ children }: PropsWithChildren) {
     () =>
       subscribe((event) => {
         if (dmE2ee.handleRealtimeEvent(event)) return;
+        if (event.type === "DM_MESSAGE" && event.message && typeof event.message === "object") {
+          const message = event.message as { id?: unknown; fromUserId?: unknown; toUserId?: unknown };
+          if (
+            message.fromUserId === user?.id &&
+            typeof message.id === "string" &&
+            typeof message.toUserId === "string"
+          ) {
+            settleDmSend(message.id, message.toUserId, event.clientMessageId);
+          }
+        }
+        if (event.type === "GROUP_MESSAGE" && event.message && typeof event.message === "object") {
+          const message = event.message as { id?: unknown; fromUserId?: unknown; groupId?: unknown };
+          const groupId = typeof event.groupId === "string" ? event.groupId : message.groupId;
+          if (
+            message.fromUserId === user?.id &&
+            typeof message.id === "string" &&
+            typeof groupId === "string"
+          ) {
+            settleGroupSend(message.id, groupId, event.clientMessageId);
+          }
+        }
         if (event.type === "DM_ERROR") {
-          void retryFrameAfterDmError({ code: event.code, messageId: event.messageId })
+          void retryFrameAfterDmError({
+            code: event.code,
+            messageId: event.messageId,
+            clientMessageId: event.clientMessageId,
+            targetUserId: event.targetUserId,
+          })
             .then((frame) => {
-              if (frame) send(frame);
+              if (frame && !send(frame)) discardDmSend(frame.clientMessageId);
             })
             .catch(() => undefined);
         }
         if (event.type === "GROUP_ERROR") {
           void retryGroupFrameAfterError(
-            { code: event.code, messageId: event.messageId, groupId: event.groupId },
+            {
+              code: event.code,
+              messageId: event.messageId,
+              clientMessageId: event.clientMessageId,
+              groupId: event.groupId,
+            },
             knownGroup,
           )
             .then((frame) => {
-              if (frame) send(frame);
+              if (frame && !send(frame)) discardGroupSend(frame.clientMessageId);
             })
             .catch(() => undefined);
         }
       }),
-    [subscribe, send],
+    [subscribe, send, user?.id],
   );
 
   return (

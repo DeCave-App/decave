@@ -4,6 +4,7 @@ import {
   sameOriginWriteAllowed,
   webSocketOriginAllowed,
   json,
+  RequestBodyTooLargeError,
   securityHeaders,
   preventHtmlAssetCaching,
 } from "./lib/http";
@@ -23,12 +24,17 @@ import {
   streamerGiveawaysEnabled,
   streamerHubAccessGuard,
   streamerMutationGuard,
+  authorizeStreamerHubImage,
 } from "./lib/streamer";
 import { requireUser } from "./lib/sessions";
 import { mobileTurnstileBridgeScript, mobileTurnstileResponse } from "./lib/turnstile";
 import { globalRoom } from "./lib/realtime";
 import { serveR2 } from "./lib/media";
 import { API_ROUTES } from "./routes/index";
+import { handleTwitchEventSub, syncTwitchAutoLive, TWITCH_EVENTSUB_PATH } from "./twitch/auto-live";
+import { refreshFaceitLinks } from "./faceit/links";
+import { announceClipOfTheWeek, importTwitchClips } from "./twitch/clips";
+import { memberTwitchStatus, recheckTwitchSubscribers } from "./twitch/subs";
 import type { ApiContext } from "./routes/context";
 
 export type { Env } from "./lib/env";
@@ -38,6 +44,15 @@ export { isLegacyHistoryReadRoute } from "./lib/messages";
 export { HubRoom };
 
 export async function handleApi(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
+  try {
+    return await dispatchApiRequest(request, env, ctx);
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return json({ error: error.message }, 413);
+    throw error;
+  }
+}
+
+async function dispatchApiRequest(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
   const url = new URL(request.url);
   const p = url.pathname;
   const method = request.method.toUpperCase();
@@ -67,6 +82,10 @@ export async function handleApi(request: Request, env: Env, ctx?: ExecutionConte
   const trustSafetyResponse = await handleTrustSafetyApi(request, env, p, method);
   if (trustSafetyResponse) return trustSafetyResponse;
 
+  if (method === "POST" && p === TWITCH_EVENTSUB_PATH) {
+    return handleTwitchEventSub(request, env, ctx ? (work) => ctx.waitUntil(work) : undefined);
+  }
+
   const streamerRoute = /^\/api\/servers\/\d+\/streamer(?:\/.*)?$/.test(p);
   if (streamerRoute) {
     const migrationPresent = await streamerMigrationExists(env.DB);
@@ -74,12 +93,17 @@ export async function handleApi(request: Request, env: Env, ctx?: ExecutionConte
       db: env.DB,
       enabled: migrationPresent && streamerHubsEnabled(env),
       giveawaysEnabled: migrationPresent && streamerGiveawaysEnabled(env),
+      faceitAvailable: Boolean(env.FACEIT_API_KEY && env.FACEIT_CLIENT_ID),
       authenticate: async (streamerRequest) => {
         const user = await requireUser(streamerRequest, env);
         return user instanceof Response ? user : { id: user.id };
       },
       guardHubAccess: (streamerRequest, hubId, userId) => streamerHubAccessGuard(streamerRequest, env, hubId, userId),
       guardMutation: (streamerRequest, hubId, userId) => streamerMutationGuard(streamerRequest, env, hubId, userId),
+      authorizeHubImage: (streamerRequest, hubId, userId, path) =>
+        authorizeStreamerHubImage(streamerRequest, env, hubId, userId, path),
+      onSettingsSaved: (hubId, config) => syncTwitchAutoLive(env, hubId, config),
+      memberTwitch: (hubId, userId) => memberTwitchStatus(env, hubId, userId),
     });
     if (response) return response;
   }
@@ -95,13 +119,15 @@ export async function handleApi(request: Request, env: Env, ctx?: ExecutionConte
 
 async function handleWebSocket(request: Request, env: Env): Promise<Response> {
   if ((request.headers.get("Upgrade") ?? "").toLowerCase() !== "websocket") {
-    return securityHeaders(json({ error: "Expected WebSocket upgrade" }, 426), request);
+    return json({ error: "Expected WebSocket upgrade" }, 426);
   }
+  // Cross-site WebSocket hijacking guard: browsers attach Origin to the
+  // upgrade; native clients may omit it.
   if (!webSocketOriginAllowed(request)) {
-    return securityHeaders(json({ error: "Cross-origin WebSocket upgrade blocked" }, 403), request);
+    return json({ error: "Cross-site WebSocket blocked" }, 403);
   }
   const room = await globalRoom(env);
-  return securityHeaders(await room.fetch(new Request("https://internal.decave/connect", request)), request);
+  return room.fetch(new Request("https://internal.decave/connect", request));
 }
 
 export default {
@@ -136,11 +162,33 @@ export default {
         error instanceof Error ? error.name : "UnknownError",
       );
     }
+    try {
+      await recheckTwitchSubscribers(env);
+    } catch (error) {
+      failures.push("twitch-subs");
+      console.error(
+        "Scheduled Twitch subscriber re-check failed",
+        error instanceof Error ? error.name : "UnknownError",
+      );
+    }
+    try {
+      await importTwitchClips(env);
+      await announceClipOfTheWeek(env);
+    } catch (error) {
+      failures.push("twitch-clips");
+      console.error("Scheduled Twitch clips import failed", error instanceof Error ? error.name : "UnknownError");
+    }
+    try {
+      await refreshFaceitLinks(env);
+    } catch (error) {
+      failures.push("faceit");
+      console.error("Scheduled FACEIT refresh failed", error instanceof Error ? error.name : "UnknownError");
+    }
     // Delete personal data past its retention period (see worker/retention.ts).
     for (const step of await pruneExpiredPersonalData(env)) failures.push(`retention:${step}`);
     if (failures.length) throw new Error(`Scheduled maintenance failed: ${failures.join(", ")}.`);
   },
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === "/ws" || url.pathname.startsWith("/ws/")) {

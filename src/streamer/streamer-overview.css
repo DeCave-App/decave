@@ -212,13 +212,24 @@
   background: linear-gradient(90deg, rgba(5, 7, 14, 0.94), rgba(5, 7, 14, 0.66) 57%, rgba(5, 7, 14, 0.3));
   pointer-events: none;
 }
-.dc-streamer-hero-image {
+/* Banner fits without cropping: the full image sits on the right, over a
+ * blurred, dimmed copy of itself that fills the rest of the hero. */
+.dc-streamer-hero-backdrop {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 30%;
+  filter: blur(22px) brightness(0.55) saturate(1.2);
+  transform: scale(1.15);
+}
+.dc-streamer-hero-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 .dc-streamer-hero-body {
   position: relative;
@@ -393,6 +404,49 @@
   font-size: 8px;
   text-transform: uppercase;
   color: #b5bcf7;
+}
+.dc-streamer-clips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.dc-streamer-clip {
+  min-width: 0;
+  overflow: hidden;
+  padding-bottom: 8px;
+  border: 1px solid var(--dcs-line);
+  border-radius: 9px;
+  background: var(--dcs-panel);
+}
+.dc-streamer-clip-preview {
+  aspect-ratio: 16/9;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at 70% 25%, #332c60, #0b1321 75%);
+}
+.dc-streamer-clip-preview img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dc-streamer-clip-preview .dc-streamer-icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  color: white;
+  filter: drop-shadow(0 2px 5px black);
+}
+.dc-streamer-clip h4 {
+  padding: 9px;
+  min-height: 42px;
+}
+.dc-streamer-clip .dc-streamer-button {
+  margin: 0 8px;
+  padding: 5px 8px;
+  min-height: 27px;
 }
 .dc-streamer-preview-note {
   padding: 9px 12px;
@@ -604,6 +658,9 @@
   .dc-streamer-tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .dc-streamer-clips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @container (max-width: 480px) {
   .dc-streamer-content {
@@ -793,5 +850,119 @@
   .dc-official-resources,
   .dc-official-facts {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Community PUG and Leaderboard panels (src/streamer/community.ts). */
+.dc-streamer-pug-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dc-streamer-pug-players li {
+  padding: 4px 10px;
+  border: 1px solid var(--dcs-line);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--dcs-text);
+  overflow-wrap: anywhere;
+}
+.dc-streamer-pug-players li.is-me {
+  border-color: var(--dcs-violet);
+}
+.dc-streamer-pug-players li.is-empty {
+  color: var(--dcs-muted);
+  border-style: dashed;
+}
+.dc-streamer-pug-maps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--dcs-line);
+  border-radius: 8px;
+  color: var(--dcs-text);
+  font-size: 13px;
+}
+.dc-streamer-pug-maps legend {
+  padding: 0 4px;
+  color: var(--dcs-muted);
+  font-size: 12px;
+}
+.dc-streamer-pug-votes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dc-streamer-pug-teams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.dc-streamer-pug-teams > section {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 12px;
+  border: 1px solid var(--dcs-line);
+  border-radius: 10px;
+  background: var(--dcs-panel);
+  min-width: 0;
+}
+.dc-streamer-pug-teams > section.is-mine {
+  border-color: var(--dcs-violet);
+}
+.dc-streamer-pug-teams small {
+  color: var(--dcs-muted);
+}
+.dc-streamer-pug-champion {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--dcs-line);
+  border-radius: 10px;
+  background: linear-gradient(120deg, rgba(212, 160, 23, 0.16), rgba(12, 23, 41, 0.6));
+}
+.dc-streamer-pug-champion strong {
+  font-size: 16px;
+  color: var(--dcs-text);
+}
+.dc-streamer-pug-board-wrap {
+  overflow-x: auto;
+}
+.dc-streamer-pug-board {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dcs-text);
+}
+.dc-streamer-pug-board th,
+.dc-streamer-pug-board td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--dcs-line);
+  text-align: left;
+  white-space: nowrap;
+}
+.dc-streamer-pug-board th {
+  color: var(--dcs-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.dc-streamer-pug-board td small {
+  color: var(--dcs-muted);
+}
+.dc-streamer-pug-board tr.is-me td {
+  background: rgba(113, 58, 251, 0.12);
+}
+@media (max-width: 560px) {
+  .dc-streamer-pug-teams {
+    grid-template-columns: 1fr;
   }
 }

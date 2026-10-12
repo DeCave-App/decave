@@ -32,7 +32,27 @@
     radial-gradient(120% 140% at 85% 0%, color-mix(in srgb, var(--hh-accent) 45%, transparent), transparent 60%),
     linear-gradient(135deg, color-mix(in srgb, var(--hh-accent) 30%, var(--ds-surface-2)), var(--ds-surface-1));
 }
+/* Banner fits without cropping: the whole image (::after, with the scrim)
+ * over a blurred, dimmed copy of itself filling the rest (::before). */
 .hh-banner.has-image {
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--ds-surface-2);
+}
+.hh-banner.has-image::before,
+.hh-banner.has-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.hh-banner.has-image::before {
+  background: var(--hh-banner) center / cover no-repeat;
+  filter: blur(22px) brightness(0.55) saturate(1.2);
+  transform: scale(1.15);
+}
+.hh-banner.has-image::after {
   background:
     linear-gradient(
       90deg,
@@ -40,8 +60,7 @@
       color-mix(in srgb, var(--ds-bg) 25%, transparent) 65%,
       color-mix(in srgb, var(--ds-bg) 55%, transparent)
     ),
-    var(--hh-banner) center 30% / cover no-repeat,
-    var(--ds-surface-2);
+    var(--hh-banner) right center / contain no-repeat;
 }
 .hh-identity {
   display: flex;

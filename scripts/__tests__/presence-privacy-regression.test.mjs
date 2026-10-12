@@ -218,3 +218,30 @@ test("DM, group, and realtime projections hide stored presence unless a user is 
     "connected friends retain allowed game activity",
   );
 });
+
+test("base public serializer never carries stored presence; the owner's private view does", async () => {
+  const { publicUser, privateUser, publicUserWithPresence } = await import("../../worker/db.ts");
+  const row = await db.prepare("SELECT * FROM decave_users WHERE id='u4'").first();
+  const pub = publicUser(row);
+  assert.deepEqual(
+    { status: pub.status, statusText: pub.statusText, activityText: pub.activityText },
+    { status: "invisible", statusText: "", activityText: "" },
+  );
+  const own = privateUser(row);
+  assert.equal(own.status, "dnd");
+  assert.equal(own.statusText, "connected status detail");
+  assert.equal(own.activityText, "control game");
+  assert.equal(publicUserWithPresence(row, false, "friend").statusText, "", "disconnected friend reads as offline");
+  assert.equal(publicUserWithPresence(row, true, "other").activityText, "", "friends-only activity stays hidden");
+});
+
+test("public profile hides stale presence of a disconnected friend", async () => {
+  connectedUserIds = [];
+  const profile = await api(`/api/users/${publicIds.get("u4")}/profile`, "u1");
+  assert.equal(profile.response.status, 200);
+  assert.deepEqual(
+    { status: profile.data.status, statusText: profile.data.statusText, activityText: profile.data.activityText },
+    { status: "invisible", statusText: "", activityText: "" },
+  );
+  assert.equal(profile.data.online, false);
+});

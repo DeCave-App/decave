@@ -21,9 +21,9 @@ who checked it, on which device and build.
 ## 0. Server prerequisites (every deploy, encryption on or off)
 
 - [ ] Take a D1 bookmark before migrating:
-      `npx wrangler d1 time-travel info YOUR_D1_DATABASE`.
+      `npx wrangler d1 time-travel info decave-review-example`.
 - [ ] Apply migrations to production **before** deploying a Worker that needs
-      them: `npx wrangler d1 migrations apply YOUR_D1_DATABASE --remote`.
+      them: `npx wrangler d1 migrations apply decave-review-example --remote`.
       `0069_dm_e2ee_rotation_reactions.sql` adds `attachment_refs`, which the DM
       send path writes even while encryption is off.
 - [ ] `npm run check` is green on the commit being deployed.

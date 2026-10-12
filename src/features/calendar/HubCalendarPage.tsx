@@ -16,6 +16,7 @@ import "../shared/shared.css";
 import "./calendar.css";
 import { Icon } from "../../components/Icon";
 import { localeForLanguage, preferredTimeOptions } from "../../app/locale";
+import { canBeginWeekSelection, weekSelectionRange } from "./weekSelection";
 
 export type CalendarView = "month" | "week" | "agenda";
 
@@ -192,6 +193,8 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
     if (!canCreate || event.button !== 0) return;
     if ((event.target as HTMLElement).closest(".hcx-week-event")) return;
     const slot = slotFromPointer(event, event.currentTarget);
+    const day = addDays(range.from, dayIndex);
+    if (!canBeginWeekSelection(day.getTime(), slot, Date.now())) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { day: dayIndex, from: slot, to: slot, moved: false };
     setDrag({ day: dayIndex, from: slot, to: slot });
@@ -213,11 +216,8 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
     setDrag(null);
     if (!current) return;
     const day = addDays(range.from, current.day);
-    const a = Math.min(current.from, current.to);
-    const b = Math.max(current.from, current.to) + 1;
-    const start = day.getTime() + a * SLOT_MIN * 60_000;
-    const end = current.moved ? day.getTime() + b * SLOT_MIN * 60_000 : start + 60 * 60_000;
-    props.onCreate(start, end);
+    const selection = weekSelectionRange(day.getTime(), current.from, current.to, current.moved, Date.now());
+    if (selection) props.onCreate(selection.start, selection.end);
   };
 
   const body = (
@@ -424,7 +424,8 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                                   tabIndex={0}
                                   aria-label={`Create event ${day.toLocaleDateString(localeForLanguage(), { weekday: "long" })} at ${timeLabel(slotStart)}`}
                                   onClick={(e) => {
-                                    if (e.detail === 0) props.onCreate(slotStart, slotStart + 60 * 60_000);
+                                    if (e.detail === 0 && slotStart >= Date.now())
+                                      props.onCreate(slotStart, slotStart + 60 * 60_000);
                                   }}
                                 />
                               );

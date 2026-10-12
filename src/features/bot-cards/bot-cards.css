@@ -1,0 +1,287 @@
+/* Builder-bot messages, cards, forms and slash-command suggestions.
+   Design-system tokens only, so dark and light themes both work. */
+
+.bot-message {
+  display: grid;
+  gap: var(--ds-space-2);
+  min-width: 0;
+}
+
+.bot-message.private {
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 1px dashed var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-2);
+}
+
+.bot-message-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+
+.bot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.bot-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--ds-on-accent);
+}
+
+.bot-private-label {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  font-style: italic;
+}
+
+.bot-message-text {
+  color: var(--ds-text);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.bot-card {
+  display: grid;
+  gap: var(--ds-space-2);
+  width: min(520px, 100%);
+  padding: var(--ds-space-3);
+  border: 1px solid var(--ds-border);
+  border-left: 4px solid var(--ds-accent);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-1);
+  color: var(--ds-text);
+}
+
+.bot-card-title {
+  font-size: var(--ds-text-md);
+}
+
+.bot-card-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.bot-card-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--ds-space-2);
+  margin: 0;
+}
+
+.bot-card-fields dt {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-xs);
+  font-weight: 700;
+}
+
+.bot-card-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.bot-card a {
+  color: var(--ds-accent-text);
+}
+
+.bot-card-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+}
+
+.bot-card-button {
+  min-height: var(--ds-control-sm);
+  padding: 0 var(--ds-space-3);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-3);
+  color: var(--ds-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bot-card-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.bot-card-button:focus-visible,
+.bot-card-select:focus-visible,
+.bot-command-suggestions button:focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: 2px;
+}
+
+.bot-card-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.bot-card-button.primary {
+  border-color: transparent;
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+
+.bot-card-button.success {
+  border-color: transparent;
+  background: var(--ds-success);
+  color: #fff;
+}
+
+.bot-card-button.danger {
+  border-color: transparent;
+  background: var(--ds-danger);
+  color: #fff;
+}
+
+.bot-card-select {
+  max-width: 100%;
+  min-height: var(--ds-control-sm);
+  padding: 0 var(--ds-space-2);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-solid);
+  color: var(--ds-text);
+  font: inherit;
+}
+
+.bot-card-error,
+.bot-form-error {
+  margin: 0;
+  color: var(--ds-danger);
+  font-size: var(--ds-text-sm);
+}
+
+.bot-form-dialog {
+  display: grid;
+  gap: var(--ds-space-3);
+  width: min(460px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: var(--ds-space-5);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface-solid);
+  color: var(--ds-text);
+  box-shadow: var(--ds-shadow-lg);
+}
+
+.bot-form-dialog h2 {
+  margin: 0;
+  font-size: var(--ds-text-lg);
+}
+
+.bot-form-field {
+  display: grid;
+  gap: var(--ds-space-1);
+  font-size: var(--ds-text-sm);
+  font-weight: 600;
+}
+
+.bot-form-field b {
+  color: var(--ds-danger);
+}
+
+.bot-form-field input,
+.bot-form-field textarea {
+  width: 100%;
+  padding: var(--ds-space-2);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-1);
+  color: var(--ds-text);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.bot-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ds-space-2);
+}
+
+.bot-command-suggestions {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--ds-space-2));
+  left: 0;
+  z-index: 30;
+  display: grid;
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--ds-space-1);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-solid);
+  box-shadow: var(--ds-shadow-md);
+  list-style: none;
+}
+
+.bot-command-suggestions button {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ds-space-2);
+  width: 100%;
+  padding: var(--ds-space-2);
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bot-command-suggestions button.active {
+  background: var(--ds-hover);
+}
+
+.bot-command-options {
+  color: var(--ds-muted);
+  font-size: var(--ds-text-sm);
+}
+
+.bot-command-suggestions small {
+  margin-left: auto;
+  color: var(--ds-muted);
+}
+
+/* The bot's emoji stands in for a user avatar in the chat author column. */
+.bot-author-avatar {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ds-surface-3);
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Hub artwork on a card (welcome cards): the whole image, never cropped. */
+.bot-card-image {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  max-height: 320px;
+  margin-top: 8px;
+  border-radius: 8px;
+  object-fit: contain;
+}

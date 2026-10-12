@@ -117,6 +117,7 @@ export function DataExportPanel({ apiBase }: { apiBase: string }) {
         throw new Error(data.error || "Could not prepare your data. Try again.");
       }
       const blob = await response.blob();
+      // The server writes "complete":true last; anything else is a truncated export.
       const exportStatus = accountExportStatus(await blob.slice(-512).text());
       if (!exportStatus.complete) throw new Error(exportStatus.error);
       const url = URL.createObjectURL(blob);

@@ -18,9 +18,14 @@
   "vars": {
     "STREAMER_HUBS_ENABLED": "true",
     "STREAMER_GIVEAWAYS_ENABLED": "true",
-    // End-to-end encrypted DMs and group chats are enabled in this review configuration.
-    // Validate supported mobile versions and recovery limitations before deployment.
+    // End-to-end encrypted DMs (docs/security/DM-E2EE.md). Keep "false" until the
+    // mobile app that can read encrypted DMs is in the App Store and Play Store.
     "DM_E2EE_ENABLED": "true",
+    // No-code bot builder (docs/bots/README.md). "false" makes the builder routes
+    // answer 404 and the dispatcher do nothing. Token bots are unaffected.
+    "BOTS_BUILDER_ENABLED": "true",
+    // Screen share through Cloudflare Realtime SFU. Needs the two CLOUDFLARE_REALTIME_* secrets too.
+    "SCREEN_SFU_ENABLED": "true",
   },
   "observability": {
     "enabled": true,

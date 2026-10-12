@@ -1,0 +1,46 @@
+name: Security scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, so newly published CVEs surface even without a push.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    name: Trivy (dependencies + config)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      # Pinned to a commit SHA, not a tag: action tags can be rewritten.
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          skip-dirs: vendor,archive,ml,.tools,.tmp,node_modules
+          exit-code: "1"
+
+  semgrep:
+    name: Semgrep (code patterns)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Install pinned Semgrep
+        run: python3 -m pip install --quiet semgrep==1.180.0
+
+      - name: Scan
+        run: >
+          semgrep scan --error --severity ERROR
+          --config p/typescript --config p/javascript --config p/react --config p/secrets
+          --exclude vendor --exclude archive --exclude ml --exclude .tools --exclude .tmp
+          --exclude dist --exclude build --exclude release

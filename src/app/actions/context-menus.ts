@@ -247,7 +247,7 @@ export function createContextMenuActions(deps: ContextMenuActionsDeps) {
     setChannelManageError("");
     setShowManageChannel(true);
     void loadHubMembers(server.id);
-    if (channel.type === "forum") void loadCustomRoles(server.id);
+    if (channel.type === "forum" || channel.type === "text") void loadCustomRoles(server.id);
     void (async () => {
       try {
         const response = await authorizedFetch(`${HTTP_URL}/api/channels/${channel.id}/access`);

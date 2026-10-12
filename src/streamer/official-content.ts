@@ -28,8 +28,8 @@ export const OFFICIAL_ANNOUNCEMENTS: OfficialAnnouncement[] = [
   {
     date: "5 Oct 2026",
     tag: "Release",
-    title: "Release 0.1.128: clearer voice controls and screen sharing",
-    body: "Voice controls are easier to reach during a call. Muting another participant's shared screen no longer silences their voice, and iOS gained a speaker toggle and screen broadcast.",
+    title: "Release 0.1.128: one voice dock and clearer streams",
+    body: "Voice controls now live in one place, the Hub sidebar dock. Muting someone's stream no longer silences their voice, and iOS gained a speaker toggle and screen broadcast.",
   },
   {
     date: "Pinned",

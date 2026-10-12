@@ -3,14 +3,11 @@ import test from "node:test";
 import { compareSchema, ProductionD1AuditError, verifyExactDatabase } from "../ops/audit-production-d1-readonly.mjs";
 
 test("production D1 audit requires the exact immutable database identity", () => {
-  assert.deepEqual(
-    verifyExactDatabase([{ name: "decave-review-example", uuid: "00000000-0000-0000-0000-000000000000" }]),
-    {
-      databaseName: "decave-review-example",
-      databaseId: "00000000-0000-0000-0000-000000000000",
-      matchCount: 1,
-    },
-  );
+  assert.deepEqual(verifyExactDatabase([{ name: "decave-review-example", uuid: "00000000-0000-0000-0000-000000000000" }]), {
+    databaseName: "decave-review-example",
+    databaseId: "00000000-0000-0000-0000-000000000000",
+    matchCount: 1,
+  });
   assert.throws(
     () => verifyExactDatabase([{ name: "decave-review-example", uuid: "00000000-0000-4000-8000-000000000000" }]),
     ProductionD1AuditError,

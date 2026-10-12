@@ -144,12 +144,12 @@ function createBuildHarness(captures, overrides = {}) {
     micTrackIdRef: ref(""),
     voiceChannelRef: ref(null),
     voiceActivationModuleLoadedRef: ref(false),
-    rnnoiseBinaryRef: ref(null),
     directMicrophoneListenersRef: ref(new Set()),
     requestMicrophoneRecoveryRef: ref(() => {}),
     requestAiNoiseFallbackRef: ref(() => {}),
     audioContextRef: ref(new FakeAudioContext()),
-    rnnoiseNodeRef: ref(null),
+    deepFilterRuntimeRef: ref(null),
+    deepFilterNodeRef: ref(null),
     clearVoiceNodeRef: ref(null),
     clearVoiceAiRuntimeRef: ref(null),
     clearVoiceAiNodeRef: ref(null),
@@ -178,7 +178,9 @@ function createBuildHarness(captures, overrides = {}) {
     createClearVoiceAiRuntime: async () => {
       throw new Error("not used");
     },
-    loadRnnoise: async () => new ArrayBuffer(0),
+    createDeepFilterRuntime: async () => {
+      throw new Error("not used");
+    },
     replaceMicrophoneTrackForPeers: async () => true,
     disposeCurrentMicrophoneGraph: () => {
       state.disposed += 1;

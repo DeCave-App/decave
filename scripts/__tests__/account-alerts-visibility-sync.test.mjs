@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
 import { register } from "node:module";
 import { test } from "node:test";
+import { runInNewContext } from "node:vm";
 
 register("../test-support/cloudflare-workers-test-loader.mjs", import.meta.url);
 const { handleApi } = await import("../../worker/index.ts");
@@ -206,6 +207,56 @@ test("'This wasn't me' requires an explicit POST, then signs out everywhere and 
     "Mobile app",
     NOW,
   );
+});
+
+test("secure-account handoff captures the fragment token and removes it from the URL", async () => {
+  const scriptResponse = await api("/api/auth/secure-account.js");
+  assert.equal(scriptResponse.response.status, 200);
+  const script = await scriptResponse.response.text();
+  const tokenInput = { value: "" };
+  const button = { disabled: false, textContent: "" };
+  let currentUrl = "https://app.test/api/auth/secure-account#token=single-use-token";
+  const location = {
+    hash: "#token=single-use-token",
+    pathname: "/api/auth/secure-account",
+    search: "",
+  };
+  runInNewContext(script, {
+    URLSearchParams,
+    location,
+    history: {
+      state: null,
+      replaceState(_state, _title, nextUrl) {
+        currentUrl = new URL(nextUrl, currentUrl).href;
+      },
+    },
+    document: {
+      getElementById: () => tokenInput,
+      querySelector: () => ({ querySelector: () => button }),
+    },
+  });
+
+  assert.equal(tokenInput.value, "single-use-token");
+  assert.equal(currentUrl, "https://app.test/api/auth/secure-account");
+  assert.equal(button.disabled, false);
+
+  const legacyInput = { value: "legacy-query-token" };
+  const legacyButton = { disabled: false, textContent: "" };
+  runInNewContext(script, {
+    URLSearchParams,
+    location: {
+      hash: "",
+      pathname: "/api/auth/secure-account",
+      search: "?token=legacy-query-token",
+    },
+    history: { state: null, replaceState() {} },
+    document: {
+      getElementById: () => legacyInput,
+      querySelector: () => ({ querySelector: () => legacyButton }),
+    },
+  });
+  assert.equal(legacyInput.value, "legacy-query-token", "legacy query-link handoff remains compatible");
+  assert.equal(legacyButton.disabled, false);
 });
 
 test("sign-in alerts can be turned off", async () => {

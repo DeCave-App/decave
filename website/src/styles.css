@@ -398,7 +398,7 @@ p {
   z-index: 0;
 }
 
-/* Text-led product preview */
+/* Screenshot frame */
 
 .window {
   position: relative;
@@ -438,60 +438,39 @@ p {
 
 .shot {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 12px;
+  display: block;
   width: 100%;
-  min-height: 300px;
-  aspect-ratio: 5 / 3;
-  padding: clamp(24px, 5vw, 64px);
-  overflow: hidden;
+  padding: 0;
   border: 0;
-  background:
-    radial-gradient(ellipse at 85% 18%, rgba(56, 201, 255, 0.18), transparent 42%),
-    radial-gradient(ellipse at 15% 85%, rgba(124, 92, 255, 0.24), transparent 48%),
-    #0a0f1f;
+  background: none;
+  cursor: zoom-in;
 }
 
-.shot-label {
-  position: relative;
-  z-index: 1;
-  color: var(--text-3);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+.shot img {
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  object-fit: cover;
+  object-position: top left;
 }
 
-.shot h3,
-.shot p {
-  position: relative;
-  z-index: 1;
-  max-width: 36rem;
-}
-
-.shot h3 {
-  font-size: clamp(1.45rem, 3vw, 2.5rem);
-  font-weight: 800;
-}
-
-.shot p {
-  color: var(--text-2);
-}
-
-.shot-mark {
+.shot-zoom {
   position: absolute;
-  right: 8%;
-  bottom: -34%;
-  width: min(40vw, 300px);
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(124, 92, 255, 0.16), transparent 68%);
-  box-shadow: 0 0 0 28px rgba(255, 255, 255, 0.025), 0 0 0 58px rgba(255, 255, 255, 0.018);
-  pointer-events: none;
+  right: 14px;
+  bottom: 14px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(7, 10, 20, 0.75);
+  color: var(--text);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.shot:hover .shot-zoom,
+.shot:focus-visible .shot-zoom {
+  opacity: 1;
 }
 
 /* Sections */
@@ -584,7 +563,7 @@ p {
   color: var(--text-2);
 }
 
-.tour-panel .shot {
+.tour-panel .shot img {
   animation: fade-in 0.35s ease;
 }
 
@@ -1055,6 +1034,58 @@ p {
   color: var(--text-2);
 }
 
+/* Lightbox */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 4vw, 48px);
+  background: rgba(3, 5, 12, 0.88);
+  backdrop-filter: blur(6px);
+  animation: fade-in 0.2s ease;
+}
+
+.lightbox figure {
+  display: grid;
+  gap: 14px;
+  max-width: min(1600px, 100%);
+  margin: 0;
+}
+
+.lightbox img {
+  max-height: calc(100vh - 160px);
+  width: auto;
+  margin: 0 auto;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.lightbox figcaption {
+  color: var(--text-2);
+  text-align: center;
+}
+
+.lightbox figcaption strong {
+  color: var(--text);
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
 
 /* Text pages */
 

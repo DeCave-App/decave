@@ -3,6 +3,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import test from "node:test";
 import { readAppSource } from "./app-source.mjs";
+import { classifyMeshAudio } from "../../src/voice/screen-sfu/screen-audio.ts";
 
 const app = readAppSource();
 const volumeSource = app.slice(app.indexOf("  const getVoiceUserVolume"), app.indexOf("  const moderateVoiceUser"));
@@ -123,6 +124,11 @@ function setup(volume = 100, flags = {}) {
     protectedVoiceSessionRef: ref(null),
     voiceChannelRef: ref(1),
     getVoiceUserVolume: () => volume,
+    classifyMeshAudio,
+    meshVoiceAudio: new WeakMap(),
+    attachSfuScreenAudio(connectionId, track) {
+      env.sfuScreenAudio = [connectionId, track];
+    },
     addLocalTracksToPeer() {},
     refreshMicrophoneSenderParameters() {},
     setAudioSink(audio, sink) {
@@ -415,4 +421,20 @@ test("late display video rebinds boosted playback to the remaining microphone", 
   track(session, display, "video");
   assert.equal(env.remoteGainContextsRef.current.get("b").trackId, "mic");
   assert.equal(session.remoteAudioStream.getAudioTracks().length, 1);
+});
+
+test("display audio moved to the screen tile rebinds boosted playback to the microphone", () => {
+  const { env, session } = setup(150, { screenSharing: true });
+  const display = new Stream([{ id: "system", kind: "audio", readyState: "live" }]);
+  display.id = "display-stream";
+  track(session, display);
+  track(session, new Stream([mic()]));
+  assert.equal(env.remoteGainContextsRef.current.get("b").trackId, "system", "bound to the early display track");
+  env.ensure({ ...session.participant, screenStreamId: "display-stream" });
+  assert.equal(env.sfuScreenAudio[1].id, "system");
+  assert.deepEqual(
+    session.remoteAudioStream.getAudioTracks().map((t) => t.id),
+    ["mic"],
+  );
+  assert.equal(env.remoteGainContextsRef.current.get("b").trackId, "mic");
 });

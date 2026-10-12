@@ -160,6 +160,24 @@ async function api(pathname, userId, { method = "GET", body, headers = {} } = {}
   return { response, data };
 }
 
+async function apiRequest(request) {
+  const response = await handleApi(request, env);
+  let data = null;
+  try {
+    data = await response.clone().json();
+  } catch {}
+  return { response, data };
+}
+
+function streamRequest(pathname, userId, stream, headers = {}) {
+  return new Request(`https://test.invalid${pathname}`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${tokenFor(userId)}`, ...headers },
+    body: stream,
+    duplex: "half",
+  });
+}
+
 function completeSocketState(userId, overrides = {}) {
   return {
     connectionId: randomUUID(),
@@ -438,6 +456,177 @@ test("DM reactions are denied in either block direction, then work after unblock
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_dm_reactions WHERE message_id='dm-1'"), 1);
 });
 
+test("JSON and upload bodies enforce streaming limits and preserve malformed/valid controls", async () => {
+  const maximum = 1024 * 1024;
+  const overflow = new Uint8Array(maximum + 1);
+  const chunkedState = { cancelled: false };
+  const chunked = new ReadableStream({
+    pull(controller) {
+      controller.enqueue(overflow);
+    },
+    cancel() {
+      chunkedState.cancelled = true;
+    },
+  });
+  const tooLargeChunked = await apiRequest(streamRequest("/api/servers/1/import/preview", "u1", chunked));
+  assert.equal(tooLargeChunked.response.status, 413);
+  assert.equal(chunkedState.cancelled, true, "chunked JSON overflow cancels the unread request stream");
+
+  const lyingLengthState = { cancelled: false };
+  const lyingLength = new ReadableStream({
+    pull(controller) {
+      controller.enqueue(overflow);
+    },
+    cancel() {
+      lyingLengthState.cancelled = true;
+    },
+  });
+  const tooLargeLyingLength = await apiRequest(
+    streamRequest("/api/servers/1/import/preview", "u1", lyingLength, {
+      "content-length": "1",
+      "content-type": "application/json",
+    }),
+  );
+  assert.equal(
+    tooLargeLyingLength.response.status,
+    413,
+    "the streamed byte count overrides an understated Content-Length",
+  );
+  assert.equal(lyingLengthState.cancelled, true);
+
+  const malformed = await apiRequest(
+    new Request(`https://test.invalid/api/dms/${publicIds.get("u2")}`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${tokenFor("u1")}`, "content-type": "application/json" },
+      body: "{",
+    }),
+  );
+  assert.equal(malformed.response.status, 400, "malformed JSON remains a client error, not a 413 or 500");
+
+  const valid = await api("/api/servers/1/import/preview", "u1", {
+    method: "POST",
+    body: {
+      code: "bounded-import",
+      name: "Bounded Import",
+      rooms: [{ name: "bounded-preview-room", type: "text" }],
+      roles: [],
+    },
+  });
+  assert.equal(valid.response.status, 200, "a legitimate import preview stays below the request limit");
+
+  const uploadChunk = new Uint8Array(1024 * 1024);
+  const uploadState = { cancelled: false, chunks: 0 };
+  const upload = new ReadableStream({
+    pull(controller) {
+      uploadState.chunks += 1;
+      controller.enqueue(uploadChunk);
+    },
+    cancel() {
+      uploadState.cancelled = true;
+    },
+  });
+  const oversizedUpload = await apiRequest(
+    streamRequest(`/api/dms/${publicIds.get("u2")}/attachments`, "u1", upload, {
+      "content-type": "application/octet-stream",
+    }),
+  );
+  assert.equal(oversizedUpload.response.status, 413);
+  assert.equal(uploadState.cancelled, true, "oversized raw uploads cancel instead of being fully buffered");
+  assert.ok(
+    uploadState.chunks <= 32,
+    `the upload reader stops near the 25 MiB limit (read ${uploadState.chunks} chunks)`,
+  );
+});
+
+test("suspended hub-bot creators cannot post any token action, while disabled tokens remain unauthorized", async () => {
+  const token = "a".repeat(64);
+  const createdAt = "2099-01-01T00:00:00.000Z";
+  db.exec(
+    `INSERT INTO decave_hub_bots
+     (id,hub_id,name,token_hash,created_by,capabilities,allowed_room_ids,enabled,created_at)
+     VALUES('runtime-token-bot',1,'Runtime Token Bot',?,'u1',?,?,1,?)`,
+    hashToken(token),
+    JSON.stringify(["send_messages", "create_events", "create_polls"]),
+    JSON.stringify([10]),
+    createdAt,
+  );
+  const botRequest = (body) =>
+    new Request("https://test.invalid/api/bots/messages", {
+      method: "POST",
+      headers: { authorization: `Bot ${token}`, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  const active = await apiRequest(botRequest({ roomId: 10, text: "active bot message" }));
+  assert.equal(active.response.status, 201, "an active creator can use the configured bot token");
+
+  db.exec("UPDATE decave_users SET suspended_at=?,suspension_reason='test' WHERE id='u1'", createdAt);
+  const before = db.scalar("SELECT COUNT(*) FROM decave_messages WHERE room_id=10");
+  const actions = [
+    { roomId: 10, action: "send_message", text: "blocked message" },
+    {
+      roomId: 10,
+      action: "create_event",
+      text: `__DECAVE_EVENT__${JSON.stringify({ title: "Blocked event", startAt: "2099-01-02T00:00:00.000Z" })}`,
+    },
+    {
+      roomId: 10,
+      action: "create_poll",
+      text: `__DECAVE_POLL__${JSON.stringify({ question: "Blocked poll", options: ["A", "B"] })}`,
+    },
+  ];
+  for (const action of actions) {
+    const denied = await apiRequest(botRequest(action));
+    assert.equal(denied.response.status, 403);
+    assert.match(denied.data.error, /suspended/i);
+  }
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_messages WHERE room_id=10"), before);
+
+  db.exec("UPDATE decave_hub_bots SET enabled=0 WHERE id='runtime-token-bot'");
+  const disabled = await apiRequest(botRequest({ roomId: 10, text: "disabled bot message" }));
+  assert.equal(
+    disabled.response.status,
+    401,
+    "disabled-token authorization remains higher priority than creator status",
+  );
+  db.exec("UPDATE decave_users SET suspended_at=NULL,suspension_reason='' WHERE id='u1'");
+});
+
+test("DM edits require the same friendship and block checks as sends, but sender deletion remains available", async () => {
+  db.exec(
+    "INSERT INTO decave_user_blocks(blocker_user_id,blocked_user_id,created_at) VALUES('u2','u1','2099-01-01T00:00:00.000Z')",
+  );
+  const blockedEdit = await api("/api/dms/messages/dm-1", "u1", { method: "PATCH", body: { text: "blocked edit" } });
+  assert.equal(blockedEdit.response.status, 403);
+  assert.equal(db.scalar("SELECT text FROM decave_direct_messages WHERE id='dm-1'"), "hello");
+
+  db.exec("DELETE FROM decave_user_blocks WHERE blocker_user_id='u2' AND blocked_user_id='u1'");
+  db.exec("DELETE FROM decave_friendships WHERE user_a='u1' AND user_b='u2'");
+  const unfriendEdit = await api("/api/dms/messages/dm-1", "u1", {
+    method: "PATCH",
+    body: { text: "unfriended edit" },
+  });
+  assert.equal(
+    unfriendEdit.response.status,
+    403,
+    "message ownership does not preserve edit access after a friendship ends",
+  );
+  db.exec("INSERT INTO decave_friendships(user_a,user_b,created_at) VALUES('u1','u2','2099-01-01T00:00:00.000Z')");
+  const friendedEdit = await api("/api/dms/messages/dm-1", "u1", {
+    method: "PATCH",
+    body: { text: "edited while friends" },
+  });
+  assert.equal(friendedEdit.response.status, 200, "a current friend can still edit their own message");
+  assert.equal(db.scalar("SELECT text FROM decave_direct_messages WHERE id='dm-1'"), "edited while friends");
+
+  db.exec(
+    "INSERT INTO decave_user_blocks(blocker_user_id,blocked_user_id,created_at) VALUES('u2','u1','2099-01-01T00:00:00.000Z')",
+  );
+  const deleted = await api("/api/dms/messages/dm-1", "u1", { method: "DELETE" });
+  assert.equal(deleted.response.status, 200, "the original sender can still remove a message after a block");
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_direct_messages WHERE id='dm-1'"), 0);
+  db.exec("DELETE FROM decave_user_blocks WHERE blocker_user_id='u2' AND blocked_user_id='u1'");
+});
+
 test("concurrent group additions leave exactly twenty members and no duplicate seat", async () => {
   const created = await api("/api/groups", "u1", {
     method: "POST",
@@ -568,4 +757,113 @@ test("uploaded attachment can be sent and replies stay within the current channe
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_messages"), before);
   assert.equal(attacker.sent.at(-1).type, "ERROR");
   assert.match(attacker.sent.at(-1).message, /not owned by you/);
+});
+
+test("deleting a squad group chat queues and deletes its squad Hub's media", async () => {
+  const squad = db.sqlite.prepare("SELECT group_id, hub_id, room_id FROM decave_squad_rooms LIMIT 1").get();
+  assert.ok(squad, "the squad test above created a squad room");
+  const owner = db.scalar("SELECT owner_user_id FROM decave_group_chats WHERE id=?", squad.group_id);
+  const now = "2099-01-01T00:00:00.000Z";
+  db.exec("UPDATE decave_hubs SET icon_key='squad-icon' WHERE id=?", squad.hub_id);
+  db.exec(
+    `INSERT INTO decave_messages(id,room_id,hub_id,author_user_id,text,attachment_key,created_at)
+     VALUES('squad-file',?,?,?,'',?,?)`,
+    squad.room_id,
+    squad.hub_id,
+    owner,
+    "attachments/private/squad-file",
+    now,
+  );
+  db.exec(
+    `INSERT INTO decave_attachment_access(r2_key,kind,owner_user_id,peer_user_id,hub_id,room_id,created_at)
+     VALUES('attachments/private/squad-file','channel',?,NULL,?,?,?)`,
+    owner,
+    squad.hub_id,
+    squad.room_id,
+    now,
+  );
+  await media.put("attachments/private/squad-file", new Uint8Array([1]));
+  await media.put("squad-icon", new Uint8Array([2]));
+  const removed = await api(`/api/groups/${encodeURIComponent(squad.group_id)}`, owner, { method: "DELETE" });
+  assert.equal(removed.response.status, 200);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_hubs WHERE id=?", squad.hub_id), 0);
+  assert.equal(media.objects.has("attachments/private/squad-file"), false);
+  assert.equal(media.objects.has("squad-icon"), false);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_media_deletion_queue"), 0);
+});
+
+test("room deletion queues sent, unsent and legacy files atomically and retries R2 failures", async () => {
+  const { deleteQueuedMedia } = await import("../../worker/lib/media.ts");
+  const stamp = new Date().toISOString();
+  db.exec("INSERT INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(1,'u1','owner',?)", stamp);
+  const files = ["attachments/private/room-sent", "attachments/private/room-unsent", "attachments/1/901/legacy"];
+  db.exec(
+    "INSERT INTO decave_rooms(id,hub_id,name,type,created_at,updated_at) VALUES(901,1,'delete-me','text',?,?)",
+    stamp,
+    stamp,
+  );
+  for (const objectKey of files.slice(0, 2)) {
+    await media.put(objectKey, new Uint8Array([1]));
+    db.exec(
+      "INSERT INTO decave_attachment_access(r2_key,kind,owner_user_id,hub_id,room_id,created_at) VALUES(?,'channel','u1',1,901,?)",
+      objectKey,
+      stamp,
+    );
+  }
+  await media.put(files[2], new Uint8Array([2]));
+  for (const [i, objectKey] of [files[0], files[2]].entries())
+    db.exec(
+      "INSERT INTO decave_messages(id,room_id,hub_id,author_user_id,text,attachment_key,created_at) VALUES(?,901,1,'u1','',?,?)",
+      "room-file-" + i,
+      objectKey,
+      stamp,
+    );
+  const denied = await api("/api/channels/901", "u2", { method: "DELETE" });
+  assert.equal(denied.response.status, 403);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_media_deletion_queue WHERE object_key IN (?,?,?)", ...files), 0);
+  const removed = await api("/api/channels/901", "u1", { method: "DELETE" });
+  assert.equal(removed.response.status, 200);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_attachment_access WHERE room_id=901"), 0);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_messages WHERE room_id=901"), 0);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_media_deletion_queue WHERE object_key IN (?,?,?)", ...files), 3);
+  const originalDelete = media.delete;
+  media.delete = async () => {
+    throw new Error("R2 unavailable");
+  };
+  try {
+    assert.deepEqual(await deleteQueuedMedia(env, files), files);
+  } finally {
+    media.delete = originalDelete;
+  }
+  assert.equal(
+    db.scalar("SELECT COUNT(*) FROM decave_media_deletion_queue WHERE object_key IN (?,?,?) AND attempts=1", ...files),
+    3,
+  );
+  assert.deepEqual(await deleteQueuedMedia(env, files), []);
+  for (const objectKey of files) assert.equal(await media.get(objectKey), null);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_rooms WHERE id=10"), 1, "other rooms remain intact");
+
+  db.exec(
+    "INSERT INTO decave_rooms(id,hub_id,name,type,created_at,updated_at) VALUES(902,1,'rollback','text',?,?)",
+    stamp,
+    stamp,
+  );
+  db.exec(
+    "INSERT INTO decave_attachment_access(r2_key,kind,owner_user_id,hub_id,room_id,created_at) VALUES('rollback-file','channel','u1',1,902,?)",
+    stamp,
+  );
+  db.sqlite.exec(
+    "CREATE TRIGGER fail_room_delete BEFORE DELETE ON decave_rooms WHEN OLD.id=902 BEGIN SELECT RAISE(ABORT,'test failure'); END;",
+  );
+  try {
+    await assert.rejects(api("/api/channels/902", "u1", { method: "DELETE" }), /test failure/);
+    assert.equal(db.scalar("SELECT COUNT(*) FROM decave_attachment_access WHERE room_id=902"), 1);
+    assert.equal(
+      db.scalar("SELECT COUNT(*) FROM decave_media_deletion_queue WHERE object_key='rollback-file'"),
+      0,
+      "failed deletion also rolls back its queue insertion",
+    );
+  } finally {
+    db.sqlite.exec("DROP TRIGGER fail_room_delete");
+  }
 });

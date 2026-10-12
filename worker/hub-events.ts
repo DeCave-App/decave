@@ -51,6 +51,8 @@ export type HubEventDeps = {
   bodyJson(request: Request): Promise<Record<string, unknown>>;
   broadcast(event: unknown, filter: Record<string, unknown>): Promise<void>;
   now?: () => number;
+  /** After an event is created or edited (arms the bot hubEventStart timer). */
+  afterSave?: (row: HubEventRow) => void;
 };
 
 type Viewer = {
@@ -409,6 +411,7 @@ export async function handleHubEventRoute(
       .run();
     const row = await db.prepare("SELECT * FROM decave_hub_events WHERE id=?").bind(id).first<HubEventRow>();
     await notifyChanged(db, deps, hubId, id, "created");
+    if (row) deps.afterSave?.(row);
     return deps.json(
       { event: (await serializeEvents(db, viewer, [{ row: row!, occurrenceStart: v.startsAt }]))[0] },
       201,
@@ -511,6 +514,7 @@ export async function handleHubEventRoute(
       .run();
     const updated = await db.prepare("SELECT * FROM decave_hub_events WHERE id=?").bind(row.id).first<HubEventRow>();
     await notifyChanged(db, deps, hubId, row.id, "updated");
+    if (updated) deps.afterSave?.(updated);
     return deps.json({
       event: (await serializeEvents(db, viewer, [{ row: updated!, occurrenceStart: v.startsAt }]))[0],
     });

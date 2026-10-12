@@ -15,12 +15,17 @@ import {
 import { groupChatForClient, groupChatMessagesForClient } from "../lib/social";
 import { json, bodyJson, idFromPath } from "../lib/http";
 import { isBlockedEitherDirection } from "../trust-safety";
-import { realtimeBroadcast } from "../lib/realtime";
+import { connectedUserIds, realtimeBroadcast } from "../lib/realtime";
 import { ensureSquadFinderSchema } from "../lib/squad";
-import { currentDmKey, dmE2eeEnabled } from "../lib/dm-e2ee";
 import { ensureHubFeatureSchema } from "../lib/hub-schema";
 import { ensureSoundboardSchema } from "../lib/soundboard";
-import { attemptQueuedMediaDeletionIfQueued, hubMediaObjectKeys, queueHubMediaDeletionStatement } from "../lib/media";
+import {
+  deleteQueuedMedia,
+  ensureMediaDeletionQueueSchema,
+  hubMediaObjectKeys,
+  queueMediaDeletionStatements,
+} from "../lib/media";
+import { currentDmKey, dmE2eeEnabled } from "../lib/dm-e2ee";
 import type { ApiContext } from "./context";
 
 export async function handleGroupChatRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
@@ -40,8 +45,9 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
       .all<GroupChatRow>();
 
     const groups: Array<NonNullable<Awaited<ReturnType<typeof groupChatForClient>>>> = [];
+    const onlineIds = await connectedUserIds(env);
     for (const row of rows.results) {
-      const group = await groupChatForClient(env, row.id, true, user.id);
+      const group = await groupChatForClient(env, row.id, true, user.id, onlineIds);
       if (group) groups.push(group);
     }
     return json({ groups });
@@ -131,10 +137,14 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     const squadRoom = await env.DB.prepare("SELECT hub_id FROM decave_squad_rooms WHERE group_id=?")
       .bind(groupId)
       .first<{ hub_id: number }>();
+    // Group chat messages carry no uploads; the only R2 objects are those of
+    // a linked squad-room Hub. They are queued in the batch that deletes the
+    // Hub, so a failed R2 delete is retried by the retention job.
     let squadMediaKeys: string[] = [];
     if (squadRoom) {
       await ensureHubFeatureSchema(env);
       await ensureSoundboardSchema(env);
+      await ensureMediaDeletionQueueSchema(env.DB);
       squadMediaKeys = await hubMediaObjectKeys(env.DB, squadRoom.hub_id);
     }
     const statements = [
@@ -144,18 +154,14 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     ];
     if (squadRoom) {
       statements.unshift(
-        queueHubMediaDeletionStatement(
-          env.DB,
-          squadRoom.hub_id,
-          nowIso(),
-          "EXISTS(SELECT 1 FROM decave_group_chats WHERE id=? AND owner_user_id=?)",
-          [groupId, user.id],
-        ),
+        ...queueMediaDeletionStatements(env.DB, squadMediaKeys, nowIso()),
+        env.DB.prepare("DELETE FROM decave_attachment_access WHERE hub_id=?").bind(squadRoom.hub_id),
+        env.DB.prepare("DELETE FROM decave_messages WHERE hub_id=?").bind(squadRoom.hub_id),
         env.DB.prepare("DELETE FROM decave_hubs WHERE id=?").bind(squadRoom.hub_id),
       );
     }
     await env.DB.batch(statements);
-    if (squadRoom && squadMediaKeys.length) await attemptQueuedMediaDeletionIfQueued(env, squadMediaKeys);
+    if (squadMediaKeys.length) await deleteQueuedMedia(env, squadMediaKeys);
     await realtimeBroadcast(env, { type: "GROUP_CHAT_REMOVED", groupId, deleted: true }, { userIds: memberIds });
     if (squadRoom) await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { userIds: memberIds });
     return json({ success: true, deleted: true });

@@ -3,7 +3,13 @@
 // linking a new device to the account key.
 // The server only relays public keys and ciphertext (docs/security/DM-E2EE.md).
 
-import { requireUser, securityEvent, describeSessionDevice, normalizeSessionClient } from "../lib/sessions";
+import {
+  requireUser,
+  securityEvent,
+  describeSessionDevice,
+  normalizeSessionClient,
+  currentPasswordThrottle,
+} from "../lib/sessions";
 import { json, idFromPath, boundedBodyJson } from "../lib/http";
 import { realtimeBroadcast } from "../lib/realtime";
 import { nowIso, publicIdOf, rawSessionTokenFromRequest, tokenHash, userByReference, verifyPassword } from "../db";
@@ -198,6 +204,8 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
         return json({ error: "This account already has an encryption key.", code: "DM_KEY_EXISTS" }, 409);
       }
       const password = typeof body.currentPassword === "string" ? body.currentPassword : "";
+      const passwordThrottle = await currentPasswordThrottle(env, user.id);
+      if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(password, user.password_salt, user.password_hash))) {
         await securityEvent(env, user.id, "dm_e2ee.reset_reauth_failed", request);
         return json({ error: "Current password is incorrect." }, 403);

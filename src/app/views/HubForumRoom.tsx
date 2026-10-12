@@ -23,6 +23,7 @@ import type {
   UiSoundEvent,
 } from "../types";
 import { HTTP_URL } from "../env";
+import { messageBotFields } from "../../../shared/bots/card-view";
 import { formatTimestamp } from "../locale";
 import { safeForumIconUrl } from "../message-payloads";
 import { UserAvatar } from "../components/UserAvatar";
@@ -130,7 +131,7 @@ export function HubForumRoom({
             targetType: message.attachment ? "attachment" : "message",
             targetId: message.id,
             subjectUserId: message.userId,
-            subjectUsername: message.username,
+            subjectUsername: messageBotFields(message).bot?.name ?? message.username,
             contextType: "forum",
             contextId: String(currentChannel.id),
             contextLabel: `#${currentChannel.name}`,
@@ -142,7 +143,7 @@ export function HubForumRoom({
 
 ${post.payload.body}`
               : message.text,
-            evidenceLabel: post ? `${message.username}'s forum post` : `${message.username}'s forum reply`,
+            evidenceLabel: `${messageBotFields(message).bot?.name ?? message.username}'s forum ${post ? "post" : "reply"}`,
           })
         }
         onDownload={(attachment) => void downloadLegacyAttachment(attachment)}

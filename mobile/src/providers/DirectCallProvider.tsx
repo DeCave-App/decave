@@ -97,6 +97,14 @@ function errorMessage(cause: unknown, fallback: string): string {
 }
 export function DirectCallProvider({ children }: PropsWithChildren) {
   const { token, user } = useSession();
+  const sessionIdentity = `${user?.id ?? ""}:${token ?? ""}`;
+  const sessionIdentityRef = useRef(sessionIdentity);
+  const callOperationGenerationRef = useRef(0);
+  const callOperationPendingRef = useRef(false);
+  if (sessionIdentityRef.current !== sessionIdentity) {
+    sessionIdentityRef.current = sessionIdentity;
+    callOperationGenerationRef.current += 1;
+  }
   const { connectionState, send, subscribe } = useRealtime();
   const [phase, setPhase] = useState<CallPhase>("idle");
   const [video, setVideo] = useState(false);
@@ -122,6 +130,9 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
   const iceServersRef = useRef<IceServer[]>([]);
   const connectedAtRef = useRef<number | null>(null);
 
+  const isCurrentCallOperation = (generation: number, identity: string) =>
+    generation === callOperationGenerationRef.current &&
+    identity === sessionIdentityRef.current;
 
   const setCallPhase = (next: CallPhase) => {
     phaseRef.current = next;
@@ -165,6 +176,8 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
   };
 
   const resetLocal = (keepError = false, keepPeer = false) => {
+    callOperationGenerationRef.current += 1;
+    callOperationPendingRef.current = false;
     clearCallVerdict();
     closePeer();
     stopLocalMedia();
@@ -190,7 +203,10 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     resetLocal(true, true);
   };
 
-  const requestMediaPermissions = async (withVideo: boolean): Promise<boolean> => {
+  const requestMediaPermissions = async (
+    withVideo: boolean,
+    isCurrent: () => boolean = () => true,
+  ): Promise<boolean> => {
     if (Platform.OS !== "android") return true;
 
     const mic = await PermissionsAndroid.request(
@@ -202,6 +218,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
         buttonNegative: "Not now",
       },
     );
+    if (!isCurrent()) return false;
     if (mic !== PermissionsAndroid.RESULTS.GRANTED) return false;
 
     if (withVideo) {
@@ -214,16 +231,30 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
           buttonNegative: "Not now",
         },
       );
+      if (!isCurrent()) return false;
       if (camera !== PermissionsAndroid.RESULTS.GRANTED) return false;
     }
 
     return true;
   };
 
-  const ensureLocalMedia = async (withVideo: boolean): Promise<MediaStream | null> => {
+  const ensureLocalMedia = async (
+    withVideo: boolean,
+    operationGeneration = callOperationGenerationRef.current,
+    operationIdentity = sessionIdentityRef.current,
+  ): Promise<MediaStream | null> => {
+    const isCurrent = () => isCurrentCallOperation(operationGeneration, operationIdentity);
+    if (!isCurrent()) return null;
     if (localStreamRef.current) return localStreamRef.current;
 
-    const permitted = await requestMediaPermissions(withVideo);
+    let permitted: boolean;
+    try {
+      permitted = await requestMediaPermissions(withVideo, isCurrent);
+    } catch (cause) {
+      if (!isCurrent()) return null;
+      throw cause;
+    }
+    if (!isCurrent()) return null;
     if (!permitted) {
       setError(withVideo ? "Microphone and camera permission are required." : "Microphone permission is required.");
       return null;
@@ -240,12 +271,17 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
           ? ({ facingMode: "user", width: 1280, height: 720, frameRate: 30 } as any)
           : false,
       });
+      if (!isCurrent()) {
+        for (const track of stream.getTracks()) { try { track.stop(); } catch {} }
+        return null;
+      }
       localStreamRef.current = stream;
       setLocalStream(stream);
       setMuted(false);
       setCameraEnabled(true);
       return stream;
     } catch (cause) {
+      if (!isCurrent()) return null;
       console.warn("Could not open direct-call media.", cause);
       setError("DeCave could not open your microphone or camera.");
       return null;
@@ -254,19 +290,28 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
 
   // Calls are relay-only. Without a TURN server no connection can ever form,
   // so fail before ringing instead of falling back to STUN/peer-to-peer.
-  const loadIceServers = async () => {
+  const loadIceServers = async (
+    operationGeneration: number,
+    operationIdentity: string,
+    operationToken: string,
+  ): Promise<boolean> => {
+    const isCurrent = () => isCurrentCallOperation(operationGeneration, operationIdentity);
+    if (!isCurrent()) return false;
     let iceServers: IceServer[] = [];
     try {
-      const data = await apiJson<{ iceServers?: IceServer[] }>("/api/rtc/ice-servers", {}, token);
+      const data = await apiJson<{ iceServers?: IceServer[] }>("/api/rtc/ice-servers", {}, operationToken);
       if (Array.isArray(data.iceServers)) iceServers = data.iceServers;
     } catch (cause) {
+      if (!isCurrent()) return false;
       console.warn("Could not load call ICE servers.", cause);
     }
+    if (!isCurrent()) return false;
     if (!hasRelayIceServer(iceServers)) {
       iceServersRef.current = [];
       throw new Error(RELAY_UNAVAILABLE_MESSAGE);
     }
     iceServersRef.current = iceServers;
+    return true;
   };
 
   const sendDescription = (targetConnectionId: string, description: any): boolean => {
@@ -293,6 +338,9 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
 
   const ensurePeer = (participant: VoiceParticipant): RTCPeerConnection => {
     if (pcRef.current) return pcRef.current;
+    if (!hasRelayIceServer(iceServersRef.current)) {
+      throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+    }
     // Relay-only: peers never exchange host/srflx candidates, so neither side
     // learns the other's IP address.
     const pc = new RTCPeerConnection({
@@ -346,6 +394,9 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     auth?: unknown,
   ) => {
     if (phaseRef.current === "idle") return;
+    const operationGeneration = callOperationGenerationRef.current;
+    const operationIdentity = sessionIdentityRef.current;
+    const isCurrent = () => isCurrentCallOperation(operationGeneration, operationIdentity);
     const currentPeer = peerRef.current;
     if (currentPeer?.userId && participant.userId !== currentPeer.userId) return;
     // Direct calls are strict: with a friend who has a key, the connection must be
@@ -357,32 +408,47 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       auth,
       true,
     );
+    if (!isCurrent()) return;
     if (verdict === "rejected") {
       throw new Error(
         "This call couldn't be verified as end-to-end encrypted, so it wasn't connected. Both of you need an up-to-date DeCave that can read encrypted messages.",
       );
     }
-    const media = await ensureLocalMedia(videoRef.current);
+    const media = await ensureLocalMedia(videoRef.current, operationGeneration, operationIdentity);
+    if (!isCurrent()) return;
     if (!media) throw new Error("Microphone permission is required.");
     const pc = ensurePeer(participant);
     await pc.setRemoteDescription(new RTCSessionDescription(description as any));
+    if (!isCurrent()) return;
     await flushCandidates();
+    if (!isCurrent()) return;
     if (description.type === "offer") {
       const answer = await pc.createAnswer();
+      if (!isCurrent()) return;
       await pc.setLocalDescription(answer);
+      if (!isCurrent()) return;
       if (!sendDescription(participant.connectionId, pc.localDescription)) {
         throw new Error("Realtime disconnected while answering the call.");
       }
     }
   };
 
-  const createOffer = async (participant: VoiceParticipant) => {
+  const createOffer = async (
+    participant: VoiceParticipant,
+    operationGeneration = callOperationGenerationRef.current,
+    operationIdentity = sessionIdentityRef.current,
+  ): Promise<boolean> => {
+    const isCurrent = () => isCurrentCallOperation(operationGeneration, operationIdentity);
+    if (!isCurrent()) return false;
     const pc = ensurePeer(participant);
     const offer = await pc.createOffer();
+    if (!isCurrent()) return false;
     await pc.setLocalDescription(offer);
+    if (!isCurrent()) return false;
     if (!sendDescription(participant.connectionId, pc.localDescription)) {
       throw new Error("Realtime disconnected while starting the call.");
     }
+    return true;
   };
 
   const handleCandidate = async (candidate: CandidatePayload) => {
@@ -400,7 +466,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     withVideo: boolean,
     username = "Friend",
   ): Promise<boolean> => {
-    if (!targetUserId || phaseRef.current !== "idle") return false;
+    if (!targetUserId || phaseRef.current !== "idle" || callOperationPendingRef.current) return false;
     if (connectionState !== "connected") {
       setError("DeCave realtime is still connecting.");
       return false;
@@ -410,11 +476,18 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       return false;
     }
 
+    const operationGeneration = ++callOperationGenerationRef.current;
+    const operationIdentity = sessionIdentity;
+    const operationToken = token;
+    const isCurrent = () => isCurrentCallOperation(operationGeneration, operationIdentity);
+    callOperationPendingRef.current = true;
     setError("");
     setCallPeer(provisionalPeer(targetUserId, username));
     try {
-      await loadIceServers();
-      const media = await ensureLocalMedia(withVideo);
+      if (!await loadIceServers(operationGeneration, operationIdentity, operationToken)) return false;
+      if (!isCurrent()) return false;
+      const media = await ensureLocalMedia(withVideo, operationGeneration, operationIdentity);
+      if (!isCurrent()) return false;
       if (!media) {
         resetLocal(true, true);
         return false;
@@ -422,34 +495,57 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       outgoingRef.current = true;
       setCallVideo(withVideo);
       setCallPhase("ringing");
+      if (!isCurrent()) return false;
       if (!send({ type: "DM_CALL_START", targetUserId, video: withVideo })) {
         throw new Error("Realtime disconnected before the call could start.");
       }
       return true;
     } catch (cause) {
+      if (!isCurrent()) return false;
       setError(errorMessage(cause, "The call could not start."));
       resetLocal(true, true);
       return false;
+    } finally {
+      if (operationGeneration === callOperationGenerationRef.current) {
+        callOperationPendingRef.current = false;
+      }
     }
   };
 
   const acceptCall = async () => {
-    if (phaseRef.current !== "incoming") return;
+    if (phaseRef.current !== "incoming" || callOperationPendingRef.current) return;
+    if (!token || !user?.id) {
+      setError("Sign in again before accepting a call.");
+      return;
+    }
+    const operationGeneration = ++callOperationGenerationRef.current;
+    const operationIdentity = sessionIdentity;
+    const operationToken = token;
+    const isCurrent = () => isCurrentCallOperation(operationGeneration, operationIdentity);
+    callOperationPendingRef.current = true;
     setError("");
     try {
-      await loadIceServers();
-      const media = await ensureLocalMedia(videoRef.current);
+      if (!await loadIceServers(operationGeneration, operationIdentity, operationToken)) return;
+      if (!isCurrent()) return;
+      const media = await ensureLocalMedia(videoRef.current, operationGeneration, operationIdentity);
+      if (!isCurrent()) return;
       if (!media) {
         send({ type: "DM_CALL_DECLINE" });
         resetLocal(true, true);
         return;
       }
       setCallPhase("connecting");
+      if (!isCurrent()) return;
       if (!send({ type: "DM_CALL_ACCEPT" })) {
         throw new Error("Realtime disconnected before the call could be accepted.");
       }
     } catch (cause) {
+      if (!isCurrent()) return;
       failCall(cause, "The call could not be accepted.");
+    } finally {
+      if (operationGeneration === callOperationGenerationRef.current) {
+        callOperationPendingRef.current = false;
+      }
     }
   };
 
@@ -482,6 +578,9 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
 
   const upgradeToVideo = async () => {
     if (phaseRef.current !== "connected") return;
+    const operationGeneration = callOperationGenerationRef.current;
+    const operationIdentity = sessionIdentityRef.current;
+    const isCurrent = () => isCurrentCallOperation(operationGeneration, operationIdentity);
     const existingTrack = localStreamRef.current?.getVideoTracks()[0];
     if (existingTrack) {
       existingTrack.enabled = true;
@@ -490,7 +589,15 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    const permitted = await requestMediaPermissions(true);
+    let permitted: boolean;
+    try {
+      permitted = await requestMediaPermissions(true, isCurrent);
+    } catch (cause) {
+      if (!isCurrent()) return;
+      setError(errorMessage(cause, "Camera permission could not be requested."));
+      return;
+    }
+    if (!isCurrent()) return;
     if (!permitted) {
       setError("Camera permission is required to switch to video.");
       return;
@@ -506,6 +613,11 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
         audio: false,
         video: { facingMode: "user", width: 1280, height: 720, frameRate: 30 } as any,
       });
+      if (!isCurrent() || phaseRef.current !== "connected" || peerRef.current !== participant || pcRef.current !== pc || localStreamRef.current !== local) {
+        for (const track of cameraStream.getTracks()) { try { track.stop(); } catch {} }
+        cameraStream = null;
+        return;
+      }
       const track = cameraStream.getVideoTracks()[0];
       if (!track) throw new Error("No camera track is available.");
       local.addTrack(track);
@@ -517,12 +629,12 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       setCallVideo(true);
       setCameraEnabled(true);
       send({ type: "DM_CALL_UPGRADE_VIDEO" });
-      await createOffer(participant);
+      await createOffer(participant, operationGeneration, operationIdentity);
     } catch (cause) {
       for (const track of cameraStream?.getTracks() ?? []) {
         try { track.stop(); } catch {}
       }
-      setError(errorMessage(cause, "DeCave could not open your camera."));
+      if (isCurrent()) setError(errorMessage(cause, "DeCave could not open your camera."));
     }
   };
 
@@ -581,12 +693,18 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       connectedAtRef.current = Date.now();
       setDurationSeconds(0);
       setCallPhase("connecting");
+      const operationGeneration = callOperationGenerationRef.current;
+      const operationIdentity = sessionIdentityRef.current;
+      const isCurrent = () => isCurrentCallOperation(operationGeneration, operationIdentity);
       void (async () => {
-        const media = await ensureLocalMedia(withVideo);
+        const media = await ensureLocalMedia(withVideo, operationGeneration, operationIdentity);
+        if (!isCurrent()) return;
         if (!media) throw new Error("Microphone permission is required.");
         ensurePeer(acceptedPeer);
-        if (outgoingRef.current) await createOffer(acceptedPeer);
-      })().catch((cause) => failCall(cause, "Call negotiation failed."));
+        if (outgoingRef.current) await createOffer(acceptedPeer, operationGeneration, operationIdentity);
+      })().catch((cause) => {
+        if (isCurrent()) failCall(cause, "Call negotiation failed.");
+      });
       return;
     }
 
@@ -594,7 +712,13 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       const from = event.from as VoiceParticipant | undefined;
       const description = event.description as DescriptionPayload | undefined;
       if (!from?.connectionId || !description?.type || !description.sdp) return;
-      void handleDescription(from, description, event.auth).catch((cause) => failCall(cause, "Call negotiation failed."));
+      const operationGeneration = callOperationGenerationRef.current;
+      const operationIdentity = sessionIdentityRef.current;
+      void handleDescription(from, description, event.auth).catch((cause) => {
+        if (isCurrentCallOperation(operationGeneration, operationIdentity)) {
+          failCall(cause, "Call negotiation failed.");
+        }
+      });
       return;
     }
 
@@ -643,7 +767,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
   }, [connectionState]);
 
   useEffect(() => {
-    if (phaseRef.current !== "idle") resetLocal();
+    if (phaseRef.current !== "idle" || callOperationPendingRef.current) resetLocal();
   }, [user?.id, token]);
 
   useEffect(() => {

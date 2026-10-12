@@ -1,7 +1,7 @@
-// Header of the open Hub room: room name, topic and the room's action buttons.
+// Header of the open Hub room: the room's action buttons (search, pins, chat, menu)
+// and, on narrow windows, the Hub/room switcher. No breadcrumb or status line.
 
 import type { Dispatch, SetStateAction } from "react";
-import { Icon } from "../../components/Icon";
 import type { Channel, Server, ChatMessage } from "../types";
 import { HubRoomHeaderActions } from "./HubRoomHeaderActions";
 import type { HubPanelsState } from "../state/hub-panels";
@@ -15,7 +15,6 @@ type Props = {
   selectedServer: number;
   selectedChannel: number;
   messages: ChatMessage[];
-  connectionStatus: string;
   currentServer: Server;
   currentChannel: Channel;
   streamerOverviewActive: boolean;
@@ -27,6 +26,8 @@ type Props = {
   hubHomeActive: boolean;
   hubPanels: HubPanelsState;
   voiceCall: VoiceCallState;
+  roomMuted: boolean;
+  toggleRoomMute: () => void;
 };
 
 export function HubContextHeader({
@@ -37,7 +38,6 @@ export function HubContextHeader({
   selectedServer,
   selectedChannel,
   messages,
-  connectionStatus,
   currentServer,
   currentChannel,
   streamerOverviewActive,
@@ -49,14 +49,18 @@ export function HubContextHeader({
   hubHomeActive,
   hubPanels,
   voiceCall,
+  roomMuted,
+  toggleRoomMute,
 }: Props) {
   const { voiceChatOpen, setVoiceChatOpen } = voiceCall;
   const { setShowMessageSearch, setShowPinnedMessages } = hubPanels;
+  const hasRoomActions = !streamerOverviewActive && !hubHomeActive;
   return (
     <header
       className="channel-header dc-hub-context-header"
       data-hub-id={currentServer.id}
       data-channel-id={currentChannel.id}
+      data-room-actions={hasRoomActions ? "true" : "false"}
       aria-label={
         streamerOverviewActive
           ? `Hubs · ${currentServer.name} · Overview`
@@ -65,43 +69,6 @@ export function HubContextHeader({
             : `Hubs · ${currentServer.name} · ${currentChannel.name}`
       }
     >
-      <div>
-        <div
-          className="dc-context-breadcrumb"
-          aria-label={
-            streamerOverviewActive
-              ? `Hubs / ${currentServer.name} / Overview`
-              : hubHomeActive
-                ? `Hubs / ${currentServer.name} / Hub Home`
-                : `Hubs / ${currentServer.name} / ${currentChannel.name}`
-          }
-        >
-          <span className="dc-context-section">Hubs</span>
-          <span className="dc-context-separator" aria-hidden="true">
-            <Icon name="chevron-right" size="sm" />
-          </span>
-          <span className="dc-context-hub">
-            {currentServer.icon} {currentServer.name}
-          </span>
-          <span className="dc-context-separator" aria-hidden="true">
-            <Icon name="chevron-right" size="sm" />
-          </span>
-          {streamerOverviewActive || hubHomeActive ? (
-            <strong className="dc-context-channel">{hubHomeActive ? "Hub Home" : "Overview"}</strong>
-          ) : (
-            <strong className="dc-context-channel">
-              {currentChannel.type === "voice" ? "V" : currentChannel.type === "forum" ? "▤" : "#"}{" "}
-              {currentChannel.name}
-            </strong>
-          )}
-        </div>
-        <div className="channel-subtitle">
-          {connectionStatus}
-          {currentServer.myRole ? ` · ${currentServer.myRole.toUpperCase()}` : ""}
-          {streamerOverviewActive && <span> · OVERVIEW</span>}
-        </div>
-      </div>
-
       <div className="dc-compact-workspace-picker" data-compact-workspace-picker="true">
         <label className="dc-compact-picker-field">
           <span>Hub</span>
@@ -141,7 +108,7 @@ export function HubContextHeader({
       </div>
 
       <div className="header-actions">
-        {!streamerOverviewActive && !hubHomeActive && (
+        {hasRoomActions && (
           <HubRoomHeaderActions
             setShowMessageSearch={setShowMessageSearch}
             setShowPinnedMessages={setShowPinnedMessages}
@@ -156,6 +123,8 @@ export function HubContextHeader({
             canManageCurrentRooms={canManageCurrentRooms}
             leaveCurrentSquadRoom={leaveCurrentSquadRoom}
             openManageChannel={openManageChannel}
+            roomMuted={roomMuted}
+            toggleRoomMute={toggleRoomMute}
           />
         )}
       </div>

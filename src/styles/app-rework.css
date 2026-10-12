@@ -9828,6 +9828,26 @@ body .message-reaction-picker.message-reaction-picker-portal {
   }
 }
 
+/* The Hub header no longer shows a breadcrumb or status line. Rooms keep a
+ * slim, right-aligned row of their buttons; Overview and Hub Home have no
+ * buttons, so the header is hidden there except for the narrow-window
+ * Hub/room switcher. */
+@media (min-width: 821px) {
+  .app[data-skin] .dc-hub-context-header[data-room-actions="false"] {
+    display: none !important;
+  }
+
+  .app[data-skin] .dc-hub-context-header[data-room-actions="true"] {
+    justify-content: flex-end !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 6px 10px !important;
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
 /* Give the live context line its separators and shrink-to-fit text budget so
  * a narrow Hub header remains readable instead of concatenating labels. */
 .app[data-skin] .dc-hub-context-header .dc-context-breadcrumb {

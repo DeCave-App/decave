@@ -411,9 +411,15 @@ export function VoiceSettingsSection({
                     "Noise Suppression by DeCave",
                     "Local AI processing for clearer voice in noisy environments",
                   ],
+                  [
+                    "deepfilter",
+                    "DeepFilterNet",
+                    "Deep noise filtering",
+                    "Strongest local AI filtering for keyboards, clicks and loud rooms",
+                  ],
                 ] as const
               ).map(([value, label, subtitle, description]) => {
-                const unavailable = value === "ai" && !aiNoiseAvailable;
+                const unavailable = (value === "ai" || value === "deepfilter") && !aiNoiseAvailable;
                 const selected = audioSettings.noiseSuppression === value;
                 return (
                   <button

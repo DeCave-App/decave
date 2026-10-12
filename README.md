@@ -8,28 +8,17 @@ promise a stable release.
 
 ## Security and privacy
 
-In release 0.1.132, direct messages and group chats are end-to-end encrypted
-after both direct-message participants, or every group member, have set up keys
-in an up-to-date client. This covers message content and attachments, plus DM
-reactions and poll votes. The Worker stores ciphertext and can see conversation
-metadata, but not this encrypted content. Hub rooms, forums, and messages sent
-before encryption remain readable by the service.
+Direct messages and group chats are end-to-end encrypted once everyone in them
+uses an up-to-date client: the Worker stores ciphertext it cannot read,
+including DM photos, files, reactions and poll votes. Hub rooms and forums, and
+messages from before encryption, are stored as readable content that the
+DeCave Worker can access. TLS protects HTTP
+and WebSocket traffic to Cloudflare, and DTLS-SRTP protects WebRTC media in
+transit between participants.
 
-Voice, video, and screen-share media in direct calls and voice rooms uses
-DTLS-SRTP between devices through Cloudflare TURN relays. A direct call rejects
-an invalid signature, and rejects a missing signature when the peer's key is
-available or pinned. If no peer key is available or pinned, an unsigned
-description may proceed without a visible verification mark. Voice rooms may
-also admit unverified participants, shown without a lock; a signaling-level
-interception is not ruled out for unverified participants.
-This code has not had an independent security audit. The launch checklist
-records real-device checks and a two-account production smoke test that remain
-outstanding.
-
-See [the end-to-end encryption design and limits](docs/security/DM-E2EE.md) and
-the [launch record and checklist](docs/security/DM-E2EE-LAUNCH.md). These
-descriptions reflect the implementation in this source snapshot; they are not
-an independent security assessment.
+- [End-to-end encrypted DMs and group chats](docs/security/DM-E2EE.md)
+- [Switching encryption on: launch checklist](docs/security/DM-E2EE-LAUNCH.md)
+- [Bot builder admin guide](docs/bots/README.md)
 
 The [data-routing disclosure](docs/legal/PRIVACY-AND-DATA-ROUTING.md) describes
 the implementation visible in this repository. It and the
@@ -99,7 +88,6 @@ npx wrangler dev --config wrangler.local.jsonc --ip 127.0.0.1 --port 8787
 ```
 
 In a second terminal, `npm run dev` starts Vite; its `/api` and `/ws` requests proxy to the local Worker at `127.0.0.1:8787`. The repository does not include a ready-made local Cloudflare resource configuration.
-
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing changes. Security

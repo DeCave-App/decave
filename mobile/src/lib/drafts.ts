@@ -22,11 +22,29 @@ function accountKey(id: string | null): string | null {
   return `decave.drafts.v2.${encodedId}`;
 }
 
+/** Storage calls for one key run in order, so a late write cannot land after a delete. */
 function queueStorageOperation<T>(key: string, operation: () => Promise<T>): Promise<T> {
   const previous = storageQueues.get(key) ?? Promise.resolve();
   const next = previous.then(operation, operation);
-  storageQueues.set(key, next.then(() => undefined, () => undefined));
+  storageQueues.set(
+    key,
+    next.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
   return next;
+}
+
+/** Deletes an account's saved drafts from this phone (after any pending write for it). */
+export async function forgetStoredDrafts(id: string): Promise<void> {
+  const key = accountKey(id);
+  if (!key) return;
+  if (accountId === id && saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  await queueStorageOperation(key, () => SecureStore.deleteItemAsync(key));
 }
 
 function notify() {
@@ -92,7 +110,9 @@ export function setDraft(key: string, text: string): void {
   saveTimer = setTimeout(() => {
     saveTimer = null;
     if (version !== accountVersion || storageKey !== accountKey(accountId)) return;
-    void queueStorageOperation(storageKey, () => SecureStore.setItemAsync(storageKey, snapshot)).catch(() => undefined);
+    void queueStorageOperation(storageKey, () => SecureStore.setItemAsync(storageKey, snapshot)).catch(
+      () => undefined,
+    );
   }, 600);
 }
 

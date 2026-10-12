@@ -6,6 +6,7 @@ import { tokenHash } from "../../worker/db.ts";
 
 register("../test-support/cloudflare-workers-test-loader.mjs", import.meta.url);
 const { handleApi } = await import("../../worker/index.ts");
+const { sendVerificationEmail } = await import("../../worker/lib/email.ts");
 
 function fixture(t) {
   const db = new D1Mock();
@@ -44,6 +45,20 @@ function fixture(t) {
     handleApi(new Request("https://test.invalid/api/auth/verify-email?token=copied-old-token"), { DB: db });
   return { db, verify, legacyGet };
 }
+
+test("verification email keeps the token in a fragment for explicit confirmation", async () => {
+  let message;
+  await sendVerificationEmail(
+    { EMAIL: { send: async (sent) => (message = sent) } },
+    "verify@example.test",
+    "verify-user",
+    "copied-old-token",
+    "https://app.example.test",
+  );
+  assert.match(message.text, /https:\/\/app\.example\.test\/#token=copied-old-token/);
+  assert.match(message.html, /href="https:\/\/app\.example\.test\/#token=copied-old-token"/);
+  assert.doesNotMatch(message.text + message.html, /verify-email\?token=/);
+});
 
 test("verification accepts a current token once and preserves account identity", async (t) => {
   const { db, verify } = fixture(t);

@@ -53,6 +53,8 @@ type Props = {
   };
   canManageCurrentServer: boolean;
   canManageCurrentRooms: boolean;
+  /** Bot managers (Manage Bots / Manage Rooms) reach Hub settings for the Bots section. */
+  canManageCurrentBots?: boolean;
   isCurrentServerOwner: boolean;
   hubEvents: HubEventsStore;
   syncHomeCalendar: () => Promise<void>;
@@ -124,6 +126,7 @@ export function HubSidebar({
   streamerSidebarProps,
   canManageCurrentServer,
   canManageCurrentRooms,
+  canManageCurrentBots,
   isCurrentServerOwner,
   hubEvents,
   syncHomeCalendar,
@@ -440,7 +443,7 @@ export function HubSidebar({
                 )}
               </button>
             )}
-            {canManageCurrentServer && (
+            {(canManageCurrentServer || canManageCurrentBots) && (
               <button type="button" aria-label="Manage Hub" data-tooltip="Manage Hub" onClick={openManageServer}>
                 <HubActionIcon kind="manage" />
                 <span>Manage Hub</span>

@@ -17,7 +17,13 @@ export function QrLogin({ client, onAuthenticated }: QrLoginProps) {
     let refreshTimer = 0;
     void (async () => {
       try {
-        const response = await fetch("/api/auth/qr/start", { method: "POST", credentials: "include" });
+        // The client kind is shown to the approving phone before it approves.
+        const response = await fetch("/api/auth/qr/start", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client }),
+        });
         const data = (await response.json()) as {
           challengeId?: string;
           secret?: string;

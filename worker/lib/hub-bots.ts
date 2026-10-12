@@ -1,10 +1,20 @@
 // Hub bots: capabilities, the rooms a bot may post in, and bots as sent to the
 // client.
 
-import { getRoom } from "../db";
+import { getRoom, nowIso } from "../db";
+import type { Env } from "./env";
 import { canAccessRoom } from "./hubs";
+import { messageForClient } from "./messages";
+import { realtimeBroadcast } from "./realtime";
 
-export const HUB_BOT_CAPABILITIES = ["send_messages", "create_polls", "create_events"] as const;
+export const HUB_BOT_CAPABILITIES = [
+  "send_messages",
+  "create_polls",
+  "create_events",
+  "manage_roles",
+  "manage_messages",
+  "webhooks",
+] as const;
 
 export type HubBotCapability = (typeof HUB_BOT_CAPABILITIES)[number];
 
@@ -79,4 +89,59 @@ export function hubBotForClient(row: HubBotRecord) {
     allowedRoomIds: storedHubBotRoomIds(row.allowed_room_ids),
     createdAt: row.created_at,
   };
+}
+
+export const BOT_MESSAGE_PREFIX = "__DECAVE_BOT__";
+
+/** Plain bot text as stored: wrapped so current clients render it as a bot message. */
+export function botMessageText(bot: { id: string; name: string }, text: string): string {
+  return `${BOT_MESSAGE_PREFIX}${JSON.stringify({ botId: bot.id, name: bot.name, text })}`;
+}
+
+/**
+ * Inserts a bot message and broadcasts it. `text` is stored as given (see
+ * botMessageText). Callers have already checked the room, the author's access
+ * and any rate limit. A private notice is broadcast only to its one viewer.
+ * Never dispatches bot events: bot output must not re-trigger bots here.
+ */
+export async function postBotMessage(
+  env: Env,
+  input: {
+    hubId: number;
+    roomId: number;
+    botId: string;
+    authorUserId: string;
+    text: string;
+    card?: unknown;
+    visibleToUserId?: string | null;
+    replyToId?: string | null;
+  },
+) {
+  const id = crypto.randomUUID();
+  const visibleTo = input.visibleToUserId ?? null;
+  await env.DB.prepare(
+    `INSERT INTO decave_messages(id,room_id,hub_id,author_user_id,text,created_at,reply_to_id,bot_id,card_json,visible_to_user_id)
+     VALUES(?,?,?,?,?,?,?,?,?,?)`,
+  )
+    .bind(
+      id,
+      input.roomId,
+      input.hubId,
+      input.authorUserId,
+      input.text,
+      nowIso(),
+      input.replyToId ?? null,
+      input.botId,
+      input.card ? JSON.stringify(input.card) : null,
+      visibleTo,
+    )
+    .run();
+  const message = await messageForClient(env, id, visibleTo);
+  if (!message) return null;
+  await realtimeBroadcast(
+    env,
+    { type: "CHAT_MESSAGE", ...message },
+    visibleTo ? { channelId: input.roomId, userIds: [visibleTo] } : { channelId: input.roomId },
+  );
+  return message;
 }

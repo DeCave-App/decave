@@ -11,7 +11,10 @@ const { RETENTION_DAYS } = await import("../../worker/retention.ts");
 const { PRIVACY_POLICY } = await import("../../website/src/privacy-policy.ts");
 
 test("docs/legal/PRIVACY-POLICY.md is generated from the website policy source", async () => {
-  const markdown = fs.readFileSync(path.join(root, "docs", "legal", "PRIVACY-POLICY.md"), "utf8");
+  // Git may check the file out with CRLF line endings (core.autocrlf on Windows).
+  const markdown = fs
+    .readFileSync(path.join(root, "docs", "legal", "PRIVACY-POLICY.md"), "utf8")
+    .replace(/\r\n/g, "\n");
   assert.equal(markdown, await renderPrivacyPolicyMarkdown());
 });
 
@@ -25,7 +28,7 @@ test("the published retention table matches the retention job", () => {
   assert.equal(RETENTION_DAYS.knownDevices, 365);
   assert.equal(keptFor("Devices remembered"), "1 year after last use");
   assert.equal(RETENTION_DAYS.closedCaseEvidence, 183);
-  assert.equal(keptFor("Evidence attached"), "6 months after the case is closed");
+  assert.equal(keptFor("Evidence attached"), "183 days after the case is closed");
   assert.equal(RETENTION_DAYS.closedCaseRecords, 365);
   assert.equal(keptFor("Reports, moderation cases"), "1 year after the case is closed");
   assert.equal(RETENTION_DAYS.auditLogs, 365);
@@ -34,9 +37,17 @@ test("the published retention table matches the retention job", () => {
   assert.equal(keptFor("Hub moderation history"), "6 months");
   assert.equal(RETENTION_DAYS.feedback, 365);
   assert.equal(keptFor("Feedback"), "1 year");
+  assert.equal(RETENTION_DAYS.botRuns, 30);
+  assert.equal(keptFor("Bot run log"), "30 days");
 });
 
 test("the policy no longer names removed integrations", () => {
   const text = JSON.stringify(PRIVACY_POLICY);
-  assert.doesNotMatch(text, /twitch|youtube/i);
+  assert.doesNotMatch(text, /youtube/i);
+  // Twitch appears only as the Streamer Hub auto-live recipient (and in the transfers list).
+  assert.match(text, /\*\*Twitch\*\*, when a Streamer Hub creator turns on automatic live status/);
+  assert.doesNotMatch(
+    text.replace(/\*\*Twitch\*\*, when a Streamer Hub creator[^"]*"/, "").replace("Anthropic, Twitch and FACEIT", ""),
+    /twitch/i,
+  );
 });

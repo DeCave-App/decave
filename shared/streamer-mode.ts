@@ -4,16 +4,60 @@ export type HubLayout = "standard" | typeof STREAMER_LAYOUT;
 export type HubRole = "owner" | "admin" | "member";
 export type QueueStatus = "waiting" | "called" | "ready" | "playing" | "done" | "skipped" | "left";
 export type SessionStatus = "open" | "paused" | "ended";
-export type FeatureFlags = { giveaways: boolean };
+export type FeatureFlags = {
+  giveaways: boolean;
+  /** CS2-style community matches; switched on per Hub by DeCave staff. */
+  pugs?: boolean;
+  /** Monthly PUG/FACEIT leaderboard; switched on per Hub by DeCave staff. */
+  leaderboard?: boolean;
+  /** Twitch auto-live and clips board; switched on per Hub by DeCave staff. */
+  twitch?: boolean;
+  /** Twitch subscriber role and sub giveaway rules; per Hub by DeCave staff. */
+  subRoles?: boolean;
+};
+/** Per-Hub community features (decave_streamer_hubs.community_features). */
+export type CommunityFeatures = {
+  pugs: boolean;
+  leaderboard: boolean;
+  twitch: boolean;
+  /** Voice room player caps. */
+  voiceLimits: boolean;
+  /** Twitch subscriber role + giveaway sub rules. */
+  subRoles: boolean;
+  /** FACEIT level badge next to member names. */
+  faceitBadges: boolean;
+};
+export function parseCommunityFeatures(json: string | null | undefined): CommunityFeatures {
+  let value: Record<string, unknown> = {};
+  try {
+    const parsed = JSON.parse(json || "{}");
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) value = parsed as Record<string, unknown>;
+  } catch {
+    /* treat as none */
+  }
+  return {
+    pugs: value.pugs === true,
+    leaderboard: value.leaderboard === true,
+    twitch: value.twitch === true,
+    voiceLimits: value.voiceLimits === true,
+    subRoles: value.subRoles === true,
+    faceitBadges: value.faceitBadges === true,
+  };
+}
 
 export type StreamerConfig = {
   creatorName: string;
   tagline: string;
+  streamUrl: string;
   streamTitle: string;
   game: string;
   language: string;
-  /** Manual, expiring community status; it does not connect to a broadcast service. */
+  /** Manual, expiring community status. This never starts an OBS/Twitch broadcast. */
   liveUntil: string | null;
+  /** Turn live status on/off from the Twitch channel in streamUrl (EventSub). */
+  twitchAutoLive: boolean;
+  /** Post the channel's new Twitch clips in the Hub's clips forum. Needs twitchAutoLive's channel link. */
+  twitchClips: boolean;
   queueRules: string;
   onboarding: string;
   version: number;
@@ -43,6 +87,13 @@ export type QueueSummary = {
   playing: number;
   mine: QueueEntry | null;
 };
+export type StreamerHighlight = {
+  id: string;
+  title: string;
+  url: string;
+  thumbnailPath: string;
+  createdAt: string;
+};
 export type Giveaway = {
   id: string;
   title: string;
@@ -52,6 +103,8 @@ export type Giveaway = {
   entryCount: number;
   entered: boolean;
   winnerName: string | null;
+  /** Entry rules (Hubs with Twitch subscriber roles). */
+  conditions?: { subsOnly: boolean; minMemberDays: number; subBonus: boolean };
 };
 export type StreamerStats = {
   memberCount: number;
@@ -66,10 +119,15 @@ export type StreamerSnapshot = {
   config: StreamerConfig;
   session: CommunitySession | null;
   queue: QueueSummary;
+  highlights: StreamerHighlight[];
   giveaways: Giveaway[];
   /** Absent from member responses, not merely hidden with CSS. */
   stats?: StreamerStats;
   features: FeatureFlags;
+  /** This viewer's Twitch link and subscription (Hubs with Twitch subscriber roles). */
+  twitchMember?: { linked: boolean; login: string | null; subscribed: boolean; tier: string | null };
+  /** The Hub's current (or just finished) PUG; absent on older servers. */
+  pug?: import("./streamer-pugs.ts").Pug | null;
   serverTime: string;
 };
 export type StreamerEvent = {
@@ -85,10 +143,13 @@ export type QueuePage = { entries: QueueEntry[]; nextCursor: string | null };
 export const DEFAULT_STREAMER_CONFIG: StreamerConfig = {
   creatorName: "",
   tagline: "Good games. Better people.",
+  streamUrl: "",
   streamTitle: "",
   game: "",
   language: "",
   liveUntil: null,
+  twitchAutoLive: false,
+  twitchClips: false,
   queueRules: "Be ready when called. Accept the ready check before joining voice. One turn per session.",
   onboarding: "Welcome! Read this hub's rules, introduce yourself, and join a community activity.",
   version: 1,
@@ -145,7 +206,68 @@ export function isCreator(role: HubRole): boolean {
   return role === "owner" || role === "admin";
 }
 export function isLive(config: StreamerConfig, now = Date.now()): boolean {
-  return Boolean(config.liveUntil && Date.parse(config.liveUntil) > now);
+  return Boolean(config.streamUrl && config.liveUntil && Date.parse(config.liveUntil) > now);
+}
+
+/** No arbitrary protocols, credentials, redirects, embeds, or attacker-owned subdomains. */
+export function publicStreamUrl(value: unknown, required = false): string {
+  const raw = text(value, "Stream URL", 500, required);
+  if (!raw) return "";
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new StreamerInputError("Enter a Twitch or YouTube HTTPS URL.");
+  }
+  const hosts = new Set([
+    "twitch.tv",
+    "www.twitch.tv",
+    "clips.twitch.tv",
+    "youtube.com",
+    "www.youtube.com",
+    "youtu.be",
+  ]);
+  if (url.protocol !== "https:" || url.username || url.password || url.port || !hosts.has(url.hostname)) {
+    throw new StreamerInputError("Only Twitch and YouTube HTTPS links are supported.");
+  }
+  // Restrict routes; provider redirect/account/auth paths are not content links.
+  if (url.hostname.endsWith("twitch.tv")) {
+    const ok =
+      url.hostname === "clips.twitch.tv"
+        ? /^\/[a-zA-Z0-9_-]+\/?$/.test(url.pathname)
+        : /^\/[a-zA-Z0-9_]{1,25}(?:\/clip\/[a-zA-Z0-9_-]+)?\/?$/.test(url.pathname) ||
+          /^\/videos\/\d+\/?$/.test(url.pathname);
+    if (!ok || /^\/(login|signup|directory|settings|downloads|wallet|oauth|redirect)(\/|$)/i.test(url.pathname)) {
+      throw new StreamerInputError("Use a direct channel, video, or clip URL.");
+    }
+    url.search = "";
+  } else if (url.hostname === "youtu.be") {
+    if (!/^\/[a-zA-Z0-9_-]{11}\/?$/.test(url.pathname))
+      throw new StreamerInputError("Use a direct YouTube video link.");
+    url.search = "";
+  } else {
+    const watch = url.pathname === "/watch" && /^[a-zA-Z0-9_-]{11}$/.test(url.searchParams.get("v") ?? "");
+    const channel = /^\/(?:@[a-zA-Z0-9_.-]+|channel\/[a-zA-Z0-9_-]+)(?:\/live)?\/?$/.test(url.pathname);
+    const clip = /^\/(?:shorts|live)\/[a-zA-Z0-9_-]{11}\/?$/.test(url.pathname);
+    if (!watch && !channel && !clip) throw new StreamerInputError("Use a direct YouTube channel or video link.");
+    const video = url.searchParams.get("v");
+    url.search = "";
+    if (watch && video) url.searchParams.set("v", video);
+  }
+  url.hash = "";
+  return url.toString();
+}
+/** Twitch login of a channel URL (twitch.tv/<login>), or null for clips, videos and other hosts. */
+export function twitchLoginFromUrl(streamUrl: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(streamUrl);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" || (url.hostname !== "twitch.tv" && url.hostname !== "www.twitch.tv")) return null;
+  const match = /^\/([a-zA-Z0-9_]{1,25})\/?$/.exec(url.pathname);
+  return match ? match[1].toLowerCase() : null;
 }
 /** Existing DeCave media only. It must additionally pass the host's media-access check. */
 export function localMediaPath(value: unknown): string {
@@ -169,13 +291,18 @@ export function localMediaPath(value: unknown): string {
 }
 export function configInput(body: Record<string, unknown>, now: number): Omit<StreamerConfig, "version"> {
   const liveHours = integer(body.liveHours ?? 0, "Live duration", 0, 12);
+  const streamUrl = publicStreamUrl(body.streamUrl);
+  if (liveHours && !streamUrl) throw new StreamerInputError("Add a stream URL before setting a live status.");
   return {
     creatorName: text(body.creatorName, "Creator name", 80, false),
     tagline: text(body.tagline, "Tagline", 160, false),
+    streamUrl,
     streamTitle: text(body.streamTitle, "Stream title", 140, false),
     game: text(body.game, "Game", 80, false),
     language: text(body.language, "Language", 40, false),
     liveUntil: liveHours ? new Date(now + liveHours * 3_600_000).toISOString() : null,
+    twitchAutoLive: body.twitchAutoLive === true || body.twitchAutoLive === "on",
+    twitchClips: body.twitchClips === true || body.twitchClips === "on",
     queueRules: text(body.queueRules, "Queue rules", 1600, false),
     onboarding: text(body.onboarding, "Welcome text", 1600, false),
   };

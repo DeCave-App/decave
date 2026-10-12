@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -47,6 +47,8 @@ function clientIcon(client: DeviceSession["client"]): keyof typeof Ionicons.glyp
 
 export default function DevicesScreen() {
   const { token, invalidate } = useSession();
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
   const [sessions, setSessions] = useState<DeviceSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -78,12 +80,15 @@ export default function DevicesScreen() {
           text: "Log out all",
           style: "destructive",
           onPress: () => void (async () => {
-            if (!token) return;
+            const sessionToken = token;
+            if (!sessionToken) return;
             try {
-              await apiJson("/api/auth/logout-all", { method: "POST" }, token);
-            } finally {
-              await invalidate("All DeCave sessions were signed out.");
-              router.replace("/login" as any);
+              await apiJson("/api/auth/logout-all", { method: "POST" }, sessionToken);
+              if (tokenRef.current !== sessionToken) return;
+              const invalidated = await invalidate("All DeCave sessions were signed out.", sessionToken);
+              if (invalidated) router.replace("/login" as any);
+            } catch (cause) {
+              Alert.alert("Could not log out all sessions", cause instanceof Error ? cause.message : "Try again.");
             }
           })(),
         },

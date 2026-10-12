@@ -13,7 +13,7 @@ const root = path.resolve(import.meta.dirname, "..", "..");
 const target = path.join(root, "docs", "legal", "PRIVACY-POLICY.md");
 
 export async function renderPrivacyPolicyMarkdown() {
-  const { PRIVACY_POLICY: policy } = await import(
+  const { PRIVACY_POLICY: policy, PRIVACY_POLICY_DRAFT_NOTE: draftNote } = await import(
     pathToFileURL(path.join(root, "website", "src", "privacy-policy.ts")).href
   );
   const lines = [
@@ -23,7 +23,7 @@ export async function renderPrivacyPolicyMarkdown() {
     "",
     "<!-- Generated from website/src/privacy-policy.ts by scripts/dev/render-privacy-policy.mjs. Edit the source, not this file. -->",
     "",
-    `> ${policy.draftNote}`,
+    `> ${draftNote}`,
     "",
     ...policy.intro.flatMap((paragraph) => [paragraph, ""]),
   ];

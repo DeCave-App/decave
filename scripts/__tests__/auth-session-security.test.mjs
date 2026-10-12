@@ -494,3 +494,67 @@ test("enrolled owner MFA replacement needs a factor and always clears old recove
     }
   }
 });
+
+test("live roster hides invisible accounts and filters private locations per viewer", async () => {
+  for (const id of ["u90", "u91", "u92"]) seedUser(id);
+  const viewer = new FakeSocket(socketState("u90", seedSession("u90", "roster-viewer"), { serverId: 901 }));
+  const friend = new FakeSocket(
+    socketState("u91", seedSession("u91", "roster-friend"), { serverId: 901, channelId: 901 }),
+  );
+  const stranger = new FakeSocket(
+    socketState("u92", seedSession("u92", "roster-stranger"), { serverId: 901, channelId: 901 }),
+  );
+  db.exec("INSERT INTO decave_friendships(user_a,user_b,created_at) VALUES('u90','u91',?)", now);
+  db.exec(
+    "INSERT INTO decave_hubs(id,name,icon,owner_id,created_at,updated_at) VALUES(901,'private','T','u91',?,?)",
+    now,
+    now,
+  );
+  db.exec("INSERT INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(901,'u91','owner',?)", now);
+  db.exec(
+    "INSERT INTO decave_rooms(id,hub_id,name,type,private,created_at,updated_at) VALUES(901,901,'secret','text',1,?,?)",
+    now,
+    now,
+  );
+  const room = roomFor([viewer, friend, stranger]);
+  const roster = async () => {
+    await room["broadcastUsers"]();
+    return viewer.sent.filter((e) => e.type === "USERS_UPDATE").at(-1).users;
+  };
+  db.exec("UPDATE decave_users SET status='invisible' WHERE id IN ('u91','u92')");
+  assert.deepEqual(
+    (await roster()).map((u) => u.userId),
+    ["DC-0000000000000090"],
+    "neither a friend nor a same-hub invisible socket is disclosed",
+  );
+  const own = friend.sent.filter((e) => e.type === "USERS_UPDATE").at(-1).users;
+  assert.ok(
+    own.some((u) => u.userId === "DC-0000000000000091"),
+    "invisible owners see themselves",
+  );
+  db.exec("UPDATE decave_users SET status='online' WHERE id='u91'");
+  let seen = (await roster()).find((u) => u.userId === "DC-0000000000000091");
+  assert.equal(seen.status, "online");
+  assert.deepEqual(
+    [seen.serverId, seen.channelId, seen.role],
+    [0, 0, null],
+    "friendship alone cannot reveal a private hub",
+  );
+  db.exec("INSERT INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(901,'u90','member',?)", now);
+  db.exec("UPDATE decave_users SET status='invisible' WHERE id='u91'");
+  await roster();
+  assert.equal(
+    viewer.sent
+      .filter((e) => e.type === "SERVERS_UPDATE")
+      .at(-1)
+      .servers.find((h) => h.id === 901).onlineCount,
+    1,
+    "online counts must not disclose invisible sockets",
+  );
+  db.exec("UPDATE decave_users SET status='online' WHERE id='u91'");
+  seen = (await roster()).find((u) => u.userId === "DC-0000000000000091");
+  assert.deepEqual([seen.serverId, seen.channelId], [901, 0], "membership does not reveal a private room");
+  db.exec("INSERT INTO decave_room_members(room_id,user_id,granted_by,created_at) VALUES(901,'u90','u91',?)", now);
+  seen = (await roster()).find((u) => u.userId === "DC-0000000000000091");
+  assert.deepEqual([seen.serverId, seen.channelId], [901, 901], "explicit room membership retains allowed location");
+});

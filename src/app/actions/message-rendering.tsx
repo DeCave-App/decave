@@ -1,6 +1,8 @@
 import { Icon } from "../../components/Icon";
 import { downloadLegacyAttachmentDesktop } from "../../features/media/attachment-download";
 import { InlineImage, canShowInline } from "../../features/media/InlineImage";
+import { BotCard } from "../../features/bot-cards";
+import { botRenderMode, messageBotFields } from "../../../shared/bots/card-view";
 import {
   EventChatCard,
   apiEventToItem,
@@ -290,6 +292,24 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
         </div>
       );
     const bot = parsePrefixedJson<{ botId: string; name: string; text: string }>(item.text, BOT_PREFIX);
+    // Builder bots: the API adds `bot`, `card` and `privateNotice` to the message.
+    // Bot posts that aren't bot-wrapped (forum posts, token-bot text) fall through
+    // to the normal pipeline; the author row adds the BOT badge for those.
+    const builder = botRenderMode(item) === "card" ? messageBotFields(item) : {};
+    if (builder.bot)
+      return (
+        <BotCard
+          messageId={item.id}
+          roomId={item.channelId ?? currentChannel.id}
+          bot={builder.bot}
+          card={builder.card}
+          privateNotice={builder.privateNotice}
+          body={bot ? renderRichMessageText(bot.text) : null}
+          baseUrl={HTTP_URL}
+          authorizedFetch={authorizedFetch}
+          showHead={false}
+        />
+      );
     if (bot)
       return (
         <div className="dc-bot-message">

@@ -10,17 +10,25 @@ import { fileURLToPath } from "node:url";
 register("../test-support/cloudflare-workers-test-loader.mjs", import.meta.url);
 const { D1Mock, MediaMock } = await import("../test-support/worker-sqlite-test-fixture.mjs");
 const { handleApi } = await import("../../worker/index.ts");
-const { ensureQrLoginSchema, securityEventIpHash, securityIpAddressTag } = await import("../../worker/lib/sessions.ts");
-const { ensureGroupChatSchema } = await import("../../worker/db.ts");
+const { ensureQrLoginSchema, securityEvent } = await import("../../worker/lib/sessions.ts");
 const { ensureSquadFinderSchema } = await import("../../worker/lib/squad.ts");
 const { ensureCollaborationSchema } = await import("../../worker/lib/hub-schema.ts");
 const { maskPushToken } = await import("../../shared/account-export.ts");
-const retention = await import("../../worker/lib/retention.ts");
+const { pruneExpiredPersonalData, RETENTION_DAYS } = await import("../../worker/retention.ts");
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const DAY = 24 * 60 * 60 * 1000;
 const now = new Date("2026-10-05T12:00:00.000Z");
 const ago = (days) => new Date(now.getTime() - days * DAY).toISOString();
+const withRetentionClock = async (callback) => {
+  const originalNow = Date.now;
+  Date.now = () => now.getTime();
+  try {
+    return await callback();
+  } finally {
+    Date.now = originalNow;
+  }
+};
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const tokenFor = (userId) => `retention-gap-token-${userId}`;
 
@@ -137,7 +145,7 @@ async function api(pathname, userId, { method = "GET", body } = {}) {
   return response;
 }
 
-test("account export includes reactions, filed reports, masked push registrations and received DMs", async () => {
+test("account export includes own data and masked push tokens without exporting other users' data", async () => {
   db.exec(
     "INSERT INTO decave_messages(id,room_id,hub_id,author_user_id,text,created_at) VALUES('m-react',10,1,'u1','hi',?)",
     ago(3),
@@ -181,14 +189,13 @@ test("account export includes reactions, filed reports, masked push registration
   const text = await response.text();
   const data = JSON.parse(text);
   assert.equal(data.complete, true);
-  assert.deepEqual(
-    data.hubMessageReactions.map((row) => [row.hub, row.room, row.emoji]),
-    [["Main Hub", "general", "fire"]],
-  );
+  assert.ok(!Object.hasOwn(data, "hubMessageReactions"), "other users' reactions are not exported");
   assert.deepEqual(
     data.directMessageReactions.map((row) => row.emoji),
     ["wave"],
   );
+  assert.ok(!Object.hasOwn(data, "directMessagesReceived"), "other users' message content is not exported");
+  assert.ok(!text.includes("incoming hello"));
   assert.equal(data.reportsFiled.length, 1);
   assert.equal(data.reportsFiled[0].description, "they spam");
   assert.ok(!text.includes("internal-target"), "internal target ids are not exported");
@@ -197,14 +204,7 @@ test("account export includes reactions, filed reports, masked push registration
   assert.match(data.pushTokens[0].token, /^ExponentPushToken\[\*+1234\]$/);
   assert.ok(!text.includes("abcdefghijklmnop"), "the usable push token is never exported");
   assert.ok(!text.includes(hash(tokenFor("u2"))), "session hashes are never exported");
-  assert.deepEqual(
-    data.pushSubscriptions.map((row) => row.hub),
-    ["Main Hub"],
-  );
-  assert.deepEqual(
-    data.directMessagesReceived.map((row) => [row.sender, row.text]),
-    [["user-u1", "incoming hello"]],
-  );
+  assert.ok(!Object.hasOwn(data, "pushSubscriptions"), "subscription routing details are not exported");
 });
 
 test("reading platform security events writes a platform audit row", async () => {
@@ -220,40 +220,19 @@ test("reading platform security events writes a platform audit row", async () =>
   assert.equal(forbidden.status, 403);
 });
 
-test("security-event IP tags prefer the dedicated key, else a domain-separated MFA-key subkey", async () => {
+test("security events retain the user agent but never persist the source IP", async () => {
   const request = new Request("https://test.invalid/", { headers: { "CF-Connecting-IP": "203.0.113.9" } });
-  const mfaKey = Buffer.alloc(32, 7).toString("base64");
-  const dedicated = await securityEventIpHash({ SECURITY_IP_HASH_KEY: "dedicated-secret" }, request);
-  const derived = await securityEventIpHash({ OWNER_MFA_ENCRYPTION_KEY: mfaKey }, request);
-  const both = await securityEventIpHash(
-    { SECURITY_IP_HASH_KEY: "dedicated-secret", OWNER_MFA_ENCRYPTION_KEY: mfaKey },
-    request,
-  );
-  assert.match(dedicated, /^hmac:v1:[0-9a-f]{64}$/);
-  assert.equal(both, dedicated);
-  assert.match(derived, /^hmac:v1d:[0-9a-f]{64}$/);
-  // The MFA key is never used directly as the HMAC key.
-  const direct = await securityEventIpHash({ SECURITY_IP_HASH_KEY: mfaKey }, request);
-  assert.notEqual(derived.slice("hmac:v1d:".length), direct.slice("hmac:v1:".length));
-  assert.ok(!derived.includes("203.0.113.9"));
-  assert.equal(await securityEventIpHash({}, request), "");
-  const addressTag = await securityIpAddressTag(
-    { SECURITY_IP_HASH_KEY: "dedicated-secret" },
-    "203.0.113.9",
-    "decave-peer-address-v1",
-  );
-  assert.match(addressTag, /^hmac:v1:[0-9a-f]{64}$/);
-  assert.notEqual(
-    addressTag,
-    await securityIpAddressTag({ SECURITY_IP_HASH_KEY: "dedicated-secret" }, "203.0.113.9", "decave-other-v1"),
-    "independent address-tag domains cannot be correlated",
-  );
-  assert.equal(await securityIpAddressTag({}, "203.0.113.9", "decave-peer-address-v1"), "");
+  request.headers.set("user-agent", "privacy-retention-test");
+  await securityEvent(env, "u2", "privacy.no_source_ip", request);
+  const row = db.sqlite
+    .prepare("SELECT ip_hash,user_agent FROM decave_security_events WHERE event='privacy.no_source_ip'")
+    .get();
+  assert.equal(row.ip_hash, "");
+  assert.equal(row.user_agent, "privacy-retention-test");
 });
 
 async function seedSquadRoom({ hubId, roomId, groupId, members }) {
   await ensureSquadFinderSchema(env);
-  await ensureGroupChatSchema(db);
   db.exec(
     `INSERT INTO decave_hubs(id,name,icon,owner_id,visibility,created_at,updated_at,icon_key)
      VALUES(?,?,'S','u1','private',?,?,?)`,
@@ -334,41 +313,39 @@ test("the last squad owner leaving deletes the Hub, the group and the Hub's R2 o
   for (const key of keys) assert.equal(media.objects.has(key), false, `${key} removed from R2`);
 });
 
-test("retention purges stale audit, device, presence and push records and orphaned uploads", async () => {
+test("retention purges stale audit, device, presence and push records", async () => {
   await ensureCollaborationSchema(env);
   // Audit logs.
   db.exec(
     "INSERT INTO decave_platform_audit(id,actor_user_id,action,created_at) VALUES('pa-old','u1','x',?),('pa-new','u1','x',?)",
-    ago(retention.PLATFORM_AUDIT_RETENTION_DAYS + 5),
-    ago(retention.PLATFORM_AUDIT_RETENTION_DAYS - 5),
+    ago(RETENTION_DAYS.auditLogs + 5),
+    ago(RETENTION_DAYS.auditLogs - 5),
   );
   db.exec(
     "INSERT INTO decave_audit(id,hub_id,action,actor_user_id,created_at) VALUES('ha-old',1,'kick','u3',?),('ha-new',1,'kick','u3',?)",
-    ago(retention.HUB_AUDIT_RETENTION_DAYS + 5),
-    ago(retention.HUB_AUDIT_RETENTION_DAYS - 5),
+    ago(RETENTION_DAYS.hubAuditLog + 5),
+    ago(RETENTION_DAYS.hubAuditLog - 5),
   );
   // Devices and presence.
   db.exec(
     "INSERT INTO decave_known_devices(user_id,fingerprint,label,first_seen_at,last_seen_at) VALUES('u1','old','',?,?),('u1','new','',?,?)",
     ago(900),
-    ago(retention.KNOWN_DEVICE_RETENTION_DAYS + 1),
+    ago(RETENTION_DAYS.knownDevices + 1),
     ago(900),
     ago(2),
   );
   db.exec(
     "INSERT OR REPLACE INTO decave_presence_activity(user_id,last_seen_at) VALUES('u1',?),('u3',?)",
-    ago(retention.PRESENCE_ACTIVITY_RETENTION_DAYS + 1),
+    ago(RETENTION_DAYS.presenceLastSeen + 1),
     ago(1),
   );
-  // Push tokens and subscriptions.
+  // Revoked-session and legacy tokens expire; the current session's token stays.
   db.exec(
     `INSERT INTO decave_push_tokens(token,user_id,session_hash,platform,created_at) VALUES
        ('ExponentPushToken[revokedsession01]','u1','revoked-session','ios',?),
        ('ExponentPushToken[legacyoldtoken01]','u1',NULL,'ios',?),
-       ('ExponentPushToken[legacynewtoken01]','u1',NULL,'ios',?),
        ('ExponentPushToken[livesession00001]','u1',?,'ios',?)`,
     ago(1),
-    ago(retention.LEGACY_PUSH_TOKEN_RETENTION_DAYS + 1),
     ago(1),
     hash(tokenFor("u1")),
     ago(1),
@@ -379,45 +356,6 @@ test("retention purges stale audit, device, presence and push records and orphan
     ago(1),
     ago(1),
   );
-  // Uploads: attached, attached by a forum/payload reference, orphaned, fresh.
-  const uploads = {
-    attached: "attachments/private/orphan-test-attached",
-    payload: "attachments/private/orphan-test-payload",
-    orphan: "attachments/private/orphan-test-orphan",
-    fresh: "attachments/private/orphan-test-fresh",
-    dmAttached: "attachments/private/orphan-test-dm-attached",
-    dmOrphan: "attachments/private/orphan-test-dm-orphan",
-  };
-  const old = ago(2);
-  for (const [name, key] of Object.entries(uploads)) {
-    const dm = name.startsWith("dm");
-    db.exec(
-      "INSERT INTO decave_attachment_access(r2_key,kind,owner_user_id,peer_user_id,hub_id,room_id,created_at) VALUES(?,?,?,?,?,?,?)",
-      key,
-      dm ? "dm" : "channel",
-      "u1",
-      dm ? "u2" : null,
-      dm ? null : 1,
-      dm ? null : 10,
-      name === "fresh" ? new Date(now.getTime() - 60 * 60 * 1000).toISOString() : old,
-    );
-    await media.put(key, new Uint8Array([1]));
-  }
-  db.exec(
-    "INSERT INTO decave_messages(id,room_id,hub_id,author_user_id,text,created_at,attachment_key) VALUES('orphan-attached',10,1,'u1','',?,?)",
-    old,
-    uploads.attached,
-  );
-  db.exec(
-    "INSERT INTO decave_messages(id,room_id,hub_id,author_user_id,text,created_at) VALUES('orphan-payload',10,1,'u1',?,?)",
-    JSON.stringify({ images: [{ url: `/uploads/${uploads.payload}` }] }),
-    old,
-  );
-  db.exec(
-    "INSERT INTO decave_direct_messages(id,from_user_id,to_user_id,text,created_at) VALUES('orphan-dm','u2','u1',?,?)",
-    JSON.stringify({ url: `/uploads/${uploads.dmAttached}` }),
-    old,
-  );
   // Expired Steam link state (Worker-lazy table; migration 0067 also defines it).
   db.exec(
     "INSERT INTO decave_steam_link_states(state,user_id,expires_at,created_at) VALUES('expired-steam','u1',?,?)",
@@ -425,8 +363,7 @@ test("retention purges stale audit, device, presence and push records and orphan
     ago(2),
   );
 
-  const result = await retention.pruneExpiredPrivacyData(env, now);
-  assert.equal(result.orphanedUploadsQueued, 2);
+  assert.deepEqual(await withRetentionClock(() => pruneExpiredPersonalData(env)), []);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_steam_link_states WHERE state='expired-steam'"), 0);
   assert.deepEqual(
     db.sqlite
@@ -446,21 +383,12 @@ test("retention purges stale audit, device, presence and push records and orphan
       .prepare("SELECT token FROM decave_push_tokens WHERE user_id='u1' ORDER BY token")
       .all()
       .map((row) => row.token),
-    ["ExponentPushToken[legacynewtoken01]", "ExponentPushToken[livesession00001]"],
+    ["ExponentPushToken[livesession00001]"],
   );
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_push_subscriptions WHERE user_id='u1'"), 1);
-  for (const name of ["attached", "payload", "fresh", "dmAttached"]) {
-    assert.equal(media.objects.has(uploads[name]), true, `${name} upload is kept`);
-    assert.equal(db.scalar("SELECT COUNT(*) FROM decave_attachment_access WHERE r2_key=?", uploads[name]), 1);
-  }
-  for (const name of ["orphan", "dmOrphan"]) {
-    assert.equal(media.objects.has(uploads[name]), false, `${name} upload is deleted from R2`);
-    assert.equal(db.scalar("SELECT COUNT(*) FROM decave_attachment_access WHERE r2_key=?", uploads[name]), 0);
-  }
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_media_deletion_queue"), 0);
 });
 
-test("a failing Steam-state purge never rolls back the credential purge", async () => {
+test("a missing lazy Steam-state table does not stop other retention steps", async () => {
   db.exec(
     "INSERT INTO decave_auth_tokens(id,user_id,purpose,token_hash,expires_at,created_at) VALUES('expired-auth-gap','u1','reset_password','h',?,?)",
     ago(1),
@@ -476,10 +404,10 @@ test("a failing Steam-state purge never rolls back the credential purge", async 
     sql.includes("DELETE FROM decave_steam_link_states")
       ? { bind: () => ({ run: () => Promise.reject(new Error("no such table: decave_steam_link_states")) }) }
       : db.prepare(sql);
-  await assert.rejects(retention.pruneExpiredPrivacyData({ ...env, DB: failingDb }, now), /steam-link-states/);
+  assert.deepEqual(await withRetentionClock(() => pruneExpiredPersonalData({ ...env, DB: failingDb })), []);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_auth_tokens WHERE id='expired-auth-gap'"), 0);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_steam_link_states WHERE state='expired-steam-2'"), 1);
-  await retention.pruneExpiredPrivacyData(env, now);
+  assert.deepEqual(await withRetentionClock(() => pruneExpiredPersonalData(env)), []);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_steam_link_states WHERE state='expired-steam-2'"), 0);
 });
 

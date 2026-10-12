@@ -8,7 +8,8 @@ export type HubPermission =
   | "voiceModerate"
   | "createInvites"
   | "viewAudit"
-  | "manageEvents";
+  | "manageEvents"
+  | "manageBots";
 export type HubCustomRole = { id: string; name: string; color: string; icon: string; permissions: HubPermission[] };
 export type HubTheme = "midnight" | "ember" | "forest" | "ocean";
 
@@ -40,6 +41,7 @@ export type ManageHubServer = {
   icon: string;
   iconUrl?: string | null;
   bannerUrl?: string | null;
+  headerUrl?: string | null;
   chatBackgroundUrl?: string | null;
   visibility: "private" | "public";
   description?: string;
@@ -90,6 +92,8 @@ export type ManageHubPanelProps = {
   authorizedFetch: AuthorizedFetch;
   isOwner: boolean;
   canManage: boolean;
+  /** Owner/admin, Manage Rooms or Manage Bots: may open the Bots section. */
+  canManageBots?: boolean;
   currentUserId?: string | null;
   error?: string;
   renderAvatar: (person: { username: string; avatarUrl?: string | null }) => ReactNode;
@@ -115,8 +119,8 @@ export type ManageHubPanelProps = {
 
   mediaBusy: boolean;
   mediaError?: string;
-  onUploadMedia: (kind: "icon" | "banner" | "chat-background", file: File) => void;
-  onRemoveMedia: (kind: "banner" | "chat-background") => void;
+  onUploadMedia: (kind: "icon" | "banner" | "header" | "chat-background", file: File) => void;
+  onRemoveMedia: (kind: "banner" | "header" | "chat-background") => void;
 
   assets: readonly HubAssetRow[];
   assetBusy: boolean;

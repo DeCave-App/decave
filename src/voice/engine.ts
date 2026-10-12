@@ -1,4 +1,4 @@
-// Voice engine: microphone capture and processing (ClearVoice, RNNoise, the
+// Voice engine: microphone capture and processing (ClearVoice, DeepFilterNet, the
 // voice gate), the input meter, peer connections and signaling, joining and
 // leaving voice, and screen-share senders.
 //
@@ -13,15 +13,12 @@ import {
   voiceBitrateForListeners,
   withVoiceOpusBitrate,
 } from "./voice-transport";
-import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "./relay-policy";
+import { isRelayIceCandidate } from "./relay-policy";
 import { inputMeterLevelDb } from "./input-meter";
-import { RnnoiseWorkletNode, loadRnnoise } from "@sapphi-red/web-noise-suppressor";
-import rnnoiseWorkletPath from "@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js?url";
-import rnnoiseWasmPath from "@sapphi-red/web-noise-suppressor/rnnoise.wasm?url";
-import rnnoiseWasmSimdPath from "@sapphi-red/web-noise-suppressor/rnnoise_simd.wasm?url";
 import clearVoiceWorkletPath from "../audio/clearvoice/ClearVoiceProcessor.worklet.ts?worker&url";
 import voiceActivationWorkletPath from "../audio/clearvoice/VoiceActivationProcessor.worklet.ts?worker&url";
 import { createClearVoiceAiRuntime, type ClearVoiceAiRuntime } from "../audio/clearvoice/ClearVoiceAiRuntime";
+import { createDeepFilterRuntime, type DeepFilterRuntime } from "../audio/deepfilter/DeepFilterRuntime";
 import type { VoiceActivationGateMetrics } from "../audio/clearvoice/VoiceActivationGate";
 import type { ExtraSettings } from "../features/settings";
 import {
@@ -46,10 +43,24 @@ import type {
   VoiceJoinAttempt,
 } from "../app/types";
 import { AUDIO_SETTINGS_KEY } from "../app/settings-storage";
-import { SCREEN_SHARE_PROFILES, microphoneErrorMessage } from "../app/voice";
+import {
+  SCREEN_PREVIEW_BITRATE,
+  SCREEN_PREVIEW_DOWNSCALE,
+  SCREEN_PREVIEW_FPS,
+  SCREEN_SHARE_PROFILES,
+  VOICE_RELAY_UNAVAILABLE_MESSAGE,
+  microphoneErrorMessage,
+  screenBitratePerViewer,
+} from "../app/voice";
 import { clamp } from "../app/format";
 import { hasDesktopActivityBridge } from "../app/desktop";
+import { hasUsableRelayIceServers } from "../../shared/rtc-relay";
 import { callDescriptionAuth, checkCallDescription, clearCallVerdict } from "../e2ee/call-verification";
+import { dmE2ee } from "../e2ee/dm-e2ee-client";
+import { createSfuSignaller, createSfuViewer, publishScreen } from "./screen-sfu/sfu-session";
+import { createScreenSfuSharer } from "./screen-sfu/sharer";
+import { createViewerController } from "./screen-sfu/viewer";
+import { classifyMeshAudio } from "./screen-sfu/screen-audio";
 
 export type VoiceEngineDeps = {
   extraSettingsRef: MutableRefObject<ExtraSettings>;
@@ -229,7 +240,9 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
 
   const micSourceNodeRef = ref<MediaStreamAudioSourceNode | null>(null);
 
-  const rnnoiseNodeRef = ref<RnnoiseWorkletNode | null>(null);
+  const deepFilterRuntimeRef = ref<DeepFilterRuntime | null>(null);
+
+  const deepFilterNodeRef = ref<AudioWorkletNode | null>(null);
 
   const clearVoiceAiRuntimeRef = ref<ClearVoiceAiRuntime | null>(null);
 
@@ -246,10 +259,6 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
   const micDestinationNodeRef = ref<MediaStreamAudioDestinationNode | null>(null);
 
   const micProcessingKeepAliveNodeRef = ref<GainNode | null>(null);
-
-  const rnnoiseBinaryRef = ref<ArrayBuffer | null>(null);
-
-  const rnnoiseModuleLoadedRef = ref(false);
 
   const clearVoiceModuleLoadedRef = ref(false);
 
@@ -390,6 +399,9 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     try {
       clearVoiceAiRuntimeRef.current?.reset();
     } catch {}
+    try {
+      deepFilterRuntimeRef.current?.reset();
+    } catch {}
     voiceActivationMetricsRef.current = null;
     voiceActivationMetricsUiAtRef.current = 0;
     setVoiceActivationMetrics(null);
@@ -471,8 +483,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
   const disposeCurrentMicrophoneGraph = () => {
     try {
       micSourceNodeRef.current?.disconnect();
-      rnnoiseNodeRef.current?.disconnect();
-      rnnoiseNodeRef.current?.destroy();
+      deepFilterRuntimeRef.current?.dispose();
       clearVoiceNodeRef.current?.disconnect();
       clearVoiceAiRuntimeRef.current?.dispose();
       micHighpassNodeRef.current?.disconnect();
@@ -488,7 +499,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     }
 
     micSourceNodeRef.current = null;
-    rnnoiseNodeRef.current = null;
+    deepFilterRuntimeRef.current = null;
+    deepFilterNodeRef.current = null;
     clearVoiceNodeRef.current = null;
     clearVoiceAiRuntimeRef.current = null;
     clearVoiceAiNodeRef.current = null;
@@ -537,7 +549,6 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
   };
 
   const ensureAudioContext = async (
-    needsRnnoise: boolean,
     needsClearVoice: boolean,
     needsVoiceActivation = true,
     needsClearVoiceAi = false,
@@ -546,34 +557,15 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     if (!context || context.state === "closed") {
       context = new AudioContext({ sampleRate: 48000 });
       audioContextRef.current = context;
-      rnnoiseModuleLoadedRef.current = false;
       clearVoiceModuleLoadedRef.current = false;
       voiceActivationModuleLoadedRef.current = false;
-      rnnoiseBinaryRef.current = null;
     }
 
     if (context.state === "suspended") await context.resume();
 
-    if (needsRnnoise || needsClearVoice || needsVoiceActivation || needsClearVoiceAi) {
+    if (needsClearVoice || needsVoiceActivation || needsClearVoiceAi) {
       if (!context.audioWorklet || typeof AudioWorkletNode === "undefined") {
         throw new Error("DeCave local noise suppression is not supported by this browser.");
-      }
-    }
-    if (needsRnnoise) {
-      if (context.sampleRate !== 48000) {
-        throw new Error(
-          `DeCave AI requires 48 kHz audio. This browser opened the audio engine at ${context.sampleRate} Hz.`,
-        );
-      }
-      if (!rnnoiseBinaryRef.current) {
-        rnnoiseBinaryRef.current = await loadRnnoise({
-          url: rnnoiseWasmPath,
-          simdUrl: rnnoiseWasmSimdPath,
-        });
-      }
-      if (!rnnoiseModuleLoadedRef.current) {
-        await context.audioWorklet.addModule(rnnoiseWorkletPath);
-        rnnoiseModuleLoadedRef.current = true;
       }
     }
     if (needsClearVoice && !clearVoiceModuleLoadedRef.current) {
@@ -672,7 +664,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
   const bypassAiNoiseProcessorNow = () => {
     if (
       aiNoiseBypassedRef.current ||
-      (!rnnoiseNodeRef.current && !clearVoiceNodeRef.current && !clearVoiceAiNodeRef.current)
+      (!deepFilterNodeRef.current && !clearVoiceNodeRef.current && !clearVoiceAiNodeRef.current)
     )
       return;
     const rawAnalyser = micAnalyserNodeRef.current;
@@ -722,7 +714,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       micLevelDbRef.current = db;
 
       const processedAnalyser = micProcessedAnalyserNodeRef.current;
-      const customNoiseProcessor = rnnoiseNodeRef.current ?? clearVoiceNodeRef.current ?? clearVoiceAiNodeRef.current;
+      const customNoiseProcessor =
+        deepFilterNodeRef.current ?? clearVoiceNodeRef.current ?? clearVoiceAiNodeRef.current;
       if (customNoiseProcessor && processedAnalyser) {
         processedAnalyser.getFloatTimeDomainData(processedSamples);
         let processedSum = 0;
@@ -737,7 +730,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         }
         if (processedInvalid || !Number.isFinite(processedSum)) {
           aiNoiseSilentSinceRef.current = null;
-          requestAiNoiseFallbackRef.current("RNNoise produced invalid audio samples");
+          requestAiNoiseFallbackRef.current("Noise suppression produced invalid audio samples");
           micMeterFrameRef.current = requestAnimationFrame(tick);
           return;
         }
@@ -755,10 +748,11 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         // processor stays silent, retain the processed/silent route rather than
         // failing open to unprocessed room noise.
         const meaningfulRawInput = db >= -68 && rms >= 0.00035;
-        // The neural model deliberately emits digital silence for noise-only
-        // input. Its worker reports missed deadlines/errors separately; zero
+        // The neural models deliberately emit (near) digital silence for
+        // noise-only input. Its worker reports missed deadlines/errors separately; zero
         // output alone must not disable successful neural suppression.
-        if (!clearVoiceAiNodeRef.current && !aiNoiseBypassedRef.current && meaningfulRawInput && workletOutputDead) {
+        const neuralProcessor = clearVoiceAiNodeRef.current ?? deepFilterNodeRef.current;
+        if (!neuralProcessor && !aiNoiseBypassedRef.current && meaningfulRawInput && workletOutputDead) {
           aiNoiseSilentSinceRef.current ??= now;
           if (now - aiNoiseSilentSinceRef.current >= 2_500) {
             aiNoiseSilentSinceRef.current = null;
@@ -818,75 +812,75 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
 
     let context: AudioContext;
     let clearVoiceAiRuntime: ClearVoiceAiRuntime | null = null;
-    let useLegacyRnnoise = false;
+    let deepFilterRuntime: DeepFilterRuntime | null = null;
     let browserFallback = forceBrowserProcessing;
     const ensureBrowserContext = async (): Promise<AudioContext> => {
       try {
-        return await ensureAudioContext(false, false, true);
+        return await ensureAudioContext(false, true);
       } catch (voiceActivationError) {
         console.warn("Audio-thread voice activation unavailable; using a fail-open microphone:", voiceActivationError);
         setAudioSettingsNotice(
           "Voice activation is unavailable on this device, so the microphone is using a safe always-on fallback.",
         );
-        return ensureAudioContext(false, false, false);
+        return ensureAudioContext(false, false);
       }
     };
-    try {
-      if (effectiveMode === "ai") {
-        context = await ensureAudioContext(false, false, true, true);
-        try {
-          clearVoiceAiRuntime = await createClearVoiceAiRuntime(context, { targetSpeaker: true });
-        } catch (clearVoiceAiError) {
-          console.warn("ClearVoice V6 unavailable; trying the legacy local RNNoise fallback:", clearVoiceAiError);
-          try {
-            context = await ensureAudioContext(true, false, true);
-            useLegacyRnnoise = true;
-            setAudioSettingsNotice(
-              "ClearVoice V6 could not start on this device, so the local RNNoise fallback is being used.",
-            );
-          } catch (rnnoiseError) {
-            console.warn("RNNoise unavailable; falling back to Standard:", rnnoiseError);
-            effectiveMode = "strong";
-            setAudioSettingsNotice("DeCave ClearVoice could not start on this device, so Standard is being used.");
-            try {
-              context = await ensureAudioContext(false, true);
-            } catch (clearVoiceError) {
-              console.warn("ClearVoice unavailable; falling back to browser processing:", clearVoiceError);
-              effectiveMode = "off";
-              browserFallback = true;
-              setAudioSettingsNotice(
-                "Local noise processing is unavailable on this device, so browser processing is being used.",
-              );
-              context = await ensureBrowserContext();
-            }
-          }
-        }
-      } else {
-        context = await ensureAudioContext(false, effectiveMode === "standard" || effectiveMode === "strong");
-      }
-    } catch (error) {
-      if (effectiveMode === "ai") {
-        console.warn("DeCave ClearVoice unavailable; falling back to browser processing:", error);
+    // A neural mode that cannot start on this device falls back to the
+    // ClearVoice Standard DSP, then to browser processing.
+    const fallBackToStandard = async (notice: string): Promise<AudioContext> => {
+      effectiveMode = "strong";
+      setAudioSettingsNotice(notice);
+      try {
+        return await ensureAudioContext(true);
+      } catch (clearVoiceError) {
+        console.warn("ClearVoice unavailable; falling back to browser processing:", clearVoiceError);
         effectiveMode = "off";
         browserFallback = true;
         setAudioSettingsNotice(
           "Local noise processing is unavailable on this device, so browser processing is being used.",
         );
-        context = await ensureBrowserContext();
-      } else if (effectiveMode === "standard" || effectiveMode === "strong") {
-        console.warn("ClearVoice unavailable; falling back to browser processing:", error);
+        return ensureBrowserContext();
+      }
+    };
+    try {
+      if (effectiveMode === "ai") {
+        context = await ensureAudioContext(false, true, true);
+        try {
+          clearVoiceAiRuntime = await createClearVoiceAiRuntime(context, { targetSpeaker: true });
+        } catch (clearVoiceAiError) {
+          console.warn("ClearVoice V6 unavailable; falling back to Standard:", clearVoiceAiError);
+          context = await fallBackToStandard(
+            "DeCave ClearVoice could not start on this device, so Standard is being used.",
+          );
+        }
+      } else if (effectiveMode === "deepfilter") {
+        context = await ensureAudioContext(false, true);
+        try {
+          deepFilterRuntime = await createDeepFilterRuntime(context);
+        } catch (deepFilterError) {
+          console.warn("DeepFilterNet unavailable; falling back to Standard:", deepFilterError);
+          context = await fallBackToStandard(
+            "DeepFilterNet could not start on this device, so Standard is being used.",
+          );
+        }
+      } else {
+        context = await ensureAudioContext(effectiveMode === "standard" || effectiveMode === "strong");
+      }
+    } catch (error) {
+      if (effectiveMode !== "off") {
+        console.warn("Local noise processing unavailable; falling back to browser processing:", error);
         effectiveMode = "off";
         browserFallback = true;
-        setAudioSettingsNotice("ClearVoice could not start on this device, so browser processing is being used.");
-        context = await ensureBrowserContext();
-      } else {
-        context = await ensureBrowserContext();
+        setAudioSettingsNotice(
+          "Local noise processing is unavailable on this device, so browser processing is being used.",
+        );
       }
+      context = await ensureBrowserContext();
     }
 
     const constraints: MediaTrackConstraints = {
       echoCancellation: settings.echoCancellation,
-      // Do not stack Chromium's NS/AGC with ClearVoice or RNNoise. AGC can
+      // Do not stack Chromium's NS/AGC with ClearVoice or DeepFilterNet. AGC can
       // raise the residual keyboard/fan floor after local processing attenuates it.
       noiseSuppression: browserFallback,
       autoGainControl: (browserFallback || effectiveMode === "off") && settings.autoGainControl,
@@ -929,10 +923,12 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       raw = await capture;
     } catch (error) {
       clearVoiceAiRuntime?.dispose();
+      deepFilterRuntime?.dispose();
       throw error;
     }
     if (signal?.aborted || serial !== microphoneBuildSerialRef.current) {
       clearVoiceAiRuntime?.dispose();
+      deepFilterRuntime?.dispose();
       for (const track of raw.getTracks()) track.stop();
       throw createAbortError("The microphone setup was superseded by a newer request.");
     }
@@ -951,7 +947,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     }
 
     let source!: MediaStreamAudioSourceNode;
-    let rnnoise: RnnoiseWorkletNode | null = null;
+    let deepFilter: AudioWorkletNode | null = null;
     let clearVoice: AudioWorkletNode | null = null;
     let clearVoiceAi: AudioWorkletNode | null = null;
     let highpass: BiquadFilterNode | null = null;
@@ -968,8 +964,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     const disposeCandidate = () => {
       try {
         source?.disconnect();
-        rnnoise?.disconnect();
-        rnnoise?.destroy();
+        deepFilterRuntime?.dispose();
         clearVoice?.disconnect();
         clearVoiceAiRuntime?.dispose();
         highpass?.disconnect();
@@ -992,11 +987,11 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     try {
       source = context.createMediaStreamSource(raw);
 
-      // ClearVoice V6 and the RNNoise compatibility fallback both receive the
-      // same rumble pre-filter. Standard keeps the filter inside the
+      // ClearVoice V6 and DeepFilterNet both receive the same rumble
+      // pre-filter. Standard keeps the filter inside the
       // shared DSP core so native ports can use the identical algorithm.
       highpass =
-        effectiveMode === "ai"
+        effectiveMode === "ai" || effectiveMode === "deepfilter"
           ? new BiquadFilterNode(context, {
               type: "highpass",
               frequency: 75,
@@ -1004,14 +999,17 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
             })
           : null;
       // Chromium's browser AGC remains enabled on the web fallback, but local
-      // ClearVoice/RNNoise deliberately disables it to avoid raising the noise
+      // ClearVoice/DeepFilterNet deliberately disables it to avoid raising the noise
       // floor. Electron therefore needs a small fixed capture compensation so
       // an otherwise identical microphone does not sound quieter than the web
       // app. Keep this before suppression so the denoiser still sees the same
       // signal relationship and leave Off/browser processing unchanged.
       const desktopCustomCaptureCompensation =
         hasDesktopActivityBridge() &&
-        (effectiveMode === "ai" || effectiveMode === "standard" || effectiveMode === "strong")
+        (effectiveMode === "ai" ||
+          effectiveMode === "deepfilter" ||
+          effectiveMode === "standard" ||
+          effectiveMode === "strong")
           ? 1.5
           : 1;
       inputGain = new GainNode(context, {
@@ -1030,7 +1028,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       inputGain.connect(analyser);
       let tail: AudioNode = analyser;
 
-      if (effectiveMode === "ai" && clearVoiceAiRuntime && !useLegacyRnnoise) {
+      if (effectiveMode === "ai" && clearVoiceAiRuntime) {
         clearVoiceAi = clearVoiceAiRuntime.node;
         clearVoiceAi.onprocessorerror = () => {
           requestAiNoiseFallbackRef.current("ClearVoice V6 audio worklet failed");
@@ -1052,23 +1050,27 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         });
         clearVoiceAi.connect(processedAnalyser);
         tail = processedAnalyser;
-      } else if (effectiveMode === "ai") {
-        const wasmBinary = rnnoiseBinaryRef.current;
-        if (!wasmBinary) throw new Error("RNNoise WASM did not load.");
-        const sourceChannelCount = clamp(Number(raw.getAudioTracks()[0]?.getSettings().channelCount) || 1, 1, 2);
-        rnnoise = new RnnoiseWorkletNode(context, {
-          wasmBinary,
-          maxChannels: sourceChannelCount,
-        });
-        rnnoise.onprocessorerror = () => {
-          requestAiNoiseFallbackRef.current("RNNoise audio worklet failed");
+      } else if (effectiveMode === "deepfilter" && deepFilterRuntime) {
+        deepFilter = deepFilterRuntime.node;
+        deepFilter.onprocessorerror = () => {
+          requestAiNoiseFallbackRef.current("DeepFilterNet audio worklet failed");
         };
-        tail.connect(rnnoise);
+        deepFilter.port.onmessage = (event: MessageEvent<unknown>) => {
+          const data = event.data;
+          if (!data || typeof data !== "object") return;
+          const message = data as { type?: unknown; reason?: unknown };
+          if (message.type === "error" || message.type === "underrun") {
+            requestAiNoiseFallbackRef.current(
+              typeof message.reason === "string" ? message.reason : "DeepFilterNet missed an audio deadline",
+            );
+          }
+        };
+        tail.connect(deepFilter);
         processedAnalyser = new AnalyserNode(context, {
           fftSize: 1024,
           smoothingTimeConstant: 0.2,
         });
-        rnnoise.connect(processedAnalyser);
+        deepFilter.connect(processedAnalyser);
         tail = processedAnalyser;
       } else if (effectiveMode === "standard" || effectiveMode === "strong") {
         clearVoice = new AudioWorkletNode(context, "decave-clearvoice", {
@@ -1090,7 +1092,11 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         clearVoice.connect(processedAnalyser);
         tail = processedAnalyser;
       }
-      const customProcessor = effectiveMode === "ai" || effectiveMode === "standard" || effectiveMode === "strong";
+      const customProcessor =
+        effectiveMode === "ai" ||
+        effectiveMode === "deepfilter" ||
+        effectiveMode === "standard" ||
+        effectiveMode === "strong";
       // Do not add a post-denoise compressor here. It can make residual room or
       // impact noise feel louder and makes the user's activation threshold less
       // predictable. Standard already has a soft limiter, and
@@ -1134,7 +1140,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
           analyser.connect(voiceActivation, 0, 1);
           processedTail.connect(voiceActivation, 0, 0);
           // ClearVoice's speech score (input 2) lets the gate hold quiet
-          // syllables open; Standard and RNNoise leave the input unconnected.
+          // syllables open; Standard and DeepFilterNet leave the input unconnected.
           clearVoiceAi?.connect(voiceActivation, 1, 2);
         } else tail.connect(voiceActivation, 0, 0);
         voiceActivation.connect(destination);
@@ -1257,7 +1263,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
 
     rawMicStreamRef.current = raw;
     micSourceNodeRef.current = source;
-    rnnoiseNodeRef.current = rnnoise;
+    deepFilterRuntimeRef.current = deepFilterRuntime;
+    deepFilterNodeRef.current = deepFilter;
     clearVoiceNodeRef.current = clearVoice;
     clearVoiceAiRuntimeRef.current = clearVoiceAiRuntime;
     clearVoiceAiNodeRef.current = clearVoiceAi;
@@ -1279,14 +1286,14 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       clearVoiceAiInitialized: Boolean(clearVoiceAi),
       processingImplementation: clearVoiceAi
         ? "clearvoice-ai-v6"
-        : rnnoise
-          ? "rnnoise-fallback"
+        : deepFilter
+          ? "deepfilternet3"
           : effectiveMode === "strong"
             ? "clearvoice-strong"
             : effectiveMode === "standard"
               ? "clearvoice-standard"
               : "browser-or-raw",
-      rnnoiseInitialized: Boolean(rnnoise),
+      deepFilterInitialized: Boolean(deepFilter),
       audioContextSampleRate: context.sampleRate,
       inputSampleRate: raw.getAudioTracks()[0]?.getSettings().sampleRate ?? null,
       rawTrackId: raw.getAudioTracks()[0]?.id ?? null,
@@ -1358,7 +1365,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
   requestAiNoiseFallbackRef.current = (reason) => {
     if (
       aiNoiseFallbackBusyRef.current ||
-      !["ai", "standard", "strong"].includes(audioSettingsRef.current.noiseSuppression)
+      !["ai", "deepfilter", "standard", "strong"].includes(audioSettingsRef.current.noiseSuppression)
     )
       return;
     aiNoiseFallbackBusyRef.current = true;
@@ -1466,6 +1473,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       session.pc.close();
       peerSessionsRef.current.delete(connectionId);
       refreshMicrophoneSenderParameters();
+      screenWatchers.delete(connectionId);
+      reapplyScreenSenders();
     }
 
     const amplified = remoteGainContextsRef.current.get(connectionId);
@@ -1485,8 +1494,12 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       remoteAudioElementsRef.current.delete(connectionId);
     }
 
+    // The peer's display audio went with it; an SFU tile keeps its video.
+    if (meshScreenAudio.delete(connectionId)) renderSfuScreen(connectionId);
     setRemoteScreens((current) => {
       if (!current[connectionId]) return current;
+      // A screen that comes through the SFU does not depend on this mesh peer.
+      if (sfuScreenStreams.get(connectionId) === current[connectionId].stream) return current;
       const next = { ...current };
       delete next[connectionId];
       return next;
@@ -1497,6 +1510,165 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     for (const connectionId of Array.from(peerSessionsRef.current.keys())) {
       closePeer(connectionId);
     }
+  };
+
+  // Viewers report whether they are watching our screen share. Peers that
+  // never reported (older clients) are treated as watching.
+  const screenWatchers = new Map<string, boolean>();
+
+  // Screen-share video through the SFU (E2EE per frame); mesh stays the
+  // fallback and carries screen audio. Policy lives in screen-sfu/sharer.ts.
+  const screenSfuSignaller = createSfuSignaller(sendSocket);
+  const screenSfu = createScreenSfuSharer({
+    sendSocket,
+    signaller: screenSfuSignaller,
+    publish: (track, fullEncoding) =>
+      publishScreen(track, {
+        signaller: screenSfuSignaller,
+        iceServers: iceServersRef.current,
+        codec: "vp8",
+        fullEncoding,
+      }),
+    canSeal: () => dmE2ee.canSealScreenKeys(),
+    sealKey: (binding, key, userIds) => dmE2ee.sealScreenKey(binding, key, userIds),
+    capableRuntime: () => typeof globalThis.RTCRtpScriptTransform === "function",
+    channelId: () => voiceChannelRef.current,
+    selfConnectionId: () => selfConnectionIdRef.current,
+    selfUserId: () => myUserIdRef.current ?? "",
+    participants: () => voiceParticipantsRef.current,
+    quality: () => screenQualityRef.current,
+    refreshMeshSenders: () => {
+      for (const session of peerSessionsRef.current.values()) addLocalTracksToPeer(session);
+      reapplyScreenSenders();
+    },
+    log: (message, error) => console.warn(message, error),
+  });
+
+  // E2EE can unlock mid-call; tell the room once we can view SFU shares.
+  dmE2ee.subscribe(() => screenSfu.refreshCapability());
+
+  // Viewer side: pull SFU shares (preview layer, full when watching), open
+  // their stream keys, and fall back to mesh. Policy lives in screen-sfu/viewer.ts.
+  // Shown SFU tile stream per sharer (SFU video + mesh display audio), the
+  // pulled SFU video, the sharer's mesh display audio, and each mesh peer's
+  // microphone stream id (to tell display audio apart from voice).
+  const sfuScreenStreams = new Map<string, MediaStream>();
+  const sfuVideoStreams = new Map<string, MediaStream>();
+  const meshScreenAudio = new Map<string, MediaStreamTrack>();
+  // Audio-only mesh tracks routed to voice, kept so they can be moved to the
+  // screen tile once the participant update naming the display stream arrives.
+  const meshVoiceAudio = new WeakMap<PeerSession, Map<MediaStreamTrack, MediaStream>>();
+  const renderSfuScreen = (connectionId: string) => {
+    const video = sfuVideoStreams.get(connectionId);
+    if (!video) return;
+    const audio = meshScreenAudio.get(connectionId);
+    const stream = new MediaStream([
+      ...video.getVideoTracks(),
+      ...(audio && audio.readyState === "live" && !audio.muted ? [audio] : []),
+    ]);
+    sfuScreenStreams.set(connectionId, stream);
+    const username = voiceParticipantsRef.current.find((p) => p.connectionId === connectionId)?.username ?? "";
+    setRemoteScreens((current) => ({ ...current, [connectionId]: { connectionId, username, stream } }));
+  };
+  const screenAudioStreamsWatched = new WeakSet<MediaStream>();
+  const attachSfuScreenAudio = (connectionId: string, track: MediaStreamTrack, stream: MediaStream) => {
+    meshScreenAudio.set(connectionId, track);
+    const detach = () => {
+      if (meshScreenAudio.get(connectionId) !== track) return;
+      meshScreenAudio.delete(connectionId);
+      renderSfuScreen(connectionId);
+    };
+    track.onended = detach;
+    // One listener per display stream; it detaches whichever track is current.
+    if (!screenAudioStreamsWatched.has(stream)) {
+      screenAudioStreamsWatched.add(stream);
+      stream.addEventListener("removetrack", (event) => {
+        if (meshScreenAudio.get(connectionId) !== event.track) return;
+        meshScreenAudio.delete(connectionId);
+        renderSfuScreen(connectionId);
+      });
+    }
+    // A muted (stalled) track is left out of the tile until it unmutes.
+    track.onmute = () => renderSfuScreen(connectionId);
+    track.onunmute = () => renderSfuScreen(connectionId);
+    renderSfuScreen(connectionId);
+  };
+  let screenSfuTick: number | null = null;
+  const screenSfuViewerCtl = createViewerController({
+    createViewer: () => createSfuViewer({ signaller: screenSfuSignaller, iceServers: iceServersRef.current }),
+    openKey: (envelope, fromUserId, binding) => dmE2ee.openScreenKey(envelope, fromUserId, binding),
+    send: sendSocket,
+    setRemoteScreen: (connectionId, stream) => {
+      if (stream) {
+        sfuVideoStreams.set(connectionId, stream);
+        renderSfuScreen(connectionId);
+        return;
+      }
+      sfuVideoStreams.delete(connectionId);
+      const previous = sfuScreenStreams.get(connectionId);
+      sfuScreenStreams.delete(connectionId);
+      if (!previous) return;
+      // Only clear the tile if it still shows our SFU stream (mesh may have replaced it).
+      setRemoteScreens((current) => {
+        if (current[connectionId]?.stream !== previous) return current;
+        const next = { ...current };
+        delete next[connectionId];
+        return next;
+      });
+    },
+    now: () => Date.now(),
+    channelId: () => voiceChannelRef.current,
+    selfConnectionId: () => selfConnectionIdRef.current,
+    capable: () => screenSfu.advertisedCapable(),
+    onSfuDisabled: () => screenSfu.markSfuDisabled(),
+    log: (message, error) => console.warn(message, error),
+  });
+  const screenSfuViewer = {
+    handleFrame: screenSfuViewerCtl.handleFrame,
+    watchChanged: screenSfuViewerCtl.watchChanged,
+    onVoiceJoined() {
+      if (screenSfuTick === null) screenSfuTick = window.setInterval(() => screenSfuViewerCtl.tick(), 1_000);
+    },
+    close() {
+      if (screenSfuTick !== null) window.clearInterval(screenSfuTick);
+      screenSfuTick = null;
+      screenSfuViewerCtl.close();
+      sfuScreenStreams.clear();
+      sfuVideoStreams.clear();
+      meshScreenAudio.clear();
+    },
+  };
+
+  // Only peers that actually get a mesh copy share the mesh uplink budget.
+  const countScreenViewers = () => {
+    let viewers = 0;
+    for (const [connectionId, session] of peerSessionsRef.current) {
+      if (screenWatchers.get(connectionId) !== false && screenSfu.meshFor(session.participant)) viewers += 1;
+    }
+    return viewers;
+  };
+
+  const reapplyScreenSenders = () => {
+    void screenSfu.updateQuality().catch((error) => console.warn("Could not update SFU screen quality:", error));
+    const screenTrackId = localScreenStreamRef.current?.getVideoTracks()[0]?.id;
+    if (!screenTrackId) return;
+    for (const session of peerSessionsRef.current.values()) {
+      for (const sender of session.pc.getSenders()) {
+        if (sender.track?.id !== screenTrackId) continue;
+        session.screenConfigPending = session.screenConfigPending
+          .then(() => configureScreenSender(sender, session.pc))
+          .catch((error) => {
+            console.warn("Could not update screen sender configuration:", error);
+          });
+      }
+    }
+  };
+
+  const handleScreenWatch = (fromConnectionId: string, watching: boolean) => {
+    if (screenWatchers.get(fromConnectionId) === watching) return;
+    screenWatchers.set(fromConnectionId, watching);
+    // The viewer count changed, so every viewer's bitrate share changes too.
+    reapplyScreenSenders();
   };
 
   const configureScreenSender = async (sender: RTCRtpSender, pc: RTCPeerConnection) => {
@@ -1526,10 +1698,22 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       const parameters = sender.getParameters();
       const quality = screenQualityRef.current;
       const target = SCREEN_SHARE_PROFILES[quality];
+      const connectionId = [...peerSessionsRef.current.entries()].find(([, item]) => item.pc === pc)?.[0];
+      const watching = connectionId === undefined || screenWatchers.get(connectionId) !== false;
       if (sender.track) sender.track.contentHint = target.fps >= 60 ? "motion" : "detail";
       if (parameters.encodings.length > 0) {
-        parameters.encodings[0].maxBitrate = target.maxBitrate;
-        parameters.encodings[0].maxFramerate = target.fps;
+        const encoding = parameters.encodings[0];
+        if (watching) {
+          encoding.maxBitrate = screenBitratePerViewer(target.maxBitrate, countScreenViewers());
+          encoding.maxFramerate = target.fps;
+          encoding.scaleResolutionDownBy = 1;
+        } else {
+          // Not watching: only a small preview thumbnail is shown, so send a
+          // tiny low-frame-rate copy instead of the full stream.
+          encoding.maxBitrate = SCREEN_PREVIEW_BITRATE;
+          encoding.maxFramerate = SCREEN_PREVIEW_FPS;
+          encoding.scaleResolutionDownBy = SCREEN_PREVIEW_DOWNSCALE;
+        }
         // Fast presets preserve cadence during congestion; 30 FPS presets
         // preserve pixels for text and UI so the image stays readable.
         const tunable = parameters as RTCRtpSendParameters & { degradationPreference?: string };
@@ -1552,6 +1736,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     const addStream = (stream: MediaStream | null, configureScreen = false, microphone = false) => {
       if (!stream) return;
       for (const track of stream.getTracks()) {
+        // Screen video skips peers the SFU serves; screen audio stays on mesh.
+        if (configureScreen && track.kind === "video" && !screenSfu.meshFor(session.participant)) continue;
         if (existingTrackIds.has(track.id)) {
           if (microphone && track.kind === "audio") {
             session.microphoneSender =
@@ -1602,14 +1788,51 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     return next;
   };
 
+  const meshAudioRoute = (participant: VoiceParticipant, stream: MediaStream) =>
+    classifyMeshAudio({
+      streamId: stream.id,
+      hasVideo: stream.getVideoTracks().length > 0,
+      screenSharing: participant.screenSharing === true,
+      cameraSharing: participant.cameraSharing === true,
+      screenStreamId: participant.screenStreamId ?? null,
+    });
+  /** Moves display audio that arrived before the participant update naming its stream. */
+  const rerouteMeshAudio = (session: PeerSession) => {
+    const tracks = meshVoiceAudio.get(session);
+    if (!tracks) return;
+    let moved = false;
+    for (const [track, stream] of tracks) {
+      if (track.readyState !== "live") {
+        tracks.delete(track);
+        continue;
+      }
+      if (stream.getVideoTracks().length > 0 || meshAudioRoute(session.participant, stream) !== "screen") continue;
+      tracks.delete(track);
+      session.remoteAudioStream.removeTrack(track);
+      session.remoteAudioTrackAttached = session.remoteAudioStream
+        .getAudioTracks()
+        .some((item) => item.readyState === "live");
+      track.contentHint = "music";
+      attachSfuScreenAudio(session.participant.connectionId, track, stream);
+      moved = true;
+    }
+    // Voice playback (incl. the >100% amplifier) may be bound to the moved
+    // display track: rebind it to the remaining microphone.
+    if (moved) session.resumeAudio();
+  };
   const ensurePeer = (participant: VoiceParticipant): PeerSession => {
     const existing = peerSessionsRef.current.get(participant.connectionId);
     if (existing) {
       existing.participant = participant;
+      rerouteMeshAudio(existing);
       addLocalTracksToPeer(existing);
       return existing;
     }
 
+    if (!hasUsableRelayIceServers(iceServersRef.current)) {
+      setVoiceError(VOICE_RELAY_UNAVAILABLE_MESSAGE);
+      throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
+    }
     // Relay-only: media always flows through TURN so peers never learn each
     // other's IP addresses. ICE restarts gather fresh relay candidates.
     const pc = new RTCPeerConnection({
@@ -1786,11 +2009,26 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         const liveParticipant =
           voiceParticipantsRef.current.find((item) => item.connectionId === participant.connectionId) ??
           session.participant;
-        if (
-          incomingStream.getVideoTracks().length > 0 &&
-          liveParticipant.screenSharing === true &&
-          liveParticipant.cameraSharing !== true
-        ) {
+        const hasVideo = incomingStream.getVideoTracks().length > 0;
+        const route = classifyMeshAudio({
+          streamId: incomingStream.id,
+          hasVideo,
+          screenSharing: liveParticipant.screenSharing === true,
+          cameraSharing: liveParticipant.cameraSharing === true,
+          screenStreamId: liveParticipant.screenStreamId ?? null,
+        });
+        if (route === "screen" && !hasVideo) {
+          // Display audio of a share whose video comes through the SFU.
+          event.track.contentHint = "music";
+          attachSfuScreenAudio(participant.connectionId, event.track, incomingStream);
+          return;
+        }
+        if (route === "voice" && !hasVideo) {
+          let tracks = meshVoiceAudio.get(session);
+          if (!tracks) meshVoiceAudio.set(session, (tracks = new Map()));
+          tracks.set(event.track, incomingStream);
+        }
+        if (route === "screen") {
           event.track.contentHint = "music";
           setRemoteScreens((current) => ({
             ...current,
@@ -2068,6 +2306,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
 
   const cleanupVoiceLocal = (clearPresence: boolean, preserveMicrophone = false, preserveRecoveryCounter = false) => {
     cancelVoiceJoinAttempt(undefined, preserveRecoveryCounter);
+    screenSfu.reset();
+    screenSfuViewer.close();
     closeAllPeers();
     if (!preserveMicrophone) stopMicrophonePipeline();
     for (const track of localScreenStreamRef.current?.getTracks() ?? []) track.stop();
@@ -2189,11 +2429,22 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       setRemoteScreens({});
       setRemoteCameras({});
 
-      const [, iceServers] = await cancellable(Promise.all([microphoneReady, loadIceServers()]));
+      // Voice is relay-only: refuse to join (with a friendly message) instead of
+      // joining a room where no peer connection can be built.
+      const relayReady = loadIceServers().then(
+        (servers) => {
+          if (!hasUsableRelayIceServers(servers)) throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
+          return servers;
+        },
+        () => {
+          throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
+        },
+      );
+      const [, iceServers] = await cancellable(Promise.all([microphoneReady, relayReady]));
       if (!isAttemptCurrent()) throw createAbortError("The voice join was cancelled.");
       // Voice is relay-only. A STUN-only list (TURN not configured) can never
       // connect, so fail the join visibly instead of joining a silent room.
-      if (!hasRelayIceServer(iceServers)) throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+      if (!hasUsableRelayIceServers(iceServers)) throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
       if (!sendSocket({ type: "VOICE_JOIN", channelId })) throw new Error("WebSocket is not connected");
       armVoiceJoinAcknowledgementTimeout();
     } catch (error) {
@@ -2322,6 +2573,10 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     upsertVoiceParticipant,
     closePeer,
     configureScreenSender,
+    handleScreenWatch,
+    reapplyScreenSenders,
+    screenSfu,
+    screenSfuViewer,
     addLocalTracksToPeer,
     ensurePeer,
     ensureVoicePeersFromState,

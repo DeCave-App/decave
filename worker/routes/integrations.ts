@@ -230,18 +230,34 @@ export async function handleSteamRoutes({ request, env, url, p, method }: ApiCon
   if (method === "GET" && p === "/api/integrations/steam/callback") {
     await ensureActivitySchema(env);
     const state = url.searchParams.get("state") ?? "";
-    const linkState = state
-      ? await env.DB.prepare("SELECT user_id,expires_at FROM decave_steam_link_states WHERE state=?")
-          .bind(state)
-          .first<{ user_id: string; expires_at: string }>()
+    const claimedState = state
+      ? await env.DB.prepare("DELETE FROM decave_steam_link_states WHERE state=? AND expires_at>? RETURNING user_id")
+          .bind(state, nowIso())
+          .first<{ user_id: string }>()
       : null;
-    if (!linkState || linkState.expires_at <= nowIso()) {
+    if (!claimedState) {
       if (state) await env.DB.prepare("DELETE FROM decave_steam_link_states WHERE state=?").bind(state).run();
       return steamCallbackPage("Steam link expired", "Start the Steam connection again from DeCave.", false);
     }
 
+    // Steam returns through a top-level cross-site GET, so only the browser's
+    // SameSite=Lax session cookie can bind this callback to the user who began
+    // linking. Ignore Authorization headers so API credentials cannot stand in
+    // for proof that this browser is signed in.
+    const browserHeaders = new Headers(request.headers);
+    browserHeaders.delete("authorization");
+    const browserRequest = new Request(request.url, { method: "GET", headers: browserHeaders });
+    const browserUser = await requireUser(browserRequest, env);
+    if (browserUser instanceof Response || browserUser.id !== claimedState.user_id) {
+      return steamCallbackPage(
+        "Sign in to finish Steam linking",
+        "Steam was not linked. Open DeCave in this browser, sign in to the same account that started linking, then start Steam connection again from Settings → Activity.",
+        false,
+        true,
+      );
+    }
+
     const steamId = await verifySteamOpenIdCallback(url);
-    await env.DB.prepare("DELETE FROM decave_steam_link_states WHERE state=?").bind(state).run();
     if (!steamId) {
       return steamCallbackPage("Steam verification failed", "Steam did not return a valid identity response.", false);
     }
@@ -249,7 +265,7 @@ export async function handleSteamRoutes({ request, env, url, p, method }: ApiCon
     const alreadyLinked = await env.DB.prepare("SELECT user_id FROM decave_steam_links WHERE steam_id=?")
       .bind(steamId)
       .first<{ user_id: string }>();
-    if (alreadyLinked && alreadyLinked.user_id !== linkState.user_id) {
+    if (alreadyLinked && alreadyLinked.user_id !== claimedState.user_id) {
       return steamCallbackPage(
         "Steam account already linked",
         "That Steam account is connected to another DeCave account.",
@@ -271,7 +287,7 @@ export async function handleSteamRoutes({ request, env, url, p, method }: ApiCon
            updated_at=excluded.updated_at`,
     )
       .bind(
-        linkState.user_id,
+        claimedState.user_id,
         steamId,
         summary?.personaname ?? "",
         summary?.avatarfull ?? summary?.avatarmedium ?? "",

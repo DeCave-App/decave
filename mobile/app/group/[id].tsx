@@ -33,7 +33,7 @@ import { colors } from "@/src/theme";
 import type { AccountUser, GroupChat, GroupChatMessage, SocialState } from "@/src/types";
 import { VoiceFloatingBar } from "@/src/components/VoiceFloatingBar";
 import { useDraftInput } from "@/src/lib/drafts";
-import { dmE2ee, groupSocketFrame, rememberGroup, useDmE2ee } from "@/src/lib/e2ee/client";
+import { discardGroupSend, dmE2ee, groupSocketFrame, rememberGroup, useDmE2ee } from "@/src/lib/e2ee/client";
 import { GroupEncryptionBadge } from "@/src/providers/DmE2eeProvider";
 
 function previewMessage(text: string): string {
@@ -193,6 +193,7 @@ export default function GroupChatScreen() {
       impactHaptic();
       setReplyingTo(null);
     } else {
+      discardGroupSend(frame.clientMessageId);
       setNotice("Realtime is reconnecting. Try again in a moment.");
     }
   };
@@ -214,6 +215,7 @@ export default function GroupChatScreen() {
       setReplyingTo(null);
       setSendFailed(false);
     } else {
+      discardGroupSend(frame.clientMessageId);
       errorHaptic();
       setSendFailed(true);
     }

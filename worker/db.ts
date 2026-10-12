@@ -10,7 +10,8 @@ export type CustomRolePermission =
   | "voiceModerate"
   | "createInvites"
   | "viewAudit"
-  | "manageEvents";
+  | "manageEvents"
+  | "manageBots";
 
 export type UserRow = {
   id: string;
@@ -61,6 +62,7 @@ export type HubRow = {
   icon_key: string | null;
   banner_key: string | null;
   chat_background_key: string | null;
+  header_key: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -77,6 +79,9 @@ export type RoomRow = {
   icon: string;
   forum_guidelines: string;
   forum_post_policy: "everyone" | "staff" | "roles" | "members";
+  /** Chat rooms: who can post ('everyone' | 'staff' | 'roles'); absent before migration 0085. */
+  post_policy?: string;
+  post_role_ids_json?: string;
   forum_post_role_ids_json: string;
   forum_post_member_ids_json: string;
   forum_tags_json?: string;
@@ -108,17 +113,20 @@ function scryptAsync(
   });
 }
 
-// New hashes use N=2^15, r=8 and p=3 (six times the legacy p=1 work).
-// This uses roughly 32 MiB per active derivation; rate limits bound concurrent
-// requests. The Worker runtime must support these Node crypto options.
-const PASSWORD_SCRYPT_OPTIONS = { N: 1 << 15, r: 8, p: 3, maxmem: 48 * 1024 * 1024 } as const;
+// New hashes are stored as "scrypt-v2$<hex>" with N=2^13, r=8, p=3. scrypt's
+// working memory is 128*N*r bytes (8 MiB here) regardless of p, which matters
+// because concurrent sign-ins share one 128 MB Worker isolate; p=3 makes the
+// total work 1.5x the legacy parameters. Hashes without a version prefix use
+// the original N=2^14, r=8, p=1 parameters (16 MiB); they still verify and are
+// rewritten with the current parameters at sign-in.
+export const PASSWORD_SCRYPT_OPTIONS = { N: 1 << 13, r: 8, p: 3, maxmem: 16 * 1024 * 1024 } as const;
 const LEGACY_PASSWORD_SCRYPT_OPTIONS = { N: 1 << 14, r: 8, p: 1, maxmem: 32 * 1024 * 1024 } as const;
 const PASSWORD_HASH_VERSION = "scrypt-v2";
 
 /**
- * A well-formed current-version hash that no password matches. Login verifies
- * against it when the identifier is unknown so that path runs the same v2
- * scrypt cost as a real upgraded account (no timing-based enumeration).
+ * A well-formed current-version hash that no password matches. Sign-in checks
+ * against it when the email is unknown, so that path costs the same as a real
+ * account and response time does not reveal whether the account exists.
  */
 export const DUMMY_PASSWORD_HASH = `${PASSWORD_HASH_VERSION}$${"00".repeat(64)}`;
 export const DUMMY_PASSWORD_SALT = "decave-login-dummy-salt-v2";
@@ -334,37 +342,37 @@ export function tokenHash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-/**
- * Opaque, stable identifier for a session shown in the signed-in devices list.
- * Derived from the stored token hash with a domain-separation prefix so the
- * stored lookup key itself is never exposed to clients.
- */
-export function sessionPublicId(sessionTokenHash: string): string {
-  return createHash("sha256").update(`decave-session-public-id-v1\0${sessionTokenHash}`).digest("hex").slice(0, 32);
-}
-
 export function createRawToken(): string {
   return randomBytes(32).toString("hex");
 }
 
 export async function hashPassword(password: string, salt?: string): Promise<{ salt: string; hash: string }> {
   const actualSalt = salt ?? randomBytes(16).toString("hex");
-  const key = (await scryptAsync(password, actualSalt, 64, PASSWORD_SCRYPT_OPTIONS)) as Buffer;
+  const key = await scryptAsync(password, actualSalt, 64, PASSWORD_SCRYPT_OPTIONS);
   return { salt: actualSalt, hash: `${PASSWORD_HASH_VERSION}$${key.toString("hex")}` };
 }
 
-export async function verifyPassword(password: string, salt: string, expectedHex: string): Promise<boolean> {
-  const currentVersion = expectedHex.startsWith(`${PASSWORD_HASH_VERSION}$`);
-  const expectedValue = currentVersion ? expectedHex.slice(PASSWORD_HASH_VERSION.length + 1) : expectedHex;
-  const options = currentVersion ? PASSWORD_SCRYPT_OPTIONS : LEGACY_PASSWORD_SCRYPT_OPTIONS;
-  const actualKey = (await scryptAsync(password, salt, 64, options)) as Buffer;
-  const expected = Buffer.from(expectedValue, "hex");
-  const actual = actualKey;
+export async function verifyPassword(password: string, salt: string, storedHash: string): Promise<boolean> {
+  const current = storedHash.startsWith(`${PASSWORD_HASH_VERSION}$`);
+  const expectedHex = current ? storedHash.slice(PASSWORD_HASH_VERSION.length + 1) : storedHash;
+  const options = current ? PASSWORD_SCRYPT_OPTIONS : LEGACY_PASSWORD_SCRYPT_OPTIONS;
+  const actual = await scryptAsync(password, salt, 64, options);
+  const expected = Buffer.from(expectedHex, "hex");
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
-export function passwordHashNeedsUpgrade(expectedHash: string): boolean {
-  return !expectedHash.startsWith(`${PASSWORD_HASH_VERSION}$`);
+/** True when a stored hash uses older scrypt parameters than new hashes do. */
+export function passwordHashNeedsUpgrade(storedHash: string): boolean {
+  return !storedHash.startsWith(`${PASSWORD_HASH_VERSION}$`);
+}
+
+/**
+ * Opaque, stable id for a session in the signed-in devices list. Derived from
+ * the stored token hash with a domain-separation label so the stored lookup key
+ * itself is never sent to clients.
+ */
+export function sessionPublicId(sessionTokenHash: string): string {
+  return createHash("sha256").update(`decave-session-public-id-v1\0${sessionTokenHash}`).digest("hex").slice(0, 32);
 }
 
 export function rawSessionTokenFromRequest(request: Request): string {
@@ -505,6 +513,7 @@ export async function customPermissions(
     "createInvites",
     "viewAudit",
     "manageEvents",
+    "manageBots",
   ]);
 
   for (const row of result.results) {
@@ -528,7 +537,9 @@ export async function hasPermission(
 ): Promise<boolean> {
   const role = await getRole(db, hubId, userId);
   if (role === "owner" || role === "admin") return true;
-  return (await customPermissions(db, hubId, userId)).has(permission);
+  const held = await customPermissions(db, hubId, userId);
+  // Room managers can also manage bots.
+  return held.has(permission) || (permission === "manageBots" && held.has("manageRooms"));
 }
 
 export type ActivityVisibility = "everyone" | "friends" | "nobody";
@@ -570,24 +581,44 @@ export function publicUser(user: UserRow) {
       ? `/api/users/${encodeURIComponent(decaveId)}/banner?v=${encodeURIComponent(user.banner_updated_at ?? "")}`
       : null,
     bio: user.bio,
-    status: user.status,
-    statusText: user.status_text,
-    // Public serialization goes to people with no known relation, so it only
-    // carries activity the user shows to everyone.
-    activityText: activityTextFor(user, "other"),
+    // Stored presence is never exposed by the base serializer: whether the
+    // account is connected is only known to callers that asked HubRoom, so they
+    // must opt in through publicUserWithPresence / presenceFieldsFor.
+    ...presenceFieldsFor(user, false, "other"),
     accent: user.accent,
   };
 }
 
-/** Public profile fields with presence details hidden for disconnected users. */
-export function publicUserWithPresence(user: UserRow, online: boolean, relation: "friend" | "other" = "other") {
-  const visibleOnline = online && user.status !== "invisible";
+export type PresenceRelation = "self" | "friend" | "other";
+
+/**
+ * The single projection of another account's presence. Status, custom status
+ * text and game activity are only shown while the account is actually
+ * connected and not invisible; otherwise the account reads as offline
+ * ("invisible", empty details) so stale stored presence never leaks. The
+ * account owner always sees their own stored values.
+ */
+export function presenceFieldsFor(
+  user: Pick<UserRow, "status" | "status_text" | "activity_text" | "activity_visibility">,
+  online: boolean,
+  relation: PresenceRelation,
+): { status: PresenceStatus; statusText: string; activityText: string } {
+  const visible = relation === "self" || (online && user.status !== "invisible");
   return {
-    ...publicUser(user),
-    status: visibleOnline ? user.status : "invisible",
-    statusText: visibleOnline ? user.status_text : "",
-    activityText: visibleOnline ? activityTextFor(user, relation) : "",
+    status: visible ? user.status : "invisible",
+    statusText: visible ? (user.status_text ?? "") : "",
+    activityText: visible ? activityTextFor(user, relation) : "",
   };
+}
+
+/** Whether presence is visible to others: connected and not invisible. */
+export function presenceOnline(user: Pick<UserRow, "status">, connected: boolean): boolean {
+  return connected && user.status !== "invisible";
+}
+
+/** Public profile fields plus presence that respects connection and visibility. */
+export function publicUserWithPresence(user: UserRow, connected: boolean, relation: PresenceRelation = "other") {
+  return { ...publicUser(user), ...presenceFieldsFor(user, connected, relation) };
 }
 
 export function privateUser(user: UserRow) {
@@ -595,6 +626,8 @@ export function privateUser(user: UserRow) {
   // account that owns these fields. Server-side authorization remains authoritative.
   return {
     ...publicUser(user),
+    status: user.status,
+    statusText: user.status_text,
     activityText: user.activity_text,
     activityVisibility: activityVisibilityOf(user),
     // Account creation time is private account metadata; only return it to the account owner.
@@ -681,6 +714,29 @@ export async function canCreateForumPost(db: D1Database, room: RoomRow, userId: 
       .bind(userId)
       .first<Pick<UserRow, "id" | "public_id">>();
     return Boolean(user && safeStringArray(room.forum_post_member_ids_json).includes(publicIdOf(user)));
+  }
+  return false;
+}
+
+/** Read-only chat rooms: may this member post here? Forums use canCreateForumPost. */
+export async function canPostInChatRoom(db: D1Database, room: RoomRow, userId: string): Promise<boolean> {
+  const policy = room.post_policy ?? "everyone";
+  if (policy === "everyone" || room.kind === "forum") return true;
+  const role = await getRole(db, room.hub_id, userId);
+  if (!role) return false;
+  if (role === "owner" || role === "admin") return true;
+  if (policy === "staff") return isForumStaff(db, room.hub_id, userId);
+  if (policy === "roles") {
+    if (await isForumStaff(db, room.hub_id, userId)) return true;
+    const roleIds = safeStringArray(room.post_role_ids_json ?? "[]").slice(0, 50);
+    if (!roleIds.length) return false;
+    const found = await db
+      .prepare(
+        `SELECT 1 AS found FROM decave_member_roles WHERE hub_id=? AND user_id=? AND role_id IN (${roleIds.map(() => "?").join(",")}) LIMIT 1`,
+      )
+      .bind(room.hub_id, userId, ...roleIds)
+      .first<{ found: number }>();
+    return Boolean(found);
   }
   return false;
 }

@@ -120,6 +120,9 @@ export function ensureHubFeatureSchema(env: Env): Promise<void> {
         capabilities TEXT NOT NULL DEFAULT '["send_messages"]',
         allowed_room_ids TEXT NOT NULL DEFAULT '[]',
         enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL,
+        kind TEXT NOT NULL DEFAULT 'token', color TEXT NOT NULL DEFAULT '',
+        avatar_emoji TEXT NOT NULL DEFAULT '🤖', published_by TEXT,
+        failure_streak INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY(hub_id) REFERENCES decave_hubs(id) ON DELETE CASCADE,
         FOREIGN KEY(created_by) REFERENCES decave_users(id) ON DELETE CASCADE
       )`),
@@ -180,6 +183,21 @@ export function ensureHubFeatureSchema(env: Env): Promise<void> {
     }
     if (!botColumns.results.some((column) => column.name === "allowed_room_ids")) {
       await env.DB.prepare("ALTER TABLE decave_hub_bots ADD COLUMN allowed_room_ids TEXT NOT NULL DEFAULT '[]'").run();
+    }
+    // Bot builder columns. Builder bots keep token_hash NOT NULL as 'builder:<id>',
+    // which can never equal a hex token hash.
+    const builderBotColumns: Array<[string, string]> = [
+      ["kind", "TEXT NOT NULL DEFAULT 'token'"],
+      ["color", "TEXT NOT NULL DEFAULT ''"],
+      ["avatar_emoji", "TEXT NOT NULL DEFAULT '🤖'"],
+      ["published_by", "TEXT"],
+      ["failure_streak", "INTEGER NOT NULL DEFAULT 0"],
+    ];
+    const botColumnsNow = await env.DB.prepare("PRAGMA table_info(decave_hub_bots)").all<{ name: string }>();
+    for (const [name, definition] of builderBotColumns) {
+      if (!botColumnsNow.results.some((column) => column.name === name)) {
+        await env.DB.prepare(`ALTER TABLE decave_hub_bots ADD COLUMN ${name} ${definition}`).run();
+      }
     }
   })().catch((error) => {
     hubFeatureSchemaReady = null;

@@ -75,7 +75,7 @@ declare global {
           bounds: { x: number; y: number; width: number; height: number } | null;
         }>;
         destroy: (id: string) => Promise<boolean>;
-        /** Desktop builds after 0.1.128: wipe the in-app browser profile on logout. */
+        /** Desktop builds after 0.1.132: wipe the in-app browser profile on sign-out. */
         clearSession?: () => Promise<boolean>;
         onState: (
           callback: (state: {
@@ -273,13 +273,7 @@ export async function checkDesktopForUpdates(): Promise<DesktopUpdateState> {
   return invokeDesktopEventBridge<DesktopUpdateState>("checkForUpdates");
 }
 
-export async function restartDesktopToUpdate(): Promise<boolean> {
-  if (window.decaveDesktop?.isDesktop && typeof window.decaveDesktop.restartToUpdate === "function")
-    return window.decaveDesktop.restartToUpdate();
-  return invokeDesktopEventBridge<boolean>("restartToUpdate");
-}
-
-/** Clears the desktop in-app browser profile; resolves false on web or older desktop builds. */
+/** Clears the desktop in-app browser profile. Resolves false on the web and on older desktop builds. */
 export async function clearDesktopBrowserSession(): Promise<boolean> {
   if (!hasDesktopActivityBridge()) return false;
   if (window.decaveDesktop?.isDesktop) {
@@ -287,6 +281,12 @@ export async function clearDesktopBrowserSession(): Promise<boolean> {
     return window.decaveDesktop.browser.clearSession();
   }
   return invokeDesktopEventBridge<boolean>("clearBrowserSession");
+}
+
+export async function restartDesktopToUpdate(): Promise<boolean> {
+  if (window.decaveDesktop?.isDesktop && typeof window.decaveDesktop.restartToUpdate === "function")
+    return window.decaveDesktop.restartToUpdate();
+  return invokeDesktopEventBridge<boolean>("restartToUpdate");
 }
 
 // The desktop layout is designed for a 1440x900 window. Smaller windows (laptop

@@ -4,6 +4,7 @@ import type { StreamerEvent } from "../../../shared/streamer-mode";
 import { StreamerOverview } from "../../streamer/StreamerOverview";
 import type { StreamerTransport } from "../../streamer/api";
 import type { Server, AccountUser } from "../types";
+import { openDesktopExternalUrl } from "../desktop";
 import { streamerMediaUrl } from "../streamer";
 import type { HubPanelsState } from "../state/hub-panels";
 import type { PageNavigation } from "../actions/page-navigation";
@@ -23,6 +24,8 @@ type Props = {
   streamerEvents: StreamerEvent[];
   openStreamerEvent: (event: StreamerEvent, mode: "view" | "manage") => void;
   openHubCalendar: (forceOpen?: boolean) => void;
+  joinVoiceRoom: (roomId: number) => void;
+  currentVoiceRoomId: () => number | null;
 };
 
 export function HubStreamerOverview({
@@ -39,6 +42,8 @@ export function HubStreamerOverview({
   streamerEvents,
   openStreamerEvent,
   openHubCalendar,
+  joinVoiceRoom,
+  currentVoiceRoomId,
 }: Props) {
   return (
     <StreamerOverview
@@ -50,6 +55,9 @@ export function HubStreamerOverview({
       announcementAvailable={announcementAvailable}
       official={Boolean(currentServer.membershipPrivate)}
       isDesktop={Boolean(window.decaveDesktop?.isDesktop)}
+      voiceRooms={currentServer.channels
+        .filter((channel) => channel.type === "voice")
+        .map((channel) => ({ id: channel.id, name: channel.name }))}
       actions={{
         openRoom: (name) => {
           const room = currentServer.channels.find(
@@ -68,7 +76,16 @@ export function HubStreamerOverview({
         composeAnnouncement: hubChat.composeAnnouncement,
         findSquad: pageNavigation.openSquadFinderWorkspace,
         manageHub: openManageServer,
+        openExternal: (url) => {
+          void openDesktopExternalUrl(url);
+        },
         mediaUrl: streamerMediaUrl,
+        joinVoiceRoom,
+        currentVoiceRoomId,
+        openSignIn: (url) => {
+          if (window.decaveDesktop?.isDesktop) void openDesktopExternalUrl(url);
+          else window.open(url, "_blank", "noopener,noreferrer");
+        },
       }}
       transport={streamerTransport}
     />

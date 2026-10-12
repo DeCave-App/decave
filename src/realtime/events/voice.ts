@@ -18,6 +18,7 @@ import type {
 } from "../../app/types";
 import { HTTP_URL } from "../../app/env";
 import type { RealtimeFrame } from "../connection";
+import type { ScreenSfuSharer } from "../../voice/screen-sfu/sharer";
 
 export type VoiceEventContext = {
   setSoundboardNotice: Dispatch<SetStateAction<string>>;
@@ -56,6 +57,9 @@ export type VoiceEventContext = {
     auth?: unknown,
   ) => Promise<void>;
   handleRtcCandidate: (participant: VoiceParticipant, candidate: RTCIceCandidateInit) => Promise<void>;
+  handleScreenWatch: (fromConnectionId: string, watching: boolean) => void;
+  screenSfu?: Pick<ScreenSfuSharer, "handleFrame" | "onVoiceJoined">;
+  screenSfuViewer?: { handleFrame(data: RealtimeFrame): boolean; onVoiceJoined(): void };
   finishVoiceJoinAttempt: (channelId: number) => void;
   acceptsVoiceJoinAcknowledgement: (channelId: number) => boolean;
   cleanupVoiceLocal: (clearPresence: boolean, preserveMicrophone?: boolean, preserveRecoveryCounter?: boolean) => void;
@@ -97,11 +101,19 @@ export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext
     ensureVoicePeersFromState,
     handleRtcDescription,
     handleRtcCandidate,
+    handleScreenWatch,
+    screenSfu,
+    screenSfuViewer,
     finishVoiceJoinAttempt,
     acceptsVoiceJoinAcknowledgement,
     cleanupVoiceLocal,
     loadSoundboardSounds,
   } = context;
+
+  // SFU results, key and mesh requests; also observes joins and leaves.
+  if (screenSfu?.handleFrame(data)) return true;
+  // Sealed stream keys; also pulls SFU shares as VOICE_STATE changes.
+  if (screenSfuViewer?.handleFrame(data)) return true;
 
   if (data.type === "VOICE_STATE") {
     const participants = Array.isArray(data.participants) ? (data.participants as VoiceParticipant[]) : [];
@@ -171,6 +183,8 @@ export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext
         ensurePeer(peer);
       }
     }
+    screenSfu?.onVoiceJoined(data.screenSfu === true);
+    screenSfuViewer?.onVoiceJoined();
     return true;
   }
 
@@ -219,6 +233,13 @@ export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext
   if (data.type === "RTC_ICE_CANDIDATE") {
     if (data.from && typeof data.from === "object" && data.candidate && typeof data.candidate === "object") {
       void handleRtcCandidate(data.from as VoiceParticipant, data.candidate as RTCIceCandidateInit);
+    }
+    return true;
+  }
+
+  if (data.type === "RTC_SCREEN_WATCH") {
+    if (voiceChannelRef.current !== null && typeof data.fromConnectionId === "string") {
+      handleScreenWatch(data.fromConnectionId, data.watching === true);
     }
     return true;
   }

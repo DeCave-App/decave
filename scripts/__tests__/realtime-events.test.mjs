@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { handleChatEvent } from "../../src/realtime/events/chat.ts";
-import { handleHubEvent } from "../../src/realtime/events/hubs.ts";
-import { handleSessionEvent } from "../../src/realtime/events/session.ts";
-import { handleSocialEvent } from "../../src/realtime/events/social.ts";
+import { register } from "node:module";
+
+register("../test-support/mobile-extensionless-loader.mjs", import.meta.url);
+
+const { handleChatEvent } = await import("../../src/realtime/events/chat.ts");
+const { handleHubEvent } = await import("../../src/realtime/events/hubs.ts");
+const { handleSessionEvent } = await import("../../src/realtime/events/session.ts");
+const { handleSocialEvent } = await import("../../src/realtime/events/social.ts");
 
 // The voice handlers read the app's server address, which reads window.location.
 globalThis.window ??= {
@@ -201,6 +205,20 @@ test("encrypted DM frames are decrypted before they reach the conversation", asy
   const dms = state([{ id: "m1", text: "secret v1", e2ee: "encrypted" }]);
   const opened = [];
   const sent = [];
+  const pendingSocialMessages = new Map([
+    [
+      "attempt-1",
+      {
+        clientMessageId: "attempt-1",
+        kind: "dm",
+        conversationId: "peer",
+        senderUserId: "me",
+        text: "exact failed draft",
+        draftRevision: 0,
+      },
+    ],
+  ]);
+  const retryRequests = [];
   const context = {
     currentUser: { id: "me" },
     activeDmUserRef: ref({ id: "peer" }),
@@ -209,6 +227,39 @@ test("encrypted DM frames are decrypted before they reach the conversation", asy
     loadDmConversations: async () => {},
     notificationSettingsRef: ref({ dms: false }),
     mutedUserIdsRef: ref(new Set()),
+    pendingSocialMessagesRef: ref(pendingSocialMessages),
+    dmDraftRevisionRef: ref({ peer: 0 }),
+    groupDraftRevisionRef: ref({}),
+    setDmDrafts: () => {},
+    setDmInput: () => {},
+    setGroupDrafts: () => {},
+    setGroupInput: () => {},
+    setGroupError: () => {},
+    setShowGroupMembers: () => {},
+    setDmUnread: () => {},
+    setDmNotice: () => {},
+    setCurrentUser: () => {},
+    setMessages: () => {},
+    setOnlineUsers: () => {},
+    setHubMembers: () => {},
+    setFriends: () => {},
+    setIncomingFriendRequests: () => {},
+    setOutgoingFriendRequests: () => {},
+    setActiveDmUser: () => {},
+    setActiveGroupChat: () => {},
+    setGroupMessages: () => {},
+    setVoiceParticipants: () => {},
+    friendsRef: ref([]),
+    activeGroupChatRef: ref(null),
+    groupChats: [],
+    dmNoticeTimerRef: ref(null),
+    notificationPreviewMode: () => "hidden",
+    notificationPreviewText: () => ({ title: "", body: "" }),
+    desktopNotify: () => {},
+    applySocialState: () => {},
+    loadSocialState: async () => {},
+    loadGroupChats: async () => {},
+    openGroupChat: async () => {},
     sendSocket: (frame) => sent.push(frame) > 0,
     e2ee: {
       handleEvent: (frame) => frame.type === "DM_KEYS_CHANGED",
@@ -216,8 +267,23 @@ test("encrypted DM frames are decrypted before they reach the conversation", asy
         opened.push(message.id);
         return { ...message, text: `decrypted ${message.id}`, e2ee: "encrypted" };
       },
-      retryFrame: async (error) => (error.code === "DM_E2EE_STALE_KEY" ? { type: "DM_MESSAGE", resent: true } : null),
+      retryFrame: async (error) => {
+        retryRequests.push(error.clientMessageId);
+        return error.code === "DM_E2EE_STALE_KEY"
+          ? {
+              type: "DM_MESSAGE",
+              clientMessageId: error.clientMessageId === "attachment-1" ? "attachment-2" : "attempt-2",
+              targetUserId: "peer",
+              resent: true,
+            }
+          : null;
+      },
       settle: () => {},
+      discardDmSend: () => {},
+      openGroup: async (message) => message,
+      retryGroupFrame: async () => null,
+      settleGroup: () => {},
+      discardGroupSend: () => {},
     },
   };
   const envelope = { v: 1 };
@@ -237,7 +303,40 @@ test("encrypted DM frames are decrypted before they reach the conversation", asy
   );
   // Key events belong to the encryption session; a stale-key error is resent once.
   assert.equal(handleSocialEvent({ type: "DM_KEYS_CHANGED", userId: "peer" }, context), true);
-  handleSocialEvent({ type: "DM_ERROR", code: "DM_E2EE_STALE_KEY", messageId: "m3", message: "stale" }, context);
+  handleSocialEvent(
+    {
+      type: "DM_ERROR",
+      code: "DM_E2EE_STALE_KEY",
+      clientMessageId: "attempt-1",
+      targetUserId: "peer",
+      messageId: "m3",
+      message: "stale",
+    },
+    context,
+  );
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.deepEqual(sent, [{ type: "DM_MESSAGE", resent: true }]);
+  assert.deepEqual(sent, [{ type: "DM_MESSAGE", clientMessageId: "attempt-2", targetUserId: "peer", resent: true }]);
+  assert.equal(pendingSocialMessages.has("attempt-1"), false);
+  assert.equal(pendingSocialMessages.get("attempt-2").text, "exact failed draft");
+
+  handleSocialEvent({ type: "DM_ERROR", code: "DM_E2EE_STALE_KEY", targetUserId: "peer", message: "stale" }, context);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(sent.length, 1, "an ID-less response cannot trigger an uncorrelated resend");
+  assert.equal(pendingSocialMessages.has("attempt-2"), true);
+  assert.deepEqual(retryRequests, ["attempt-1", undefined]);
+
+  handleSocialEvent(
+    {
+      type: "DM_ERROR",
+      code: "DM_E2EE_STALE_KEY",
+      clientMessageId: "attachment-1",
+      targetUserId: "peer",
+      messageId: null,
+    },
+    context,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(sent.length, 2, "an exact server-echoed ID permits retrying an attachment without a draft record");
+  assert.equal(sent[1].clientMessageId, "attachment-2");
+  assert.deepEqual(retryRequests, ["attempt-1", undefined, "attachment-1"]);
 });

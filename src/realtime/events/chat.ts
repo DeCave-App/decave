@@ -10,6 +10,7 @@ import type { NotificationPreview } from "../../privacy/notification-preview";
 import { resolveEcho, type OutboxItem } from "../../features/outbox/outbox";
 import type { AccountUser, AttachmentMeta, ChatMessage, NotificationSettings, UiSoundEvent } from "../../app/types";
 import type { RealtimeFrame } from "../connection";
+import { messageBotFields } from "../../../shared/bots/card-view";
 
 export type ChatEventContext = {
   currentUser: AccountUser;
@@ -100,6 +101,7 @@ export function handleChatEvent(data: RealtimeFrame, context: ChatEventContext):
       role: data.role === "owner" || data.role === "admin" || data.role === "member" ? data.role : null,
       replyToId: typeof data.replyToId === "string" ? data.replyToId : null,
       attachment: data.attachment && typeof data.attachment === "object" ? (data.attachment as AttachmentMeta) : null,
+      ...messageBotFields(data),
     };
 
     if (

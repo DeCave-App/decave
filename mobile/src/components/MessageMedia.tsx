@@ -42,6 +42,10 @@ export function MessageImage({
       setLoadedImage(null);
       return;
     }
+    if (isGiphyProxyUrl(url)) {
+      setLoadedImage(null);
+      return;
+    }
     const controller = new AbortController();
     let active = true;
     setLoadedImage(null);
@@ -123,6 +127,15 @@ export function MessageImage({
       </Modal>
     </>
   );
+}
+
+function isGiphyProxyUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value, `${API_BASE}/`);
+    return parsed.origin === API_BASE && parsed.pathname === "/api/giphy/media";
+  } catch {
+    return false;
+  }
 }
 
 const styles = StyleSheet.create({

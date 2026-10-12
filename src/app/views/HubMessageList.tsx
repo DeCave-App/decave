@@ -1,5 +1,7 @@
 // Message list of a Hub text room.
 
+import { BotBadge } from "../../features/bot-cards";
+import { messageBotFields } from "../../../shared/bots/card-view";
 import type { MouseEvent as ReactMouseEvent, Dispatch, SetStateAction, MutableRefObject } from "react";
 import { Icon } from "../../components/Icon";
 import type { SafetyReportTarget } from "../../safety/types";
@@ -93,27 +95,18 @@ export function HubMessageList({
         if (file) void uploadAttachment(file);
       }}
     >
-      {messages.map((item) => (
-        <div className="chat-message" key={item.id} data-message-id={item.id}>
-          <div
-            className="message-avatar-context user-context-target"
-            onContextMenu={(event) => {
-              if (!item.userId) return;
-              openUserContextMenu(event, {
-                userId: item.userId,
-                username: item.username,
-                avatarUrl: item.avatarUrl,
-                role: item.role,
-              });
-            }}
-            title={`Right-click ${item.username}`}
-          >
-            <UserAvatar className="message-avatar" username={item.username} avatarUrl={item.avatarUrl} />
-          </div>
-          <div className="chat-message-content">
-            <div className="chat-message-header">
-              <strong
-                className={item.userId ? "user-context-target" : undefined}
+      {messages.map((item) => {
+        // A builder bot is the author of its messages, not the admin who published it.
+        const author = messageBotFields(item).bot;
+        return (
+          <div className="chat-message" key={item.id} data-message-id={item.id}>
+            {author ? (
+              <span className="message-avatar bot-author-avatar" aria-hidden="true">
+                {author.avatarEmoji || "🤖"}
+              </span>
+            ) : (
+              <div
+                className="message-avatar-context user-context-target"
                 onContextMenu={(event) => {
                   if (!item.userId) return;
                   openUserContextMenu(event, {
@@ -123,173 +116,205 @@ export function HubMessageList({
                     role: item.role,
                   });
                 }}
+                title={`Right-click ${item.username}`}
               >
-                {hubMembers.find((member) => member.userId === item.userId) ? (
-                  <span className="dc-member-role-icons">
-                    {memberRoleIcons(hubMembers.find((member) => member.userId === item.userId)!)}
-                  </span>
-                ) : null}{" "}
-                {item.username}
-              </strong>
-              <span>{formatTimestamp(item.timestamp)}</span>
-            </div>
-            {item.replyToId &&
-              (() => {
-                const replyTarget = messages.find((candidate) => candidate.id === item.replyToId);
-                return (
-                  <button type="button" className="chat-reply-ref" onClick={() => scrollToMessage(item.replyToId!)}>
-                    ↳ Reply to{" "}
-                    {replyTarget ? `${replyTarget.username}: ${replyPreviewText(replyTarget.text)}` : "message"}
-                  </button>
-                );
-              })()}
-            {item.text && <div className="chat-message-text">{renderHubMessageBody(item)}</div>}
-
-            {item.attachment && canShowInline(item.attachment) && (
-              <InlineImage
-                attachment={item.attachment}
-                baseUrl={HTTP_URL}
-                authorizedFetch={authorizedFetch}
-                onDownload={() => void downloadLegacyAttachment(item.attachment!)}
-              />
+                <UserAvatar className="message-avatar" username={item.username} avatarUrl={item.avatarUrl} />
+              </div>
             )}
-            {item.attachment &&
-              !canShowInline(item.attachment) &&
-              (item.attachment.mimeType.startsWith("image/") || item.attachment.mimeType.startsWith("video/")) && (
-                <button
-                  type="button"
-                  className="chat-media-preview"
-                  onClick={() => void downloadLegacyAttachment(item.attachment!)}
-                >
-                  <span>
-                    {item.attachment.mimeType.startsWith("image/") ? "Image" : "Video"} · {item.attachment.name}
-                  </span>
-                  <small>Tap to download</small>
-                </button>
-              )}
-            {item.attachment &&
-              !item.attachment.mimeType.startsWith("image/") &&
-              !item.attachment.mimeType.startsWith("video/") && (
-                <button
-                  type="button"
-                  className="chat-attachment-card"
-                  onClick={() => void downloadLegacyAttachment(item.attachment!)}
-                >
-                  <span className="chat-attachment-icon">↥</span>
-                  <span>
-                    <strong>{item.attachment.name}</strong>
-                    <small>
-                      {(item.attachment.size / 1024 / 1024).toFixed(item.attachment.size > 1024 * 1024 ? 1 : 2)} MB ·{" "}
-                      {item.attachment.mimeType || "File"}
-                    </small>
-                  </span>
-                  <b>Download</b>
-                </button>
-              )}
-            <div className="chat-message-reactions">
-              {Object.entries(item.reactions ?? {}).map(
-                ([emoji, users]) =>
-                  users.length > 0 &&
-                  !emoji.startsWith("poll_") && (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className="chat-reaction-pill"
-                      style={{ pointerEvents: undefined }}
-                      onClick={() => void sendReaction(item, emoji)}
-                    >
-                      {emoji} {users.length}
+            <div className="chat-message-content">
+              <div className="chat-message-header">
+                {author ? (
+                  <>
+                    <strong>{author.name}</strong>
+                    <BotBadge bot={author} />
+                  </>
+                ) : (
+                  <strong
+                    className={item.userId ? "user-context-target" : undefined}
+                    onContextMenu={(event) => {
+                      if (!item.userId) return;
+                      openUserContextMenu(event, {
+                        userId: item.userId,
+                        username: item.username,
+                        avatarUrl: item.avatarUrl,
+                        role: item.role,
+                      });
+                    }}
+                  >
+                    {hubMembers.find((member) => member.userId === item.userId) ? (
+                      <span className="dc-member-role-icons">
+                        {memberRoleIcons(hubMembers.find((member) => member.userId === item.userId)!)}
+                      </span>
+                    ) : null}{" "}
+                    {item.username}
+                  </strong>
+                )}
+                <span>{formatTimestamp(item.timestamp)}</span>
+              </div>
+              {item.replyToId &&
+                (() => {
+                  const replyTarget = messages.find((candidate) => candidate.id === item.replyToId);
+                  return (
+                    <button type="button" className="chat-reply-ref" onClick={() => scrollToMessage(item.replyToId!)}>
+                      ↳ Reply to{" "}
+                      {replyTarget
+                        ? `${messageBotFields(replyTarget).bot?.name ?? replyTarget.username}: ${replyPreviewText(replyTarget.text)}`
+                        : "message"}
                     </button>
-                  ),
+                  );
+                })()}
+              {item.text && <div className="chat-message-text">{renderHubMessageBody(item)}</div>}
+
+              {item.attachment && canShowInline(item.attachment) && (
+                <InlineImage
+                  attachment={item.attachment}
+                  baseUrl={HTTP_URL}
+                  authorizedFetch={authorizedFetch}
+                  onDownload={() => void downloadLegacyAttachment(item.attachment!)}
+                />
               )}
-              {item.pinned && <span className="chat-pinned">PINNED</span>}
-            </div>
-
-            <div className="chat-message-hover-actions" style={{ display: undefined }}>
-              <div className="message-reaction-picker-anchor">
-                <button
-                  type="button"
-                  title="Add reaction"
-                  className="reaction-action-button"
-                  onClick={(event) => toggleMessageReactionPicker(item.id, event)}
-                >
-                  <Icon name="smile" />
-                </button>
-
-                {renderMessageReactionPicker(item.id, (emoji) => void sendReaction(item, emoji))}
+              {item.attachment &&
+                !canShowInline(item.attachment) &&
+                (item.attachment.mimeType.startsWith("image/") || item.attachment.mimeType.startsWith("video/")) && (
+                  <button
+                    type="button"
+                    className="chat-media-preview"
+                    onClick={() => void downloadLegacyAttachment(item.attachment!)}
+                  >
+                    <span>
+                      {item.attachment.mimeType.startsWith("image/") ? "Image" : "Video"} · {item.attachment.name}
+                    </span>
+                    <small>Tap to download</small>
+                  </button>
+                )}
+              {item.attachment &&
+                !item.attachment.mimeType.startsWith("image/") &&
+                !item.attachment.mimeType.startsWith("video/") && (
+                  <button
+                    type="button"
+                    className="chat-attachment-card"
+                    onClick={() => void downloadLegacyAttachment(item.attachment!)}
+                  >
+                    <span className="chat-attachment-icon">↥</span>
+                    <span>
+                      <strong>{item.attachment.name}</strong>
+                      <small>
+                        {(item.attachment.size / 1024 / 1024).toFixed(item.attachment.size > 1024 * 1024 ? 1 : 2)} MB ·{" "}
+                        {item.attachment.mimeType || "File"}
+                      </small>
+                    </span>
+                    <b>Download</b>
+                  </button>
+                )}
+              <div className="chat-message-reactions">
+                {Object.entries(item.reactions ?? {}).map(
+                  ([emoji, users]) =>
+                    users.length > 0 &&
+                    !emoji.startsWith("poll_") && (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className="chat-reaction-pill"
+                        style={{ pointerEvents: undefined }}
+                        onClick={() => void sendReaction(item, emoji)}
+                      >
+                        {emoji} {users.length}
+                      </button>
+                    ),
+                )}
+                {item.pinned && <span className="chat-pinned">PINNED</span>}
               </div>
 
-              <button
-                type="button"
-                title="Reply"
-                aria-label="Reply"
-                onClick={() => {
-                  setEditingMessage(null);
-                  setReplyingTo(item);
-                }}
-              >
-                <Icon name="message" />
-              </button>
+              <div className="chat-message-hover-actions" style={{ display: undefined }}>
+                <div className="message-reaction-picker-anchor">
+                  <button
+                    type="button"
+                    title="Add reaction"
+                    className="reaction-action-button"
+                    onClick={(event) => toggleMessageReactionPicker(item.id, event)}
+                  >
+                    <Icon name="smile" />
+                  </button>
 
-              {item.userId && item.userId !== currentUser.id && (
+                  {renderMessageReactionPicker(item.id, (emoji) => void sendReaction(item, emoji))}
+                </div>
+
                 <button
                   type="button"
-                  onClick={() =>
-                    openSafetyReport({
-                      targetType: item.attachment ? "attachment" : "message",
-                      targetId: item.id,
-                      subjectUserId: item.userId,
-                      subjectUsername: item.username,
-                      contextType: "channel",
-                      contextId: String(item.channelId || currentChannel.id),
-                      contextLabel: `#${currentChannel.name}`,
-                      hubId: currentServer.id,
-                      roomId: currentChannel.id,
-                      evidenceType: item.attachment ? "attachment" : "message",
-                      evidenceText: item.text || item.attachment?.name || "",
-                      evidenceLabel: `${item.username}'s message`,
-                    })
-                  }
-                  title="Report"
-                  aria-label="Report message"
+                  title="Reply"
+                  aria-label="Reply"
+                  onClick={() => {
+                    setEditingMessage(null);
+                    setReplyingTo(item);
+                  }}
                 >
-                  <Icon name="flag" />
+                  <Icon name="message" />
                 </button>
-              )}
 
-              {item.userId === currentUser.id && (
-                <button type="button" title="Edit" aria-label="Edit message" onClick={() => startEditMessage(item)}>
-                  <Icon name="edit" />
-                </button>
-              )}
+                {item.userId && item.userId !== currentUser.id && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openSafetyReport({
+                        targetType: item.attachment ? "attachment" : "message",
+                        targetId: item.id,
+                        subjectUserId: item.userId,
+                        // The server records the true author from the message row.
+                        subjectUsername: author?.name ?? item.username,
+                        contextType: "channel",
+                        contextId: String(item.channelId || currentChannel.id),
+                        contextLabel: `#${currentChannel.name}`,
+                        hubId: currentServer.id,
+                        roomId: currentChannel.id,
+                        evidenceType: item.attachment ? "attachment" : "message",
+                        evidenceText: item.text || item.attachment?.name || "",
+                        evidenceLabel: `${author?.name ?? item.username}'s message`,
+                      })
+                    }
+                    title="Report"
+                    aria-label="Report message"
+                  >
+                    <Icon name="flag" />
+                  </button>
+                )}
 
-              {(currentServer.myRole === "owner" || currentServer.myRole === "admin") && (
-                <button
-                  type="button"
-                  title={item.pinned ? "Unpin" : "Pin"}
-                  aria-label={item.pinned ? "Unpin message" : "Pin message"}
-                  aria-pressed={item.pinned}
-                  onClick={() => void togglePinMessage(item)}
-                >
-                  <Icon name="pin" />
-                </button>
-              )}
+                {/* A bot's message is not the publisher's own message to edit. */}
+                {item.userId === currentUser.id && !author && (
+                  <button type="button" title="Edit" aria-label="Edit message" onClick={() => startEditMessage(item)}>
+                    <Icon name="edit" />
+                  </button>
+                )}
 
-              {canDeleteMessage(item) && (
-                <button
-                  type="button"
-                  onClick={() => void deleteMessage(item)}
-                  title={item.userId === currentUser.id ? "Delete your message" : "Delete message as moderator"}
-                  aria-label="Delete message"
-                  className="danger"
-                >
-                  <Icon name="trash" />
-                </button>
-              )}
+                {(currentServer.myRole === "owner" || currentServer.myRole === "admin") && (
+                  <button
+                    type="button"
+                    title={item.pinned ? "Unpin" : "Pin"}
+                    aria-label={item.pinned ? "Unpin message" : "Pin message"}
+                    aria-pressed={item.pinned}
+                    onClick={() => void togglePinMessage(item)}
+                  >
+                    <Icon name="pin" />
+                  </button>
+                )}
+
+                {canDeleteMessage(item) && (
+                  <button
+                    type="button"
+                    onClick={() => void deleteMessage(item)}
+                    title={
+                      item.userId === currentUser.id && !author ? "Delete your message" : "Delete message as moderator"
+                    }
+                    aria-label="Delete message"
+                    className="danger"
+                  >
+                    <Icon name="trash" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {outbox
         .filter((item) => item.channelId === selectedChannel)
         .map((item) => (

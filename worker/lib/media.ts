@@ -100,8 +100,57 @@ export function mediaDeletionQueueStatement(db: D1Database, key: string, queuedA
 }
 
 /**
+ * Reconcile attachment cleanup after deleting messages. A retry can leave
+ * multiple message rows pointing at one upload, so only unreferenced keys may
+ * lose their access row or enter the durable deletion queue.
+ */
+export function reconcileAttachmentDeletionStatements(
+  db: D1Database,
+  keys: Iterable<string>,
+  queuedAt: string,
+): D1PreparedStatement[] {
+  const uniqueKeys = [...new Set(keys)].filter(Boolean);
+  for (const key of uniqueKeys) {
+    if (!isQueueableMediaKey(key)) throw new TypeError("Refusing to queue an unsupported R2 key.");
+  }
+
+  const statements: D1PreparedStatement[] = [];
+  for (let offset = 0; offset < uniqueKeys.length; offset += 90) {
+    const chunk = uniqueKeys.slice(offset, offset + 90);
+    const placeholders = chunk.map(() => "?").join(",");
+    statements.push(
+      db
+        .prepare(
+          `DELETE FROM decave_media_deletion_queue
+           WHERE object_key IN (${placeholders})
+             AND EXISTS(SELECT 1 FROM decave_messages WHERE attachment_key=decave_media_deletion_queue.object_key)`,
+        )
+        .bind(...chunk),
+      db
+        .prepare(
+          `DELETE FROM decave_attachment_access
+           WHERE r2_key IN (${placeholders})
+             AND NOT EXISTS(SELECT 1 FROM decave_messages WHERE attachment_key=decave_attachment_access.r2_key)`,
+        )
+        .bind(...chunk),
+      db
+        .prepare(
+          `INSERT OR IGNORE INTO decave_media_deletion_queue(object_key,queued_at,attempts,last_attempt_at)
+           SELECT candidate.object_key,?,0,NULL FROM (
+             SELECT ? AS object_key${chunk.map(() => " UNION ALL SELECT ?").join("")}
+           ) candidate
+           WHERE NOT EXISTS(SELECT 1 FROM decave_messages WHERE attachment_key=candidate.object_key)
+             AND NOT EXISTS(SELECT 1 FROM decave_attachment_access WHERE r2_key=candidate.object_key)`,
+        )
+        .bind(queuedAt, ...chunk),
+    );
+  }
+  return statements;
+}
+
+/**
  * Every R2 object owned by one Hub (channel attachments, assets, soundboard and
- * artwork). Bind the Hub id seven times. Callers must run
+ * artwork, clip thumbnails). Bind the Hub id nine times. Callers must run
  * ensureHubFeatureSchema and ensureSoundboardSchema first.
  */
 export const HUB_MEDIA_OBJECT_KEYS_SQL = `SELECT attachment_key AS object_key FROM decave_messages WHERE hub_id=? AND attachment_key IS NOT NULL
@@ -110,12 +159,14 @@ export const HUB_MEDIA_OBJECT_KEYS_SQL = `SELECT attachment_key AS object_key FR
   UNION SELECT r2_key AS object_key FROM decave_soundboard_sounds WHERE hub_id=?
   UNION SELECT icon_key AS object_key FROM decave_hubs WHERE id=? AND icon_key IS NOT NULL
   UNION SELECT banner_key AS object_key FROM decave_hubs WHERE id=? AND banner_key IS NOT NULL
-  UNION SELECT chat_background_key AS object_key FROM decave_hubs WHERE id=? AND chat_background_key IS NOT NULL`;
+  UNION SELECT chat_background_key AS object_key FROM decave_hubs WHERE id=? AND chat_background_key IS NOT NULL
+  UNION SELECT header_key AS object_key FROM decave_hubs WHERE id=? AND header_key IS NOT NULL
+  UNION SELECT thumbnail_key AS object_key FROM decave_twitch_clips_posted WHERE hub_id=? AND thumbnail_key IS NOT NULL AND thumbnail_key<>''`;
 
 export async function hubMediaObjectKeys(db: D1Database, hubId: number): Promise<string[]> {
   const rows = await db
     .prepare(HUB_MEDIA_OBJECT_KEYS_SQL)
-    .bind(hubId, hubId, hubId, hubId, hubId, hubId, hubId)
+    .bind(hubId, hubId, hubId, hubId, hubId, hubId, hubId, hubId, hubId)
     .all<{ object_key: string }>();
   return [...new Set(rows.results.map((row) => row.object_key).filter(Boolean))];
 }
@@ -138,7 +189,7 @@ export function queueHubMediaDeletionStatement(
        SELECT object_key,?,0,NULL FROM (${HUB_MEDIA_OBJECT_KEYS_SQL})
        WHERE object_key IS NOT NULL AND (${guardSql})`,
     )
-    .bind(queuedAt, hubId, hubId, hubId, hubId, hubId, hubId, hubId, ...guardBindings);
+    .bind(queuedAt, hubId, hubId, hubId, hubId, hubId, hubId, hubId, hubId, hubId, ...guardBindings);
 }
 
 /** Attempt R2 deletion only for keys that are actually queued (a guarded batch may have skipped them). */
@@ -405,4 +456,130 @@ export async function serveR2(request: Request, env: Env, exportOwnerUserId?: st
   headers.set("x-content-type-options", "nosniff");
   headers.set("cache-control", "private, max-age=300");
   return new Response(body, { headers });
+}
+
+// ---------------------------------------------------------------------------
+// Durable R2 deletion. An object key is written to decave_media_deletion_queue
+// in the same D1 batch that drops the last row pointing at it; the R2 delete is
+// then tried at once and, if R2 is unavailable, again by the hourly retention
+// job (worker/retention.ts) until R2 confirms. Migration 0074 creates the
+// table; the lazy schema below keeps a Worker deployed before the migration
+// working.
+
+let mediaDeletionQueueReady: Promise<void> | null = null;
+
+export function ensureMediaDeletionQueueSchema(db: D1Database): Promise<void> {
+  mediaDeletionQueueReady ??= db
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS decave_media_deletion_queue (
+        object_key TEXT PRIMARY KEY,
+        queued_at TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        last_attempt_at TEXT
+      )`,
+    )
+    .run()
+    .then(() => undefined)
+    .catch((error) => {
+      mediaDeletionQueueReady = null;
+      throw error;
+    });
+  return mediaDeletionQueueReady;
+}
+
+/**
+ * SQL condition (correlated on `access`, a decave_attachment_access row) that is
+ * true while any DM still carries the upload: plaintext DMs name it in `text`,
+ * end-to-end encrypted DMs list it in `attachment_refs` (the ciphertext itself is
+ * opaque to the server, so the client sends the refs next to the envelope).
+ * Messages either way between the owner and the peer are checked.
+ */
+export const DM_UPLOAD_REFERENCED_SQL = `EXISTS(
+  SELECT 1 FROM decave_direct_messages dm
+  WHERE (dm.from_user_id=access.owner_user_id
+         OR (access.peer_user_id IS NOT NULL AND dm.from_user_id=access.peer_user_id AND dm.to_user_id=access.owner_user_id))
+    AND (instr(dm.text, access.r2_key)>0 OR instr(COALESCE(dm.attachment_refs, ''), access.r2_key)>0)
+)`;
+
+/** True while a Hub channel message (or legacy message) still points at the key. */
+export const CHANNEL_UPLOAD_REFERENCED_SQL = `EXISTS(
+  SELECT 1 FROM decave_messages m WHERE m.attachment_key=access.r2_key
+)`;
+
+export function queueMediaDeletionStatements(db: D1Database, keys: Iterable<string>, now: string) {
+  return [...new Set(keys)]
+    .filter(Boolean)
+    .map((key) =>
+      db
+        .prepare("INSERT OR IGNORE INTO decave_media_deletion_queue(object_key,queued_at,attempts) VALUES(?,?,0)")
+        .bind(key, now),
+    );
+}
+
+/**
+ * Try to delete queued keys from R2. Keys R2 confirmed are dequeued; failures
+ * stay queued with an attempt count. A key that is referenced again (an
+ * attachment access row or a channel message) is dequeued without deleting.
+ * Returns the keys still queued.
+ */
+export async function deleteQueuedMedia(env: Env, keys: string[]): Promise<string[]> {
+  const unique = [...new Set(keys)].filter(Boolean);
+  if (!unique.length) return [];
+  const live: string[] = [];
+  const stillUsed: string[] = [];
+  for (const key of unique) {
+    const used = await env.DB.prepare(
+      `SELECT 1 AS used FROM decave_attachment_access WHERE r2_key=?
+       UNION ALL SELECT 1 FROM decave_messages WHERE attachment_key=? LIMIT 1`,
+    )
+      .bind(key, key)
+      .first<{ used: number }>();
+    (used ? stillUsed : live).push(key);
+  }
+  const dequeue = (list: string[]) =>
+    list.length
+      ? env.DB.batch(
+          list.map((key) => env.DB.prepare("DELETE FROM decave_media_deletion_queue WHERE object_key=?").bind(key)),
+        )
+      : Promise.resolve([]);
+  await dequeue(stillUsed);
+  // One key at a time so each confirmed delete is dequeued on its own.
+  const deleted: string[] = [];
+  const failed: string[] = [];
+  for (const key of live) {
+    try {
+      await env.MEDIA.delete(key);
+      deleted.push(key);
+    } catch {
+      failed.push(key);
+    }
+  }
+  await dequeue(deleted);
+  if (failed.length) {
+    const now = new Date().toISOString();
+    await env.DB.batch(
+      failed.map((key) =>
+        env.DB.prepare(
+          "UPDATE decave_media_deletion_queue SET attempts=attempts+1, last_attempt_at=? WHERE object_key=?",
+        ).bind(now, key),
+      ),
+    );
+  }
+  return failed;
+}
+
+/** deleteQueuedMedia for only those keys a (possibly guarded) batch really queued. */
+export async function deleteQueuedMediaIfQueued(env: Env, keys: Iterable<string>): Promise<string[]> {
+  const unique = [...new Set(keys)].filter(Boolean);
+  const queued: string[] = [];
+  for (let offset = 0; offset < unique.length; offset += 90) {
+    const chunk = unique.slice(offset, offset + 90);
+    const rows = await env.DB.prepare(
+      `SELECT object_key FROM decave_media_deletion_queue WHERE object_key IN (${chunk.map(() => "?").join(",")})`,
+    )
+      .bind(...chunk)
+      .all<{ object_key: string }>();
+    queued.push(...rows.results.map((row) => row.object_key));
+  }
+  return deleteQueuedMedia(env, queued);
 }

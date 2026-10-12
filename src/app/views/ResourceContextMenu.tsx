@@ -1,4 +1,4 @@
-// Right-click menu for a Hub or room: open it, copy its share link, mute the Hub, or manage it.
+// Right-click menu for a Hub or room: open it, copy its share link, mute the Hub or room, or manage it.
 
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
@@ -12,6 +12,9 @@ type Props = {
   setResourceContextMenu: Dispatch<SetStateAction<ResourceContextMenuState | null>>;
   setResourceContextMoreOpen: Dispatch<SetStateAction<boolean>>;
   toggleMutedHub: (serverId: number) => void;
+  /** Rooms muted with the room bell ("Nothing" notification level). */
+  isRoomMuted: (roomId: number) => boolean;
+  toggleRoomMute: (roomId: number) => void;
   changeServer: (serverId: number, availableServers?: Server[]) => void;
   changeChannel: (channelId: number) => void;
   contextMenus: ContextMenuActions;
@@ -24,6 +27,8 @@ export function ResourceContextMenu({
   setResourceContextMenu,
   setResourceContextMoreOpen,
   toggleMutedHub,
+  isRoomMuted,
+  toggleRoomMute,
   changeServer,
   changeChannel,
   contextMenus,
@@ -169,6 +174,29 @@ export function ResourceContextMenu({
           <span>{mutedHubIds.includes(server.id) ? "Unmute Hub" : "Mute Hub"}</span>
           <span className="ds-text-muted">
             <Icon name={mutedHubIds.includes(server.id) ? "check" : "bell"} size="sm" />
+          </span>
+        </button>
+      )}
+
+      {!isHub && channel && (
+        <button
+          type="button"
+          style={menuButtonStyle}
+          onMouseEnter={(event) => {
+            event.currentTarget.style.background = "rgba(255,255,255,.045)";
+          }}
+          onMouseLeave={(event) => {
+            event.currentTarget.style.background = "transparent";
+          }}
+          onClick={() => {
+            toggleRoomMute(channel.id);
+            setResourceContextMenu(null);
+            setResourceContextMoreOpen(false);
+          }}
+        >
+          <span>{isRoomMuted(channel.id) ? "Unmute Room" : "Mute Room"}</span>
+          <span className="ds-text-muted">
+            <Icon name={isRoomMuted(channel.id) ? "check" : "bell"} size="sm" />
           </span>
         </button>
       )}

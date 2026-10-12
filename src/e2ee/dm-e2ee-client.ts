@@ -29,8 +29,9 @@ export const dmE2ee = new DmE2eeSession({
   },
   loadKeyring: loadAccountKeyring,
   saveKeyring: saveAccountKeyring,
-  forgetKeyring: async (accountId) => {
+  forgetKeyring: async (accountId, options) => {
     await forgetAccountKeyring(accountId);
+    if (options?.preserveDeviceState) return;
     try {
       localStorage.removeItem(STATE_PREFIX + accountId);
     } catch {}
@@ -43,13 +44,15 @@ export const dmE2ee = new DmE2eeSession({
         recoveryCodeUnconfirmed: raw.recoveryCodeUnconfirmed === true,
       };
     } catch {
-      return { pins: {} };
+      throw new Error("Could not read this device's encryption security state.");
     }
   },
   saveDeviceState: async (accountId, state) => {
     try {
       localStorage.setItem(STATE_PREFIX + accountId, JSON.stringify(state));
-    } catch {}
+    } catch {
+      throw new Error("Could not save this device's encryption security state.");
+    }
   },
 });
 
@@ -77,10 +80,12 @@ export const {
   dmSealedBody,
   dmSocketFrame,
   settleDmSend,
+  discardDmSend,
   retryFrameAfterDmError,
   dmReactionBody,
   groupSocketFrame,
   settleGroupSend,
+  discardGroupSend,
   retryGroupFrameAfterError,
   groupPreview,
   decryptConversationPreviews,

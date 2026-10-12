@@ -197,6 +197,10 @@ export type ChatMessage = {
     size: number;
     url: string;
   } | null;
+  /** Builder-bot fields (see shared/bots/card-view.ts). */
+  bot?: { id: string; name: string; color: string | null; avatarEmoji: string | null };
+  card?: Record<string, unknown> | null;
+  privateNotice?: boolean;
 };
 
 export type VoiceParticipant = {

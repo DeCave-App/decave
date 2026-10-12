@@ -16,7 +16,8 @@ const { randomUUID } = require("node:crypto");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { scanCaptureApps } = require("./capture-apps.cjs");
-const { scanActivity } = require("./activity-scan.cjs");
+const { scanActivity, runningGameProcessIds } = require("./activity-scan.cjs");
+const { watchForegroundGame } = require("./foreground-game.cjs");
 const { chooseDesktopSource } = require("./source-picker.cjs");
 const { showTurnstileChallenge } = require("./turnstile.cjs");
 const { resolveAppIconPath } = require("./app-icon.cjs");
@@ -65,6 +66,9 @@ let browserSessionConfigured = false;
 let tray = null;
 let isQuitting = false;
 let voiceOverlayWindow = null;
+/** Foreground-game watcher; runs only while the overlay could be shown. */
+let stopForegroundWatch = null;
+let gameInForeground = false;
 let voiceOverlayState = { enabled: true, connected: false, roomName: "", participants: [] };
 let streamerModeEnabled = false;
 let updaterStarted = false;
@@ -199,7 +203,11 @@ async function checkForDesktopUpdate() {
 function startDesktopUpdater() {
   if (updaterStarted || !app.isPackaged || (process.platform !== "win32" && process.platform !== "darwin")) return;
   if (process.platform === "win32") {
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = false;
     try {
+      // No code-signing certificate yet: unsigned builds carry an explicit package
+      // opt-in and are checked against the update feed's SHA-512 hashes only.
       const allowUnsignedUpdates = readUnsignedWindowsUpdatesOptIn(path.join(app.getAppPath(), "package.json"));
       const trustMode = configureWindowsUpdateTrust({
         configPath: path.join(process.resourcesPath, "app-update.yml"),
@@ -212,7 +220,7 @@ function startDesktopUpdater() {
       }
     } catch (error) {
       publishUpdateState({
-        status: "error",
+        status: "disabled",
         error: "Automatic updates are disabled because the installed Windows publisher could not be verified.",
       });
       console.error("DeCave Windows updater disabled:", error instanceof Error ? error.message : "verification failed");
@@ -457,7 +465,21 @@ async function renderVoiceOverlay() {
     voiceOverlayState.connected === true &&
     Array.isArray(voiceOverlayState.participants) &&
     voiceOverlayState.participants.length > 0;
-  if (!shouldShow) {
+  if (shouldShow && !stopForegroundWatch && (process.platform === "win32" || process.platform === "darwin")) {
+    stopForegroundWatch = watchForegroundGame({
+      listGameProcessIds: runningGameProcessIds,
+      onChange: (isGame) => {
+        gameInForeground = isGame;
+        void renderVoiceOverlay();
+      },
+    });
+  } else if (!shouldShow && stopForegroundWatch) {
+    stopForegroundWatch();
+    stopForegroundWatch = null;
+    gameInForeground = false;
+  }
+  // Only over a game: never over the desktop, a browser or DeCave itself.
+  if (!shouldShow || !gameInForeground) {
     if (voiceOverlayWindow && !voiceOverlayWindow.isDestroyed()) voiceOverlayWindow.hide();
     return;
   }
@@ -529,6 +551,8 @@ function rendererContentType(filePath) {
       return "image/x-icon";
     case ".woff2":
       return "font/woff2";
+    case ".wasm":
+      return "application/wasm";
     default:
       return "application/octet-stream";
   }
@@ -663,7 +687,7 @@ async function installLocalRenderer() {
   });
   secureSession.webRequest.onBeforeRequest((details, callback) => {
     callback({
-      cancel: shouldBlockPrivilegedResource(details.url, details.resourceType, details.method, details.initiator),
+      cancel: shouldBlockPrivilegedResource(details.url, details.resourceType, details.method),
     });
   });
   await secureSession.protocol.handle("https", async (request) => {
@@ -1348,8 +1372,8 @@ ipcMain.handle("decave:browser:destroy", (event, rawId) => {
   return true;
 });
 
-// Logout wipes the in-app browser profile so the next account on this device
-// does not inherit the previous user's web sessions.
+// Signing out wipes the in-app browser profile (cookies, storage, cache), so the
+// next account on this device does not inherit the previous user's web sessions.
 ipcMain.handle("decave:browser:clear-session", async (event) => {
   if (!trustedMainRenderer(event)) return false;
   destroyBrowserView();
@@ -1614,6 +1638,11 @@ if (!gotLock) {
       app.exit(1);
     });
 }
+
+app.on("before-quit", () => {
+  stopForegroundWatch?.();
+  stopForegroundWatch = null;
+});
 
 app.on("before-quit", () => {
   isQuitting = true;

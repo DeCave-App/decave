@@ -680,9 +680,10 @@ export function createHubActions(deps: HubActionsDeps) {
     }
   };
 
-  const uploadHubMedia = async (kind: "icon" | "banner" | "chat-background", file: File) => {
+  const uploadHubMedia = async (kind: "icon" | "banner" | "header" | "chat-background", file: File) => {
     const limit = kind === "icon" ? 3 * 1024 * 1024 : 8 * 1024 * 1024;
-    const label = kind === "icon" ? "Icon" : kind === "banner" ? "Banner" : "Chat background";
+    const label =
+      kind === "icon" ? "Icon" : kind === "banner" ? "Banner" : kind === "header" ? "Header image" : "Chat background";
     if (file.size > limit) {
       setHubMediaError(`${label} is too large.`);
       return;
@@ -721,8 +722,8 @@ export function createHubActions(deps: HubActionsDeps) {
     }
   };
 
-  const removeHubMedia = async (kind: "banner" | "chat-background") => {
-    const label = kind === "banner" ? "sidebar banner" : "chat background";
+  const removeHubMedia = async (kind: "banner" | "header" | "chat-background") => {
+    const label = kind === "banner" ? "sidebar banner" : kind === "header" ? "header image" : "chat background";
     if (!window.confirm(`Remove the ${label}? This deletes the image from this Hub.`)) return;
     setHubMediaBusy(true);
     setHubMediaError("");
@@ -736,7 +737,7 @@ export function createHubActions(deps: HubActionsDeps) {
         return;
       }
       if (kind === "banner") setManageUseBannerBackground(false);
-      else setManageUseChatBackground(false);
+      else if (kind === "chat-background") setManageUseChatBackground(false);
       await loadServers();
     } catch {
       setHubMediaError(`Could not remove the ${label}.`);
@@ -760,8 +761,18 @@ export function createHubActions(deps: HubActionsDeps) {
         .replace(/\.[^.]+$/, "")
         .replace(/[^\p{L}\p{N}_-]/gu, "")
         .slice(0, 32) || kind;
-    const name = window.prompt(`${kind === "emote" ? "Emote" : "Sticker"} name`, suggested)?.trim();
-    if (!name) return;
+    // The desktop app (Electron) has no window.prompt: use the file name there.
+    let asked: string | null | undefined;
+    try {
+      asked =
+        typeof window.prompt === "function" && !window.decaveDesktop?.isDesktop
+          ? window.prompt(`${kind === "emote" ? "Emote" : "Sticker"} name`, suggested)
+          : suggested;
+    } catch {
+      asked = suggested;
+    }
+    if (asked === null) return; // Cancelled in the browser prompt.
+    const name = (asked ?? suggested).trim() || suggested;
     setHubFeatureBusy(true);
     setServerManageError("");
     try {
@@ -1120,7 +1131,7 @@ export function createHubActions(deps: HubActionsDeps) {
     setChannelManageError("");
     setShowManageChannel(true);
     void loadHubMembers(hubId);
-    if (currentChannel.type === "forum") void loadCustomRoles(hubId);
+    if (currentChannel.type === "forum" || currentChannel.type === "text") void loadCustomRoles(hubId);
     void (async () => {
       try {
         const response = await authorizedFetch(`${HTTP_URL}/api/channels/${roomId}/access`);
@@ -1137,7 +1148,9 @@ export function createHubActions(deps: HubActionsDeps) {
     })();
   };
 
-  const renameChannel = async (extra: { forumTags?: string[] } = {}) => {
+  const renameChannel = async (
+    extra: { forumTags?: string[]; userLimit?: number; postPolicy?: string; postRoleIds?: string[] } = {},
+  ) => {
     const name = manageChannelName.trim();
     const roomId = manageChannelId || currentChannel.id;
     const hubId = manageChannelServerId || currentServer.id;
@@ -1165,6 +1178,10 @@ export function createHubActions(deps: HubActionsDeps) {
           forumPostRoleIds: manageForumPostPolicy === "roles" ? manageForumPostRoleIds : [],
           forumPostMemberIds: manageForumPostPolicy === "members" ? manageForumPostMemberIds : [],
           ...(extra.forumTags ? { forumTags: extra.forumTags } : {}),
+          ...(extra.userLimit !== undefined ? { userLimit: extra.userLimit } : {}),
+          ...(extra.postPolicy !== undefined
+            ? { postPolicy: extra.postPolicy, postRoleIds: extra.postRoleIds ?? [] }
+            : {}),
         }),
       });
       const data = (await response.json()) as ApiError & { private?: boolean; icon?: string; name?: string };

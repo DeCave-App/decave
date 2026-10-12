@@ -12,6 +12,8 @@ const SAFE_EXTERNAL_HOSTS = new Set([
   "de-cave.com",
   "steamcommunity.com",
   "steampowered.com",
+  // FACEIT login for the Streamer Hub leaderboard link (accounts.faceit.com).
+  "faceit.com",
   "reddit.com",
   "spotify.com",
   "netflix.com",
@@ -20,18 +22,16 @@ const SAFE_EXTERNAL_HOSTS = new Set([
   "twitter.com",
   "instagram.com",
   "tiktok.com",
+  "twitch.tv",
   "facebook.com",
   "linkedin.com",
   "threads.net",
   "github.com",
   "wikipedia.org",
   "primevideo.com",
+  "youtube.com",
   "crunchyroll.com",
 ]);
-// No third-party media players are embedded in the desktop renderer, so no
-// frame host (and no frame-initiated remote code) is approved.
-const MEDIA_FRAME_HOSTS = new Set([]);
-const MEDIA_RESOURCE_HOSTS = new Set([...MEDIA_FRAME_HOSTS]);
 
 function parsedUrl(value) {
   try {
@@ -83,34 +83,16 @@ function isSafeExternalUrl(value) {
   return [...SAFE_EXTERNAL_HOSTS].some((domain) => hostMatchesAllowedDomain(url.hostname.toLowerCase(), domain));
 }
 
-function isApprovedMediaFrameUrl(value) {
-  const url = parsedUrl(value);
-  return Boolean(url && url.protocol === "https:" && MEDIA_FRAME_HOSTS.has(url.hostname.toLowerCase()));
-}
-
-function isApprovedMediaResource(value, initiator) {
-  const url = parsedUrl(value);
-  const source = parsedUrl(initiator);
-  return Boolean(
-    url &&
-    source &&
-    url.protocol === "https:" &&
-    source.protocol === "https:" &&
-    MEDIA_RESOURCE_HOSTS.has(url.hostname.toLowerCase()) &&
-    MEDIA_FRAME_HOSTS.has(source.hostname.toLowerCase()),
-  );
-}
-
-function shouldBlockPrivilegedResource(value, resourceType, method, initiator) {
+function shouldBlockPrivilegedResource(value, resourceType, method) {
   const url = parsedUrl(value);
   if (!url) return true;
 
   if (resourceType === "mainFrame") return !isTrustedRendererNavigation(url);
-  if (resourceType === "subFrame" || resourceType === "object") return !isApprovedMediaFrameUrl(url);
+  if (resourceType === "subFrame" || resourceType === "object") return true;
   if (!CODE_RESOURCE_TYPES.has(resourceType)) return false;
 
   if (url.origin === APP_ORIGIN) return isNetworkAppRequest(url, method);
-  return !isApprovedMediaResource(url, initiator);
+  return true;
 }
 
 function isDownloadableAppUrl(value) {
@@ -163,7 +145,6 @@ module.exports = {
   NETWORK_PATH_PREFIXES,
   TURNSTILE_PATH,
   isSafeExternalUrl,
-  isApprovedMediaFrameUrl,
   isDownloadableAppUrl,
   isNetworkAppRequest,
   isTrustedRendererNavigation,

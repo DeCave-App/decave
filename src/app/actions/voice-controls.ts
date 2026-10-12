@@ -16,6 +16,7 @@ import type {
 import { HTTP_URL } from "../env";
 import { SCREEN_SHARE_PROFILES } from "../voice";
 import type { SoundboardState } from "../state/soundboard";
+import type { ScreenSfuSharer } from "../../voice/screen-sfu/sharer";
 import type { CameraShareOptionsState } from "../state/camera-share-options";
 import type { VoiceCallState } from "../state/voice-call";
 import type { CallMediaState } from "../state/call-media";
@@ -39,6 +40,7 @@ export type VoiceControlActionsDeps = {
   sendSocket: (payload: unknown) => boolean;
   applyMicrophoneEnabledState: () => boolean;
   addLocalTracksToPeer: (session: PeerSession) => void;
+  screenSfu: Pick<ScreenSfuSharer, "begin" | "end">;
   stopCamera: () => void;
   soundboard: SoundboardState;
   cameraShareOptions: CameraShareOptionsState;
@@ -67,6 +69,7 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
     sendSocket,
     applyMicrophoneEnabledState,
     addLocalTracksToPeer,
+    screenSfu,
     stopCamera,
     soundboard,
     cameraShareOptions,
@@ -194,8 +197,13 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
   };
 
   const startCamera = async () => {
-    if (voiceChannelRef.current === null || isCameraOn || cameraStartInFlightRef.current) return;
-    if (localScreenStreamRef.current) stopScreenShare();
+    if (
+      voiceChannelRef.current === null ||
+      isCameraOn ||
+      cameraStartInFlightRef.current ||
+      screenShareInFlightRef.current
+    )
+      return;
     setVoiceError("");
     setCameraEffectNotice("");
     cameraStartInFlightRef.current = true;
@@ -235,6 +243,10 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
       const track = camera.getVideoTracks()[0];
       if (!track) throw new Error("No camera video track available.");
       track.contentHint = "detail";
+      // Keep the current capture alive until the replacement has been acquired
+      // and validated. Permission cancellation or device failure must not end
+      // the user's existing screen share.
+      if (localScreenStreamRef.current) stopScreenShare();
       localCameraStreamRef.current = camera;
       setLocalCameraStream(camera);
       setIsCameraOn(true);
@@ -242,16 +254,14 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
       // Signaling state is sent first; WebSocket ordering ensures receivers can
       // install the sealed camera generation before the subsequent SDP offer.
       for (const session of peerSessionsRef.current.values()) addLocalTracksToPeer(session);
-      track.onended = () => stopCamera();
+      track.onended = () => {
+        if (localCameraStreamRef.current === camera) stopCamera();
+      };
     } catch (error) {
-      // F8: stop the acquired stream even when it never became the local camera stream.
-      if (camera && localCameraStreamRef.current !== camera) for (const t of camera.getTracks()) t.stop();
-      if (localCameraStreamRef.current) {
-        for (const track of localCameraStreamRef.current.getTracks()) track.stop();
-        localCameraStreamRef.current = null;
-        setLocalCameraStream(null);
-        setIsCameraOn(false);
-      }
+      // Dispose only the candidate from this attempt. An existing camera or
+      // screen capture belongs to the prior state and must survive failure.
+      if (camera && localCameraStreamRef.current === camera) stopCamera();
+      else if (camera) for (const track of camera.getTracks()) track.stop();
       if (error instanceof DOMException && error.name === "NotAllowedError") return;
       setVoiceError(error instanceof Error ? error.message : "Could not start protected camera.");
     } finally {
@@ -262,6 +272,7 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
   const stopScreenShare = () => {
     const screen = localScreenStreamRef.current;
     if (!screen) return;
+    screenSfu.end();
     const ids = new Set(screen.getTracks().map((track) => track.id));
     for (const session of peerSessionsRef.current.values()) {
       for (const sender of session.pc.getSenders())
@@ -283,13 +294,19 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
 
   const startScreenShare = async () => {
     // F7: one picker at a time; re-check voice after every await.
-    if (voiceChannelRef.current === null || isScreenSharing || screenShareInFlightRef.current) return;
+    if (
+      voiceChannelRef.current === null ||
+      isScreenSharing ||
+      screenShareInFlightRef.current ||
+      cameraStartInFlightRef.current
+    )
+      return;
     screenShareInFlightRef.current = true;
     const shareVoiceChannel = voiceChannelRef.current;
     const stillInSameVoice = () => voiceChannelRef.current !== null && voiceChannelRef.current === shareVoiceChannel;
     setVoiceError("");
+    let screen: MediaStream | null = null;
     try {
-      if (localCameraStreamRef.current) stopCamera();
       const quality = screenQualityRef.current;
       const { width, height, fps } = SCREEN_SHARE_PROFILES[quality];
       // Protected calls need a separately reviewed system-audio media domain;
@@ -308,7 +325,7 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
         channelCount: { ideal: 2 },
         sampleRate: { ideal: 48_000 },
       };
-      const screen = await navigator.mediaDevices.getDisplayMedia({
+      screen = await navigator.mediaDevices.getDisplayMedia({
         video: {
           width: { ideal: width, max: width },
           height: { ideal: height, max: height },
@@ -323,7 +340,6 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
       discardUnapprovedDisplayAudio(screen, captureSystemAudio);
       const videoTrack = screen.getVideoTracks()[0];
       if (!videoTrack) {
-        for (const track of screen.getTracks()) track.stop();
         throw new Error("No screen video track was selected.");
       }
       videoTrack.contentHint = "motion";
@@ -355,24 +371,32 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
         for (const track of screen.getTracks()) track.stop();
         return;
       }
+      // The picker and capture setup can take time. Stop the current camera
+      // only after the replacement stream is ready and the user is still in
+      // the same voice channel.
+      if (localCameraStreamRef.current) stopCamera();
       localScreenStreamRef.current = screen;
       setLocalScreenStream(screen);
       setIsScreenSharing(true);
-      videoTrack.onended = () => stopScreenShare();
+      videoTrack.onended = () => {
+        if (localScreenStreamRef.current === screen) stopScreenShare();
+      };
+      // Decides SFU vs mesh synchronously, so the mesh senders below follow it.
+      void screenSfu.begin(videoTrack);
       for (const session of peerSessionsRef.current.values()) addLocalTracksToPeer(session);
       sendSocket({
         type: "VOICE_SCREEN_STATE",
         screenSharing: true,
+        // Lets viewers tell this share's audio from our microphone.
+        screenStreamId: screen.id,
         allowStreamPreview: privacySettingsRef.current.allowStreamPreviews,
       });
       playUiSound("screenShare");
     } catch (error) {
-      if (localScreenStreamRef.current) {
-        for (const track of localScreenStreamRef.current.getTracks()) track.stop();
-        localScreenStreamRef.current = null;
-        setLocalScreenStream(null);
-        setIsScreenSharing(false);
-      }
+      // Do not tear down a previously active screen share if this attempt was
+      // canceled or failed before replacing it.
+      if (screen && localScreenStreamRef.current === screen) stopScreenShare();
+      else if (screen) for (const track of screen.getTracks()) track.stop();
       if (error instanceof DOMException && error.name === "NotAllowedError") return;
       console.error("Could not start protected screen sharing:", error);
       setVoiceError(error instanceof Error ? error.message : "Could not start protected screen sharing.");

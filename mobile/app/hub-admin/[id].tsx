@@ -143,6 +143,7 @@ export default function HubAdminScreen() {
   const [auditExpanded, setAuditExpanded] = useState(false);
 
   const isOwner = hub?.myRole === "owner";
+  const [botBuilderAvailable, setBotBuilderAvailable] = useState(false);
   const canManage = hub?.myRole === "owner" || hub?.myRole === "admin";
 
   const loadFeatures = useCallback(async () => {
@@ -152,7 +153,10 @@ export default function HubAdminScreen() {
       apiJson<AuditEntry[]>(`/api/servers/${hubId}/audit`, {}, token),
       apiJson<HubAsset[]>(`/api/servers/${hubId}/assets`, {}, token),
       apiJson<HubBot[]>(`/api/servers/${hubId}/bots`, {}, token),
+      // 404 when the bot builder is off, 403 without Manage Bots: either way the entry stays hidden.
+      apiJson<unknown>(`/api/servers/${hubId}/bot-builder`, {}, token),
     ]);
+    setBotBuilderAvailable(requests[4].status === "fulfilled");
     if (requests[0].status === "fulfilled") setRoles(Array.isArray(requests[0].value) ? requests[0].value : []);
     if (requests[1].status === "fulfilled") setAuditLog(Array.isArray(requests[1].value) ? requests[1].value : []);
     if (requests[2].status === "fulfilled") setAssets(Array.isArray(requests[2].value) ? requests[2].value : []);
@@ -602,6 +606,16 @@ export default function HubAdminScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.faint} />
           </Pressable>
         </Section>
+
+        {botBuilderAvailable && (
+          <Section title="BOT BUILDER">
+            <Pressable accessibilityRole="button" style={styles.actionRow} onPress={() => router.push(`/hub-bots/${hubId}` as any)}>
+              <Ionicons name="sparkles-outline" size={19} color={colors.cyan} />
+              <View style={{ flex: 1 }}><Text style={styles.actionTitle}>Bots</Text><Text style={styles.muted}>Turn bots on or off, see their activity, or start from a template. Edit rules on desktop or web.</Text></View>
+              <Ionicons name="chevron-forward" size={18} color={colors.faint} />
+            </Pressable>
+          </Section>
+        )}
 
         <Section title="INVITES">
           <Pressable accessibilityRole="button" style={styles.actionRow} disabled={!canManage || !!busy} onPress={() => void createOneTimeInvite()}>

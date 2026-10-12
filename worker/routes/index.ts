@@ -23,8 +23,11 @@ import { handleHubImportRoutes } from "./hub-import";
 import { handleRoomRoutes } from "./rooms";
 import { handleEventAndForumRoutes } from "./events-forum";
 import { handleHubAssetRoutes } from "./hub-assets";
+import { handleBotBuilderRoutes } from "./bot-builder";
 import { handleHubBotRoutes } from "./hub-bots";
 import { handleMediaRoutes } from "./media";
+import { handleFaceitRoutes } from "../faceit/links";
+import { handleTwitchMemberRoutes } from "../twitch/subs";
 
 export const API_ROUTES: ApiRouteHandler[] = [
   handleGiphyRoutes,
@@ -56,6 +59,9 @@ export const API_ROUTES: ApiRouteHandler[] = [
   handleRoomRoutes,
   handleEventAndForumRoutes,
   handleHubAssetRoutes,
+  handleBotBuilderRoutes,
   handleHubBotRoutes,
   handleMediaRoutes,
+  handleFaceitRoutes,
+  handleTwitchMemberRoutes,
 ];
