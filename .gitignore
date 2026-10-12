@@ -106,3 +106,6 @@ mobile/.local-test-accounts.json
 
 # Generated standalone website mockups (website/designs/midnight/build.mjs)
 website/designs/midnight/out/
+
+# Private terms checked by scripts/release/sync-public-source.mjs
+.release-denylist.txt
