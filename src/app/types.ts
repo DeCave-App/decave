@@ -24,7 +24,8 @@ type CustomRolePermission =
   | "voiceModerate"
   | "createInvites"
   | "viewAudit"
-  | "manageEvents";
+  | "manageEvents"
+  | "manageBots";
 export type CustomRoleView = {
   id: string;
   name: string;
@@ -44,6 +45,13 @@ export type Channel = {
   private?: boolean;
   icon?: string;
   forumGuidelines?: string;
+  /** Voice room player cap; 0 or absent = no limit. */
+  userLimit?: number;
+  /** Chat rooms: who can post ("everyone" | "staff" | "roles") and the allowed roles. */
+  postPolicy?: "everyone" | "staff" | "roles";
+  postRoleIds?: string[];
+  /** False when this member can read but not post here (read-only room). */
+  canPost?: boolean;
   forumPostPolicy?: "everyone" | "staff" | "roles" | "members";
   forumPostRoleIds?: string[];
   forumPostMemberIds?: string[];
@@ -95,6 +103,10 @@ export type Server = {
   slowModeSeconds?: number;
   iconUrl?: string | null;
   bannerUrl?: string | null;
+  /** Wide header for Hub Home / Streamer Overview; falls back to bannerUrl. */
+  headerUrl?: string | null;
+  /** Custom per-Hub features switched on by DeCave staff. */
+  communityFeatures?: { voiceLimits?: boolean; subRoles?: boolean; faceitBadges?: boolean };
   chatBackgroundUrl?: string | null;
   iconRing?: boolean;
   theme?: "midnight" | "ember" | "forest" | "ocean";
@@ -192,6 +204,8 @@ export type OnlineUser = {
   accent?: string;
   createdAt?: string;
   lastOnlineAt?: string | null;
+  /** FACEIT CS2 skill level 1–10 (Hubs with FACEIT badges, linked members only). */
+  faceitLevel?: number;
 };
 
 export type AttachmentMeta = {
@@ -220,6 +234,11 @@ export type ChatMessage = {
   pinned?: boolean;
   attachment?: AttachmentMeta | null;
   pending?: boolean;
+  /** Builder-bot fields (see shared/bots/card-view.ts). */
+  bot?: { id: string; name: string; color: string | null; avatarEmoji: string | null };
+  card?: Record<string, unknown> | null;
+  /** A bot's private notice: only this viewer receives it. */
+  privateNotice?: boolean;
 };
 
 export type ServerMemberView = {
@@ -264,6 +283,12 @@ export type VoiceParticipant = {
   screenSharing: boolean;
   allowStreamPreview?: boolean;
   cameraSharing?: boolean;
+  /** Set while this participant publishes screen video through the SFU. */
+  screenSfu?: { sessionId: string; trackName: string } | null;
+  /** This participant's client can view an SFU screen share. */
+  sfuScreenCapable?: boolean;
+  /** The sharer's display MediaStream id (screen audio is audio from this stream). */
+  screenStreamId?: string | null;
 };
 
 export type SocialUser = AccountUser & { online?: boolean };
@@ -397,7 +422,7 @@ export type RemoteScreen = {
   stream: MediaStream;
 };
 
-export type NoiseSuppressionMode = "off" | "standard" | "strong" | "ai";
+export type NoiseSuppressionMode = "off" | "standard" | "strong" | "ai" | "deepfilter";
 type SensitivityMode = "auto" | "manual";
 export type DirectCallMicrophoneLease = {
   stream: MediaStream;

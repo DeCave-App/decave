@@ -164,6 +164,7 @@ export async function handleFriendRoutes({ request, env, p, method }: ApiContext
       ]);
     }
     await realtimeBroadcast(env, { type: "SOCIAL_REFRESH" }, { userIds: [user.id, targetId] });
+    // The acting user learns nothing about the target's presence here.
     return json({ success: true, target: publicUser(target) });
   }
 

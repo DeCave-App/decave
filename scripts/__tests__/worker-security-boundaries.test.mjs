@@ -53,8 +53,9 @@ test("WebSocket admission and message processing are bounded", () => {
   assert.match(hub, /const MAX_IDENTIFY_FAILURES = 5/);
   assert.match(hub, /const WS_IDENTIFY_FAILURE_LIMIT_PER_ADDRESS = 60/);
   assert.match(hub, /identifyFailures: state\.identifyFailures \+ 1/);
-  assert.match(hub, /identifyFailuresForAddress\(state\.peerAddress\)/);
-  assert.match(hub, /recordIdentifyFailure\(state\.peerAddress\)/);
+  assert.match(hub, /const peerAddress = this\.peerAddressForState\(state\)/);
+  assert.match(hub, /identifyFailuresForAddress\(peerAddress\)/);
+  assert.match(hub, /recordIdentifyFailure\(peerAddress\)/);
   assert.match(hub, /data\.token\.length <= 256/);
   assert.match(hub, /Authentication is temporarily unavailable/);
   assert.match(hub, /state\.identifyFailures >= MAX_IDENTIFY_FAILURES/);

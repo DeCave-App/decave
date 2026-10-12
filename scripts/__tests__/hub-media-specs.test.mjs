@@ -63,3 +63,12 @@ test("chat background must be 16:9 landscape within 5% and at least 1280x720", (
   assert.match(validateHubMediaDimensions("chat-background", 800, 450), /too small/);
   assert.equal(validateHubMediaDimensions("icon", 1, 1), null);
 });
+
+test("header image accepts any wide image from 4:3 to 4:1, at least 900 px wide", () => {
+  assert.equal(validateHubMediaDimensions("header", 1500, 500), null);
+  assert.equal(validateHubMediaDimensions("header", 1194, 795), null, "3:2 welcome art fits as is");
+  assert.equal(validateHubMediaDimensions("header", 1920, 1080), null);
+  assert.match(validateHubMediaDimensions("header", 600, 1800), /between 4:3 and 4:1/);
+  assert.match(validateHubMediaDimensions("header", 3000, 500), /between 4:3 and 4:1/);
+  assert.match(validateHubMediaDimensions("header", 800, 400), /too small/);
+});

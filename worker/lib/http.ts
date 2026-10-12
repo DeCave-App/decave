@@ -5,6 +5,14 @@ import type { Env } from "./env";
 import { tokenHash } from "../db";
 
 export const jsonHeaders = { "content-type": "application/json; charset=utf-8" };
+export const JSON_BODY_MAX_BYTES = 1024 * 1024;
+
+export class RequestBodyTooLargeError extends Error {
+  constructor() {
+    super("Request body is too large");
+    this.name = "RequestBodyTooLargeError";
+  }
+}
 
 export function authBaseUrlForEnvironment(env: Pick<Env, "TURNSTILE_SECRET_KEY">): string {
   return env.TURNSTILE_SECRET_KEY === "1x0000000000000000000000000000000AA"
@@ -20,20 +28,60 @@ export function json(data: unknown, status = 200, headers?: HeadersInit): Respon
 }
 
 export async function bodyJson(request: Request): Promise<Record<string, unknown>> {
-  try {
-    const value = await request.json();
-    return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-  } catch {
-    return {};
+  const value = await boundedBodyJson(request, JSON_BODY_MAX_BYTES);
+  if (value === null) throw new RequestBodyTooLargeError();
+  return value;
+}
+
+export async function boundedBodyBytes(request: Request, maxBytes: number): Promise<Uint8Array | null> {
+  if (!Number.isFinite(maxBytes) || maxBytes < 0) throw new RangeError("maxBytes must be a non-negative finite number");
+  const declaredLength = Number(request.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    void request.body?.cancel().catch(() => {});
+    return null;
   }
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  let bytes: Uint8Array;
+  try {
+    reader = request.body?.getReader();
+    if (!reader) return new Uint8Array(0);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value?.byteLength) continue;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        // Stop consuming chunked uploads as soon as the size limit is known.
+        // Do not wait for an attacker-controlled stream to finish closing.
+        void reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(value);
+    }
+
+    bytes = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+  } catch {
+    // A body stream that fails while being read behaves like an empty body,
+    // matching bodyJson's historical treatment of malformed requests.
+    return new Uint8Array(0);
+  } finally {
+    reader?.releaseLock();
+  }
+  return bytes;
 }
 
 export async function boundedBodyJson(request: Request, maxBytes: number): Promise<Record<string, unknown> | null> {
-  const declaredLength = Number(request.headers.get("content-length") ?? 0);
-  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) return null;
+  const bytes = await boundedBodyBytes(request, maxBytes);
+  if (bytes === null) return null;
   try {
-    const bytes = await request.arrayBuffer();
-    if (bytes.byteLength > maxBytes) return null;
     const value = JSON.parse(new TextDecoder().decode(bytes));
     return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   } catch {

@@ -9,6 +9,7 @@ import { DeCaveBrand } from "../components/DeCaveBrand";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { authErrorStyle, authSwitchStyle } from "../inline-styles";
 import type { AuthFormState } from "../state/auth-form";
+import { MINIMUM_SIGNUP_AGE } from "../../../shared/legal-consent";
 
 const TERMS_URL = "https://de-cave.com/terms";
 const PRIVACY_URL = "https://de-cave.com/privacy";
@@ -77,10 +78,10 @@ export function AuthScreen({
     setConfirmPasswordInput,
     birthDateInput,
     setBirthDateInput,
+    termsAccepted,
+    setTermsAccepted,
     staySignedIn,
     setStaySignedIn,
-    acceptedTerms,
-    setAcceptedTerms,
     authBusy,
     loginMfaKind,
   } = authForm;
@@ -239,8 +240,8 @@ export function AuthScreen({
                     max={new Date().toISOString().slice(0, 10)}
                   />
                   <small>
-                    Used only to confirm that DeCave is only for adults aged 18 or older. We do not store the exact
-                    date.
+                    Used only to confirm that DeCave is available to people aged {MINIMUM_SIGNUP_AGE} or older. We do
+                    not store the exact date.
                   </small>
                 </label>
               )}
@@ -256,6 +257,7 @@ export function AuthScreen({
                   }}
                   autoComplete={authMode === "login" ? "current-password" : "new-password"}
                   maxLength={128}
+                  minLength={authMode === "register" ? 10 : undefined}
                   style={{ marginTop: "12px" }}
                 />
               )}
@@ -279,11 +281,11 @@ export function AuthScreen({
                 <label className="dc-auth-consent">
                   <input
                     type="checkbox"
-                    checked={acceptedTerms}
-                    onChange={(event) => setAcceptedTerms(event.target.checked)}
+                    checked={termsAccepted}
+                    onChange={(event) => setTermsAccepted(event.target.checked)}
                   />
                   <span>
-                    I am 18 or older and agree to the{" "}
+                    I am {MINIMUM_SIGNUP_AGE} or older and agree to the{" "}
                     <a href={TERMS_URL} target="_blank" rel="noreferrer">
                       Terms of Service
                     </a>{" "}
@@ -359,7 +361,8 @@ export function AuthScreen({
                       (authMode === "register" &&
                         (!emailInput.trim() ||
                           !birthDateInput ||
-                          !acceptedTerms ||
+                          !termsAccepted ||
+                          passwordInput.length < 10 ||
                           !confirmPasswordInput ||
                           confirmPasswordInput !== passwordInput)))
                 }
@@ -396,7 +399,7 @@ export function AuthScreen({
                   setAuthError("");
                   setConfirmPasswordInput("");
                   setBirthDateInput("");
-                  setAcceptedTerms(false);
+                  setTermsAccepted(false);
                   setTurnstileToken("");
                   setTurnstileNonce((value) => value + 1);
                 }}

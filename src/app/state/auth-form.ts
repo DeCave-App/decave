@@ -10,7 +10,6 @@ export function useAuthFormState() {
   const [birthDateInput, setBirthDateInput] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [staySignedIn, setStaySignedIn] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [loginMfaKind, setLoginMfaKind] = useState<"owner" | "user">("owner");
 
@@ -29,8 +28,6 @@ export function useAuthFormState() {
     setTermsAccepted,
     staySignedIn,
     setStaySignedIn,
-    acceptedTerms,
-    setAcceptedTerms,
     authBusy,
     setAuthBusy,
     loginMfaKind,

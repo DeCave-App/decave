@@ -5,6 +5,7 @@ import { isCurrentChannelLoad } from "../../voice/desktop-voice-reliability";
 import type { ChatMessage, SocialUser, DirectMessage, GroupChatMessage, GroupChat, ApiError } from "../types";
 import { HTTP_URL } from "../env";
 import { HISTORY_PAGE_SIZE } from "../constants";
+import { messageBotFields } from "../../../shared/bots/card-view";
 import type { ComposerState } from "../state/composer";
 import { dmE2ee } from "../../e2ee/dm-e2ee-client";
 
@@ -68,6 +69,7 @@ export function createMessageHistoryActions(deps: MessageHistoryActionsDeps) {
       reactions: value.reactions && typeof value.reactions === "object" ? value.reactions : {},
       pinned: value.pinned === true,
       attachment: value.attachment ?? null,
+      ...messageBotFields(item),
     };
   };
 

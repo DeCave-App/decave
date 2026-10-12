@@ -8,9 +8,11 @@ import { canAccessRoom } from "../lib/hubs";
 import { realtimeBroadcast } from "../lib/realtime";
 import { matchForumRoute, handleForumRoute } from "../forum-posts";
 import { messagesForClient } from "../lib/messages";
+import { inBackground } from "../bots/events";
+import { scheduleHubEventStart } from "../bots/timers";
 import type { ApiContext } from "./context";
 
-export async function handleEventAndForumRoutes({ request, env, p }: ApiContext): Promise<Response | null> {
+export async function handleEventAndForumRoutes({ request, env, p, ctx }: ApiContext): Promise<Response | null> {
   const hubEventRoute = matchHubEventRoute(p);
   if (hubEventRoute) {
     const handled = await handleHubEventRoute(request, env, hubEventRoute, {
@@ -19,6 +21,8 @@ export async function handleEventAndForumRoutes({ request, env, p }: ApiContext)
       canAccessRoom: (room, userId) => canAccessRoom(env.DB, room, userId),
       bodyJson,
       broadcast: (event, filter) => realtimeBroadcast(env, event, filter),
+      afterSave: (row) =>
+        inBackground(() => scheduleHubEventStart(env, row), ctx ? (work) => ctx.waitUntil(work) : undefined),
     });
     if (handled) return handled;
   }
@@ -31,7 +35,7 @@ export async function handleEventAndForumRoutes({ request, env, p }: ApiContext)
       canAccessRoom: (room, userId) => canAccessRoom(env.DB, room, userId),
       bodyJson,
       broadcast: (event, filter) => realtimeBroadcast(env, event, filter),
-      messagesForClient: (ids) => messagesForClient(env, ids),
+      messagesForClient: (ids, viewerId) => messagesForClient(env, ids, viewerId),
     });
     if (handled) return handled;
   }

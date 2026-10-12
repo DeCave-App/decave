@@ -1,3 +1,7 @@
+// Account export helpers for the worker, web, desktop and mobile. The mobile
+// app keeps an identical copy at mobile/src/lib/account-export.ts (checked by
+// scripts/__tests__/account-export.test.mjs).
+
 /** The v2 export streams a JSON object and writes this terminal status last. */
 export function accountExportStatus(tail: string): { complete: boolean; error?: string } {
   const text = tail.trimEnd();

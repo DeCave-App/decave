@@ -20,8 +20,11 @@ import { localeForLanguage, preferredTimeOptions } from "../locale";
 import { HISTORY_PAGE_SIZE } from "../constants";
 import { DM_ATTACHMENT_PREFIX, dmPreviewText } from "../message-payloads";
 import type { NewConversationState } from "../state/new-conversation";
+import { mergeConversationHistory, type PendingSocialMessage } from "./social-message-recovery";
 import {
   dmE2ee,
+  discardDmSend,
+  discardGroupSend,
   dmReactionBody,
   dmSealedBody,
   dmSocketFrame,
@@ -47,6 +50,8 @@ export type DirectMessageActionsDeps = {
   setGroupChats: Dispatch<SetStateAction<GroupChat[]>>;
   setActiveGroupChat: Dispatch<SetStateAction<GroupChat | null>>;
   setGroupMessages: Dispatch<SetStateAction<GroupChatMessage[]>>;
+  groupDrafts: Record<string, string>;
+  setGroupDrafts: Dispatch<SetStateAction<Record<string, string>>>;
   setGroupInput: Dispatch<SetStateAction<string>>;
   groupInput: string;
   setGroupReplyingTo: Dispatch<SetStateAction<GroupChatMessage | null>>;
@@ -79,6 +84,9 @@ export type DirectMessageActionsDeps = {
   dmAttachmentRetryFileRef: MutableRefObject<File | null>;
   activeDmUserRef: MutableRefObject<SocialUser | null>;
   activeGroupChatRef: MutableRefObject<GroupChat | null>;
+  pendingSocialMessagesRef: MutableRefObject<Map<string, PendingSocialMessage>>;
+  dmDraftRevisionRef: MutableRefObject<Record<string, number>>;
+  groupDraftRevisionRef: MutableRefObject<Record<string, number>>;
   groupHistoryLoadGenerationRef: MutableRefObject<number>;
   playUiSound: (event: UiSoundEvent, preview?: boolean, quietChecked?: boolean) => void;
   authorizedFetch: (url: string, init?: RequestInit) => Promise<Response>;
@@ -107,6 +115,8 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     setGroupChats,
     setActiveGroupChat,
     setGroupMessages,
+    groupDrafts,
+    setGroupDrafts,
     setGroupInput,
     groupInput,
     setGroupReplyingTo,
@@ -139,6 +149,9 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     dmAttachmentRetryFileRef,
     activeDmUserRef,
     activeGroupChatRef,
+    pendingSocialMessagesRef,
+    dmDraftRevisionRef,
+    groupDraftRevisionRef,
     groupHistoryLoadGenerationRef,
     playUiSound,
     authorizedFetch,
@@ -280,6 +293,11 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
   };
 
   const openGroupChat = async (group: GroupChat) => {
+    const previousGroup = activeGroupChatRef.current;
+    const reopeningSameGroup = previousGroup?.id === group.id;
+    if (previousGroup && !reopeningSameGroup) {
+      setGroupDrafts((current) => ({ ...current, [previousGroup.id]: groupInput }));
+    }
     const loadGeneration = ++groupHistoryLoadGenerationRef.current;
     setShowHome(false);
     setShowSettings(false);
@@ -293,7 +311,8 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     setDmReplyingTo(null);
     setActiveGroupChat(group);
     activeGroupChatRef.current = group;
-    setGroupInput("");
+    if (!reopeningSameGroup) setGroupMessages([]);
+    if (!reopeningSameGroup) setGroupInput(groupDrafts[group.id] ?? "");
     setGroupReplyingTo(null);
     setGroupError("");
     setShowGroupMembers(false);
@@ -319,7 +338,9 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       );
       if (loadGeneration !== groupHistoryLoadGenerationRef.current || activeGroupChatRef.current?.id !== group.id)
         return;
-      setGroupMessages(firstGroupPage);
+      setGroupMessages((current) =>
+        mergeConversationHistory(firstGroupPage, current, (message) => message.groupId === group.id),
+      );
       setOlderHistory((current) => ({ ...current, group: firstGroupPage.length >= HISTORY_PAGE_SIZE }));
       void loadGroupChats();
     } catch (error) {
@@ -335,6 +356,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     const text = groupInput.trim();
     if (!group || !text) return;
     setGroupError("");
+    const draftRevision = groupDraftRevisionRef.current[group.id] ?? 0;
     let frame: Record<string, unknown>;
     try {
       frame = await groupSocketFrame(group, text, groupReplyingTo?.id ?? null);
@@ -342,11 +364,29 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       setGroupError(error instanceof Error ? error.message : "Could not encrypt this message.");
       return;
     }
+    const clientMessageId = frame.clientMessageId;
+    if (typeof clientMessageId !== "string") {
+      discardGroupSend(clientMessageId);
+      setGroupError("Could not prepare this message to send. Please try again.");
+      return;
+    }
+    const pending: PendingSocialMessage = {
+      clientMessageId,
+      kind: "group",
+      conversationId: group.id,
+      senderUserId: currentUser?.id ?? "",
+      text,
+      draftRevision,
+    };
+    pendingSocialMessagesRef.current.set(clientMessageId, pending);
     if (sendSocket(frame)) {
       setGroupInput("");
+      setGroupDrafts((current) => ({ ...current, [group.id]: "" }));
       setGroupReplyingTo(null);
       return;
     }
+    pendingSocialMessagesRef.current.delete(clientMessageId);
+    discardGroupSend(clientMessageId);
   };
 
   const deleteGroupMessage = async (message: GroupChatMessage) => {
@@ -504,6 +544,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     const text = dmInput.trim();
     if (!target || !text) return;
     setDmError("");
+    const draftRevision = dmDraftRevisionRef.current[target.id] ?? 0;
     let frame: Record<string, unknown>;
     try {
       frame = await dmSocketFrame(target.id, text, dmReplyingTo?.id ?? null);
@@ -511,6 +552,21 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       setDmError(error instanceof Error ? error.message : "Could not encrypt this message.");
       return;
     }
+    const clientMessageId = frame.clientMessageId;
+    if (typeof clientMessageId !== "string") {
+      discardDmSend(clientMessageId);
+      setDmError("Could not prepare this message to send. Please try again.");
+      return;
+    }
+    const pending: PendingSocialMessage = {
+      clientMessageId,
+      kind: "dm",
+      conversationId: target.id,
+      senderUserId: currentUser?.id ?? "",
+      text,
+      draftRevision,
+    };
+    pendingSocialMessagesRef.current.set(clientMessageId, pending);
     if (sendSocket(frame)) {
       setDmInput("");
       setDmDrafts((current) => {
@@ -522,6 +578,8 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       playUiSound("send");
       return;
     }
+    pendingSocialMessagesRef.current.delete(clientMessageId);
+    discardDmSend(clientMessageId);
   };
 
   const uploadDmAttachment = async (file: File) => {
@@ -564,7 +622,9 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
           }
         : data.attachment;
       const text = `${DM_ATTACHMENT_PREFIX}${JSON.stringify(attachment)}`;
-      if (!sendSocket(await dmSocketFrame(target.id, text, dmReplyingTo?.id ?? null))) {
+      const frame = await dmSocketFrame(target.id, text, dmReplyingTo?.id ?? null);
+      if (!sendSocket(frame)) {
+        discardDmSend(frame.clientMessageId);
         setDmError("Realtime is reconnecting. Try the attachment again in a moment.");
         return;
       }

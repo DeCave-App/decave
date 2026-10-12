@@ -1,6 +1,7 @@
 // Hub emotes and stickers.
 
-import { idFromPath, json } from "../lib/http";
+import { boundedBodyBytes, idFromPath, json } from "../lib/http";
+import { sniffedImageMime } from "../lib/upload-content-type";
 import { requireUser } from "../lib/sessions";
 import { getRole, hasPermission, nowIso, audit } from "../db";
 import type { ApiContext } from "./context";
@@ -38,15 +39,11 @@ export async function handleHubAssetRoutes({ request, env, p, method }: ApiConte
     if (!(await hasPermission(env.DB, hubId, user.id, "manageRooms")))
       return json({ error: "Manage Rooms permission required" }, 403);
     const limit = kind === "emote" ? 1024 * 1024 : 5 * 1024 * 1024;
-    const declaredLength = Number(request.headers.get("content-length") ?? 0);
-    if (declaredLength > limit)
+    const bytes = await boundedBodyBytes(request, limit);
+    if (!bytes || !bytes.byteLength)
       return json({ error: `${kind === "emote" ? "Emote" : "Sticker"} exceeds the size limit` }, 413);
-    const bytes = await request.arrayBuffer();
-    if (!bytes.byteLength || bytes.byteLength > limit)
-      return json({ error: `${kind === "emote" ? "Emote" : "Sticker"} exceeds the size limit` }, 413);
-    const mime = (request.headers.get("X-File-Type") ?? "").slice(0, 100);
-    if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(mime))
-      return json({ error: "Use PNG, JPG, WebP or GIF" }, 400);
+    const mime = sniffedImageMime(bytes, ["image/png", "image/jpeg", "image/webp", "image/gif"]);
+    if (!mime) return json({ error: "Use PNG, JPG, WebP or GIF" }, 400);
     let name = "custom";
     try {
       name =

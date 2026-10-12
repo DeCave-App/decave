@@ -299,11 +299,8 @@ async function detectedGameIconDataUrl(detected, games) {
   return "";
 }
 
-async function scanActivity() {
-  const scannedAt = new Date().toISOString();
-  if (process.platform !== "win32" && process.platform !== "darwin") {
-    return { supported: false, platform: process.platform, game: null, scannedAt };
-  }
+/** Running processes that belong to installed Steam/Epic games, newest first. */
+async function gameCandidates() {
   const processes = await runningProcesses();
   const games = await installedGames(processes);
   const ignoredNames = new Set([
@@ -343,6 +340,22 @@ async function scanActivity() {
     const bTime = b.startedAt ? Date.parse(b.startedAt) : 0;
     return bTime - aTime;
   });
+  return { processes, games, candidates };
+}
+
+/** Process IDs of running games (main process only; never sent to the renderer). */
+async function runningGameProcessIds() {
+  if (process.platform !== "win32" && process.platform !== "darwin") return new Set();
+  const { candidates } = await gameCandidates();
+  return new Set(candidates.map((candidate) => candidate.processId));
+}
+
+async function scanActivity() {
+  const scannedAt = new Date().toISOString();
+  if (process.platform !== "win32" && process.platform !== "darwin") {
+    return { supported: false, platform: process.platform, game: null, scannedAt };
+  }
+  const { processes, games, candidates } = await gameCandidates();
   const detected = candidates[0] ?? null;
   if (detected) {
     const iconDataUrl = await detectedGameIconDataUrl(detected, games);
@@ -369,4 +382,4 @@ async function scanActivity() {
   return { supported: true, platform: process.platform, game, scannedAt };
 }
 
-module.exports = { scanActivity };
+module.exports = { scanActivity, runningGameProcessIds };

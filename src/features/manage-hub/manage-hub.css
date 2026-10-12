@@ -155,6 +155,11 @@
   padding: 20px 24px 24px;
   overflow-y: auto;
 }
+/* Cards clip (overflow: hidden), which lets flex shrink them to fit the panel
+   and hide their content; keep their full height so .dch-main scrolls. */
+.dch-main > * {
+  flex-shrink: 0;
+}
 .dch-main > .dcx-card + .dcx-card {
   margin-top: 0;
 }

@@ -3,6 +3,7 @@ import { useDialogA11y } from "../shared/useDialogA11y";
 import { TypeToConfirmDialog } from "../shared/TypeToConfirmDialog";
 import "../shared/shared.css";
 import "./room-settings.css";
+import { filterRoomIcons } from "./roomIcons";
 
 export type RoomType = "text" | "voice" | "forum";
 export type ForumPostPolicy = "everyone" | "staff" | "roles" | "members";
@@ -33,7 +34,13 @@ export type RoomSettingsMember = {
 
 export type RoomSettingsRole = { id: string; name: string; icon?: string; color?: string };
 
-export type RoomSettingsSubmitExtra = { forumTags?: string[] };
+export type ChatPostPolicy = "everyone" | "staff" | "roles";
+export type RoomSettingsSubmitExtra = {
+  forumTags?: string[];
+  userLimit?: number;
+  postPolicy?: ChatPostPolicy;
+  postRoleIds?: string[];
+};
 
 type RoomSettingsPanelProps = {
   mode: "create" | "manage";
@@ -55,6 +62,10 @@ type RoomSettingsPanelProps = {
   onDelete?: () => void | Promise<void>;
   /** Name the user must type to confirm deletion (defaults to the current name). */
   deleteConfirmName?: string;
+  /** Voice room player cap (0 = no limit); undefined hides the field (Hub without voice limits). */
+  initialUserLimit?: number;
+  /** Chat rooms: current "who can post" setting; undefined hides it (voice/forum rooms). */
+  initialPostPolicy?: { policy: ChatPostPolicy; roleIds: string[] };
 };
 
 type TabId = "general" | "permissions" | "forum";
@@ -90,8 +101,17 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
     onClose,
     onDelete,
     deleteConfirmName,
+    initialUserLimit,
+    initialPostPolicy,
   } = props;
+  const [postPolicy, setPostPolicy] = useState<ChatPostPolicy>(initialPostPolicy?.policy ?? "everyone");
+  const [postRoleIds, setPostRoleIds] = useState<string[]>(initialPostPolicy?.roleIds ?? []);
+  const showPostPolicy = mode === "manage" && values.type === "text" && initialPostPolicy !== undefined;
+  const [userLimit, setUserLimit] = useState(initialUserLimit ?? 0);
+  const showUserLimit = mode === "manage" && values.type === "voice" && initialUserLimit !== undefined;
   const [tab, setTab] = useState<TabId>("general");
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [iconSearch, setIconSearch] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
   const [forumMemberSearch, setForumMemberSearch] = useState("");
   const [tags, setTags] = useState<string[]>(() => [...(initialForumTags ?? [])]);
@@ -179,7 +199,11 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
     if (!values.name.trim() || busy) return;
     setBusy(true);
     try {
-      await onSubmit(values.type === "forum" && forumTagsSupported ? { forumTags: tags } : {});
+      await onSubmit({
+        ...(values.type === "forum" && forumTagsSupported ? { forumTags: tags } : {}),
+        ...(showUserLimit ? { userLimit } : {}),
+        ...(showPostPolicy ? { postPolicy, postRoleIds: postPolicy === "roles" ? postRoleIds : [] } : {}),
+      });
     } finally {
       setBusy(false);
     }
@@ -312,8 +336,55 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                           {icon}
                         </button>
                       ))}
+                      <button
+                        type="button"
+                        className="dcr-icon-more"
+                        aria-expanded={iconPickerOpen}
+                        onClick={() => setIconPickerOpen((open) => !open)}
+                      >
+                        {iconPickerOpen ? "Fewer icons" : "More icons"}
+                      </button>
                     </div>
                   </div>
+                  {iconPickerOpen && (
+                    <div className="dcr-icon-picker">
+                      <input
+                        className="dcx-input dcr-icon-search"
+                        type="search"
+                        placeholder="Search icons, e.g. rules, clips, cs, music"
+                        aria-label="Search icons"
+                        value={iconSearch}
+                        onChange={(event) => setIconSearch(event.target.value)}
+                      />
+                      <div className="dcr-icon-groups">
+                        {filterRoomIcons(iconSearch).map((group) => (
+                          <section key={group.id} aria-label={group.label}>
+                            <h4>{group.label}</h4>
+                            <div className="dcr-icon-choices" role="group">
+                              {group.icons.map(([icon, words]) => (
+                                <button
+                                  key={`${group.id}-${icon}`}
+                                  type="button"
+                                  className={`dcr-icon-choice${values.icon === icon ? " is-selected" : ""}`}
+                                  aria-pressed={values.icon === icon}
+                                  aria-label={`Use ${icon} (${words.split(" ")[0]}) as icon`}
+                                  title={words}
+                                  onClick={() => set.icon(icon)}
+                                >
+                                  {icon}
+                                </button>
+                              ))}
+                            </div>
+                          </section>
+                        ))}
+                        {filterRoomIcons(iconSearch).length === 0 && (
+                          <small className="dcx-hint">
+                            No icons match. You can type or paste any emoji in the box.
+                          </small>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {mode === "create" ? (
                   <fieldset className="dcx-row-stack dcr-fieldset">
@@ -353,6 +424,80 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                       <span className="dcr-pill">
                         {values.type === "voice" ? "Voice" : values.type === "forum" ? "Forum" : "Text"}
                       </span>
+                    </div>
+                  </div>
+                )}
+                {showPostPolicy && (
+                  <fieldset className="dcx-row-stack">
+                    <legend className="dcx-field-label">Who can post</legend>
+                    <small>Everyone in the room can still read and react.</small>
+                    {(
+                      [
+                        ["everyone", "Everyone", "Anyone who can see the room."],
+                        ["staff", "Staff only (read-only)", "The owner, admins and moderators."],
+                        ["roles", "Selected roles", "Staff plus members with a role you pick."],
+                      ] as const
+                    ).map(([value, label, copy]) => (
+                      <label key={value} className={`dcr-choice${postPolicy === value ? " is-selected" : ""}`}>
+                        <input
+                          type="radio"
+                          name={fieldId("post-policy")}
+                          value={value}
+                          checked={postPolicy === value}
+                          onChange={() => setPostPolicy(value)}
+                        />
+                        <span>
+                          <strong>{label}</strong>
+                          <small>{copy}</small>
+                        </span>
+                      </label>
+                    ))}
+                    {postPolicy === "roles" && (
+                      <div className="dcr-role-picks">
+                        {roles.length ? (
+                          roles.map((role) => (
+                            <label key={role.id} className="dcr-role-pick">
+                              <input
+                                type="checkbox"
+                                checked={postRoleIds.includes(role.id)}
+                                onChange={(event) =>
+                                  setPostRoleIds((current) =>
+                                    event.target.checked
+                                      ? [...current, role.id]
+                                      : current.filter((id) => id !== role.id),
+                                  )
+                                }
+                              />
+                              <span>{role.name}</span>
+                            </label>
+                          ))
+                        ) : (
+                          <small>This Hub has no custom roles yet.</small>
+                        )}
+                      </div>
+                    )}
+                  </fieldset>
+                )}
+                {showUserLimit && (
+                  <div className="dcx-row">
+                    <div className="dcx-row-copy">
+                      <label htmlFor={fieldId("user-limit")}>
+                        <strong>Max players</strong>
+                      </label>
+                      <small>0 means no limit. The owner and admins can still join a full room.</small>
+                    </div>
+                    <div className="dcx-row-control">
+                      <input
+                        id={fieldId("user-limit")}
+                        className="dcx-input"
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={userLimit}
+                        onChange={(event) =>
+                          setUserLimit(Math.max(0, Math.min(99, Math.floor(Number(event.target.value) || 0))))
+                        }
+                      />
                     </div>
                   </div>
                 )}

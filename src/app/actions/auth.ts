@@ -1,6 +1,7 @@
 // Signing in or registering, logging out, and signing out of every session.
 
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
+import { currentLegalConsent, MINIMUM_SIGNUP_AGE } from "../../../shared/legal-consent";
 import type {
   Server,
   AccountUser,
@@ -15,8 +16,7 @@ import type {
 } from "../types";
 import { HTTP_URL } from "../env";
 import { hasDesktopActivityBridge } from "../desktop";
-import { clearAccountDataOnLogout, clearAccountScopedStorage } from "./clear-account-storage";
-import { PRIVACY_VERSION, TERMS_VERSION } from "../../../shared/legal-consent";
+import { clearAccountDataOnSignOut } from "./clear-account-storage";
 import type { AuthFormState } from "../state/auth-form";
 import type { OwnerSecurityState } from "../state/owner-security";
 import type { HubPanelsState } from "../state/hub-panels";
@@ -136,9 +136,9 @@ export function createAuthActions(deps: AuthActionsDeps) {
     setConfirmPasswordInput,
     birthDateInput,
     setBirthDateInput,
+    termsAccepted,
+    setTermsAccepted,
     staySignedIn,
-    acceptedTerms,
-    setAcceptedTerms,
     setAuthBusy,
     setLoginMfaKind,
   } = authForm;
@@ -177,6 +177,10 @@ export function createAuthActions(deps: AuthActionsDeps) {
     }
 
     if (authMode === "register") {
+      if (!termsAccepted) {
+        setAuthError("Agree to the Terms and acknowledge the Privacy Notice to create an account.");
+        return;
+      }
       if (!email) {
         setAuthError("Enter a valid email address.");
         return;
@@ -189,12 +193,20 @@ export function createAuthActions(deps: AuthActionsDeps) {
         setAuthError("Passwords do not match.");
         return;
       }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDateInput)) {
-        setAuthError("Enter your birth date to confirm you are 18 or older.");
+      if (passwordInput.length < 10) {
+        setAuthError("Use a password with at least 10 characters.");
         return;
       }
-      if (!acceptedTerms) {
-        setAuthError("Confirm that you are 18 or older and agree to the Terms of Service and Privacy Policy.");
+      const birthDate = new Date(`${birthDateInput}T00:00:00Z`);
+      const ageDate = new Date();
+      ageDate.setUTCFullYear(ageDate.getUTCFullYear() - MINIMUM_SIGNUP_AGE);
+      if (
+        !/^\d{4}-\d{2}-\d{2}$/.test(birthDateInput) ||
+        Number.isNaN(birthDate.getTime()) ||
+        birthDate.toISOString().slice(0, 10) !== birthDateInput ||
+        birthDate > ageDate
+      ) {
+        setAuthError(`Enter your birth date to confirm you are ${MINIMUM_SIGNUP_AGE} or older.`);
         return;
       }
     }
@@ -222,9 +234,7 @@ export function createAuthActions(deps: AuthActionsDeps) {
                 password: passwordInput,
                 turnstileToken,
                 birthDate: birthDateInput,
-                termsAccepted: true,
-                termsVersion: TERMS_VERSION,
-                privacyVersion: PRIVACY_VERSION,
+                ...currentLegalConsent(),
               },
         ),
       });
@@ -264,7 +274,7 @@ export function createAuthActions(deps: AuthActionsDeps) {
       setPasswordInput("");
       setConfirmPasswordInput("");
       setBirthDateInput("");
-      setAcceptedTerms(false);
+      setTermsAccepted(false);
       setAuthReady(true);
     } catch (error) {
       console.error("Authentication error:", error);
@@ -284,9 +294,6 @@ export function createAuthActions(deps: AuthActionsDeps) {
    */
   const logout = async ({ signedOutElsewhere = false }: { signedOutElsewhere?: boolean } = {}) => {
     resetPrivateAccountState();
-    const localCleanup = signedOutElsewhere
-      ? (clearAccountScopedStorage(), Promise.resolve())
-      : clearAccountDataOnLogout();
     storeToken("");
     setCurrentUser(null);
     setAuthReady(true);
@@ -301,7 +308,11 @@ export function createAuthActions(deps: AuthActionsDeps) {
     cleanupVoiceLocal(true);
     socketRef.current?.close();
     // Choosing to sign out removes the DM encryption key from this device.
-    await dmE2ee.stop({ forget: !signedOutElsewhere }).catch(() => undefined);
+    void dmE2ee.stop({ forget: !signedOutElsewhere });
+    // ...and the account's other local data (drafts, notes, settings, the desktop
+    // in-app browser profile). Signed out elsewhere, it stays like the key does;
+    // a different account signing in clears it then (useAccountStorageOwner).
+    const localCleanup = signedOutElsewhere ? Promise.resolve() : clearAccountDataOnSignOut();
 
     try {
       await fetch(`${HTTP_URL}/api/auth/logout`, {

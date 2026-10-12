@@ -82,7 +82,11 @@ export function HubHomePanel({
     <HubHome
       name={currentServer.name}
       icon={currentServer.iconUrl ? <img src={`${HTTP_URL}${currentServer.iconUrl}`} alt="" /> : currentServer.icon}
-      bannerUrl={currentServer.bannerUrl ? `${HTTP_URL}${currentServer.bannerUrl}` : null}
+      bannerUrl={
+        currentServer.headerUrl || currentServer.bannerUrl
+          ? `${HTTP_URL}${currentServer.headerUrl || currentServer.bannerUrl}`
+          : null
+      }
       accent={currentServer.accent}
       description={currentServer.description}
       category={currentServer.category}

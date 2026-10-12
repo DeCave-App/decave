@@ -316,7 +316,7 @@ test("new recovery codes and turning two-factor off need the password and a code
   assert.equal(after.data.user.username, "user-u1");
 });
 
-test("data export contains your own messages and direct messages you received", async () => {
+test("data export contains your own messages without exposing direct messages sent by others", async () => {
   const { response } = await api("/api/account/export", "u1");
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-disposition") ?? "", /attachment; filename="decave-data-/);
@@ -333,24 +333,20 @@ test("data export contains your own messages and direct messages you received", 
     ["hello from u1"],
   );
   assert.equal(data.complete, true);
-  // Direct messages received are part of the account holder's own
-  // conversations (access/portability); they are listed separately.
-  assert.deepEqual(
-    data.directMessagesReceived.map((message) => [message.sender, message.text]),
-    [["user-u2", "secret reply from u2"]],
-  );
+  assert.ok(!Object.hasOwn(data, "directMessagesReceived"));
+  assert.ok(!text.includes("secret reply from u2"));
   assert.ok(!text.includes(hash), "never includes the password hash");
 });
 
 test("profile display name and pronouns are cleaned and saved", async () => {
   const { data } = await api("/api/profile", "u1", {
     method: "PUT",
-    body: { displayName: "  Ilias​   The\u0007Great  ", pronouns: "he/him".repeat(10) },
+    body: { displayName: "  Alex​   The\u0007Great  ", pronouns: "he/him".repeat(10) },
   });
-  assert.equal(data.user.displayName, "Ilias TheGreat");
+  assert.equal(data.user.displayName, "Alex TheGreat");
   assert.equal(data.user.pronouns.length, 24);
   const unchanged = await api("/api/profile", "u1", { method: "PUT", body: { bio: "hi" } });
-  assert.equal(unchanged.data.user.displayName, "Ilias TheGreat", "omitting the fields keeps them");
+  assert.equal(unchanged.data.user.displayName, "Alex TheGreat", "omitting the fields keeps them");
 });
 
 test("banners upload through the API and are only served to people who share context", async () => {

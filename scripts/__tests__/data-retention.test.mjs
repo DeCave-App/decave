@@ -86,62 +86,6 @@ test("retention removes security events after the retention period", async () =>
   assert.equal(db.scalar("SELECT group_concat(id) FROM decave_security_events"), "recent");
 });
 
-test("the scheduled retention pass keeps legacy credential, presence, push, and media cleanup active", async () => {
-  const { db, env, deleted } = setup();
-  env.MEDIA.delete = async (keys) => deleted.push(...(Array.isArray(keys) ? keys : [keys]));
-
-  for (const [table, keyColumn, expiredAt] of [
-    ["decave_user_login_challenges", "token_hash", ago(1)],
-    ["decave_owner_login_challenges", "token_hash", ago(1)],
-  ]) {
-    db.exec(
-      `INSERT INTO ${table}(${keyColumn},user_id,stay_signed_in,expires_at,created_at) VALUES(?,?,0,?,?)`,
-      `expired-${table}`,
-      "alice",
-      expiredAt,
-      ago(2),
-    );
-  }
-  db.exec(
-    "INSERT INTO decave_user_login_challenges(token_hash,user_id,stay_signed_in,expires_at,created_at) VALUES('live-login','alice',0,?,?)",
-    ahead(1),
-    ago(0),
-  );
-  db.exec("INSERT INTO decave_presence_activity(user_id,last_seen_at) VALUES('alice',?)", ago(181));
-  db.exec("INSERT INTO decave_presence_activity(user_id,last_seen_at) VALUES('bob',?)", ago(10));
-  db.exec(
-    "INSERT INTO decave_push_tokens(token,user_id,session_hash,platform,created_at) VALUES(?, 'alice', NULL, 'ios', ?)",
-    "legacy-expired-token",
-    ago(91),
-  );
-  db.exec(
-    "INSERT INTO decave_push_tokens(token,user_id,session_hash,platform,created_at) VALUES(?, 'alice', NULL, 'ios', ?)",
-    "legacy-live-token",
-    ago(10),
-  );
-  db.exec(
-    "INSERT INTO decave_push_subscriptions(user_id,hub_id,room_id,created_at) VALUES('alice',999,NULL,?)",
-    ago(1),
-  );
-  db.exec(
-    "INSERT INTO decave_attachment_access(r2_key,kind,owner_user_id,created_at) VALUES('attachments/orphan-channel','channel','alice',?)",
-    ago(3),
-  );
-  db.exec(
-    "INSERT INTO decave_media_deletion_queue(object_key,queued_at,attempts,last_attempt_at) VALUES('attachments/queued','2020-01-01',0,NULL)",
-  );
-
-  assert.deepEqual(await pruneExpiredPersonalData(env), []);
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_user_login_challenges"), 1);
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_owner_login_challenges"), 0);
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_presence_activity WHERE user_id='alice'"), 0);
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_presence_activity WHERE user_id='bob'"), 1);
-  assert.equal(db.scalar("SELECT group_concat(token) FROM decave_push_tokens"), "legacy-live-token");
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_push_subscriptions"), 0);
-  assert.deepEqual(deleted.sort(), ["attachments/orphan-channel", "attachments/queued"]);
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_media_deletion_queue"), 0);
-});
-
 test("closed cases lose evidence after six months and records after a year, never on legal hold", async () => {
   const { db, env, deleted } = setup();
   db.exec(

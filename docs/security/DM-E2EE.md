@@ -213,9 +213,8 @@ current key (`verifyRtc` in the session):
   blocking it, so someone whose device is locked can still be heard. Verified
   participants show a lock next to their name.
 
-When no peer key is available or pinned (for example, with encryption disabled
-or an older app), an unsigned direct-call description may proceed unverified,
-without a visible verification mark.
+Someone without any key (encryption off, or an old app) connects unverified, as
+before.
 
 ## Verifying people
 

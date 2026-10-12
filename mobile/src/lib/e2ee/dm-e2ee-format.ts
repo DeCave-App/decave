@@ -14,6 +14,8 @@ export const DM_LINK_SEALED_MAX_BYTES = 8 * 1024;
 /** Wraps in a group message: one per member (groups have at most 20). */
 export const DM_GROUP_MAX_WRAPS = 20;
 export const DM_REACTIONS_MAX = 20;
+/** Most wraps in a screen-key envelope: the sharer's own plus up to 19 viewers. Seal and parse both honour it. */
+export const SCREEN_KEY_MAX_WRAPS = DM_GROUP_MAX_WRAPS;
 
 const B64URL = /^[A-Za-z0-9_-]+$/;
 const KEY_ID = /^[A-Za-z0-9_-]{22}$/;
@@ -137,9 +139,14 @@ export function parseDmPublicKey(raw: unknown): DmPublicKey | null {
 /**
  * Check an envelope's shape. Accepts a JSON string or an already parsed value.
  * `maxWraps` is 4 for direct messages and reactions (two accounts, room for a
- * key change), DM_GROUP_MAX_WRAPS for group messages.
+ * key change), DM_GROUP_MAX_WRAPS for group messages. `isValidId` defaults to
+ * message UUIDs; screen-key envelopes use a binding string instead.
  */
-export function parseDmEnvelope(raw: unknown, maxWraps = 4): DmEnvelope | null {
+export function parseDmEnvelope(
+  raw: unknown,
+  maxWraps = 4,
+  isValidId: (id: unknown) => boolean = isDmMessageId,
+): DmEnvelope | null {
   let value = raw;
   if (typeof raw === "string") {
     if (raw.length > DM_ENVELOPE_MAX_BYTES) return null;
@@ -151,7 +158,7 @@ export function parseDmEnvelope(raw: unknown, maxWraps = 4): DmEnvelope | null {
   }
   if (!isRecord(value) || value.v !== DM_E2EE_VERSION) return null;
   const { id, from, to, sk, e, n, c, w, s } = value;
-  if (!isDmMessageId(id) || typeof from !== "string" || typeof to !== "string") return null;
+  if (typeof id !== "string" || !isValidId(id) || typeof from !== "string" || typeof to !== "string") return null;
   if (!from || !to || from.length > 80 || to.length > 80 || from === to) return null;
   if (!isDmKeyId(sk) || !isB64(e, 32) || !isB64(n, 24) || !isB64(c, undefined, DM_ENVELOPE_MAX_BYTES)) return null;
   if (!isB64(s, 64) || !Array.isArray(w) || w.length < 1 || w.length > maxWraps) return null;

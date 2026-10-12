@@ -1,7 +1,7 @@
-// The public landing page uses text-led product highlights rather than private
-// or unreviewed screenshots.
+// The landing page. Every product image is a real screenshot of the current web
+// app, captured with demo data by scripts/dev/capture-website-screens.mjs.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Apple,
   ArrowRight,
@@ -12,9 +12,11 @@ import {
   Globe2,
   Keyboard,
   LockKeyhole,
+  Maximize2,
   MonitorUp,
   RefreshCw,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { FaqList, roadmap } from "./pages";
 import {
@@ -29,53 +31,61 @@ import {
   WINDOWS_DOWNLOAD_URL,
 } from "./layout";
 
-type Screen = { id: string; label: string; title: string; copy: string };
+type Screen = { id: string; src: string; label: string; title: string; copy: string };
 
 const screens: Screen[] = [
   {
     id: "hub",
+    src: "/screens/app-hub.webp",
     label: "Hubs",
     title: "Rooms for every topic",
     copy: "Text, voice and forum rooms grouped the way your community thinks. See who’s already in voice before you join.",
   },
   {
     id: "voice",
+    src: "/screens/app-voice.webp",
     label: "Voice",
     title: "Voice that stays out of the way",
     copy: "Clear participant cards, quick mute and deafen, camera and screen sharing from one control bar.",
   },
   {
     id: "dms",
+    src: "/screens/app-dms.webp",
     label: "Messages",
     title: "Private conversations",
     copy: "Direct messages with search, unread filters and one-click voice or video calls.",
   },
   {
     id: "friends",
+    src: "/screens/app-friends.webp",
     label: "Friends",
     title: "Know who’s around",
     copy: "Presence and activity at a glance, friend requests in one place and a DeCave ID that’s easy to share.",
   },
   {
     id: "squad",
+    src: "/screens/app-squad.webp",
     label: "Squad Finder",
     title: "Fill the team",
     copy: "Match by game, platform, language, region and microphone preference, then join the group in one click.",
   },
   {
     id: "discover",
+    src: "/screens/app-discover.webp",
     label: "Discover",
     title: "Find a Hub worth joining",
     copy: "Browse public Hubs by category, size and activity, preview them first or join with an invite code.",
   },
   {
     id: "official",
+    src: "/screens/app-official.webp",
     label: "DeCave Hub",
     title: "News and help in one place",
     copy: "Every account joins the official DeCave Hub: announcements, patch notes, the roadmap, rules and an FAQ from the team.",
   },
   {
     id: "home",
+    src: "/screens/app-home.webp",
     label: "Home",
     title: "Your dashboard, your way",
     copy: "Jump back into your last room, see who’s online and what they’re playing, join a voice room and keep upcoming events in view.",
@@ -84,18 +94,61 @@ const screens: Screen[] = [
 
 const byId = (id: string) => screens.find((screen) => screen.id === id)!;
 
-function Shot({ screen }: { screen: Screen }) {
+function Shot({ screen, onOpen, eager = false }: { screen: Screen; onOpen: (screen: Screen) => void; eager?: boolean }) {
   return (
-    <div className="shot" role="group" aria-label={`${screen.label}: ${screen.title}`}>
-      <span className="shot-label">{screen.label}</span>
-      <h3>{screen.title}</h3>
-      <p>{screen.copy}</p>
-      <span className="shot-mark" aria-hidden="true" />
+    <button type="button" className="shot" onClick={() => onOpen(screen)} aria-label={`Enlarge: ${screen.title}`}>
+      <img
+        src={screen.src}
+        alt={`DeCave ${screen.label}: ${screen.title}`}
+        width="1600"
+        height="960"
+        loading={eager ? "eager" : "lazy"}
+        fetchPriority={eager ? "high" : "auto"}
+        decoding="async"
+      />
+      <span className="shot-zoom" aria-hidden="true">
+        <Maximize2 size={16} />
+      </span>
+    </button>
+  );
+}
+
+function Lightbox({ screen, onClose }: { screen: Screen | null; onClose: () => void }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!screen) return;
+    closeRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [screen, onClose]);
+  if (!screen) return null;
+  return (
+    <div
+      className="lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label={screen.title}
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <figure>
+        <img src={screen.src} alt={`DeCave ${screen.label}: ${screen.title}`} />
+        <figcaption>
+          <strong>{screen.title}</strong> {screen.copy}
+        </figcaption>
+      </figure>
+      <button ref={closeRef} type="button" className="lightbox-close" onClick={onClose} aria-label="Close">
+        <X size={20} />
+      </button>
     </div>
   );
 }
 
-function Hero() {
+function Hero({ onOpen }: { onOpen: (screen: Screen) => void }) {
   return (
     <section className="hero">
       <div className="hero-copy">
@@ -131,14 +184,14 @@ function Hero() {
             <i />
             <span>app.de-cave.com</span>
           </div>
-          <Shot screen={byId("home")} />
+          <Shot screen={byId("home")} onOpen={onOpen} eager />
         </div>
       </div>
     </section>
   );
 }
 
-function Tour() {
+function Tour({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const [active, setActive] = useState(screens[0].id);
   const current = byId(active);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -155,9 +208,9 @@ function Tour() {
       <div className="section-head">
         <p className="eyebrow">Take the tour</p>
         <h2 id="tour-heading">
-          One place for your whole squad.
+          The real app, <span className="grad">not a mockup.</span>
         </h2>
-        <p>Explore the core spaces and tools built into DeCave.</p>
+        <p>Every screen below is the current DeCave web app.</p>
       </div>
       <div
         className="tabs"
@@ -192,7 +245,7 @@ function Tour() {
           <p>{current.copy}</p>
         </div>
         <div className="window">
-          <Shot key={current.id} screen={current} />
+          <Shot key={current.id} screen={current} onOpen={onOpen} />
         </div>
       </div>
     </section>
@@ -230,15 +283,17 @@ const spotlights = [
   },
 ];
 
-function Spotlights() {
+function Spotlights({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const hubHome: Screen = {
     id: "hub-home",
+    src: "/screens/app-hub-home.webp",
     label: "Hub Home",
     title: "Hub Home and events",
     copy: "Upcoming events, RSVPs and members on a Hub’s home page.",
   };
   const officialInfo: Screen = {
     id: "official-info",
+    src: "/screens/app-official-info.webp",
     label: "DeCave Hub",
     title: "The official DeCave Hub",
     copy: "Announcements, the roadmap, helpful resources and privacy notes from the DeCave team.",
@@ -261,7 +316,7 @@ function Spotlights() {
               </ul>
             </div>
             <div className="window">
-              <Shot screen={screen} />
+              <Shot screen={screen} onOpen={onOpen} />
             </div>
           </article>
         );
@@ -443,13 +498,14 @@ function Trust() {
 }
 
 export function HomePage() {
+  const [open, setOpen] = useState<Screen | null>(null);
   return (
     <div className="site">
       <SiteNav />
       <main>
-        <Hero />
-        <Tour />
-        <Spotlights />
+        <Hero onOpen={setOpen} />
+        <Tour onOpen={setOpen} />
+        <Spotlights onOpen={setOpen} />
         <FeatureGrid />
         <Downloads />
         <RoadmapSection />
@@ -470,6 +526,7 @@ export function HomePage() {
         </section>
       </main>
       <SiteFooter />
+      <Lightbox screen={open} onClose={() => setOpen(null)} />
     </div>
   );
 }

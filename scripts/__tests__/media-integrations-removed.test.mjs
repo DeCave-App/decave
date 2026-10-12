@@ -18,7 +18,6 @@ const homeOutput = ts.transpileModule(homeSource, {
 const homeContext = vm.createContext({ exports: {}, URL });
 vm.runInContext(`${homeOutput}\nglobalThis.__homeExports = exports;`, homeContext);
 const { normalizeHomeQuickLink } = homeContext.__homeExports;
-const { isSafeExternalUrl } = await import("../../electron/security-boundary.cjs");
 
 function sourceFiles(directory) {
   if (!existsSync(directory)) return [];
@@ -30,31 +29,31 @@ function sourceFiles(directory) {
 }
 
 test("application and desktop source no longer contain video platform integrations", () => {
-  const workerSource = sourceFiles(path.join(root, "worker"))
+  // worker/twitch/ is the one allowed exception: server-side Streamer Hub auto-live
+  // (EventSub stream.online/offline for the creator's channel). No search, embeds or viewer calls.
+  const twitchModule = path.join(root, "worker", "twitch");
+  const workerFiles = sourceFiles(path.join(root, "worker"));
+  const strayTwitchApi = workerFiles.filter(
+    (file) =>
+      !file.startsWith(twitchModule + path.sep) && /api\.twitch\.tv|id\.twitch\.tv/i.test(readFileSync(file, "utf8")),
+  );
+  assert.deepEqual(strayTwitchApi, [], "only worker/twitch/ may call the Twitch API");
+  const workerSource = workerFiles
+    .filter((file) => !file.startsWith(twitchModule + path.sep))
     .map((file) => readFileSync(file, "utf8"))
     .join("\n");
   const appSource = sourceFiles(path.join(root, "src"))
     .map((file) => readFileSync(file, "utf8"))
     .join("\n");
-  const desktopSource = ["electron/main.cjs", "electron/security-boundary.cjs", "electron/capture-apps.cjs"]
+  // electron/security-boundary.cjs is excluded: its external-link allowlist still lets
+  // YouTube/Twitch links open in the system browser, which embeds nothing.
+  const desktopSource = ["electron/main.cjs", "electron/capture-apps.cjs"]
     .map((file) => readFileSync(path.join(root, file), "utf8"))
-    .join("\n");
-  const websiteSource = sourceFiles(path.join(root, "website/src"))
-    .map((file) => readFileSync(file, "utf8"))
     .join("\n");
 
   assert.doesNotMatch(workerSource, /youtube\/(?:search|v3\/search)|twitch\/discovery|api\.twitch\.tv/i);
   assert.doesNotMatch(appSource, /YouTubeDock|TwitchDock|youtube-nocookie\.com|youtube\.com|twitch\.tv/i);
   assert.doesNotMatch(desktopSource, /youtube-nocookie\.com|youtube\.com|twitch\.tv/i);
-  assert.doesNotMatch(websiteSource, /youtube-nocookie\.com|youtube\.com|twitch\.tv/i);
-  for (const url of [
-    "https://www.youtube.com/watch?v=example",
-    "https://www.youtube-nocookie.com/embed/example",
-    "https://youtu.be/example",
-    "https://www.twitch.tv/example",
-  ]) {
-    assert.equal(isSafeExternalUrl(url), false, `${url} should not remain an allowed external integration`);
-  }
 });
 
 test("video platform credentials are absent from configuration examples", () => {
@@ -62,6 +61,7 @@ test("video platform credentials are absent from configuration examples", () => 
     .filter((file) => existsSync(path.join(root, file)))
     .map((file) => readFileSync(path.join(root, file), "utf8"))
     .join("\n");
+  // Twitch app credentials (TWITCH_CLIENT_ID/SECRET, TWITCH_EVENTSUB_SECRET) are Worker secrets, never config.
   assert.doesNotMatch(config, /youtube|twitch/i);
 });
 

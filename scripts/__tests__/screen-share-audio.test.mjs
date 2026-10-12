@@ -11,10 +11,9 @@ const electronMain = fs.readFileSync(path.join(root, "electron/main.cjs"), "utf8
 const electronPreload = fs.readFileSync(path.join(root, "electron/preload.cjs"), "utf8");
 
 test("ordinary screen audio stays attached to the screen stream", () => {
-  assert.match(
-    app,
-    /if \(\s*incomingStream\.getVideoTracks\(\)\.length > 0 &&\s*liveParticipant\.screenSharing === true/,
-  );
+  // Routing lives in classifyMeshAudio (screen-sfu/screen-audio.ts, unit-tested there).
+  assert.match(app, /const route = classifyMeshAudio\(\{/);
+  assert.match(app, /if \(route === "screen"\) \{/);
   assert.match(app, /const incomingStream = event\.streams\[0\]/);
   assert.match(app, /setRemoteScreens/);
   assert.match(app, /const videoStream = event\.streams\[0\]/);
@@ -77,8 +76,8 @@ test("screen cards measure video RTP with timestamped byte deltas", () => {
 test("screen profiles share capture and sender limits while prioritizing frame cadence", () => {
   assert.match(app, /"1440p60": \{ width: 2560, height: 1440, fps: 60, maxBitrate: 28_000_000 \}/);
   assert.match(app, /const target = SCREEN_SHARE_PROFILES\[quality\]/);
-  assert.match(app, /parameters\.encodings\[0\]\.maxBitrate = target\.maxBitrate/);
-  assert.match(app, /parameters\.encodings\[0\]\.maxFramerate = target\.fps/);
+  assert.match(app, /encoding\.maxBitrate = screenBitratePerViewer\(target\.maxBitrate, countScreenViewers\(\)\)/);
+  assert.match(app, /encoding\.maxFramerate = target\.fps/);
   assert.match(app, /degradationPreference = "maintain-framerate"/);
   assert.match(app, /videoTrack\.contentHint = "motion"/);
 });

@@ -51,12 +51,18 @@ export async function createWsToken(
     throw new Error("WebSocket credentials require an active session");
   const token = createRawToken();
   const createdAt = nowIso();
-  await env.DB.prepare(
-    `INSERT INTO decave_ws_tokens(token_hash,user_id,session_hash,expires_at,created_at,used_at)
-     VALUES(?,?,?,?,?,NULL)`,
-  )
-    .bind(tokenHash(token), userId, sessionHash, new Date(Date.now() + ttlMs).toISOString(), createdAt)
-    .run();
+  // Tokens live for two minutes and are single-use; drop this user's spent ones
+  // so the table never becomes a history of when someone connected.
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM decave_ws_tokens WHERE user_id=? AND (used_at IS NOT NULL OR expires_at<=?)").bind(
+      userId,
+      createdAt,
+    ),
+    env.DB.prepare(
+      `INSERT INTO decave_ws_tokens(token_hash,user_id,session_hash,expires_at,created_at,used_at)
+       VALUES(?,?,?,?,?,NULL)`,
+    ).bind(tokenHash(token), userId, sessionHash, new Date(Date.now() + ttlMs).toISOString(), createdAt),
+  ]);
   return token;
 }
 
@@ -141,6 +147,10 @@ export async function createAuthToken(
   return raw;
 }
 
+// Security events keep the browser user agent so people can recognise their
+// own sign-ins, but never the IP address. Pass request=null when someone else
+// (an admin) acts on the account, so their client details are not filed under
+// the affected user.
 export async function securityEvent(
   env: Env,
   userId: string | null,
@@ -165,61 +175,14 @@ export async function securityEvent(
     .run();
 }
 
-let warnedIpHashKeyFallback = false;
-let warnedIpHashKeyMissing = false;
-
-async function hmacSha256(keyBytes: BufferSource, message: string): Promise<Uint8Array<ArrayBuffer>> {
-  const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message)));
-}
-
 /**
- * Resolve the IP-tag key. SECURITY_IP_HASH_KEY is preferred. Without it, a
- * domain-separated subkey is derived from OWNER_MFA_ENCRYPTION_KEY (HMAC with a
- * fixed label), so the MFA encryption key itself is never used for IP tags and
- * the derived subkey reveals nothing about it. Tags from the derived key carry
- * a distinct version prefix so they are never confused with dedicated-key tags.
+ * Throttles current-password checks before sensitive account changes. The key
+ * is the account, not the IP, so guesses made with a stolen session from many
+ * addresses share one budget. Returns a 429 response when over the limit.
  */
-export async function securityIpHashKey(env: Env): Promise<{ key: BufferSource; prefix: string } | null> {
-  const dedicated = env.SECURITY_IP_HASH_KEY?.trim() ?? "";
-  if (dedicated) return { key: new TextEncoder().encode(dedicated), prefix: "hmac:v1:" };
-  const parent = env.OWNER_MFA_ENCRYPTION_KEY?.trim() ?? "";
-  if (parent) {
-    if (!warnedIpHashKeyFallback) {
-      warnedIpHashKeyFallback = true;
-      console.warn(
-        "SECURITY_IP_HASH_KEY is not configured; security-event IP tags use a subkey derived from OWNER_MFA_ENCRYPTION_KEY.",
-      );
-    }
-    return {
-      key: await hmacSha256(new TextEncoder().encode(parent), "decave-security-ip-hash-key-derivation-v1"),
-      prefix: "hmac:v1d:",
-    };
-  }
-  if (!warnedIpHashKeyMissing) {
-    warnedIpHashKeyMissing = true;
-    console.warn(
-      "No SECURITY_IP_HASH_KEY or OWNER_MFA_ENCRYPTION_KEY is configured; security-event IP tags are empty.",
-    );
-  }
-  return null;
-}
-
-/** Returns a versioned, domain-separated keyed address tag, or empty if no key is configured. */
-export async function securityIpAddressTag(env: Env, address: string, domain: string): Promise<string> {
-  const normalizedAddress = address.trim();
-  const normalizedDomain = domain.trim();
-  if (!normalizedAddress || !normalizedDomain) return "";
-  const resolved = await securityIpHashKey(env);
-  if (!resolved) return "";
-  const signature = await hmacSha256(resolved.key, `${normalizedDomain}\0${normalizedAddress}`);
-  return `${resolved.prefix}${Array.from(signature, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
-}
-
-/** Returns a versioned keyed IP tag, or an empty string when no key can be resolved. */
-export async function securityEventIpHash(env: Env, request: Request): Promise<string> {
-  const rawIp = request.headers.get("CF-Connecting-IP")?.trim() ?? "";
-  return securityIpAddressTag(env, rawIp, "decave-security-ip-v1");
+export async function currentPasswordThrottle(env: Env, userId: string): Promise<Response | null> {
+  const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: `current-password:${userId}` });
+  return limited.success ? null : json({ error: "Too many password attempts. Please try again later." }, 429);
 }
 
 export function activeSuspension(user: UserRow): boolean {
@@ -291,12 +254,11 @@ export async function ensureSessionClientSchema(env: Env): Promise<void> {
 
 export let qrLoginSchemaReady: Promise<void> | null = null;
 
+// Keep this the original table shape. Migration 0073 adds the requester and
+// claim columns with ALTER TABLE; D1 has no ADD COLUMN IF NOT EXISTS, so a
+// lazily created table that already had them would make that migration fail.
 export function ensureQrLoginSchema(env: Env): Promise<void> {
   if (qrLoginSchemaReady) return qrLoginSchemaReady;
-  // Keep this exactly the legacy (pre-0065) shape. Migration 0065 adds
-  // requester_device and requester_country with ALTER TABLE. D1 has no
-  // ADD COLUMN IF NOT EXISTS, so a lazily created table that already had those
-  // columns would make the migration fail on a fresh database.
   qrLoginSchemaReady = env.DB.prepare(
     `CREATE TABLE IF NOT EXISTS decave_qr_login_challenges (
     id TEXT PRIMARY KEY,
@@ -383,6 +345,14 @@ export function describeSessionDevice(userAgent: string, client: SessionClient, 
   return [os ? `${app} on ${os}` : app, place].filter(Boolean).join(" · ").slice(0, 80);
 }
 
+/** The two-letter country Cloudflare places the request in, or "" when unknown. No IP is read. */
+export function requestCountryCode(request: Request): string {
+  const cf = (request as Request & { cf?: { country?: unknown } }).cf;
+  const country = typeof cf?.country === "string" ? cf.country : (request.headers.get("CF-IPCountry") ?? "");
+  return /^[A-Z]{2}$/.test(country) && country !== "XX" && country !== "T1" ? country : "";
+}
+
+/** English name for a two-letter country code, or "" when it is not a real country. */
 export function describeRequestCountry(country: string): string {
   if (!/^[A-Z]{2}$/.test(country) || country === "XX" || country === "T1") return "";
   try {
@@ -474,11 +444,13 @@ export async function noteSignInDevice(
     const count = await env.DB.prepare("SELECT COUNT(*) AS count FROM decave_known_devices WHERE user_id=?")
       .bind(user.id)
       .first<{ count: number }>();
+    // Only the fingerprint is needed to recognise a device; the readable label
+    // is not kept. last_seen_at lets unused devices expire (see retention.ts).
     await env.DB.prepare(
-      `INSERT INTO decave_known_devices(user_id,fingerprint,label,first_seen_at,last_seen_at) VALUES(?,?,?,?,?)
-       ON CONFLICT(user_id,fingerprint) DO UPDATE SET last_seen_at=excluded.last_seen_at, label=excluded.label`,
+      `INSERT INTO decave_known_devices(user_id,fingerprint,label,first_seen_at,last_seen_at) VALUES(?,?,'',?,?)
+       ON CONFLICT(user_id,fingerprint) DO UPDATE SET last_seen_at=excluded.last_seen_at, label=''`,
     )
-      .bind(user.id, fingerprint, label, now, now)
+      .bind(user.id, fingerprint, now, now)
       .run();
     if (known || Number(count?.count ?? 0) === 0) return;
     const preferences = await accountPreferencesRow(env, user.id);
@@ -499,7 +471,10 @@ export async function noteSignInDevice(
 export async function revokeAccountSessions(env: Env, userId: string, reason: string): Promise<void> {
   await ensureSessionClientSchema(env);
   await ensurePushSchema(env.DB);
+  await ensureQrLoginSchema(env);
   await env.DB.batch([
+    env.DB.prepare("DELETE FROM decave_qr_login_challenges WHERE user_id=?").bind(userId),
+    env.DB.prepare("DELETE FROM decave_user_login_challenges WHERE user_id=?").bind(userId),
     env.DB.prepare("DELETE FROM decave_sessions WHERE user_id=?").bind(userId),
     env.DB.prepare("DELETE FROM decave_session_clients WHERE user_id=?").bind(userId),
     env.DB.prepare("DELETE FROM decave_owner_reauth WHERE user_id=?").bind(userId),

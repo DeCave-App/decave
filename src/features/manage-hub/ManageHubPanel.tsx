@@ -9,6 +9,7 @@ import "../shared/shared.css";
 import "../room-settings/room-settings.css";
 import "./manage-hub.css";
 import { Icon } from "../../components/Icon";
+import { BotsSection } from "../bots";
 import { localeForLanguage, preferredTimeOptions } from "../../app/locale";
 
 type NavItem = {
@@ -47,7 +48,12 @@ const NAV: NavItem[] = [
     description: "Slow mode, custom emotes and stickers, and the audit log.",
     group: "advanced",
   },
-  { id: "bots", label: "Bots", description: "Connect bots and webhooks to rooms.", group: "advanced" },
+  {
+    id: "bots",
+    label: "Bots",
+    description: "Build bots that greet, answer commands and hand out roles.",
+    group: "advanced",
+  },
   { id: "danger", label: "Danger zone", description: "Irreversible actions for this Hub.", group: "advanced" },
 ];
 
@@ -132,6 +138,7 @@ function FileButton({
 
 export function ManageHubPanel(props: ManageHubPanelProps) {
   const { server, values, set, apiBaseUrl, isOwner, canManage, error, renderAvatar, onClose } = props;
+  const canManageBots = canManage || props.canManageBots === true;
   const [section, setSection] = useState<ManageHubSectionId>("overview");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -191,7 +198,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
     ].filter((group) => group.items.length > 0);
   }, [server.channels]);
 
-  const visibleNav = NAV.filter((item) => (item.id === "danger" ? isOwner : item.id === "bots" ? canManage : true));
+  const visibleNav = NAV.filter((item) => (item.id === "danger" ? isOwner : item.id === "bots" ? canManageBots : true));
   const current = visibleNav.find((item) => item.id === section) ?? visibleNav[0];
   const memberCount = props.members.length || server.memberCount || 0;
   const onlineCount = props.members.filter((member) => member.online).length || server.onlineCount || 0;
@@ -637,6 +644,42 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                   <div className="dch-media-card">
                     <div className="dch-media-head">
                       <div className="dch-media-prev is-wide">
+                        {server.headerUrl ? (
+                          <img src={`${apiBaseUrl}${server.headerUrl}`} alt="Current header image" />
+                        ) : (
+                          <span>No header</span>
+                        )}
+                      </div>
+                      <div className="dcx-row-copy">
+                        <strong>Header image</strong>
+                        <small>
+                          Wide image at the top of Hub Home and the Streamer Overview, shown whole. Without one, the
+                          sidebar banner is used. {hubMediaHint("header")}.
+                        </small>
+                      </div>
+                    </div>
+                    <div className="dch-media-actions">
+                      <FileButton
+                        label={props.mediaBusy ? "Uploading…" : server.headerUrl ? "Change" : "Add header"}
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        disabled={props.mediaBusy}
+                        onFile={(file) => props.onUploadMedia("header", file)}
+                      />
+                      {server.headerUrl && (
+                        <button
+                          type="button"
+                          className="dcx-btn dcx-btn-ghost dch-media-remove"
+                          disabled={props.mediaBusy}
+                          onClick={() => props.onRemoveMedia("header")}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="dch-media-card">
+                    <div className="dch-media-head">
+                      <div className="dch-media-prev is-wide">
                         {server.chatBackgroundUrl ? (
                           <img src={`${apiBaseUrl}${server.chatBackgroundUrl}`} alt="Current chat background" />
                         ) : (
@@ -986,7 +1029,19 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
           )}
 
           {current.id === "bots" &&
-            (props.botsPanel ?? <p className="dcx-hint">Bots are available to Hub owners and admins.</p>)}
+            (canManageBots ? (
+              <BotsSection
+                hubId={server.id}
+                apiBaseUrl={apiBaseUrl}
+                authorizedFetch={props.authorizedFetch}
+                rooms={server.channels}
+                roles={props.roles}
+                showTokenBots={Boolean(props.botsPanel)}
+                fallback={props.botsPanel ?? <p className="dcx-hint">Bots are available to Hub owners and admins.</p>}
+              />
+            ) : (
+              <p className="dcx-hint">Bots are available to Hub owners and admins.</p>
+            ))}
 
           {current.id === "danger" && isOwner && (
             <section className="dcx-card dch-danger">

@@ -1,7 +1,13 @@
 // Account settings: two-factor setup, data export, preferences, username,
 // phone number, and disabling or deleting the account.
 
-import { requireUser, securityEvent, revokeAccountSessions, clearSessionCookie } from "../lib/sessions";
+import {
+  requireUser,
+  securityEvent,
+  revokeAccountSessions,
+  clearSessionCookie,
+  currentPasswordThrottle,
+} from "../lib/sessions";
 import { json, bodyJson } from "../lib/http";
 import {
   userRecoveryCodesRemaining,
@@ -15,6 +21,9 @@ import {
   userVerifyMfaOrRecovery,
 } from "../lib/mfa";
 import { verifyPassword, nowIso, privateUser, activityVisibilityOf, ensureGroupChatSchema, type UserRow } from "../db";
+import { ensurePushSchema } from "../push";
+import { accountExportChunks, accountExportResponse, accountExportSections } from "../lib/account-export";
+import { serveR2 } from "../lib/media";
 import {
   accountPreferencesRow,
   accountPreferencesForClient,
@@ -26,10 +35,6 @@ import { allMessageSubscriptions, pushSettingsFromJson } from "../push-policy";
 import { broadcastProfileUpdate, realtimeBroadcast } from "../lib/realtime";
 import { validateUsername } from "../lib/validation";
 import { ownedHubCount } from "../lib/hubs";
-import { ensureActivitySchema } from "../lib/activity";
-import { serveR2 } from "../lib/media";
-import { ensurePushSchema } from "../push";
-import { maskPushToken } from "../../shared/account-export";
 import type { ApiContext } from "./context";
 
 export async function handleAccountSecurityRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
@@ -62,6 +67,8 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
 
     if (p === "/api/account/mfa/setup") {
       if (enabled) return json({ error: "Two-factor sign-in is already on." }, 409);
+      const passwordThrottle = await currentPasswordThrottle(env, user.id);
+      if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(password, user.password_salt, user.password_hash))) {
         await securityEvent(env, user.id, "account.mfa_setup_reauth_failed", request);
         return json({ error: "Current password is incorrect." }, 403);
@@ -111,6 +118,8 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
     // current code, so a stolen session alone cannot weaken the account.
     if (p === "/api/account/mfa/disable" || p === "/api/account/mfa/recovery-codes") {
       if (!enabled) return json({ error: "Two-factor sign-in is off." }, 409);
+      const passwordThrottle = await currentPasswordThrottle(env, user.id);
+      if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(password, user.password_salt, user.password_hash))) {
         await securityEvent(env, user.id, "account.mfa_reauth_failed", request);
         return json({ error: "Current password is incorrect." }, 403);
@@ -135,8 +144,10 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
     return json({ error: "Not found" }, 404);
   }
 
-  // Exported attachment downloads require the same signed-in account and a
-  // current row linking the object's key to content the account holder wrote.
+  // Export attachment downloads must still point to a live object referenced by
+  // content this account authored. The attachment-access row alone is not enough:
+  // a DM recipient may access the original, but must not export another person's
+  // upload as their own data.
   if (method === "GET" && p === "/api/account/export/attachment") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
@@ -164,21 +175,27 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
       .bind(key, user.id, user.id, user.id, key, user.id)
       .first<{ present: number }>();
     if (!ownedReference) return json({ error: "Attachment not found." }, 404);
+
     const mediaRequestUrl = new URL(request.url);
-    mediaRequestUrl.pathname = `/uploads/${key}`;
-    return serveR2(new Request(mediaRequestUrl, request), env, user.id);
+    mediaRequestUrl.pathname = `/uploads/${key.split("/").map(encodeURIComponent).join("/")}`;
+    const response = await serveR2(new Request(mediaRequestUrl, request), env, user.id);
+    if (response.status !== 200) return response;
+    const headers = new Headers(response.headers);
+    headers.set("cache-control", "no-store, private");
+    if (!/^attachment(?:\s*;|$)/i.test(headers.get("content-disposition") ?? "")) {
+      headers.set("content-disposition", "attachment");
+    }
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   }
 
-  // "Download my data": stream every account-owned record in bounded pages.
-  // Direct messages received by the account are included; other people's
-  // channel and group messages, and files they uploaded, are excluded.
+  // "Download my data": streamed by worker/lib/account-export.ts.
   if (method === "GET" && p === "/api/account/export") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const limited = await env.AUTH_RATE_LIMITER.limit({ key: `account-export:${user.id}` });
     if (!limited.success) return json({ error: "You just exported your data. Try again in a minute." }, 429);
+    // Lazily created tables and columns the export reads.
     await ensureGroupChatSchema(env.DB);
-    await ensureActivitySchema(env);
     await ensurePushSchema(env.DB);
     const preferences = await accountPreferencesRow(env, user.id);
     const consent = await env.DB.prepare(
@@ -186,363 +203,19 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
     )
       .bind(user.id)
       .first<{ terms_accepted_at: string | null; terms_version: string | null; privacy_version: string | null }>();
-    const [safety, activity, steam] = await Promise.all([
-      getSafetyProfile(env.DB, user.id),
-      env.DB.prepare(
-        "SELECT manual_text,automatic_text,source,source_app_id,started_at,updated_at FROM decave_activity_state WHERE user_id=? LIMIT 1",
-      )
-        .bind(user.id)
-        .first(),
-      env.DB.prepare(
-        "SELECT steam_id,persona_name,profile_url,linked_at,updated_at FROM decave_steam_links WHERE user_id=? LIMIT 1",
-      )
-        .bind(user.id)
-        .first(),
-    ]);
     await securityEvent(env, user.id, "account.data_exported", request);
-    const payload = {
+    const header = {
       exportedAt: nowIso(),
       format: "decave-account-export-v2",
+      note: "End-to-end encrypted content (envelopes, key backup, sealed keys) is exported as stored: ciphertext the server cannot read. The last field, complete, is true only when the whole export was written.",
       account: {
         ...privateUser(user),
         ...accountPreferencesForClient(preferences),
         twoFactorEnabled: await userMfaEnabled(env.DB, user.id),
         consent: consent ?? { terms_accepted_at: null, terms_version: null, privacy_version: null },
-        safety,
-        activity,
-        steam,
       },
     };
-    const sections = [
-      {
-        name: "friends",
-        alias: "f",
-        sql: `SELECT u.username,f.created_at AS since,f.rowid AS __export_rowid
-          FROM decave_friendships f JOIN decave_users u ON u.id=CASE WHEN f.user_a=? THEN f.user_b ELSE f.user_a END
-          WHERE (f.user_a=? OR f.user_b=?)`,
-        binds: [user.id, user.id, user.id],
-      },
-      {
-        name: "friendRequests",
-        alias: "r",
-        sql: `SELECT CASE WHEN r.sender_id=? THEN 'sent' ELSE 'received' END AS direction,u.username,r.created_at,
-            r.rowid AS __export_rowid
-          FROM decave_friend_requests r JOIN decave_users u ON u.id=CASE WHEN r.sender_id=? THEN r.recipient_id ELSE r.sender_id END
-          WHERE (r.sender_id=? OR r.recipient_id=?)`,
-        binds: [user.id, user.id, user.id, user.id],
-      },
-      {
-        name: "blocked",
-        alias: "b",
-        sql: `SELECT u.username,b.created_at,b.rowid AS __export_rowid
-          FROM decave_user_blocks b JOIN decave_users u ON u.id=b.blocked_user_id WHERE b.blocker_user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "muted",
-        alias: "m",
-        sql: `SELECT u.username,m.created_at,m.rowid AS __export_rowid
-          FROM decave_user_mutes m JOIN decave_users u ON u.id=m.muted_user_id WHERE m.muter_user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "hubMemberships",
-        alias: "m",
-        sql: `SELECT h.name AS hub,m.role,m.joined_at,m.rowid AS __export_rowid
-          FROM decave_hub_members m JOIN decave_hubs h ON h.id=m.hub_id WHERE m.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "groupChats",
-        alias: "gm",
-        sql: `SELECT g.name,CASE WHEN g.owner_user_id=? THEN 'owner' ELSE 'member' END AS role,gm.added_at,
-            gm.rowid AS __export_rowid
-          FROM decave_group_chat_members gm JOIN decave_group_chats g ON g.id=gm.group_id WHERE gm.user_id=?`,
-        binds: [user.id, user.id],
-      },
-      {
-        name: "hubRoomMessages",
-        alias: "m",
-        sql: `SELECT h.name AS hub,r.name AS room,m.text,m.attachment_name AS attachment,m.attachment_mime AS attachmentMime,
-            m.attachment_size AS attachmentSize,m.created_at,m.edited_at,m.rowid AS __export_rowid
-          FROM decave_messages m LEFT JOIN decave_rooms r ON r.id=m.room_id LEFT JOIN decave_hubs h ON h.id=m.hub_id
-          WHERE m.author_user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "directMessagesSent",
-        alias: "d",
-        sql: `SELECT u.username AS recipient,d.text,d.envelope,d.attachment_refs,d.created_at,d.rowid AS __export_rowid
-          FROM decave_direct_messages d LEFT JOIN decave_users u ON u.id=d.to_user_id WHERE d.from_user_id=?`,
-        binds: [user.id],
-        transform: (row: Record<string, unknown>) => (row.envelope ? { ...row, text: "[end-to-end encrypted]" } : row),
-      },
-      {
-        // Messages other people sent to this account are part of the account
-        // holder's own conversations and are included for access/portability.
-        name: "directMessagesReceived",
-        alias: "d",
-        sql: `SELECT u.username AS sender,d.text,d.envelope,d.attachment_refs,d.created_at,d.rowid AS __export_rowid
-          FROM decave_direct_messages d LEFT JOIN decave_users u ON u.id=d.from_user_id WHERE d.to_user_id=?`,
-        binds: [user.id],
-        transform: (row: Record<string, unknown>) => (row.envelope ? { ...row, text: "[end-to-end encrypted]" } : row),
-      },
-      {
-        name: "hubMessageReactions",
-        alias: "mr",
-        sql: `SELECT h.name AS hub,r.name AS room,mr.message_id,mr.emoji,mr.created_at,mr.rowid AS __export_rowid
-          FROM decave_message_reactions mr LEFT JOIN decave_messages m ON m.id=mr.message_id
-          LEFT JOIN decave_rooms r ON r.id=m.room_id LEFT JOIN decave_hubs h ON h.id=m.hub_id
-          WHERE mr.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "directMessageReactions",
-        alias: "dr",
-        sql: `SELECT dr.message_id,dr.emoji,dr.created_at,dr.rowid AS __export_rowid
-          FROM decave_dm_reactions dr WHERE dr.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "directMessageReactionEnvelopes",
-        alias: "re",
-        sql: `SELECT re.message_id,re.envelope,re.updated_at,re.rowid AS __export_rowid
-          FROM decave_dm_reaction_envelopes re WHERE re.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "dmPublicKeys",
-        alias: "k",
-        sql: `SELECT k.key_id,k.x25519_public,k.ed25519_public,k.created_at,k.retired_at,k.previous_key_id,
-            k.certificate,k.sealed_for_previous,k.rowid AS __export_rowid
-          FROM decave_dm_keys k WHERE k.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "dmEncryptedKeyBackup",
-        alias: "b",
-        sql: `SELECT b.key_id,b.backup AS encryptedBackup,b.updated_at,b.rowid AS __export_rowid
-          FROM decave_dm_key_backups b WHERE b.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "dmKeySettings",
-        alias: "ks",
-        sql: `SELECT ks.history_days,ks.updated_at,ks.rowid AS __export_rowid
-          FROM decave_dm_key_settings ks WHERE ks.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "groupChatMessages",
-        alias: "m",
-        sql: `SELECT g.name AS groupName,m.text,m.created_at,m.rowid AS __export_rowid
-          FROM decave_group_chat_messages m LEFT JOIN decave_group_chats g ON g.id=m.group_id WHERE m.from_user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "hubEventsCreated",
-        alias: "e",
-        sql: `SELECT h.name AS hub,e.title,e.description,e.starts_at,e.ends_at,e.timezone,e.recurrence,e.audience,
-            e.reminder_minutes,e.capacity,e.game_tag,e.created_at,e.updated_at,e.cancelled_at,e.rowid AS __export_rowid
-          FROM decave_hub_events e JOIN decave_hubs h ON h.id=e.hub_id WHERE e.created_by=?`,
-        binds: [user.id],
-      },
-      {
-        name: "eventRsvps",
-        alias: "r",
-        sql: `SELECT h.name AS hub,e.title,e.starts_at,r.status,r.updated_at,r.rowid AS __export_rowid
-          FROM decave_hub_event_rsvps r JOIN decave_hub_events e ON e.id=r.event_id
-          JOIN decave_hubs h ON h.id=e.hub_id WHERE r.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "hubImports",
-        alias: "i",
-        sql: `SELECT i.hub_id,i.created_at,i.rolled_back_at,i.rowid AS __export_rowid
-          FROM decave_hub_imports i WHERE i.created_by=?`,
-        binds: [user.id],
-      },
-      {
-        name: "feedback",
-        alias: "f",
-        sql: `SELECT f.type,f.message,f.contact_email,f.status,f.created_at,f.rowid AS __export_rowid
-          FROM decave_feedback f WHERE f.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "signIns",
-        alias: "s",
-        sql: `SELECT s.client,s.device_label,s.created_at,s.last_seen_at,s.rowid AS __export_rowid
-          FROM decave_session_clients s WHERE s.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "knownDevices",
-        alias: "d",
-        sql: `SELECT d.label,d.first_seen_at,d.last_seen_at,d.rowid AS __export_rowid
-          FROM decave_known_devices d WHERE d.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "dmConversationClears",
-        alias: "c",
-        sql: `SELECT u.username AS partner,c.cleared_at,c.rowid AS __export_rowid
-          FROM decave_dm_conversation_clears c JOIN decave_users u ON u.id=c.partner_id WHERE c.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "reportsFiled",
-        alias: "r",
-        sql: `SELECT r.id,r.target_type,r.target_public_id_snapshot AS reportedPublicId,
-            r.target_username_snapshot AS reportedUsername,r.context_type,r.context_label,r.category,r.description,
-            r.status,r.submitted_at,r.updated_at,r.closed_at,r.rowid AS __export_rowid
-          FROM decave_reports r WHERE r.reporter_user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "pushTokens",
-        alias: "t",
-        sql: `SELECT t.token AS __push_token,t.platform,t.created_at,t.rowid AS __export_rowid
-          FROM decave_push_tokens t WHERE t.user_id=?`,
-        binds: [user.id],
-        transform: (row: Record<string, unknown>) => {
-          const { __push_token: token, ...rest } = row;
-          return { token: maskPushToken(token), ...rest };
-        },
-      },
-      {
-        name: "pushSubscriptions",
-        alias: "p",
-        sql: `SELECT h.name AS hub,r.name AS room,p.created_at,p.rowid AS __export_rowid
-          FROM decave_push_subscriptions p LEFT JOIN decave_hubs h ON h.id=p.hub_id
-          LEFT JOIN decave_rooms r ON r.id=p.room_id WHERE p.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "securityLog",
-        alias: "s",
-        sql: `SELECT s.event,s.user_agent,s.created_at,s.rowid AS __export_rowid
-          FROM decave_security_events s WHERE s.user_id=?`,
-        binds: [user.id],
-      },
-      {
-        name: "hubRoomAttachments",
-        alias: "a",
-        sql: `SELECT a.r2_key AS __download_key,a.rowid AS __export_rowid,
-            (SELECT m.attachment_name FROM decave_messages m WHERE m.attachment_key=a.r2_key AND m.author_user_id=? ORDER BY m.rowid LIMIT 1) AS fileName,
-            (SELECT m.attachment_size FROM decave_messages m WHERE m.attachment_key=a.r2_key AND m.author_user_id=? ORDER BY m.rowid LIMIT 1) AS size,
-            a.created_at
-          FROM decave_attachment_access a
-          WHERE a.owner_user_id=? AND a.kind='channel' AND EXISTS(
-            SELECT 1 FROM decave_messages m WHERE m.attachment_key=a.r2_key AND m.author_user_id=?
-          )`,
-        binds: [user.id, user.id, user.id, user.id],
-        transform: (row: Record<string, unknown>) => {
-          const { __download_key: key, ...rest } = row;
-          return {
-            ...rest,
-            downloadUrl: `/api/account/export/attachment?key=${encodeURIComponent(String(key ?? ""))}`,
-          };
-        },
-      },
-      {
-        name: "legacyHubRoomAttachments",
-        alias: "m",
-        sql: `SELECT m.attachment_name AS fileName,m.attachment_mime AS mimeType,m.attachment_size AS size,
-            m.created_at,m.attachment_key AS __download_key,m.rowid AS __export_rowid
-          FROM decave_messages m
-          WHERE m.author_user_id=? AND m.attachment_key IS NOT NULL
-            AND m.rowid=(SELECT min(own.rowid) FROM decave_messages own
-              WHERE own.author_user_id=m.author_user_id AND own.attachment_key=m.attachment_key)
-            AND NOT EXISTS(SELECT 1 FROM decave_attachment_access a WHERE a.r2_key=m.attachment_key)`,
-        binds: [user.id],
-        transform: (row: Record<string, unknown>) => {
-          const { __download_key: key, ...rest } = row;
-          return {
-            ...rest,
-            downloadUrl: `/api/account/export/attachment?key=${encodeURIComponent(String(key ?? ""))}`,
-          };
-        },
-      },
-      {
-        name: "directMessageAttachments",
-        alias: "a",
-        sql: `SELECT a.r2_key AS __download_key,a.created_at,a.rowid AS __export_rowid
-          FROM decave_attachment_access a
-          WHERE a.owner_user_id=? AND a.kind='dm' AND EXISTS(
-            SELECT 1 FROM decave_direct_messages d WHERE d.from_user_id=?
-              AND (instr(d.text,a.r2_key)>0 OR instr(COALESCE(d.attachment_refs,''),a.r2_key)>0)
-          )`,
-        binds: [user.id, user.id],
-        transform: (row: Record<string, unknown>) => {
-          const { __download_key: key, ...rest } = row;
-          return {
-            fileName: "attachment",
-            ...rest,
-            downloadUrl: `/api/account/export/attachment?key=${encodeURIComponent(String(key ?? ""))}`,
-          };
-        },
-      },
-    ] as const;
-    const encoder = new TextEncoder();
-    async function* exportJson(): AsyncGenerator<string> {
-      yield `{"exportedAt":${JSON.stringify(payload.exportedAt)},"format":${JSON.stringify(payload.format)},"account":${JSON.stringify(payload.account)}`;
-      for (const section of sections) {
-        yield `,${JSON.stringify(section.name)}:[`;
-        let first = true;
-        let cursor = 0;
-        try {
-          while (true) {
-            const page = await env.DB.prepare(
-              `${section.sql} AND ${section.alias}.rowid>? ORDER BY ${section.alias}.rowid LIMIT ?`,
-            )
-              .bind(...section.binds, cursor, 100)
-              .all<Record<string, unknown>>();
-            if (!page.results.length) break;
-            for (const result of page.results) {
-              cursor = Number(result.__export_rowid);
-              const { __export_rowid: _cursor, ...raw } = result;
-              const row = "transform" in section && section.transform ? section.transform(raw) : raw;
-              yield `${first ? "" : ","}${JSON.stringify(row)}`;
-              first = false;
-            }
-          }
-        } catch (error) {
-          console.error(
-            `Account export stopped while reading ${section.name}.`,
-            error instanceof Error ? error.name : "UnknownError",
-          );
-          yield `],"complete":false,"error":"The export could not be completed. Retry the download."}`;
-          return;
-        }
-        yield "]";
-      }
-      yield `,"complete":true}`;
-    }
-    const generator = exportJson();
-    const body = new ReadableStream<Uint8Array>({
-      async pull(controller) {
-        try {
-          const next = await generator.next();
-          if (next.done) controller.close();
-          else controller.enqueue(encoder.encode(next.value));
-        } catch (error) {
-          controller.error(error);
-        }
-      },
-      async cancel() {
-        await generator.return(undefined);
-      },
-    });
-    return new Response(body, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="decave-data-${new Date().toISOString().slice(0, 10)}.json"`,
-        "Cache-Control": "no-store, private",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
+    return accountExportResponse(accountExportChunks(env.DB, header, accountExportSections(user.id)));
   }
 
   return null;
@@ -712,7 +385,6 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
     }
 
     const updated = await accountPreferencesRow(env, user.id);
-    await securityEvent(env, user.id, "account.preferences_updated", request);
     return json(
       {
         ...accountPreferencesForClient(updated),
@@ -727,8 +399,6 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
   if (method === "PUT" && p === "/api/account/username") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-    const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: `account-username:${user.id}` });
-    if (!limited.success) return json({ error: "Too many username changes. Please try again later." }, 429);
     const body = await bodyJson(request);
     if (!body) {
       return json({ error: "Invalid account mutation request.", code: "INVALID_INPUT" }, 400);
@@ -739,6 +409,8 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
     }
     {
       const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
+      const passwordThrottle = await currentPasswordThrottle(env, user.id);
+      if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(currentPassword, user.password_salt, user.password_hash))) {
         await securityEvent(env, user.id, "username.change_failed_password", request);
         return json({ error: "Current password is incorrect." }, 403);
@@ -800,14 +472,13 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
   }
 
   if (method === "PUT" && p === "/api/account/phone") {
+    // DeCave no longer collects phone numbers (nothing used them).
     return json({ error: "Phone numbers are no longer collected.", code: "FEATURE_REMOVED" }, 410);
   }
 
   if (method === "POST" && (p === "/api/account/disable" || p === "/api/account/delete")) {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-    const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: `account-state:${user.id}` });
-    if (!limited.success) return json({ error: "Too many account changes. Please try again later." }, 429);
     const deleting = p === "/api/account/delete";
     if (user.platform_role === "owner")
       return json(
@@ -834,6 +505,8 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
     const confirm = typeof body.confirmUsername === "string" ? body.confirmUsername.trim() : "";
     {
       const password = typeof body.currentPassword === "string" ? body.currentPassword : "";
+      const passwordThrottle = await currentPasswordThrottle(env, user.id);
+      if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(password, user.password_salt, user.password_hash))) {
         return json({ error: "Current password is incorrect" }, 403);
       }

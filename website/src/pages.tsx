@@ -52,7 +52,7 @@ export const faqItems = [
   {
     question: "Where do I report a security issue?",
     answer:
-      "Email security@de-cave.com with a short description and safe reproduction steps. Do not include passwords, private keys, sensitive conversations or unredacted files.",
+      "Email security@example.invalid with a short description and safe reproduction steps. Do not include passwords, private keys, sensitive conversations or unredacted files.",
   },
 ];
 

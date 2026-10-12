@@ -1,13 +1,4 @@
-// Input validation for usernames, passwords, email addresses and phone numbers.
-
-/** Kept for compatibility with existing callers; phone collection is retired. */
-export function cleanPhoneNumber(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  const normalized = trimmed.replace(/[\s().-]+/g, "");
-  return /^\+?[0-9]{7,15}$/.test(normalized) ? normalized : null;
-}
+// Input validation for usernames, passwords and email addresses.
 
 export function validateUsername(value: unknown): string | null {
   if (typeof value !== "string") return null;

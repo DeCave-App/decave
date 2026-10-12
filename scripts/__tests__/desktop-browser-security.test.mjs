@@ -17,10 +17,6 @@ test("desktop browser uses an isolated WebContentsView session", () => {
   assert.match(main, /decave:browser:deactivate/);
   assert.match(main, /decave:browser:zoom/);
   assert.match(main, /decave:browser:find/);
-  assert.match(
-    main,
-    /ipcMain\.handle\("decave:browser:clear-session", async \(event\) => \{[\s\S]*?trustedMainRenderer\(event\)[\s\S]*?clearStorageData\(\)[\s\S]*?clearCache\(\)/,
-  );
   assert.match(main, /stopFindInPage/);
   assert.match(main, /found-in-page/);
   assert.match(main, /setZoomFactor/);
@@ -71,15 +67,16 @@ test("preload exposes only the narrow browser operations", () => {
     assert.match(preload, new RegExp(`${operation}:`));
   }
   assert.match(preload, /deactivate:/);
-  assert.match(preload, /clearSession:\s*\(\) => ipcRenderer\.invoke\("decave:browser:clear-session"\)/);
   assert.match(preload, /onPermissionRequest:/);
   assert.match(preload, /respondPermission:/);
   assert.doesNotMatch(preload, /executeJavaScript/);
   assert.doesNotMatch(preload, /webContents/);
 });
 
-test("desktop external links allowlisted social and developer destinations only", () => {
+test("desktop external links cover the shared media and social destinations", () => {
   for (const url of [
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "https://www.twitch.tv/example",
     "https://discord.com/",
     "https://x.com/",
     "https://www.instagram.com/",
@@ -90,14 +87,6 @@ test("desktop external links allowlisted social and developer destinations only"
   }
   assert.equal(isSafeExternalUrl("http://example.com/"), false);
   assert.equal(isSafeExternalUrl("https://example.com/"), false);
-  for (const url of [
-    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    "https://www.youtube-nocookie.com/",
-    "https://youtu.be/example",
-    "https://www.twitch.tv/example",
-  ]) {
-    assert.equal(isSafeExternalUrl(url), false, `${url} should not be allowlisted`);
-  }
 });
 
 test("dashboard quick links use the same external-link path on web and desktop", () => {

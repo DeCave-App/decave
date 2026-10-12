@@ -2,7 +2,7 @@
 
 import type { Env } from "./env";
 import type { HubRoom } from "../HubRoom";
-import { type UserRow, publicUserWithPresence, activityVisibilityOf } from "../db";
+import { type UserRow, publicUserWithPresence, presenceOnline, activityVisibilityOf } from "../db";
 
 export async function globalRoom(env: Env): Promise<DurableObjectStub<HubRoom>> {
   return env.HUB_ROOM.get(env.HUB_ROOM.idFromName("decave-global"));
@@ -19,6 +19,22 @@ export async function realtimeFetch(env: Env, path: string, payload?: unknown): 
   );
 }
 
+/**
+ * Internal ids of accounts with a live socket. Presence projections
+ * (publicUserWithPresence) need this so stored status/activity of a
+ * disconnected account is never shown. Fails closed (nobody online).
+ */
+export async function connectedUserIds(env: Env): Promise<Set<string>> {
+  try {
+    const response = await realtimeFetch(env, "/internal/online-users");
+    if (!response.ok) return new Set();
+    const data = (await response.json()) as { userIds?: string[] };
+    return new Set(data.userIds ?? []);
+  } catch {
+    return new Set();
+  }
+}
+
 export async function realtimeBroadcast(env: Env, event: unknown, filter: Record<string, unknown> = {}): Promise<void> {
   await realtimeFetch(env, "/internal/broadcast", { event, filter });
 }
@@ -29,10 +45,8 @@ export async function realtimeBroadcast(env: Env, event: unknown, filter: Record
  * that carries it.
  */
 export async function broadcastProfileUpdate(env: Env, user: UserRow): Promise<void> {
-  const onlineResponse = await realtimeFetch(env, "/internal/online-users");
-  const onlineData = onlineResponse.ok ? ((await onlineResponse.json()) as { userIds?: string[] }) : {};
-  const online = user.status !== "invisible" && (onlineData.userIds ?? []).includes(user.id);
-  const pub = publicUserWithPresence(user, online);
+  const online = presenceOnline(user, (await connectedUserIds(env)).has(user.id));
+  const pub = publicUserWithPresence(user, online, "other");
   // Match usersSharePublicContext: self, a friendship, any friend request, or
   // a shared Hub. The global room includes anonymous sockets, so always scope
   // profile events to this eligible set.

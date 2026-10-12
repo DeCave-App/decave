@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Security updates are opened automatically for vulnerable packages;
+  # routine version bumps are kept off to avoid PR noise.
+  - package-ecosystem: npm
+    directories: ["/", "/mobile", "/website"]
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly

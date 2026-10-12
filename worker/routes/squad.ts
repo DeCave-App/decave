@@ -22,7 +22,12 @@ import { realtimeBroadcast } from "../lib/realtime";
 import { groupChatForClient } from "../lib/social";
 import { ensureHubFeatureSchema } from "../lib/hub-schema";
 import { ensureSoundboardSchema } from "../lib/soundboard";
-import { attemptQueuedMediaDeletionIfQueued, hubMediaObjectKeys, queueHubMediaDeletionStatement } from "../lib/media";
+import {
+  deleteQueuedMediaIfQueued,
+  ensureMediaDeletionQueueSchema,
+  hubMediaObjectKeys,
+  queueHubMediaDeletionStatement,
+} from "../lib/media";
 import type { ApiContext } from "./context";
 
 export async function handleSquadFinderRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
@@ -464,6 +469,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
     if (isOwner && !nextOwner) {
       await ensureHubFeatureSchema(env);
       await ensureSoundboardSchema(env);
+      await ensureMediaDeletionQueueSchema(env.DB);
       squadMediaKeys = await hubMediaObjectKeys(env.DB, hubId);
     }
     const ownershipGuardBindings = isOwner ? [hubId, squadRoom.group_id, user.id, user.id] : [];
@@ -532,7 +538,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
       (Number(leaveResults[3]?.meta.changes ?? 0) !== 1 || Number(leaveResults[4]?.meta.changes ?? 0) !== 1)
     )
       return json({ error: "Squad ownership changed. Try again." }, 409);
-    if (isOwner && !nextOwner && squadMediaKeys.length) await attemptQueuedMediaDeletionIfQueued(env, squadMediaKeys);
+    if (isOwner && !nextOwner && squadMediaKeys.length) await deleteQueuedMediaIfQueued(env, squadMediaKeys);
     const remainingIds = await groupChatMemberIds(env.DB, squadRoom.group_id);
     await realtimeBroadcast(
       env,

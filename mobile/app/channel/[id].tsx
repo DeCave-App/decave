@@ -39,6 +39,8 @@ import { SendFailedBanner } from "@/src/components/SendFailedBanner";
 import { MessagePreview } from "@/src/components/MessagePreview";
 import { ComposerMediaSheet } from "@/src/components/ComposerMediaSheet";
 import { ChannelFinderSheet } from "@/src/components/ChannelFinderSheet";
+import { BotBadge, BotMessage } from "@/src/components/channel/BotMessage";
+import { botMessageText, botRenderMode, messageBotFields } from "../../../shared/bots/card-view";
 
 type ChannelParams = {
   id: string;
@@ -570,9 +572,12 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
               formatDayLabel(previous.timestamp) !==
                 formatDayLabel(item.timestamp);
 
+            // A builder bot is the author of its messages, not the admin who published it.
+            const author = messageBotFields(item).bot;
             const grouped =
               !!previous &&
               previous.userId === item.userId &&
+              messageBotFields(previous).bot?.id === author?.id &&
               Date.parse(item.timestamp) -
                 Date.parse(previous.timestamp) <
                 5 * 60_000 &&
@@ -602,7 +607,11 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                   delayLongPress={350}
                   accessibilityHint="Long press for message actions"
                 >
-                  {!grouped ? (
+                  {!grouped && author ? (
+                    <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: colors.wash }}>
+                      <Text style={{ fontSize: 18 }}>{author.avatarEmoji || "🤖"}</Text>
+                    </View>
+                  ) : !grouped ? (
                     <Avatar
                       username={item.username}
                       avatarUrl={item.avatarUrl}
@@ -627,14 +636,15 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                           ]}
                           numberOfLines={1}
                         >
-                          {item.username}
+                          {author ? author.name : item.username}
                         </Text>
+                        {author ? <BotBadge color={author.color} /> : null}
 
                         <Text style={styles.time}>
                           {formatMessageTime(item.timestamp)}
                         </Text>
 
-                        {item.role &&
+                        {!author && item.role &&
                           (item.role === "owner" ||
                             item.role === "admin") && (
                             <View style={styles.roleChip}>
@@ -649,7 +659,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                     {replyTarget && (
                       <View style={styles.replyReference}>
                         <Text style={styles.replyReferenceText} numberOfLines={1}>
-                          ↳ {replyTarget.username}: {previewMessage(messagePreviewText(replyTarget.text))}
+                          ↳ {messageBotFields(replyTarget).bot?.name ?? replyTarget.username}: {previewMessage(messagePreviewText(replyTarget.text))}
                         </Text>
                       </View>
                     )}
@@ -661,7 +671,21 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                       </View>
                     )}
 
-                                        {parseGif(item.text) ? (
+                                        {botRenderMode(item) === "card" ? (() => {
+                      const builder = messageBotFields(item);
+                      return builder.bot ? (
+                        <BotMessage
+                          messageId={item.id}
+                          roomId={item.channelId ?? channelId}
+                          bot={builder.bot}
+                          card={builder.card}
+                          privateNotice={builder.privateNotice}
+                          text={botMessageText(item.text)}
+                          token={token}
+                          showHead={false}
+                        />
+                      ) : null;
+                    })() : parseGif(item.text) ? (
                       <MessageImage url={parseGif(item.text)!.url} title={parseGif(item.text)!.title} token={token} authenticated />
                     ) : !item.text ? null : (() => {
                       const post = parseForumPost(item.text);
@@ -816,7 +840,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
           <View style={styles.replyingBanner}>
             <Ionicons name="arrow-undo-outline" size={14} color={colors.cyan} />
             <Text style={styles.replyingBannerText} numberOfLines={1}>
-              Replying to {replyingTo.username}: {previewMessage(messagePreviewText(replyingTo.text))}
+              Replying to {messageBotFields(replyingTo).bot?.name ?? replyingTo.username}: {previewMessage(messagePreviewText(replyingTo.text))}
             </Text>
             <Pressable accessibilityRole="button" onPress={() => setReplyingTo(null)}>
               <Text style={styles.editingCancel}>Cancel</Text>
@@ -876,15 +900,16 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
         <Pressable style={styles.actionBackdrop} onPress={() => setActionMessage(null)}>
           <Pressable style={styles.actionSheet} onPress={() => {}}>
             <View style={styles.actionGrabber} />
-            {actionMessage && <MessagePreview author={actionMessage.username} text={actionMessage.text} mine={actionMessage.userId === user?.id} />}
+            {actionMessage && <MessagePreview author={messageBotFields(actionMessage).bot?.name ?? actionMessage.username} text={actionMessage.text} mine={actionMessage.userId === user?.id && !messageBotFields(actionMessage).bot} />}
             <View style={styles.emojiGrid}>
               {CHANNEL_REACTION_EMOJIS.map((emoji) => <Pressable accessibilityRole="button" key={emoji} style={styles.emojiButton} onPress={() => { const message=actionMessage; setActionMessage(null); if(message) void reactToMessage(message,emoji); }}><Text style={styles.emojiButtonText}>{emoji}</Text></Pressable>)}
             </View>
             {actionMessage && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => void togglePin(actionMessage)}><Ionicons name={actionMessage.pinned ? "pin" : "pin-outline"} size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>{actionMessage.pinned ? "Unpin message" : "Pin message"}</Text></Pressable>}
             {actionMessage && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => beginReply(actionMessage)}><Ionicons name="arrow-undo-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>Reply</Text></Pressable>}
             {actionMessage && actionMessage.userId !== user?.id && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); toggleMute(message.userId).then(() => successHaptic()).catch((error) => { errorHaptic(); Alert.alert("Could not update mute", error instanceof Error ? error.message : "Please try again."); }); }}><Ionicons name={mutedIds.has(actionMessage.userId) ? "notifications-outline" : "notifications-off-outline"} size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>{mutedIds.has(actionMessage.userId) ? `Unmute ${actionMessage.username}` : `Mute notifications from ${actionMessage.username}`}</Text></Pressable>}
-            {actionMessage && actionMessage.userId !== user?.id && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: message.attachment ? "attachment" : "message", targetId: message.id, subjectUserId: message.userId, subjectUsername: message.username, contextType: "channel", contextId: String(channelId), contextLabel: `#${name}` }); }}><Ionicons name="flag-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>Report message</Text></Pressable>}
-            {actionMessage?.userId === user?.id && <>
+            {actionMessage && actionMessage.userId !== user?.id && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: message.attachment ? "attachment" : "message", targetId: message.id, subjectUserId: message.userId, subjectUsername: messageBotFields(message).bot?.name ?? message.username, contextType: "channel", contextId: String(channelId), contextLabel: `#${name}` }); }}><Ionicons name="flag-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>Report message</Text></Pressable>}
+            {/* A bot's message is not the publisher's own to edit or delete. */}
+            {actionMessage?.userId === user?.id && !messageBotFields(actionMessage).bot && <>
               <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message=actionMessage; setActionMessage(null); if(message) beginEdit(message); }}><Ionicons name="create-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>Edit message</Text></Pressable>
               <Pressable accessibilityRole="button" style={[styles.sheetAction,styles.sheetDanger]} onPress={() => actionMessage && deleteMessage(actionMessage)}><Ionicons name="trash-outline" size={18} color={colors.red}/><Text style={[styles.sheetActionText,{color:colors.red}]}>Delete message</Text></Pressable>
             </>}

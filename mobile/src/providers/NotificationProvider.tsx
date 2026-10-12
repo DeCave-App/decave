@@ -121,14 +121,16 @@ function stringValue(value: unknown): string {
 export function NotificationProvider({ children }: PropsWithChildren) {
   const { user, token } = useSession();
   const { mutedRef } = useMutedUsers();
-  const { lastEvent } = useRealtime();
+  const { lastEvent, lastEventIdentity } = useRealtime();
   const { settings } = useNotificationSettings();
   const pathname = usePathname();
   const [permissionState, setPermissionState] =
     useState<NotificationPermissionState>("checking");
   const settingsRef = useRef(settings);
   const pathnameRef = useRef(pathname);
-  const lastHandledRef = useRef("");
+  const lastHandledRef = useRef<{ userId: string; token: string; eventId: string } | null>(null);
+  const identityRef = useRef<{ userId: string | null; token: string | null }>({ userId: user?.id ?? null, token });
+  identityRef.current = { userId: user?.id ?? null, token };
   const permissionPromptedRef = useRef(false);
   const lastSquadMatchRef = useRef("");
 
@@ -296,8 +298,20 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   },[user?.id,token,settings.enabled,permissionState]);
 
   useEffect(() => {
-    if (!lastEvent || !user || !settingsRef.current.enabled) return;
+    if (
+      !lastEvent ||
+      !user ||
+      !token ||
+      lastEventIdentity?.userId !== user.id ||
+      lastEventIdentity.token !== token ||
+      !settingsRef.current.enabled
+    ) return;
     if (permissionState !== "granted") return;
+
+    const notificationIdentity = { userId: user.id, token };
+    const identityIsCurrent = () =>
+      identityRef.current.userId === notificationIdentity.userId &&
+      identityRef.current.token === notificationIdentity.token;
 
     const type = stringValue(lastEvent.type);
     if (!type) return;
@@ -311,8 +325,14 @@ export function NotificationProvider({ children }: PropsWithChildren) {
       stringValue(lastEvent.messageId) ||
       stringValue(lastEvent.id) ||
       `${type}:${stringValue(lastEvent.groupId)}:${stringValue(lastEvent.channelId)}:${stringValue(lastEvent.userId)}:${stringValue(lastEvent.timestamp)}`;
-    if (eventId && lastHandledRef.current === eventId) return;
-    if (eventId) lastHandledRef.current = eventId;
+    const previous = lastHandledRef.current;
+    if (
+      eventId &&
+      previous?.userId === user.id &&
+      previous.token === token &&
+      previous.eventId === eventId
+    ) return;
+    if (eventId) lastHandledRef.current = { ...notificationIdentity, eventId };
 
     const notify = async (
       title: string,
@@ -348,7 +368,13 @@ export function NotificationProvider({ children }: PropsWithChildren) {
 
     if (type === "DM_MESSAGE" && message) {
       const fromUserId = stringValue(message.fromUserId);
-      if (!fromUserId || fromUserId === user.id || !settingsRef.current.dms || mutedRef.current.has(fromUserId)) return;
+      if (
+        !fromUserId ||
+        fromUserId === user.id ||
+        stringValue(message.toUserId) !== user.id ||
+        !settingsRef.current.dms ||
+        mutedRef.current.has(fromUserId)
+      ) return;
       const route = `/dm/${encodeURIComponent(fromUserId)}`;
       if (pathnameRef.current === route) return;
       const sender =
@@ -358,10 +384,11 @@ export function NotificationProvider({ children }: PropsWithChildren) {
       const senderName = stringValue(sender?.username) || "DeCave user";
       // Encrypted messages are decrypted on the phone; one this phone can't read yet says so.
       void dmE2ee.open(message as unknown as DirectMessage).then((opened) => {
+        if (!identityIsCurrent()) return;
         const text = opened.e2ee === "locked" || opened.e2ee === "failed" ? "🔒 Encrypted message" : opened.text;
         const preview = privacyText(settingsRef.current.notificationPreview, senderName, text, "dm");
         void notify(preview.title, preview.body, route);
-      });
+      }).catch(() => undefined);
       return;
     }
 
@@ -427,7 +454,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
       );
       void notify(preview.title, preview.body, route);
     }
-  }, [lastEvent, permissionState, user?.id]);
+  }, [lastEvent, lastEventIdentity, permissionState, user?.id, token]);
 
   const value = useMemo<NotificationContextValue>(
     () => ({ permissionState, requestPermission }),

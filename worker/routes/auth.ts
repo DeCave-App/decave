@@ -6,9 +6,9 @@ import { streamerMigrationExists } from "../streamer/index.ts";
 import { json, requestKey, bodyJson, authBaseUrlForEnvironment, escapeHtml } from "../lib/http";
 import { streamerHubsEnabled, streamerGiveawaysEnabled } from "../lib/streamer";
 import { validateEmail, validateUsername, validatePassword } from "../lib/validation";
-import { TERMS_VERSION, PRIVACY_VERSION, MINIMUM_SIGNUP_AGE } from "../../shared/legal-consent";
 import { deriveAgeProfile, saveAgeProfile, safetyProfileForClient, getSafetyProfile } from "../trust-safety";
 import { verifyTurnstile } from "../lib/turnstile";
+import { acceptsCurrentLegalTerms, PRIVACY_VERSION, TERMS_VERSION } from "../../shared/legal-consent";
 import { ensureOfficialHubSchema, joinOfficialHubs } from "../lib/official-hubs";
 import {
   createPublicUserId,
@@ -30,8 +30,6 @@ import {
   securityEvent,
   createAuthToken,
   normalizeSessionClient,
-  describeSessionDevice,
-  describeRequestCountry,
   accountAccessError,
   replaceSessionClientClass,
   createSession,
@@ -45,6 +43,10 @@ import {
   ensureQrLoginSchema,
   revokeAccountSessions,
   revokeSession,
+  currentPasswordThrottle,
+  describeSessionDevice,
+  describeRequestCountry,
+  requestCountryCode,
 } from "../lib/sessions";
 import { sendVerificationEmail, sendResetEmail, sendEmailChangeNotice } from "../lib/email";
 import {
@@ -82,11 +84,30 @@ type QrLoginChallengeRow = {
   requester_country?: string;
 };
 
-const SELF_DISABLE_REASON = "Self-disabled by account holder";
-const SELF_DELETE_REASON = "Self-service account deletion";
+// Transition for released apps up to 0.1.133, which predate the stricter
+// sign-up consent and QR approval requests. Remove both flags (and the legacy
+// branches they guard) once those apps are no longer in use.
+/** Apps up to 0.1.133 show a required Terms/Privacy checkbox but send no
+ * versioned consent: 0.1.132 sends nothing, 0.1.133 sends `acceptedTerms: true`. */
+const LEGACY_CONSENT_CLIENTS_ALLOWED = true;
+/** Recorded instead of a version string for those sign-ups: they never saw a versioned text. */
+const LEGACY_CONSENT_VERSION = "legacy-client-checkbox";
+/** 0.1.132 mobile apps approve QR sign-ins without `approved` or an MFA code. */
+const LEGACY_QR_APPROVAL_CLIENTS_ALLOWED = true;
+
+/** Sign-ins approved by QR are never "stay signed in": same as a password sign-in without it. */
 const SHORT_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
-/** Account holds the holder placed themselves, which a full sign-in lifts. */
+/** Forgot-password always answers the same, whether or not the account exists. */
+const FORGOT_PASSWORD_RESPONSE = {
+  success: true,
+  message: "If that verified email exists, a reset link has been sent.",
+};
+
+const SELF_DISABLE_REASON = "Self-disabled by account holder";
+const SELF_DELETE_REASON = "Self-service account deletion";
+
+/** Holds the account holder placed on their own account, which signing in again lifts. */
 type SelfServiceHolds = { disabled: boolean; deletion: boolean };
 
 function selfServiceHolds(user: UserRow): SelfServiceHolds {
@@ -100,7 +121,7 @@ function selfServiceHolds(user: UserRow): SelfServiceHolds {
   };
 }
 
-/** The user as it would look once its self-service holds are lifted (no DB write). */
+/** The user as it would look once its self-service holds are lifted (no write). */
 function withSelfServiceHoldsLifted(user: UserRow, holds: SelfServiceHolds): UserRow {
   return {
     ...user,
@@ -110,10 +131,10 @@ function withSelfServiceHoldsLifted(user: UserRow, holds: SelfServiceHolds): Use
 }
 
 /**
- * Lifts self-service holds. Call only after sign-in has fully succeeded
- * (password, plus the second factor when MFA is enabled). Each hold is cleared
- * only while it still carries the self-service reason, so an admin suspension
- * or deletion applied meanwhile is never lifted by signing in.
+ * Lifts self-service holds once sign-in has fully succeeded: the password for
+ * password-only accounts, and the second factor too when two-factor sign-in is
+ * on. Each hold is cleared only while it still carries the self-service
+ * reason, so an admin suspension or deletion applied meanwhile stays.
  */
 async function liftSelfServiceHolds(
   env: ApiContext["env"],
@@ -133,8 +154,7 @@ async function liftSelfServiceHolds(
   if (holds.deletion) {
     await env.DB.prepare(
       `UPDATE decave_users SET deleted_at=NULL,delete_after=NULL,deletion_reason=''
-       WHERE id=? AND deleted_at IS NOT NULL AND deletion_reason=? AND delete_after>?
-         AND erasure_started_at IS NULL AND erased_at IS NULL`,
+       WHERE id=? AND deleted_at IS NOT NULL AND deletion_reason=? AND delete_after>?`,
     )
       .bind(user.id, SELF_DELETE_REASON, nowIso())
       .run();
@@ -148,39 +168,6 @@ async function liftSelfServiceHolds(
   }
   await securityEvent(env, user.id, "account.self_reactivated_on_login", request);
   return latest;
-}
-
-const EMAIL_ACTION_JS = `(()=>{const root=document.querySelector("[data-email-action]");if(!root)return;const action=root.dataset.emailAction;const token=new URLSearchParams(location.hash.slice(1)).get("token")||"";history.replaceState(null,"",location.pathname+location.search);const form=root.querySelector("form");const status=root.querySelector("[role=status]");form.addEventListener("submit",async e=>{e.preventDefault();if(!token){status.textContent="This link is invalid or expired.";return}const button=form.querySelector("button");button.disabled=true;status.textContent="Working…";const body={token};if(action==="reset")body.password=form.elements.password.value;try{const path=action==="verify"?"/api/auth/verify-email":action==="secure"?"/api/auth/secure-account":"/api/auth/reset-password";const response=await fetch(path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body),credentials:"same-origin"});const result=await response.json();status.textContent=response.ok?(result.message||"Done. You can close this page."):(result.error||"This link is invalid or expired.");if(response.ok)form.remove()}catch{status.textContent="Could not complete this action. Try again."}finally{button.disabled=false}})})();`;
-
-function emailActionPage(action: "verify" | "secure" | "reset"): Response {
-  const title =
-    action === "verify" ? "Verify your email" : action === "secure" ? "Secure your account" : "Reset password";
-  const description =
-    action === "verify"
-      ? "Choose Verify email to confirm this address."
-      : action === "secure"
-        ? "Choose the button only if you want to sign out every device and secure your account."
-        : "Choose a new password to finish resetting your account.";
-  const password =
-    action === "reset"
-      ? '<label for="password">New password</label><input id="password" name="password" type="password" minlength="10" maxlength="128" required autocomplete="new-password" placeholder="10–128 characters" style="width:100%;padding:12px;box-sizing:border-box;border-radius:10px;border:1px solid #344663;background:#080d18;color:white">'
-      : "";
-  const button =
-    action === "verify"
-      ? "Verify email"
-      : action === "secure"
-        ? "Sign out everywhere and secure my account"
-        : "Set new password";
-  return new Response(
-    `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="referrer" content="no-referrer"><title>${title}</title></head><body style="margin:0;background:#080d18;color:#eef4ff;font-family:Arial;display:grid;place-items:center;min-height:100vh"><main data-email-action="${action}" style="width:min(420px,calc(100vw - 40px));background:#10182a;border:1px solid #273653;border-radius:16px;padding:28px;box-sizing:border-box"><h1 style="margin-top:0">${title}</h1><p>${description}</p><form>${password}<button type="submit" style="width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:#6fe4ff;color:#06111b;font-weight:800">${button}</button></form><p role="status" aria-live="polite"></p></main><script src="/api/auth/email-action.js" defer></script></body></html>`,
-    {
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": "no-store, private",
-        "referrer-policy": "no-referrer",
-      },
-    },
-  );
 }
 
 export async function handleSignInRoutes({ request, env, url, p, method }: ApiContext): Promise<Response | null> {
@@ -203,23 +190,35 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
     const email = validateEmail(body.email);
     const username = validateUsername(body.username);
     const password = validatePassword(body.password);
-    const ageProfile = deriveAgeProfile(body.birthDate, new Date());
+    const ageProfile = deriveAgeProfile(body.birthDate);
     if (!email) return json({ error: "Enter a valid email address" }, 400);
     if (!username) return json({ error: "Username must be 3-24 characters using letters, numbers, _, . or -" }, 400);
     if (!password) return json({ error: "Password must be 10-128 characters" }, 400);
-    if (!ageProfile)
-      return json({ error: `Enter a valid birth date to confirm you are ${MINIMUM_SIGNUP_AGE} or older.` }, 400);
+    if (!ageProfile) return json({ error: "Enter a valid birth date to confirm you are 18 or older." }, 400);
     if (ageProfile.ageStatus === "ineligible") {
       return json(
-        {
-          error: `DeCave accounts are available only to people aged ${MINIMUM_SIGNUP_AGE} or older.`,
-          code: "AGE_RESTRICTED",
-        },
+        { error: "DeCave accounts are available only to adults aged 18 or older.", code: "AGE_RESTRICTED" },
         403,
       );
     }
-    if (body.termsAccepted !== true || body.termsVersion !== TERMS_VERSION || body.privacyVersion !== PRIVACY_VERSION) {
-      return json({ error: "Review and accept the current Terms and Privacy Notice to create an account." }, 400);
+    // Old clients send none of the versioned consent fields (at most the old
+    // `acceptedTerms` flag, which must not be false); any versioned field means
+    // a current client, which must accept exactly the current versions.
+    const legacyConsent =
+      LEGACY_CONSENT_CLIENTS_ALLOWED &&
+      !("termsAccepted" in body) &&
+      !("termsVersion" in body) &&
+      !("privacyVersion" in body) &&
+      (!("acceptedTerms" in body) || body.acceptedTerms === true);
+    if (!legacyConsent && !acceptsCurrentLegalTerms(body)) {
+      return json(
+        {
+          error:
+            "Accept the current Terms of Service and Privacy Policy to create an account. If you already did, update DeCave and try again.",
+          code: "TERMS_NOT_ACCEPTED",
+        },
+        400,
+      );
     }
     if (!(await verifyTurnstile(request, env, body.turnstileToken, "register"))) {
       return json({ error: "Security check failed. Please try again." }, 403);
@@ -232,34 +231,38 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
       return json({ error: "Account setup is temporarily unavailable. Please try again." }, 503);
     }
 
-    const { salt, hash } = await hashPassword(password);
     const exists = await env.DB.prepare(
       "SELECT 1 FROM decave_users WHERE username = ? COLLATE NOCASE OR email_normalized = ? LIMIT 1",
     )
       .bind(username, email)
       .first();
-    const genericSignupResponse = () =>
-      json({ success: true, message: "If the details can be used, the next step will be sent to you." }, 202, {
-        "Cache-Control": "no-store, private",
-      });
-    if (exists) return genericSignupResponse();
+    if (exists) return json({ error: "Username or email is already registered" }, 409);
 
     const id = crypto.randomUUID();
     const publicId = createPublicUserId();
     const createdAt = nowIso();
-    const inserted = await env.DB.prepare(
+    const { salt, hash } = await hashPassword(password);
+    await env.DB.prepare(
+      // Privacy by default: a new account shares its game activity with friends only.
       `INSERT INTO decave_users
-         (id, public_id, username, password_salt, password_hash, created_at, email, email_normalized,
-          requires_email_verification, terms_accepted_at, terms_version, privacy_version, activity_visibility)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, 'friends')`,
+         (id, public_id, username, password_salt, password_hash, created_at, email, email_normalized, requires_email_verification, activity_visibility,
+          terms_accepted_at, terms_version, privacy_version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'friends', ?, ?, ?)`,
     )
-      .bind(id, publicId, username, salt, hash, createdAt, email, email, createdAt, TERMS_VERSION, PRIVACY_VERSION)
-      .run()
-      .catch((error: unknown) => {
-        if (/unique constraint|constraint failed/i.test(String(error))) return null;
-        throw error;
-      });
-    if (!inserted) return genericSignupResponse();
+      .bind(
+        id,
+        publicId,
+        username,
+        salt,
+        hash,
+        createdAt,
+        email,
+        email,
+        createdAt,
+        legacyConsent ? LEGACY_CONSENT_VERSION : TERMS_VERSION,
+        legacyConsent ? LEGACY_CONSENT_VERSION : PRIVACY_VERSION,
+      )
+      .run();
 
     try {
       await saveAgeProfile(env.DB, id, ageProfile, createdAt);
@@ -286,14 +289,13 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
         .bind(createdAt, id)
         .run();
       await securityEvent(env, id, "account.registered", request);
-      return genericSignupResponse();
-    }
-
-    // Keep the signup response indistinguishable when email delivery is not
-    // configured. Remove the pending account so the person can retry later.
-    if (!env.EMAIL) {
-      await env.DB.prepare("DELETE FROM decave_users WHERE id = ?").bind(id).run();
-      return genericSignupResponse();
+      return json(
+        {
+          verificationRequired: false,
+          message: "Local test account created. You can sign in now.",
+        },
+        201,
+      );
     }
 
     const verifyToken = await createAuthToken(env, id, "verify_email", 24 * 60 * 60 * 1000);
@@ -303,60 +305,77 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
     } catch (error) {
       console.error("Could not send verification email", error instanceof Error ? error.name : "UnknownError");
       await env.DB.prepare("DELETE FROM decave_users WHERE id = ?").bind(id).run();
-      return genericSignupResponse();
+      return json({ error: "We could not send the verification email. Please try again." }, 503);
     }
 
     await securityEvent(env, id, "account.registered", request);
-    return genericSignupResponse();
+    return json(
+      {
+        verificationRequired: true,
+        message: "Account created. Check your email to verify it before logging in.",
+      },
+      201,
+    );
   }
 
   if (method === "GET" && p === "/api/auth/verify-email") {
-    const legacyToken = url.searchParams.get("token");
-    if (legacyToken) {
-      return new Response(null, {
-        status: 302,
-        headers: {
-          location: `${url.origin}${url.pathname}#token=${encodeURIComponent(legacyToken)}`,
-          "cache-control": "no-store, private",
-          "referrer-policy": "no-referrer",
-        },
-      });
-    }
-    return emailActionPage("verify");
+    // Mail scanners routinely follow links. Move the credential into the URL
+    // fragment (which is not sent to this server) and wait for an explicit
+    // client POST before consuming it.
+    const raw = url.searchParams.get("token") ?? "";
+    const verifiedBaseUrl = authBaseUrlForEnvironment(env);
+    const fragment = raw && raw.length <= 2048 ? `#token=${encodeURIComponent(raw)}` : "";
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: `${verifiedBaseUrl}/${fragment}`,
+        "Cache-Control": "no-store, private",
+        "Referrer-Policy": "no-referrer",
+      },
+    });
   }
 
   if (method === "POST" && p === "/api/auth/verify-email") {
-    const raw = String((await bodyJson(request)).token ?? "");
-    if (!raw || raw.length > 2048) return json({ error: "Verification link is invalid or expired." }, 400);
+    const body = await bodyJson(request);
+    const raw = typeof body.token === "string" ? body.token : "";
+    const tokenDigest = raw.length > 0 && raw.length <= 2048 ? tokenHash(raw) : "";
     const at = nowIso();
-    const row = await env.DB.prepare(
-      `SELECT t.id,t.user_id,u.email,u.email_normalized FROM decave_auth_tokens t
-       JOIN decave_users u ON u.id=t.user_id
-       WHERE t.token_hash=? AND t.purpose='verify_email' AND t.consumed_at IS NULL AND t.expires_at>?
-       LIMIT 1`,
-    )
-      .bind(tokenHash(raw), at)
-      .first<{ id: string; user_id: string; email: string | null; email_normalized: string | null }>();
-    if (!row) return json({ error: "Verification link is invalid or expired." }, 400);
+    const row = tokenDigest
+      ? await env.DB.prepare(
+          `SELECT t.id,t.user_id,u.email,u.email_normalized FROM decave_auth_tokens t
+           JOIN decave_users u ON u.id=t.user_id
+           WHERE t.token_hash=? AND t.purpose='verify_email' AND t.consumed_at IS NULL AND t.expires_at>?
+           LIMIT 1`,
+        )
+          .bind(tokenDigest, at)
+          .first<{ id: string; user_id: string; email: string | null; email_normalized: string | null }>()
+      : null;
+
+    if (!row)
+      return json({ error: "Verification link invalid or expired." }, 400, { "Cache-Control": "no-store, private" });
+
+    // D1 batches are atomic. Both statements re-check the email and live token
+    // at the write boundary, so a racing address change, token replacement or
+    // expiry cannot leave a partially verified account.
     const results = await env.DB.batch([
       env.DB.prepare(
         `UPDATE decave_users SET email_verified_at=?,requires_email_verification=0
          WHERE id=? AND email IS ? AND email_normalized IS ?
-         AND EXISTS(SELECT 1 FROM decave_auth_tokens WHERE id=? AND token_hash=? AND purpose='verify_email'
-           AND consumed_at IS NULL AND expires_at>?)`,
-      ).bind(at, row.user_id, row.email, row.email_normalized, row.id, tokenHash(raw), at),
+           AND EXISTS(SELECT 1 FROM decave_auth_tokens WHERE id=? AND user_id=? AND token_hash=?
+             AND purpose='verify_email' AND consumed_at IS NULL AND expires_at>?)`,
+      ).bind(at, row.user_id, row.email, row.email_normalized, row.id, row.user_id, tokenDigest, at),
       env.DB.prepare(
-        `UPDATE decave_auth_tokens SET consumed_at=? WHERE changes()=1 AND id=? AND user_id=?
-         AND token_hash=? AND purpose='verify_email' AND consumed_at IS NULL AND expires_at>?`,
-      ).bind(at, row.id, row.user_id, tokenHash(raw), at),
+        `UPDATE decave_auth_tokens SET consumed_at=? WHERE changes()=1
+         AND id=? AND user_id=? AND token_hash=? AND purpose='verify_email'
+         AND consumed_at IS NULL AND expires_at>?`,
+      ).bind(at, row.id, row.user_id, tokenDigest, at),
     ]);
-    if (results.some((result) => Number(result.meta?.changes ?? 0) !== 1)) {
-      return json({ error: "Verification link is invalid or expired." }, 400);
+    if (!results.every((result) => Number(result.meta.changes) === 1)) {
+      return json({ error: "Verification link invalid or expired." }, 400, { "Cache-Control": "no-store, private" });
     }
+
     await securityEvent(env, row.user_id, "email.verified", request);
-    return json({ success: true, message: "Email verified. You can return to DeCave and sign in." }, 200, {
-      "Cache-Control": "no-store, private",
-    });
+    return json({ success: true }, 200, { "Cache-Control": "no-store, private" });
   }
 
   if (method === "POST" && p === "/api/auth/login") {
@@ -375,8 +394,10 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
     }
 
     const normalized = validateEmail(identifier);
+    // A second limiter keyed by the account (a hash of the normalized email,
+    // never stored) stops guessing one account's password from many addresses.
     const accountLimit = await env.AUTH_RATE_LIMITER.limit({
-      key: `login-account:${tokenHash((normalized ?? identifier.trim().toLowerCase()).slice(0, 320)).slice(0, 32)}`,
+      key: `login-account:${tokenHash((normalized ?? identifier.toLowerCase()).slice(0, 320)).slice(0, 32)}`,
     });
     if (!accountLimit.success) return json({ error: "Too many login attempts. Try again shortly." }, 429);
     let user = await env.DB.prepare(
@@ -389,8 +410,7 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
 
     // Always perform the password KDF, even when the identifier does not exist,
     // to reduce username/email enumeration through response-time differences.
-    // The dummy hash is a valid scrypt-v2 hash so unknown identifiers pay the
-    // same KDF cost as real (upgraded) accounts.
+    // The dummy is a current-version hash, so it costs the same as a real one.
     const passwordMatches = await verifyPassword(
       password,
       user?.password_salt ?? DUMMY_PASSWORD_SALT,
@@ -402,31 +422,23 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
     }
 
     if (passwordHashNeedsUpgrade(user.password_hash)) {
+      // Rewrite the hash with the current scrypt parameters. The update only
+      // applies while the stored hash is still the one just verified.
       const upgraded = await hashPassword(password);
       const result = await env.DB.prepare(
         "UPDATE decave_users SET password_salt=?,password_hash=? WHERE id=? AND password_salt=? AND password_hash=?",
       )
         .bind(upgraded.salt, upgraded.hash, user.id, user.password_salt, user.password_hash)
         .run();
-      if (Number(result.meta?.changes ?? 0) !== 1) {
-        const latest = await env.DB.prepare("SELECT * FROM decave_users WHERE id=? LIMIT 1")
-          .bind(user.id)
-          .first<UserRow>();
-        if (!latest || !(await verifyPassword(password, latest.password_salt, latest.password_hash))) {
-          await securityEvent(env, user.id, "login.failed", request, "credential_changed_during_login");
-          return json({ error: "Invalid email or password" }, 401);
-        }
-        user = latest;
-      } else {
+      if (Number(result.meta?.changes ?? 0) === 1) {
         user = { ...user, password_salt: upgraded.salt, password_hash: upgraded.hash };
       }
     }
 
     // A self-disabled account or a pending self-service deletion is lifted by
-    // signing in again, but only once sign-in fully succeeds: after the
-    // password for password-only accounts, and after the second factor for MFA
-    // accounts. Here we only check the account would be usable once lifted;
-    // any other hold (admin suspension, admin deletion, erasure) still blocks.
+    // signing in again, but only once sign-in fully succeeds (after the second
+    // factor when two-factor sign-in is on). Here we only check the account
+    // would be usable once lifted; any other hold still blocks.
     const holds = selfServiceHolds(user);
     const accountBlocked = accountAccessError(withSelfServiceHoldsLifted(user, holds));
     if (accountBlocked) {
@@ -464,7 +476,7 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
       });
     }
 
-    // Password-only account: the password was the full authentication.
+    // Password-only account: the password was the full sign-in.
     const liftedUser = await liftSelfServiceHolds(env, user, holds, request);
     if (liftedUser instanceof Response) return liftedUser;
     user = liftedUser;
@@ -548,9 +560,9 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
     if (!consumedChallenge) return json({ error: "MFA login challenge was already used. Sign in again." }, 409);
 
     // Password and second factor both verified: sign-in is complete.
-    const liftedUser = await liftSelfServiceHolds(env, user, ownerHolds, request);
-    if (liftedUser instanceof Response) return liftedUser;
-    user = liftedUser;
+    const ownerLifted = await liftSelfServiceHolds(env, user, ownerHolds, request);
+    if (ownerLifted instanceof Response) return ownerLifted;
+    user = ownerLifted;
 
     // DECAVE_PARITY_MFA_SESSION_CLASS
     await replaceSessionClientClass(env, user.id, sessionClient);
@@ -626,10 +638,10 @@ export async function handleSignInRoutes({ request, env, url, p, method }: ApiCo
     const consumedChallenge = await consumeChallenge();
     if (!consumedChallenge) return json({ error: "Sign-in check was already used. Sign in again." }, 409);
 
-    // Password and second factor (TOTP or recovery code) both verified.
-    const liftedUser = await liftSelfServiceHolds(env, user, userHolds, request);
-    if (liftedUser instanceof Response) return liftedUser;
-    user = liftedUser;
+    // Password and second factor (authenticator or recovery code) both verified.
+    const userLifted = await liftSelfServiceHolds(env, user, userHolds, request);
+    if (userLifted instanceof Response) return userLifted;
+    user = userLifted;
 
     await replaceSessionClientClass(env, user.id, sessionClient);
     const staySignedIn = challenge.stay_signed_in === 1;
@@ -747,9 +759,8 @@ export async function handleSessionRoutes({ request, env, p, method }: ApiContex
     await ensureSessionClientSchema(env);
     const body = await bodyJson(request);
     const id = typeof body.id === "string" ? body.id.trim() : "";
-    if (!id || !/^[0-9a-f]{32}$/.test(id)) return json({ error: "Choose a session to log out." }, 400);
-    // The id is opaque (derived from the token hash), so resolve it among the
-    // caller's own sessions. A raw token hash is no longer accepted.
+    if (!/^[0-9a-f]{32}$/.test(id)) return json({ error: "Choose a session to log out." }, 400);
+    // The id is opaque, so resolve it among the caller's own sessions only.
     const ownedRows = await env.DB.prepare("SELECT token_hash FROM decave_sessions WHERE user_id=?")
       .bind(user.id)
       .all<{ token_hash: string }>();
@@ -770,9 +781,10 @@ export async function handleSessionRoutes({ request, env, p, method }: ApiContex
     const id = crypto.randomUUID();
     const secret = createRawToken();
     const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
-    const client = normalizeSessionClient(body.client);
-    const country = request.headers.get("CF-IPCountry") ?? "";
-    const device = describeSessionDevice(request.headers.get("user-agent") ?? "", client, country);
+    // Shown to the approver before they approve: which app and browser or OS
+    // is asking, and the country Cloudflare places it in. No IP is stored.
+    const country = requestCountryCode(request);
+    const device = describeSessionDevice(request.headers.get("user-agent") ?? "", normalizeSessionClient(body?.client));
     await env.DB.prepare("DELETE FROM decave_qr_login_challenges WHERE expires_at<=? OR claimed_at IS NOT NULL")
       .bind(nowIso())
       .run();
@@ -781,7 +793,7 @@ export async function handleSessionRoutes({ request, env, p, method }: ApiContex
        (id,secret_hash,user_id,expires_at,approved_at,claimed_at,created_at,requester_device,requester_country)
        VALUES(?,?,NULL,?,NULL,NULL,?,?,?)`,
     )
-      .bind(id, tokenHash(secret), expiresAt, nowIso(), device, /^[A-Z]{2}$/.test(country) ? country : "")
+      .bind(id, tokenHash(secret), expiresAt, nowIso(), device, country)
       .run();
     return json(
       {
@@ -795,6 +807,7 @@ export async function handleSessionRoutes({ request, env, p, method }: ApiContex
     );
   }
 
+  // What the approver sees before approving a QR sign-in.
   if (method === "POST" && p === "/api/auth/qr/preview") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
@@ -803,7 +816,7 @@ export async function handleSessionRoutes({ request, env, p, method }: ApiContex
     const challengeId = typeof body.challengeId === "string" ? body.challengeId : "";
     const secret = typeof body.secret === "string" ? body.secret : "";
     const challenge = await env.DB.prepare(
-      `SELECT secret_hash,expires_at,approved_at,claimed_at,requester_device,requester_country
+      `SELECT id,secret_hash,expires_at,approved_at,claimed_at,requester_device,requester_country
        FROM decave_qr_login_challenges WHERE id=? LIMIT 1`,
     )
       .bind(challengeId)
@@ -819,11 +832,14 @@ export async function handleSessionRoutes({ request, env, p, method }: ApiContex
         "Cache-Control": "no-store, private",
       });
     }
+    const ownerFactor = user.platform_role === "owner" && (await platformOwnerMfaEnabled(env.DB, user.id));
+    const mfaRequired = ownerFactor || (await userMfaEnabled(env.DB, user.id));
     return json(
       {
-        deviceLabel: (challenge.requester_device ?? "Unknown device").slice(0, 80),
+        deviceLabel: (challenge.requester_device || "Unknown device").slice(0, 80),
         locationLabel: describeRequestCountry(challenge.requester_country ?? "") || "Unknown location",
         expiresAt: challenge.expires_at,
+        mfaRequired,
       },
       200,
       { "Cache-Control": "no-store, private" },
@@ -835,7 +851,17 @@ export async function handleSessionRoutes({ request, env, p, method }: ApiContex
     if (user instanceof Response) return user;
     await ensureQrLoginSchema(env);
     const body = await bodyJson(request);
-    if (body.approved !== true) return json({ error: "Confirm approval to continue." }, 400);
+    // Current apps show the requesting device first and send approved:true
+    // after an explicit confirm. Older apps approved straight from the scan.
+    // Older apps send no `approved` field; they are allowed only while the
+    // transition flag is on and only for approvers without MFA (checked below).
+    const legacyApproval = LEGACY_QR_APPROVAL_CLIENTS_ALLOWED && !("approved" in body);
+    if (body.approved !== true && !legacyApproval) {
+      return json(
+        { error: "Update DeCave to approve sign-ins with a QR code.", code: "QR_APPROVAL_UPDATE_REQUIRED" },
+        400,
+      );
+    }
     const limited = await env.AUTH_RATE_LIMITER.limit({ key: `qr-approve:${user.id}` });
     if (!limited.success) return json({ error: "Too many QR approvals. Try again shortly." }, 429);
     const challengeId = typeof body.challengeId === "string" ? body.challengeId : "";
@@ -853,23 +879,46 @@ export async function handleSessionRoutes({ request, env, p, method }: ApiContex
     )
       return json({ error: "This QR login code expired. Refresh it on the other device." }, 400);
     if (challenge.approved_at) return json({ error: "This QR login code was already approved." }, 409);
+    // Approving signs another device in, so it needs the second factor too.
     const mfaCode = typeof body.mfaCode === "string" ? body.mfaCode : "";
     const ownerFactor = user.platform_role === "owner" && (await platformOwnerMfaEnabled(env.DB, user.id));
     const regularFactor = !ownerFactor && (await userMfaEnabled(env.DB, user.id));
-    if (ownerFactor && !(await ownerVerifyMfaOrRecovery(env, user.id, mfaCode))) {
-      return json({ error: "Enter a current authenticator or recovery code to approve this login." }, 403);
+    // An old app cannot send a code, so an MFA account fails closed.
+    if (legacyApproval && (ownerFactor || regularFactor)) {
+      return json(
+        { error: "Update DeCave to approve sign-ins with a QR code.", code: "QR_APPROVAL_UPDATE_REQUIRED" },
+        400,
+      );
     }
-    if (regularFactor && !(await userVerifyMfaOrRecovery(env, user.id, mfaCode))) {
-      return json({ error: "Enter a current authenticator or recovery code to approve this login." }, 403);
+    if (
+      (ownerFactor && !(await ownerVerifyMfaOrRecovery(env, user.id, mfaCode))) ||
+      (regularFactor && !(await userVerifyMfaOrRecovery(env, user.id, mfaCode)))
+    ) {
+      await securityEvent(env, user.id, "login.qr_approve_mfa_failed", request);
+      return json(
+        { error: "Enter a current authenticator or recovery code to approve this login.", code: "MFA_REQUIRED" },
+        403,
+      );
     }
     const approved = await env.DB.prepare(
       `UPDATE decave_qr_login_challenges SET user_id=?,approved_at=?
-       WHERE id=? AND secret_hash=? AND expires_at>? AND approved_at IS NULL AND claimed_at IS NULL`,
+       WHERE id=? AND secret_hash=? AND expires_at>? AND approved_at IS NULL AND claimed_at IS NULL
+         AND EXISTS (SELECT 1 FROM decave_sessions WHERE token_hash=? AND user_id=? AND expires_at>?)`,
     )
-      .bind(user.id, nowIso(), challengeId, tokenHash(secret), nowIso())
+      .bind(
+        user.id,
+        nowIso(),
+        challengeId,
+        tokenHash(secret),
+        nowIso(),
+        tokenHash(rawSessionTokenFromRequest(request) ?? ""),
+        user.id,
+        nowIso(),
+      )
       .run();
-    if (Number(approved.meta?.changes ?? 0) !== 1)
+    if (Number(approved.meta?.changes ?? 0) !== 1) {
       return json({ error: "This QR login code expired or was already used." }, 409);
+    }
     await securityEvent(env, user.id, "login.qr_approved", request);
     return json({ success: true });
   }
@@ -900,18 +949,42 @@ export async function handleSessionRoutes({ request, env, p, method }: ApiContex
     if (!user) return json({ error: "The approving account is unavailable." }, 404);
     const blocked = accountAccessError(user);
     if (blocked) return blocked;
+    // One conditional write claims the challenge and stamps a fresh claim id;
+    // only the request whose claim id was written goes on to get a session.
+    const claimId = crypto.randomUUID();
     const claimed = await env.DB.prepare(
-      `UPDATE decave_qr_login_challenges SET claimed_at=?
-       WHERE id=? AND secret_hash=? AND user_id=? AND approved_at IS NOT NULL AND claimed_at IS NULL AND expires_at>?
-       RETURNING id`,
+      `UPDATE decave_qr_login_challenges SET claimed_at=?,claim_id=?
+       WHERE id=? AND secret_hash=? AND user_id=? AND approved_at IS NOT NULL
+         AND claimed_at IS NULL AND claim_id IS NULL AND expires_at>?
+       RETURNING claim_id`,
     )
-      .bind(nowIso(), challengeId, tokenHash(secret), user.id, nowIso())
-      .first<{ id: string }>();
-    if (!claimed) return json({ error: "This QR login code was already used or expired." }, 409);
+      .bind(nowIso(), claimId, challengeId, tokenHash(secret), user.id, nowIso())
+      .first<{ claim_id: string }>();
+    if (claimed?.claim_id !== claimId) return json({ error: "This QR login code was already used." }, 409);
     await replaceSessionClientClass(env, user.id, sessionClient);
-    // QR sign-in grants a short, non-persistent session (same as a password
-    // sign-in without "stay signed in"); the cookie is a session cookie.
-    const sessionToken = await createSession(env, user.id, SHORT_SESSION_TTL_MS);
+    // Short and non-persistent: the cookie below is a session cookie.
+    // Revocation may run after claim but before issuance. Check the grant at
+    // the session write, not only in an earlier JavaScript read.
+    const sessionToken = createRawToken();
+    const createdAt = nowIso();
+    const issued = await env.DB.prepare(
+      `INSERT INTO decave_sessions(token_hash,user_id,expires_at,created_at)
+       SELECT ?,user_id,?,? FROM decave_qr_login_challenges
+       WHERE id=? AND user_id=? AND claim_id=? AND expires_at>?`,
+    )
+      .bind(
+        tokenHash(sessionToken),
+        new Date(Date.now() + SHORT_SESSION_TTL_MS).toISOString(),
+        createdAt,
+        challengeId,
+        user.id,
+        claimId,
+        createdAt,
+      )
+      .run();
+    if (Number(issued.meta?.changes ?? 0) !== 1) {
+      return json({ error: "This QR login approval expired or was revoked." }, 409);
+    }
     await recordSessionClient(env, sessionToken, user.id, sessionClient, request);
     await noteSignInDevice(env, request, user, sessionClient);
     const wsToken = await createWsToken(env, user.id, sessionToken);
@@ -937,18 +1010,9 @@ export async function handlePasswordRoutes({
   method,
   ctx,
 }: ApiContext): Promise<Response | null> {
-  if (method === "GET" && p === "/api/auth/email-action.js") {
-    return new Response(EMAIL_ACTION_JS, {
-      headers: { "content-type": "application/javascript; charset=utf-8", "cache-control": "no-store" },
-    });
-  }
-
   if (method === "POST" && p === "/api/auth/add-email") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-
-    const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: `add-email:${user.id}` });
-    if (!limited.success) return json({ error: "Too many email change attempts. Please try again later." }, 429);
 
     const body = await bodyJson(request);
     if (!body) {
@@ -958,19 +1022,43 @@ export async function handlePasswordRoutes({
     if (!email) return json({ error: "Enter a canonical valid email address" }, 400);
     {
       const password = typeof body.password === "string" ? body.password : "";
+      const passwordThrottle = await currentPasswordThrottle(env, user.id);
+      if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(password, user.password_salt, user.password_hash))) {
         await securityEvent(env, user.id, "email.add_failed_password", request);
         return json({ error: "Current password is incorrect" }, 403);
       }
     }
-    const mfaCode = typeof body.mfaCode === "string" ? body.mfaCode : "";
-    const ownerFactor = user.platform_role === "owner" && (await platformOwnerMfaEnabled(env.DB, user.id));
-    const regularFactor = !ownerFactor && (await userMfaEnabled(env.DB, user.id));
-    if (ownerFactor && !(await ownerVerifyMfaOrRecovery(env, user.id, mfaCode))) {
-      return json({ error: "Enter a current authenticator or recovery code to change your email." }, 403);
-    }
-    if (regularFactor && !(await userVerifyMfaOrRecovery(env, user.id, mfaCode))) {
-      return json({ error: "Enter a current authenticator or recovery code to change your email." }, 403);
+    {
+      // With two-factor sign-in on (user TOTP or owner MFA), moving the account
+      // email also needs a fresh authenticator or recovery code, so a stolen
+      // session plus password cannot redirect account recovery. Apps released
+      // before this check never send mfaCode; they show this error verbatim.
+      const ownerFactor = user.platform_role === "owner" && (await platformOwnerMfaEnabled(env.DB, user.id));
+      const regularFactor = !ownerFactor && (await userMfaEnabled(env.DB, user.id));
+      if (ownerFactor || regularFactor) {
+        const mfaCode = typeof body.mfaCode === "string" ? body.mfaCode.trim() : "";
+        if (!mfaCode) {
+          return json(
+            {
+              error:
+                "Enter a code from your authenticator app or a recovery code to change your email. If you don't see a code field, update DeCave to change your email.",
+              code: "MFA_REQUIRED",
+            },
+            403,
+          );
+        }
+        const factor = ownerFactor
+          ? await ownerVerifyMfaOrRecovery(env, user.id, mfaCode)
+          : await userVerifyMfaOrRecovery(env, user.id, mfaCode);
+        if (!factor) {
+          await securityEvent(env, user.id, "email.add_failed_mfa", request);
+          return json(
+            { error: "That authenticator or recovery code is not valid. Try a current code.", code: "MFA_INVALID" },
+            403,
+          );
+        }
+      }
     }
 
     let verifyToken: string;
@@ -1014,13 +1102,13 @@ export async function handlePasswordRoutes({
     // The official Cloudflare always-pass Turnstile secret is used only in local dev.
     const isLocalDev = env.TURNSTILE_SECRET_KEY === "1x0000000000000000000000000000000AA";
     const authBaseUrl = authBaseUrlForEnvironment(env);
-    const localVerificationUrl = isLocalDev
-      ? `${authBaseUrl}/api/auth/verify-email#token=${encodeURIComponent(verifyToken)}`
-      : undefined;
+    const localVerificationUrl = isLocalDev ? `${authBaseUrl}/#token=${encodeURIComponent(verifyToken)}` : undefined;
 
-    if (user.email && user.email_verified_at && user.email.toLowerCase() !== email.toLowerCase()) {
+    if (user.email && user.email_verified_at && user.email_normalized !== email) {
+      // Tell the previous verified address. No links: the notice cannot undo
+      // or confirm anything, so forwarding it is harmless.
       try {
-        await sendEmailChangeNotice(env, user.email, user.username, email, authBaseUrl);
+        await sendEmailChangeNotice(env, user.email, user.username, email);
       } catch (error) {
         console.error("Could not send email change notice", error instanceof Error ? error.name : "UnknownError");
       }
@@ -1142,62 +1230,82 @@ export async function handlePasswordRoutes({
   // "This wasn't me" from a sign-in alert email. GET only shows a page with a
   // button (mail scanners follow links); the POST does the work.
   if (method === "GET" && p === "/api/auth/secure-account") {
-    const token = url.searchParams.get("token") ?? "";
-    if (token) {
-      return new Response(null, {
-        status: 302,
+    const token = url.searchParams.get("token") ?? ""; // Support links sent before tokens moved to fragments.
+    const page = (body: string) =>
+      new Response(
+        `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Secure your DeCave account</title></head><body style="margin:0;background:#080d18;color:#eef4ff;font-family:Arial;display:grid;place-items:center;min-height:100vh"><div style="width:min(460px,calc(100vw - 40px));background:#10182a;border:1px solid #273653;border-radius:16px;padding:28px;box-sizing:border-box">${body}<form method="post" action="/api/auth/secure-account" data-email-action="secure"><input id="secure-account-token" name="token" type="hidden" value="${escapeHtml(token)}"><button style="width:100%;margin-top:8px;padding:12px;border:0;border-radius:10px;background:#ff6b7d;color:#14060a;font-weight:800">Sign out everywhere and reset my password</button></form></div><script src="/api/auth/secure-account.js" defer></script></body></html>`,
+        {
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "no-store, private",
+            "referrer-policy": "no-referrer",
+          },
+        },
+      );
+    const row =
+      token.length > 0 && token.length <= 2048
+        ? await env.DB.prepare(
+            "SELECT device_label FROM decave_secure_account_tokens WHERE token_hash=? AND used_at IS NULL AND expires_at>? LIMIT 1",
+          )
+            .bind(tokenHash(token), nowIso())
+            .first<{ device_label: string }>()
+        : null;
+    if (!token) {
+      return page(
+        `<h1 style="margin-top:0">Secure your account</h1><p>Continuing will sign out every device, including yours, and email you a link to set a new password.</p>`,
+      );
+    }
+    if (!row)
+      return page(
+        `<h1 style="margin-top:0">Link expired</h1><p>This link was already used or is more than 7 days old. If you think someone else is using your account, open DeCave, go to Settings &gt; Account &amp; security and choose Sign out all devices, then change your password.</p>`,
+      );
+    return page(
+      `<h1 style="margin-top:0">Secure your account</h1><p>Someone signed in on <strong>${escapeHtml(row.device_label)}</strong>.</p><p>Continuing will sign out every device, including yours, and email you a link to set a new password.</p>`,
+    );
+  }
+
+  if (method === "GET" && p === "/api/auth/secure-account.js") {
+    return new Response(
+      `const token = new URLSearchParams(location.hash.slice(1)).get("token") || "";\nif (location.hash) history.replaceState(history.state, "", location.pathname + location.search);\nconst input = document.getElementById("secure-account-token");\nif (input && token) input.value = token;\nconst form = document.querySelector('form[data-email-action="secure"]');\nconst button = form && form.querySelector("button");\nif (button && !input?.value) { button.disabled = true; button.textContent = "Invalid or expired link"; }`,
+      {
         headers: {
-          location: `${url.origin}${url.pathname}#token=${encodeURIComponent(token)}`,
+          "content-type": "application/javascript; charset=utf-8",
           "cache-control": "no-store, private",
           "referrer-policy": "no-referrer",
         },
-      });
-    }
-    return emailActionPage("secure");
+      },
+    );
   }
 
   if (method === "POST" && (p === "/api/auth/secure-account" || p === "/api/auth/secure-account-form")) {
-    const apiAction = p === "/api/auth/secure-account";
     const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: requestKey(request, "secure-account") });
     if (!limited.success) return json({ error: "Too many attempts. Please try again later." }, 429);
-    const raw = apiAction
-      ? String((await bodyJson(request)).token ?? "")
-      : String((await request.formData()).get("token") ?? "");
+    const submitted = request.headers.get("content-type")?.includes("application/json")
+      ? await bodyJson(request)
+      : Object.fromEntries(await request.formData());
+    const raw = typeof submitted.token === "string" ? submitted.token : "";
     const now = nowIso();
-    const row =
-      raw && raw.length <= 2048
-        ? await env.DB.prepare(
-            "SELECT token_hash,user_id FROM decave_secure_account_tokens WHERE token_hash=? AND used_at IS NULL AND expires_at>? LIMIT 1",
-          )
-            .bind(tokenHash(raw), now)
-            .first<{ token_hash: string; user_id: string }>()
-        : null;
     const done = (body: string, status = 200) =>
-      apiAction
-        ? json(
-            {
-              success: status < 400,
-              message: body
-                .replace(/<[^>]*>/g, " ")
-                .replace(/\s+/g, " ")
-                .trim(),
-            },
-            status,
-            { "Cache-Control": "no-store, private" },
-          )
-        : new Response(
-            `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>DeCave account secured</title></head><body style="margin:0;background:#080d18;color:#eef4ff;font-family:Arial;display:grid;place-items:center;min-height:100vh"><div style="width:min(460px,calc(100vw - 40px));background:#10182a;border:1px solid #273653;border-radius:16px;padding:28px;box-sizing:border-box">${body}</div></body></html>`,
-            { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } },
-          );
+      new Response(
+        `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>DeCave account secured</title></head><body style="margin:0;background:#080d18;color:#eef4ff;font-family:Arial;display:grid;place-items:center;min-height:100vh"><div style="width:min(460px,calc(100vw - 40px));background:#10182a;border:1px solid #273653;border-radius:16px;padding:28px;box-sizing:border-box">${body}</div></body></html>`,
+        {
+          status,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "no-store, private",
+            "referrer-policy": "no-referrer",
+          },
+        },
+      );
+    if (!raw || raw.length > 2048)
+      return done(`<h1 style="margin-top:0">Link expired</h1><p>This link was already used or is too old.</p>`, 400);
+    const row = await env.DB.prepare(
+      "UPDATE decave_secure_account_tokens SET used_at=? WHERE token_hash=? AND used_at IS NULL AND expires_at>? RETURNING user_id",
+    )
+      .bind(now, tokenHash(raw), now)
+      .first<{ user_id: string }>();
     if (!row)
       return done(`<h1 style="margin-top:0">Link expired</h1><p>This link was already used or is too old.</p>`, 400);
-    const spent = await env.DB.prepare(
-      "UPDATE decave_secure_account_tokens SET used_at=? WHERE token_hash=? AND used_at IS NULL AND expires_at>?",
-    )
-      .bind(now, row.token_hash, now)
-      .run();
-    if (Number(spent.meta?.changes ?? 0) !== 1)
-      return done(`<h1 style="margin-top:0">Already done</h1><p>This link was just used.</p>`, 409);
     const user = await env.DB.prepare("SELECT * FROM decave_users WHERE id=? LIMIT 1")
       .bind(row.user_id)
       .first<UserRow>();
@@ -1221,13 +1329,14 @@ export async function handlePasswordRoutes({
       }
     }
     await securityEvent(env, user.id, "account.secured_from_alert", request);
-    const message = `Every device has been signed out. ${mailed ? "We emailed you a link to set a new password. It works for 30 minutes." : "Open DeCave and choose Forgot password to set a new one."} After that, turn on two-factor sign-in in Settings > Account & security.`;
-    return done(`<h1 style="margin-top:0">Account secured</h1><p>${escapeHtml(message)}</p>`);
+    return done(
+      `<h1 style="margin-top:0">Account secured</h1><p>Every device has been signed out.</p><p>${mailed ? "We emailed you a link to set a new password. It works for 30 minutes." : "Open DeCave and choose Forgot password to set a new one."}</p><p style="color:#9fb0c8">After that, turn on two-factor sign-in in Settings &gt; Account &amp; security so a password alone can't get into your account.</p>`,
+    );
   }
 
   if (method === "POST" && p === "/api/auth/forgot-password") {
     const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: requestKey(request, "forgot") });
-    if (!limited.success) return json({ success: true });
+    if (!limited.success) return json(FORGOT_PASSWORD_RESPONSE, 200, { "Cache-Control": "no-store, private" });
 
     const body = await bodyJson(request);
     const email = validateEmail(body.email);
@@ -1248,8 +1357,7 @@ export async function handlePasswordRoutes({
             .bind(nowIso(), user.id)
             .run();
           const resetToken = await createAuthToken(env, user.id, "reset_password", 30 * 60000);
-          const authBaseUrl = authBaseUrlForEnvironment(env);
-          await sendResetEmail(env, email, user.username, resetToken, authBaseUrl);
+          await sendResetEmail(env, email, user.username, resetToken, authBaseUrlForEnvironment(env));
           await securityEvent(env, user.id, "password.reset_requested", request);
         } catch (error) {
           console.error("Could not send password reset email", error instanceof Error ? error.name : "UnknownError");
@@ -1258,95 +1366,60 @@ export async function handlePasswordRoutes({
       if (ctx) ctx.waitUntil(sendReset());
       else await sendReset();
     }
-    return json({ success: true, message: "If that verified email exists, a reset link has been sent." });
+    return json(FORGOT_PASSWORD_RESPONSE, 200, { "Cache-Control": "no-store, private" });
   }
 
-  if (method === "GET" && (p === "/api/auth/reset" || p === "/api/auth/reset-password")) {
-    const token = url.searchParams.get("token");
-    if (token) {
-      return new Response(null, {
-        status: 302,
+  if (method === "GET" && p === "/api/auth/reset") {
+    const token = url.searchParams.get("token") ?? "";
+    const escaped = token.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    return new Response(
+      `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Reset DeCave password</title></head><body style="margin:0;background:#080d18;color:#eef4ff;font-family:Arial;display:grid;place-items:center;min-height:100vh"><form method="post" action="/api/auth/reset-password-form" style="width:min(420px,calc(100vw - 40px));background:#10182a;border:1px solid #273653;border-radius:16px;padding:28px;box-sizing:border-box"><h1 style="margin-top:0">Reset password</h1><input type="hidden" name="token" value="${escaped}"><input name="password" type="password" minlength="10" maxlength="128" required placeholder="New password" style="width:100%;padding:12px;box-sizing:border-box;border-radius:10px;border:1px solid #344663;background:#080d18;color:white"><button style="width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:#6fe4ff;color:#06111b;font-weight:800">Set new password</button></form></body></html>`,
+      {
         headers: {
-          location: `${url.origin}/api/auth/reset-password#token=${encodeURIComponent(token)}`,
+          "content-type": "text/html; charset=utf-8",
           "cache-control": "no-store, private",
           "referrer-policy": "no-referrer",
         },
-      });
-    }
-    if (p === "/api/auth/reset") {
-      return new Response(null, {
-        status: 302,
-        headers: { location: `${url.origin}/api/auth/reset-password`, "cache-control": "no-store" },
-      });
-    }
-    return emailActionPage("reset");
+      },
+    );
   }
 
-  if (method === "POST" && (p === "/api/auth/reset-password" || p === "/api/auth/reset-password-form")) {
-    const apiAction = p === "/api/auth/reset-password";
-    const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: requestKey(request, "reset-password") });
+  // Opening the emailed link (GET) only shows the form; mail scanners that
+  // follow links never spend the token. Only the POST below consumes it.
+  if (method === "POST" && p === "/api/auth/reset-password-form") {
+    const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: requestKey(request, "reset-password-form") });
     if (!limited.success) return json({ error: "Too many reset attempts. Please try again later." }, 429);
-    const body = apiAction ? await bodyJson(request) : Object.fromEntries(await (await request.formData()).entries());
-    const raw = String(body.token ?? "");
-    const password = validatePassword(body.password);
-    if (!raw || !password) return json({ error: "Invalid reset request" }, 400);
+    const form = await request.formData();
+    const raw = String(form.get("token") ?? "");
+    const password = validatePassword(form.get("password"));
+    if (!raw || raw.length > 2048 || !password) return json({ error: "Invalid reset request" }, 400);
 
-    const row = await env.DB.prepare(
-      `SELECT id,user_id FROM decave_auth_tokens
-       WHERE token_hash=? AND purpose='reset_password' AND consumed_at IS NULL AND expires_at>?
-       LIMIT 1`,
-    )
-      .bind(tokenHash(raw), nowIso())
-      .first<{ id: string; user_id: string }>();
-    if (!row) return json({ error: "Reset link is invalid or expired" }, 400);
-
+    // Claim the token in one conditional write before doing anything else, so
+    // two submissions of the same link can never both set a password.
     const { salt, hash } = await hashPassword(password);
     const claimId = crypto.randomUUID();
     const at = nowIso();
-    const results = await env.DB.batch([
-      env.DB.prepare(
-        `UPDATE decave_auth_tokens SET claim_id=?
-         WHERE id=? AND purpose='reset_password' AND consumed_at IS NULL AND claim_id IS NULL AND expires_at>?`,
-      ).bind(claimId, row.id, at),
+    const row = await env.DB.prepare(
+      `UPDATE decave_auth_tokens SET consumed_at=?,claim_id=?
+       WHERE token_hash=? AND purpose='reset_password' AND consumed_at IS NULL AND claim_id IS NULL AND expires_at>?
+       RETURNING id,user_id`,
+    )
+      .bind(at, claimId, tokenHash(raw), at)
+      .first<{ id: string; user_id: string }>();
+    if (!row) return json({ error: "Reset link is invalid or expired" }, 400);
+
+    await env.DB.batch([
       env.DB.prepare(
         `UPDATE decave_users SET password_salt=?,password_hash=?,must_reset_password=0
-         WHERE id=? AND EXISTS(SELECT 1 FROM decave_auth_tokens WHERE id=? AND claim_id=?
-           AND purpose='reset_password' AND consumed_at IS NULL AND expires_at>?)`,
-      ).bind(salt, hash, row.user_id, row.id, claimId, at),
-      env.DB.prepare(
-        `UPDATE decave_auth_tokens SET consumed_at=? WHERE changes()=1 AND id=? AND claim_id=?
-         AND consumed_at IS NULL AND expires_at>?
-         AND EXISTS(SELECT 1 FROM decave_users WHERE id=? AND password_salt=? AND password_hash=?)`,
-      ).bind(at, row.id, claimId, at, row.user_id, salt, hash),
-      env.DB.prepare(
-        `DELETE FROM decave_sessions WHERE user_id=? AND EXISTS(SELECT 1 FROM decave_auth_tokens
-         WHERE id=? AND claim_id=? AND consumed_at=?)`,
-      ).bind(row.user_id, row.id, claimId, at),
-      env.DB.prepare(
-        `DELETE FROM decave_ws_tokens WHERE user_id=? AND EXISTS(SELECT 1 FROM decave_auth_tokens
-         WHERE id=? AND claim_id=? AND consumed_at=?)`,
-      ).bind(row.user_id, row.id, claimId, at),
-      env.DB.prepare(
-        `DELETE FROM decave_owner_reauth WHERE user_id=? AND EXISTS(SELECT 1 FROM decave_auth_tokens
-         WHERE id=? AND claim_id=? AND consumed_at=?)`,
-      ).bind(row.user_id, row.id, claimId, at),
-      env.DB.prepare(
-        `DELETE FROM decave_owner_login_challenges WHERE user_id=? AND EXISTS(SELECT 1 FROM decave_auth_tokens
-         WHERE id=? AND claim_id=? AND consumed_at=?)`,
-      ).bind(row.user_id, row.id, claimId, at),
-      env.DB.prepare(
-        `UPDATE decave_auth_tokens SET claim_id=NULL WHERE id=? AND claim_id=? AND consumed_at IS NULL`,
-      ).bind(row.id, claimId),
+         WHERE id=? AND EXISTS(SELECT 1 FROM decave_auth_tokens WHERE id=? AND claim_id=?)`,
+      ).bind(salt, hash, row.user_id, row.id, claimId),
+      env.DB.prepare("DELETE FROM decave_sessions WHERE user_id=?").bind(row.user_id),
+      env.DB.prepare("DELETE FROM decave_ws_tokens WHERE user_id=?").bind(row.user_id),
+      env.DB.prepare("DELETE FROM decave_owner_reauth WHERE user_id=?").bind(row.user_id),
+      env.DB.prepare("DELETE FROM decave_owner_login_challenges WHERE user_id=?").bind(row.user_id),
     ]);
-    if (results.slice(0, 3).some((result) => Number(result.meta?.changes ?? 0) !== 1)) {
-      return json({ error: "Reset link is invalid or expired" }, 400);
-    }
     await revokeAccountSessions(env, row.user_id, "password_reset");
     await securityEvent(env, row.user_id, "password.reset_completed", request);
-    if (apiAction)
-      return json({ success: true, message: "Password updated. All previous sessions were signed out." }, 200, {
-        "Cache-Control": "no-store, private",
-      });
     return new Response(
       `<!doctype html><meta charset="utf-8"><title>Password changed</title><body style="background:#080d18;color:#eef4ff;font-family:Arial;padding:40px"><h1>Password updated</h1><p>All previous sessions were signed out.</p><p><a href="/" style="color:#63dfff">Return to DeCave</a></p></body>`,
       { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store, private" } },

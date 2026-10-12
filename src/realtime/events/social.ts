@@ -17,6 +17,7 @@ import type {
   UiSoundEvent,
 } from "../../app/types";
 import type { RealtimeFrame } from "../connection";
+import { restoreDraftIfUnchanged, type PendingSocialMessage } from "../../app/actions/social-message-recovery";
 
 export type SocialEventContext = {
   currentUser: AccountUser;
@@ -31,9 +32,13 @@ export type SocialEventContext = {
   groupChats: GroupChat[];
   setActiveGroupChat: Dispatch<SetStateAction<GroupChat | null>>;
   setGroupMessages: Dispatch<SetStateAction<GroupChatMessage[]>>;
+  setGroupDrafts: Dispatch<SetStateAction<Record<string, string>>>;
+  setGroupInput: Dispatch<SetStateAction<string>>;
   setGroupError: Dispatch<SetStateAction<string>>;
   setShowGroupMembers: Dispatch<SetStateAction<boolean>>;
   setDmMessages: Dispatch<SetStateAction<DirectMessage[]>>;
+  setDmDrafts: Dispatch<SetStateAction<Record<string, string>>>;
+  setDmInput: Dispatch<SetStateAction<string>>;
   setDmError: Dispatch<SetStateAction<string>>;
   setDmUnread: Dispatch<SetStateAction<Record<string, number>>>;
   setDmNotice: Dispatch<SetStateAction<DmNotice | null>>;
@@ -43,6 +48,9 @@ export type SocialEventContext = {
   mutedUserIdsRef: MutableRefObject<Set<string>>;
   activeDmUserRef: MutableRefObject<SocialUser | null>;
   activeGroupChatRef: MutableRefObject<GroupChat | null>;
+  pendingSocialMessagesRef: MutableRefObject<Map<string, PendingSocialMessage>>;
+  dmDraftRevisionRef: MutableRefObject<Record<string, number>>;
+  groupDraftRevisionRef: MutableRefObject<Record<string, number>>;
   dmNoticeTimerRef: MutableRefObject<number | null>;
   notificationPreviewMode: () => NotificationPreview;
   notificationPreviewText: (
@@ -69,10 +77,12 @@ export type SocialEventContext = {
     handleEvent: (data: RealtimeFrame) => boolean;
     open: (message: DirectMessage) => Promise<DirectMessage>;
     retryFrame: (error: RealtimeFrame) => Promise<Record<string, unknown> | null>;
-    settle: (messageId: string, peerId: string) => void;
+    settle: (messageId: string, peerId: string, clientMessageId?: unknown) => void;
+    discardDmSend: (clientMessageId: unknown) => void;
     openGroup: (message: GroupChatMessage, groupId: string) => Promise<GroupChatMessage>;
     retryGroupFrame: (error: RealtimeFrame) => Promise<Record<string, unknown> | null>;
-    settleGroup: (messageId: string, groupId: string) => void;
+    settleGroup: (messageId: string, groupId: string, clientMessageId?: unknown) => void;
+    discardGroupSend: (clientMessageId: unknown) => void;
   };
 };
 
@@ -91,9 +101,13 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
     groupChats,
     setActiveGroupChat,
     setGroupMessages,
+    setGroupDrafts,
+    setGroupInput,
     setGroupError,
     setShowGroupMembers,
     setDmMessages,
+    setDmDrafts,
+    setDmInput,
     setDmError,
     setDmUnread,
     setDmNotice,
@@ -103,6 +117,9 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
     mutedUserIdsRef,
     activeDmUserRef,
     activeGroupChatRef,
+    pendingSocialMessagesRef,
+    dmDraftRevisionRef,
+    groupDraftRevisionRef,
     dmNoticeTimerRef,
     notificationPreviewMode,
     notificationPreviewText,
@@ -115,6 +132,107 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
     sendSocket,
     e2ee,
   } = context;
+
+  const acknowledgePendingSend = (
+    clientMessageId: unknown,
+    senderUserId: string | undefined,
+    kind: "dm" | "group",
+    conversationId: string,
+  ) => {
+    if (typeof clientMessageId !== "string" || senderUserId !== currentUser?.id) return;
+    const pending = pendingSocialMessagesRef.current.get(clientMessageId);
+    if (
+      pending?.senderUserId === currentUser.id &&
+      pending.kind === kind &&
+      pending.conversationId === conversationId
+    ) {
+      pendingSocialMessagesRef.current.delete(clientMessageId);
+    }
+  };
+
+  const restorePendingSend = (clientMessageId: unknown, kind: "dm" | "group", conversationId: unknown) => {
+    if (typeof clientMessageId !== "string") return;
+    const pending = pendingSocialMessagesRef.current.get(clientMessageId);
+    if (
+      !pending ||
+      pending.kind !== kind ||
+      pending.senderUserId !== currentUser?.id ||
+      (conversationId !== undefined && conversationId !== pending.conversationId)
+    ) {
+      return;
+    }
+    pendingSocialMessagesRef.current.delete(clientMessageId);
+
+    if (kind === "dm") {
+      const userId = pending.conversationId;
+      setDmDrafts((current) => {
+        const result = restoreDraftIfUnchanged(
+          current[userId],
+          dmDraftRevisionRef.current[userId],
+          pending.draftRevision,
+          pending.text,
+        );
+        return result.restored ? { ...current, [userId]: result.value } : current;
+      });
+      if (activeDmUserRef.current?.id === userId) {
+        setDmInput((current) => {
+          const result = restoreDraftIfUnchanged(
+            current,
+            dmDraftRevisionRef.current[userId],
+            pending.draftRevision,
+            pending.text,
+          );
+          return result.restored ? result.value : current;
+        });
+      }
+      return;
+    }
+
+    const groupId = pending.conversationId;
+    setGroupDrafts((current) => {
+      const result = restoreDraftIfUnchanged(
+        current[groupId],
+        groupDraftRevisionRef.current[groupId],
+        pending.draftRevision,
+        pending.text,
+      );
+      return result.restored ? { ...current, [groupId]: result.value } : current;
+    });
+    if (activeGroupChatRef.current?.id === groupId) {
+      setGroupInput((current) => {
+        const result = restoreDraftIfUnchanged(
+          current,
+          groupDraftRevisionRef.current[groupId],
+          pending.draftRevision,
+          pending.text,
+        );
+        return result.restored ? result.value : current;
+      });
+    }
+  };
+
+  const rekeyPendingSend = (
+    oldClientMessageId: unknown,
+    newClientMessageId: unknown,
+    kind: "dm" | "group",
+    conversationId: string,
+  ) => {
+    if (typeof oldClientMessageId !== "string" || typeof newClientMessageId !== "string") return false;
+    const pending = pendingSocialMessagesRef.current.get(oldClientMessageId);
+    if (
+      !pending ||
+      pending.kind !== kind ||
+      pending.senderUserId !== currentUser?.id ||
+      pending.conversationId !== conversationId
+    ) {
+      return false;
+    }
+    if (oldClientMessageId !== newClientMessageId && pendingSocialMessagesRef.current.has(newClientMessageId))
+      return false;
+    pendingSocialMessagesRef.current.delete(oldClientMessageId);
+    pendingSocialMessagesRef.current.set(newClientMessageId, { ...pending, clientMessageId: newClientMessageId });
+    return true;
+  };
 
   if (e2ee?.handleEvent(data)) return true;
 
@@ -149,8 +267,9 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
 
   function handleDirectMessage(message: DirectMessage) {
     const partnerId = message.fromUserId === currentUser?.id ? message.toUserId : message.fromUserId;
+    acknowledgePendingSend(data.clientMessageId, message.fromUserId, "dm", partnerId);
     const isIncoming = message.fromUserId !== currentUser?.id;
-    if (!isIncoming) e2ee?.settle(message.id, partnerId);
+    if (!isIncoming) e2ee?.settle(message.id, partnerId, data.clientMessageId);
 
     void loadDmConversations();
 
@@ -228,15 +347,35 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
     const fallback = typeof data.message === "string" ? data.message : "Private message failed.";
     // A stale key is fixed by sealing again with fresh keys, once.
     if (!e2ee) {
+      restorePendingSend(data.clientMessageId, "dm", data.targetUserId);
       setDmError(fallback);
       return true;
     }
     void e2ee
       .retryFrame(data)
       .then((frame) => {
-        if (!frame || !sendSocket(frame)) setDmError(fallback);
+        const retryClientMessageId = frame?.clientMessageId;
+        const hasTrackedDraft =
+          typeof data.clientMessageId === "string" && pendingSocialMessagesRef.current.has(data.clientMessageId);
+        const rekeyed = Boolean(
+          frame &&
+          typeof data.targetUserId === "string" &&
+          rekeyPendingSend(data.clientMessageId, retryClientMessageId, "dm", data.targetUserId),
+        );
+        // Attachments use the E2EE send registry for retry metadata, but do not
+        // participate in composer draft recovery. The server-echoed ID plus the
+        // E2EE registry still identify that exact send, so allow that retry too.
+        const untrackedSend =
+          !hasTrackedDraft && typeof data.clientMessageId === "string" && typeof data.targetUserId === "string";
+        if ((rekeyed || untrackedSend) && frame && sendSocket(frame)) return;
+        if (typeof retryClientMessageId === "string") e2ee?.discardDmSend(retryClientMessageId);
+        restorePendingSend(rekeyed ? retryClientMessageId : data.clientMessageId, "dm", data.targetUserId);
+        setDmError(fallback);
       })
-      .catch((error: unknown) => setDmError(error instanceof Error ? error.message : fallback));
+      .catch((error: unknown) => {
+        restorePendingSend(data.clientMessageId, "dm", data.targetUserId);
+        setDmError(error instanceof Error ? error.message : fallback);
+      });
     return true;
   }
 
@@ -250,7 +389,8 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
   }
 
   function handleGroupMessage(message: GroupChatMessage, groupId: string) {
-    if (message.fromUserId === currentUser?.id) e2ee?.settleGroup(message.id, groupId);
+    acknowledgePendingSend(data.clientMessageId, message.fromUserId, "group", groupId);
+    if (message.fromUserId === currentUser?.id) e2ee?.settleGroup(message.id, groupId, data.clientMessageId);
     void loadGroupChats();
 
     if (activeGroupChatRef.current?.id === groupId) {
@@ -299,15 +439,28 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
     const fallback = typeof data.message === "string" ? data.message : "Group message failed.";
     // Keys or members changed since the message was sealed: seal again, once.
     if (!e2ee) {
+      restorePendingSend(data.clientMessageId, "group", data.groupId);
       setGroupError(fallback);
       return true;
     }
     void e2ee
       .retryGroupFrame(data)
       .then((frame) => {
-        if (!frame || !sendSocket(frame)) setGroupError(fallback);
+        const retryClientMessageId = frame?.clientMessageId;
+        const rekeyed = Boolean(
+          frame &&
+          typeof data.groupId === "string" &&
+          rekeyPendingSend(data.clientMessageId, retryClientMessageId, "group", data.groupId),
+        );
+        if (rekeyed && frame && sendSocket(frame)) return;
+        if (typeof retryClientMessageId === "string") e2ee?.discardGroupSend(retryClientMessageId);
+        restorePendingSend(rekeyed ? retryClientMessageId : data.clientMessageId, "group", data.groupId);
+        setGroupError(fallback);
       })
-      .catch((error: unknown) => setGroupError(error instanceof Error ? error.message : fallback));
+      .catch((error: unknown) => {
+        restorePendingSend(data.clientMessageId, "group", data.groupId);
+        setGroupError(error instanceof Error ? error.message : fallback);
+      });
     return true;
   }
 

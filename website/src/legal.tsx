@@ -2,7 +2,6 @@
 // generates docs/legal/PRIVACY-POLICY.md); the terms mirror
 // docs/legal/TERMS-OF-SERVICE.md, keep them in sync when either changes.
 
-import { ShieldAlert } from "lucide-react";
 import { PageLayout } from "./layout";
 import { PRIVACY_POLICY, type PolicyBlock } from "./privacy-policy";
 
@@ -77,10 +76,6 @@ export function PrivacyPage() {
       lead="What DeCave collects, why, who receives it, how long we keep it and your rights."
       updated={`Effective ${policy.effective}`}
     >
-      <div className="disclosure-banner">
-        <ShieldAlert size={19} />
-        <span>{policy.draftNote}</span>
-      </div>
       <div className="info-columns">
         <aside className="info-aside">
           <span>On this page</span>
@@ -118,12 +113,8 @@ export function TermsPage() {
       eyebrow="Terms of service"
       title={<>Use the cave.<br /><span>Keep it playable.</span></>}
       lead="The rules for accounts, content, communities, safety, release boundaries, and the current alpha service."
-      updated="Effective 6 Oct 2026"
+      updated="Effective 9 Oct 2026"
     >
-      <div className="disclosure-banner">
-        <ShieldAlert size={19} />
-        <span><strong>Implementation draft:</strong> replace the address, governing law, liability cap, arbitration, copyright-agent, and market-specific terms with counsel-approved details before publication.</span>
-      </div>
       <div className="info-columns">
         <aside className="info-aside">
           <span>On this page</span>
@@ -186,7 +177,7 @@ export function TermsPage() {
           <section id="terms-ip">
             <h2>8. DeCave intellectual property</h2>
             <p>The Service, software, visual design, logos, names, documentation, and other DeCave materials belong to DeCave or its licensors. Subject to these Terms, we grant you a limited, revocable, non-exclusive, non-transferable license for personal or authorized community use. Do not copy, sell, sublicense, modify, distribute, or create derivative works from DeCave materials except as allowed by law or in writing.</p>
-            <p>Rights complaints can be sent to <a href="mailto:security@de-cave.com">security@de-cave.com</a>. A jurisdiction-specific copyright-agent process will be added before relying on one.</p>
+            <p>Rights complaints can be sent to <a href="mailto:security@example.invalid">security@example.invalid</a>.</p>
           </section>
 
           <section id="terms-ending">
@@ -198,21 +189,20 @@ export function TermsPage() {
           <section id="terms-disclaimers">
             <h2>10. Disclaimers and liability</h2>
             <p>To the maximum extent permitted by law, the Service is provided “as is” and “as available.” DeCave does not promise uninterrupted availability, error-free operation, delivery, recoverability, privacy, preservation, or that moderation will identify every harmful act. We disclaim warranties that cannot lawfully be excluded only to the extent allowed by law.</p>
-            <p>To the maximum extent permitted by law, DeCave and its owners, staff, contractors, providers, and licensors will not be liable for indirect, special, consequential, exemplary, or punitive damages, or lost profits, data, goodwill, or revenue. Total liability will not exceed the greater of what you paid us for the Service in the prior 12 months or <strong>[INSERT CAP AMOUNT]</strong>. Non-waivable consumer rights and liability that cannot legally be limited are not affected.</p>
+            <p>To the maximum extent permitted by law, DeCave and its owners, staff, contractors, providers, and licensors will not be liable for indirect, special, consequential, exemplary, or punitive damages, or lost profits, data, goodwill, or revenue. Total liability will not exceed what you paid us for the Service in the prior 12 months. Non-waivable consumer rights and liability that cannot legally be limited are not affected.</p>
           </section>
 
           <section id="terms-disputes">
-            <h2>11. Disputes and governing law</h2>
-            <p><strong>Governing law and courts:</strong> [GOVERNING LAW AND COURTS]. The final informal-resolution, arbitration, class-action, and market-specific consumer terms must be completed after legal review. Contact <a href="mailto:security@de-cave.com">security@de-cave.com</a> first with a clear description of a dispute; this does not remove a non-waivable right to contact a regulator or seek urgent relief.</p>
+            <h2>11. Disputes</h2>
+            <p>Contact <a href="mailto:security@example.invalid">security@example.invalid</a> first with a clear description of a dispute; this does not remove a non-waivable right to contact a regulator or seek urgent relief.</p>
           </section>
 
           <section id="terms-contact">
             <h2>12. Changes and contact</h2>
             <p>We may update these Terms when the Service or law changes. We will update the effective date and provide additional notice or consent where required. If you continue using the Service after the effective date, the updated Terms apply to future use. If you do not agree, stop using the Service and request deletion.</p>
-            <p><strong>General support:</strong> <a href="mailto:support@de-cave.com">support@de-cave.com</a><br /><strong>Legal, privacy, and security:</strong> <a href="mailto:security@de-cave.com">security@de-cave.com</a><br /><strong>Legal entity:</strong> DeCave<br /><strong>Address:</strong> [CONTROLLER/CONTRACTING ADDRESS]</p>
+            <p><strong>General support:</strong> <a href="mailto:support@de-cave.com">support@de-cave.com</a><br /><strong>Legal, privacy, and security:</strong> <a href="mailto:security@example.invalid">security@example.invalid</a><br /><strong>Legal entity:</strong> DeCave</p>
           </section>
 
-          <p className="article-footnote">These Terms are an implementation draft, not legal advice. Complete the bracketed fields and obtain jurisdiction-specific review before treating them as a final contract.</p>
         </article>
       </div>
     </PageLayout>

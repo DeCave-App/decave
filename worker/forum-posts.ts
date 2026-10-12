@@ -8,7 +8,7 @@ export type ForumDeps = {
   canAccessRoom(room: RoomRow, userId: string): Promise<boolean>;
   bodyJson(request: Request): Promise<Record<string, unknown>>;
   broadcast(event: unknown, filter: Record<string, unknown>): Promise<void>;
-  messagesForClient(ids: readonly string[]): Promise<unknown[]>;
+  messagesForClient(ids: readonly string[], viewerId: string): Promise<unknown[]>;
 };
 
 type PostStateRow = {
@@ -101,8 +101,8 @@ export async function handleForumRoute(
         ? limitParam
         : FORUM_PAGE_SIZE;
 
-    const where: string[] = ["s.channel_id=?"];
-    const binds: unknown[] = [roomId];
+    const where: string[] = ["s.channel_id=?", "(m.visible_to_user_id IS NULL OR m.visible_to_user_id = ?)"];
+    const binds: unknown[] = [roomId, user.id];
     if (tag) {
       where.push(
         "EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(s.tags_json) THEN s.tags_json ELSE '[]' END) t WHERE LOWER(CAST(t.value AS TEXT))=LOWER(?))",
@@ -133,7 +133,10 @@ export async function handleForumRoute(
       .bind(...binds, pageSize + 1, offset)
       .all<PostStateRow>();
     const page = rows.results.slice(0, pageSize);
-    const messages = (await deps.messagesForClient(page.map((r) => r.message_id))) as { id: string }[];
+    const messages = (await deps.messagesForClient(
+      page.map((r) => r.message_id),
+      user.id,
+    )) as { id: string }[];
     const byId = new Map(messages.map((m) => [m.id, m]));
     return deps.json({
       posts: page.flatMap((r) =>
@@ -153,7 +156,7 @@ export async function handleForumRoute(
   if (!post) return deps.json({ error: "Post not found" }, 404);
 
   if (method === "GET" && !replies) {
-    const [message] = await deps.messagesForClient([post.message_id]);
+    const [message] = await deps.messagesForClient([post.message_id], user.id);
     return deps.json({ post: { message, ...stateForClient(post) } });
   }
 
@@ -170,19 +173,24 @@ export async function handleForumRoute(
     const rows = await db
       .prepare(
         `SELECT id FROM decave_messages WHERE reply_to_id=? AND room_id=?
+       AND (visible_to_user_id IS NULL OR visible_to_user_id = ?)
        ${anchor ? "AND (created_at > ? OR (created_at = ? AND id > ?))" : ""}
        ORDER BY created_at ASC, id ASC LIMIT ?`,
       )
       .bind(
         postId,
         roomId,
+        user.id,
         ...(anchor ? [anchor.created_at, anchor.created_at, anchor.id] : []),
         FORUM_REPLY_PAGE_SIZE + 1,
       )
       .all<{ id: string }>();
     const page = rows.results.slice(0, FORUM_REPLY_PAGE_SIZE);
     return deps.json({
-      replies: await deps.messagesForClient(page.map((r) => r.id)),
+      replies: await deps.messagesForClient(
+        page.map((r) => r.id),
+        user.id,
+      ),
       nextCursor: rows.results.length > FORUM_REPLY_PAGE_SIZE ? page[page.length - 1].id : null,
     });
   }

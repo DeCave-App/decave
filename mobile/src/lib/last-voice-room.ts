@@ -16,11 +16,24 @@ export function lastVoiceRoomStorageKey(userId: string | null): string | null {
   return `decave.lastVoiceRoom.v2.${encodedId}`;
 }
 
+/** Storage calls for one key run in order, so a late write cannot land after a delete. */
 function queueStorageOperation<T>(key: string, operation: () => Promise<T>): Promise<T> {
   const previous = storageQueues.get(key) ?? Promise.resolve();
   const next = previous.then(operation, operation);
-  storageQueues.set(key, next.then(() => undefined, () => undefined));
+  storageQueues.set(
+    key,
+    next.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
   return next;
+}
+
+/** Deletes an account's last voice room from this phone (after any pending write for it). */
+export async function forgetLastVoiceRoom(userId: string): Promise<void> {
+  const key = lastVoiceRoomStorageKey(userId);
+  if (key) await queueStorageOperation(key, () => SecureStore.deleteItemAsync(key));
 }
 
 /** Call synchronously before changing auth state so pending writes cannot cross accounts. */
@@ -29,7 +42,8 @@ export function setLastVoiceRoomAccount(userId: string | null): void {
   const previousKey = lastVoiceRoomStorageKey(accountId);
   accountId = userId;
   generation += 1;
-  if (previousKey) void queueStorageOperation(previousKey, () => SecureStore.deleteItemAsync(previousKey)).catch(() => undefined);
+  if (previousKey)
+    void queueStorageOperation(previousKey, () => SecureStore.deleteItemAsync(previousKey)).catch(() => undefined);
 }
 
 export function lastVoiceRoomGeneration(): number {

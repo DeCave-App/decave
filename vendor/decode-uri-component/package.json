@@ -1,0 +1,10 @@
+{
+  "name": "decode-uri-component",
+  "version": "0.5.0-gamerchat.1",
+  "description": "CommonJS compatibility fork of decode-uri-component 0.5.0",
+  "license": "MIT",
+  "repository": "https://github.com/SamVerschueren/decode-uri-component",
+  "main": "index.js",
+  "type": "commonjs",
+  "private": true
+}

@@ -2,13 +2,14 @@
 // before privileged actions, and recovery codes.
 
 import { requirePlatformOwner, platformAudit } from "../../lib/platform-owner";
+import { currentPasswordThrottle } from "../../lib/sessions";
 import { json, bodyJson } from "../../lib/http";
 import {
   platformOwnerMfaEnabled,
   ownerRandomMfaSecret,
   ownerEncryptMfa,
   ownerDecryptMfa,
-  ownerVerifyTotp,
+  ownerMatchingTotpStep,
   ownerRecoveryCode,
   ownerVerifyMfaOrRecovery,
   ownerRequireReauth,
@@ -40,6 +41,8 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
     if (owner instanceof Response) return owner;
     const body = await bodyJson(request);
     const currentPassword = typeof body?.currentPassword === "string" ? body.currentPassword : "";
+    const passwordThrottle = await currentPasswordThrottle(env, owner.id);
+    if (passwordThrottle) return passwordThrottle;
     if (!(await verifyPassword(currentPassword, owner.password_salt, owner.password_hash))) {
       await platformAudit(env, owner.id, "platform.mfa_setup_reauth_failed", request);
       return json({ error: "Current password is incorrect" }, 403);
@@ -70,7 +73,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
     const replaceEnabled = Boolean(existing?.enabled_at);
     const setupMutation = replaceEnabled
       ? env.DB.prepare(
-          `UPDATE decave_owner_mfa SET secret_ciphertext=?,enabled_at=NULL,updated_at=?
+          `UPDATE decave_owner_mfa SET secret_ciphertext=?,enabled_at=NULL,last_totp_step=NULL,updated_at=?
            WHERE user_id=? AND secret_ciphertext=? AND enabled_at=?
              AND EXISTS(SELECT 1 FROM decave_users WHERE id=? AND platform_role='owner')`,
         ).bind(encrypted, now, owner.id, existing!.secret_ciphertext, existing!.enabled_at, owner.id)
@@ -80,6 +83,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
            ON CONFLICT(user_id) DO UPDATE SET
              secret_ciphertext=excluded.secret_ciphertext,
              enabled_at=NULL,
+             last_totp_step=NULL,
              updated_at=excluded.updated_at
            WHERE decave_owner_mfa.enabled_at IS NULL`,
         ).bind(owner.id, encrypted, now, now, owner.id);
@@ -129,7 +133,8 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
       .first<{ secret_ciphertext: string }>();
     if (!row) return json({ error: "Start MFA setup first" }, 409);
     const secret = await ownerDecryptMfa(env, row.secret_ciphertext);
-    if (!(await ownerVerifyTotp(secret, code))) {
+    const matchedStep = await ownerMatchingTotpStep(secret, code);
+    if (matchedStep === null) {
       await platformAudit(env, owner.id, "platform.mfa_enable_failed", request);
       return json({ error: "Authenticator code is invalid" }, 403);
     }
@@ -140,10 +145,10 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
     const witness = "EXISTS(SELECT 1 FROM decave_platform_audit WHERE id=? AND actor_user_id=? AND action=?)";
     const results = await env.DB.batch([
       env.DB.prepare(
-        `UPDATE decave_owner_mfa SET enabled_at=?,updated_at=?
+        `UPDATE decave_owner_mfa SET enabled_at=?,last_totp_step=?,updated_at=?
         WHERE user_id=? AND secret_ciphertext=? AND enabled_at IS NULL
         AND EXISTS(SELECT 1 FROM decave_users WHERE id=? AND platform_role='owner')`,
-      ).bind(now, now, owner.id, row.secret_ciphertext, owner.id),
+      ).bind(now, matchedStep, now, owner.id, row.secret_ciphertext, owner.id),
       // Only the primary CAS can create this unique witness. All dependent
       // inserts use it in the same transaction, not a chain of changes().
       // An insertion failure rolls back the primary update and the witness.
@@ -184,6 +189,8 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
 
     const body = await bodyJson(request);
     const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
+    const passwordThrottle = await currentPasswordThrottle(env, owner.id);
+    if (passwordThrottle) return passwordThrottle;
     if (!(await verifyPassword(currentPassword, owner.password_salt, owner.password_hash))) {
       await platformAudit(env, owner.id, "platform.reauth_password_failed", request);
       return json({ error: "Current password is incorrect" }, 403);

@@ -6,7 +6,10 @@ import {
   identifier,
   integer,
   isCreator,
+  localMediaPath,
   objectBody,
+  parseCommunityFeatures,
+  publicStreamUrl,
   sessionInput,
   text,
   unbiasedIndex,
@@ -18,9 +21,12 @@ import {
   type QueuePage,
   type StreamerConfig,
   type StreamerSnapshot,
+  type StreamerHighlight,
   type StreamerStats,
 } from "../../shared/streamer-mode";
 import type { Admission, Database, Statement, StreamerDependencies } from "./types";
+import { all, one, statement } from "./sql";
+import { handlePugMutation, readLeaderboard, readPug } from "./pugs";
 
 export const STREAMER_MIGRATION_ID = "0043_streamer_mode";
 
@@ -101,21 +107,6 @@ async function body(request: Request): Promise<Record<string, unknown>> {
     throw new StreamerInputError("Malformed JSON.");
   }
 }
-function statement<D extends Database>(
-  db: D,
-  sql: string,
-  ...args: (string | number | null)[]
-): ReturnType<D["prepare"]> {
-  // D1 bind returns a prepared statement from the same binding. Preserve that concrete
-  // type so public factory helpers fit the host's existing D1PreparedStatement[] batches.
-  return db.prepare(sql).bind(...args) as ReturnType<D["prepare"]>;
-}
-async function one<T>(db: Database, sql: string, ...args: (string | number | null)[]): Promise<T | null> {
-  return statement(db, sql, ...args).first<T>();
-}
-async function all<T>(db: Database, sql: string, ...args: (string | number | null)[]): Promise<T[]> {
-  return (await statement(db, sql, ...args).all<T>()).results;
-}
 function requireCreator(admission: Admission): void {
   if (!isCreator(admission.role)) throw new StreamerInputError("Creator permission required.", 403);
 }
@@ -180,6 +171,37 @@ async function auditMutation(
   ]);
   return results[0].meta.changes ?? 0;
 }
+type GiveawayRules = { subsOnly: boolean; minMemberDays: number; subBonus: boolean };
+function giveawayConditions(json: string | null | undefined): GiveawayRules {
+  try {
+    const value = JSON.parse(json || "{}") as Record<string, unknown>;
+    const days = Number(value.minMemberDays);
+    return {
+      subsOnly: value.subsOnly === true,
+      minMemberDays: Number.isInteger(days) && days > 0 && days <= 365 ? days : 0,
+      subBonus: value.subBonus === true,
+    };
+  } catch {
+    return { subsOnly: false, minMemberDays: 0, subBonus: false };
+  }
+}
+async function isSubscriber(db: Database, hubId: number, userId: string): Promise<boolean> {
+  try {
+    return Boolean(
+      await one(db, "SELECT 1 FROM decave_twitch_hub_subscribers WHERE hub_id=? AND user_id=?", hubId, userId),
+    );
+  } catch {
+    return false;
+  }
+}
+async function communityFeatures(db: Database, hubId: number) {
+  const row = await one<{ community_features: string | null }>(
+    db,
+    "SELECT community_features FROM decave_streamer_hubs WHERE hub_id=?",
+    hubId,
+  );
+  return parseCommunityFeatures(row?.community_features);
+}
 async function activeSession(db: Database, hubId: number): Promise<CommunitySession | null> {
   return one<CommunitySession>(
     db,
@@ -201,16 +223,14 @@ async function readSnapshot(
   now: number,
 ): Promise<StreamerSnapshot> {
   const db = deps.db;
-  const row = await one<{ config_json: string; version: number }>(
+  const row = await one<{ config_json: string; version: number; community_features: string | null }>(
     db,
-    "SELECT config_json,version FROM decave_streamer_hubs WHERE hub_id=?",
+    "SELECT config_json,version,community_features FROM decave_streamer_hubs WHERE hub_id=?",
     hubId,
   );
   if (!row) throw new StreamerInputError("Streamer Mode is not enabled for this Hub.", 404);
-  const storedConfig = JSON.parse(row.config_json) as Record<string, unknown>;
-  // Older settings may contain a provider link; never return it from this API.
-  delete storedConfig.streamUrl;
-  const config = { ...DEFAULT_STREAMER_CONFIG, ...storedConfig, version: row.version } as StreamerConfig;
+  const config = { ...DEFAULT_STREAMER_CONFIG, ...JSON.parse(row.config_json), version: row.version } as StreamerConfig;
+  const community = parseCommunityFeatures(row.community_features);
   const session = await activeSession(db, hubId);
   const stamp = new Date(now).toISOString();
   const queue = { waiting: 0, called: 0, ready: 0, playing: 0, mine: null as QueueEntry | null };
@@ -242,11 +262,17 @@ async function readSnapshot(
     );
     queue.mine = entry ? normaliseEntry(entry, now) : null;
   }
+  const highlights = await all<StreamerHighlight>(
+    db,
+    `SELECT id,title,url,thumbnail_path AS thumbnailPath,created_at AS createdAt FROM decave_streamer_highlights
+     WHERE hub_id=? ORDER BY created_at DESC,id DESC LIMIT 12`,
+    hubId,
+  );
   let giveaways: Giveaway[] = [];
   if (deps.giveawaysEnabled) {
     giveaways = await all<Giveaway>(
       db,
-      `SELECT g.id,g.title,g.rules,g.closes_at AS closesAt,g.status,
+      `SELECT g.id,g.title,g.rules,g.closes_at AS closesAt,g.status,g.conditions_json AS conditionsJson,
       (SELECT COUNT(*) FROM decave_streamer_giveaway_entries e WHERE e.giveaway_id=g.id) AS entryCount,
       EXISTS(SELECT 1 FROM decave_streamer_giveaway_entries e WHERE e.giveaway_id=g.id AND e.user_id=?) AS entered,
       u.username AS winnerName,(g.winner_user_id=?) AS isWinner FROM decave_streamer_giveaways g LEFT JOIN decave_users u ON u.id=g.winner_user_id
@@ -272,11 +298,14 @@ async function readSnapshot(
         membershipPrivate = true;
       }
     }
-    giveaways = (giveaways as Array<Giveaway & { isWinner?: unknown }>).map(({ isWinner, ...g }) => ({
-      ...g,
-      entered: Boolean(g.entered),
-      winnerName: membershipPrivate && !isWinner ? null : g.winnerName,
-    }));
+    giveaways = (giveaways as Array<Giveaway & { isWinner?: unknown; conditionsJson?: string }>).map(
+      ({ isWinner, conditionsJson, ...g }) => ({
+        ...g,
+        conditions: giveawayConditions(conditionsJson),
+        entered: Boolean(g.entered),
+        winnerName: membershipPrivate && !isWinner ? null : g.winnerName,
+      }),
+    );
   }
   let stats: StreamerStats | undefined;
   if (isCreator(admission.role)) {
@@ -314,9 +343,14 @@ async function readSnapshot(
     config,
     session,
     queue,
+    highlights,
     giveaways,
     ...(stats ? { stats } : {}),
-    features: { giveaways: deps.giveawaysEnabled },
+    features: { giveaways: deps.giveawaysEnabled, ...community },
+    pug: community.pugs ? await readPug(db, hubId, admission.principal.id, now) : null,
+    ...(community.subRoles && deps.memberTwitch
+      ? { twitchMember: await deps.memberTwitch(hubId, admission.principal.id) }
+      : {}),
     serverTime: stamp,
   };
 }
@@ -331,7 +365,8 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
   if (
     typeof deps.authenticate !== "function" ||
     typeof deps.guardMutation !== "function" ||
-    typeof deps.guardHubAccess !== "function"
+    typeof deps.guardHubAccess !== "function" ||
+    typeof deps.authorizeHubImage !== "function"
   ) {
     return reply({ error: "Streamer integration security hooks are unavailable." }, 503);
   }
@@ -376,6 +411,11 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
         nextCursor: entries.length > 50 ? String(page[49].seq) : null,
       } satisfies QueuePage);
     }
+    if (request.method === "GET" && path === "leaderboard") {
+      if (!(await communityFeatures(db, hubId)).leaderboard)
+        throw new StreamerInputError("This Hub has no leaderboard.", 404);
+      return reply(await readLeaderboard(db, hubId, principal.id, now, deps.faceitAvailable ?? false));
+    }
     if (request.method !== "POST") return reply({ error: "Method not supported." }, 405);
     const guard = await deps.guardMutation(request, hubId, principal.id);
     if (guard) return guard;
@@ -419,10 +459,28 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
     if (!(await one(db, "SELECT 1 FROM decave_streamer_hubs WHERE hub_id=?", hubId)))
       throw new StreamerInputError("Streamer Mode is not enabled.", 404);
 
+    if (path.startsWith("pug/") && !(await communityFeatures(db, hubId)).pugs)
+      throw new StreamerInputError("PUGs aren't enabled for this Hub.", 404);
+    const pugResult = await handlePugMutation(path, input, {
+      db,
+      admission,
+      hubId,
+      now,
+      stamp,
+      newId,
+      audit: (mutation, action, target) => auditMutation(deps, mutation, admission, hubId, action, target, stamp),
+    });
+    if (pugResult) return reply(pugResult);
+
     if (path === "settings") {
       requireCreator(admission);
       const version = integer(input.version, "Version", 1, Number.MAX_SAFE_INTEGER);
       const config = configInput(input, now);
+      // Twitch auto-live and clips are custom per-Hub features; creators can't switch them on themselves.
+      if (!(await communityFeatures(db, hubId)).twitch) {
+        config.twitchAutoLive = false;
+        config.twitchClips = false;
+      }
       changed(
         await auditMutation(
           deps,
@@ -442,7 +500,8 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
           stamp,
         ),
       );
-      return reply({ ok: true });
+      const notice = deps.onSettingsSaved ? await deps.onSettingsSaved(hubId, config) : null;
+      return reply(notice ? { ok: true, notice } : { ok: true });
     }
     if (path === "session/create") {
       requireCreator(admission);
@@ -691,6 +750,57 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
       );
       return reply({ ok: true });
     }
+    if (path === "highlights/add") {
+      requireCreator(admission);
+      const title = text(input.title, "Title", 120);
+      const link = publicStreamUrl(input.url, true);
+      const thumbnail = localMediaPath(input.thumbnailPath ?? "");
+      if (thumbnail && !(await deps.authorizeHubImage(request, hubId, principal.id, thumbnail))) {
+        throw new StreamerInputError("This image is not approved for this Hub's Overview.", 403);
+      }
+      const id = newId();
+      changed(
+        await auditMutation(
+          deps,
+          statement(
+            db,
+            `INSERT INTO decave_streamer_highlights(id,hub_id,title,url,thumbnail_path,created_by,created_at)
+         SELECT ?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM decave_streamer_highlights WHERE hub_id=?)<24`,
+            id,
+            hubId,
+            title,
+            link,
+            thumbnail,
+            principal.id,
+            stamp,
+            hubId,
+          ),
+          admission,
+          hubId,
+          "highlight.add",
+          id,
+          stamp,
+        ),
+        "This Hub already has 24 highlights. Remove one first.",
+      );
+      return reply({ ok: true, id }, 201);
+    }
+    if (path === "highlights/remove") {
+      requireCreator(admission);
+      const id = identifier(input.id);
+      changed(
+        await auditMutation(
+          deps,
+          statement(db, "DELETE FROM decave_streamer_highlights WHERE id=? AND hub_id=?", id, hubId),
+          admission,
+          hubId,
+          "highlight.remove",
+          id,
+          stamp,
+        ),
+      );
+      return reply({ ok: true });
+    }
     if (path.startsWith("giveaways/")) {
       if (!deps.giveawaysEnabled) throw new StreamerInputError("Giveaways are not enabled on this deployment.", 404);
       if (path === "giveaways/create") {
@@ -698,20 +808,30 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
         const title = text(input.title, "Title", 120);
         const rules = text(input.rules, "Rules", 2000);
         const closesAt = futureDate(input.closesAt, "Closing time", now);
+        // Entry rules need the Hub's Twitch subscriber feature (custom per Hub).
+        const conditions = (await communityFeatures(db, hubId)).subRoles
+          ? {
+              subsOnly: input.subsOnly === true,
+              minMemberDays:
+                input.minMemberDays === undefined ? 0 : integer(input.minMemberDays, "Days in the Hub", 0, 365),
+              subBonus: input.subBonus === true,
+            }
+          : {};
         const id = newId();
         changed(
           await auditMutation(
             deps,
             statement(
               db,
-              `INSERT INTO decave_streamer_giveaways(id,hub_id,title,rules,closes_at,status,created_at)
-          SELECT ?,?,?,?,?,'open',? WHERE (SELECT COUNT(*) FROM decave_streamer_giveaways WHERE hub_id=? AND status='open')<3`,
+              `INSERT INTO decave_streamer_giveaways(id,hub_id,title,rules,closes_at,status,created_at,conditions_json)
+          SELECT ?,?,?,?,?,'open',?,? WHERE (SELECT COUNT(*) FROM decave_streamer_giveaways WHERE hub_id=? AND status='open')<3`,
               id,
               hubId,
               title,
               rules,
               closesAt,
               stamp,
+              JSON.stringify(conditions),
               hubId,
             ),
             admission,
@@ -727,6 +847,34 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
       const id = identifier(input.id);
       if (path === "giveaways/enter") {
         if (isCreator(admission.role)) throw new StreamerInputError("Organizers cannot enter their own giveaway.", 403);
+        const rules = giveawayConditions(
+          (
+            await one<{ conditions_json: string | null }>(
+              db,
+              "SELECT conditions_json FROM decave_streamer_giveaways WHERE id=? AND hub_id=?",
+              id,
+              hubId,
+            )
+          )?.conditions_json,
+        );
+        if (rules.subsOnly && !(await isSubscriber(db, hubId, principal.id)))
+          throw new StreamerInputError(
+            "This giveaway is for Twitch subscribers. Link your Twitch account on the Overview to enter.",
+            403,
+          );
+        if (rules.minMemberDays) {
+          const member = await one<{ joined_at: string }>(
+            db,
+            "SELECT joined_at FROM decave_hub_members WHERE hub_id=? AND user_id=?",
+            hubId,
+            principal.id,
+          );
+          if (!member || Date.parse(member.joined_at) > now - rules.minMemberDays * 86_400_000)
+            throw new StreamerInputError(
+              `This giveaway needs ${rules.minMemberDays} ${rules.minMemberDays === 1 ? "day" : "days"} in the Hub before entering.`,
+              403,
+            );
+        }
         const op = statement(
           db,
           `INSERT OR IGNORE INTO decave_streamer_giveaway_entries(giveaway_id,hub_id,user_id,created_at)
@@ -798,7 +946,34 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
           hubId,
         );
         if (!entrants.length) throw new StreamerInputError("No eligible entries. Cancel this giveaway instead.", 409);
-        const winner = entrants[unbiasedIndex(entrants.length)].user_id;
+        // Subscriber bonus: subscribers (verified at draw time) hold two tickets.
+        const drawRules = giveawayConditions(
+          (
+            await one<{ conditions_json: string | null }>(
+              db,
+              "SELECT conditions_json FROM decave_streamer_giveaways WHERE id=? AND hub_id=?",
+              id,
+              hubId,
+            )
+          )?.conditions_json,
+        );
+        const tickets: string[] = [];
+        const subscribers = drawRules.subBonus
+          ? new Set(
+              (
+                await all<{ user_id: string }>(
+                  db,
+                  "SELECT user_id FROM decave_twitch_hub_subscribers WHERE hub_id=?",
+                  hubId,
+                )
+              ).map((row) => row.user_id),
+            )
+          : new Set<string>();
+        for (const entrant of entrants) {
+          tickets.push(entrant.user_id);
+          if (subscribers.has(entrant.user_id)) tickets.push(entrant.user_id);
+        }
+        const winner = tickets[unbiasedIndex(tickets.length)];
         changed(
           await auditMutation(
             deps,
@@ -846,6 +1021,13 @@ export function streamerRevokeParticipantStatements<D extends Database>(
   return [
     statement(db, "DELETE FROM decave_streamer_queue WHERE hub_id=? AND user_id=?", hubId, userId),
     statement(db, "DELETE FROM decave_streamer_giveaway_entries WHERE hub_id=? AND user_id=?", hubId, userId),
+    statement(
+      db,
+      `DELETE FROM decave_streamer_pug_players WHERE hub_id=? AND user_id=?
+       AND pug_id IN (SELECT id FROM decave_streamer_pugs WHERE status='open')`,
+      hubId,
+      userId,
+    ),
   ];
 }
 /** Append to the existing erasure flow, using its INTERNAL user ID; do not replace it. */
@@ -857,6 +1039,13 @@ export function streamerUserErasureStatements<D extends Database>(db: D, userId:
     statement(db, "UPDATE decave_streamer_giveaways SET winner_user_id=NULL WHERE winner_user_id=?", userId),
     statement(db, "UPDATE decave_streamer_highlights SET created_by=NULL WHERE created_by=?", userId),
     statement(db, "UPDATE decave_streamer_audit SET actor_user_id=NULL WHERE actor_user_id=?", userId),
+    statement(db, "DELETE FROM decave_streamer_pug_players WHERE user_id=?", userId),
+    statement(db, "UPDATE decave_streamer_pugs SET created_by='' WHERE created_by=?", userId),
+    statement(db, "DELETE FROM decave_faceit_links WHERE user_id=?", userId),
+    statement(db, "DELETE FROM decave_faceit_link_states WHERE user_id=?", userId),
+    statement(db, "DELETE FROM decave_twitch_member_links WHERE user_id=?", userId),
+    statement(db, "DELETE FROM decave_twitch_member_link_states WHERE user_id=?", userId),
+    statement(db, "DELETE FROM decave_twitch_hub_subscribers WHERE user_id=?", userId),
   ];
 }
 /** Invoke from an authorized scheduled Worker hook, never an unauthenticated route.
@@ -878,6 +1067,18 @@ export async function pruneStreamerData(db: Database, now = Date.now()): Promise
       db,
       "DELETE FROM decave_streamer_giveaways WHERE status!='open' AND created_at<?",
       new Date(now - 90 * 86_400_000).toISOString(),
+    ),
+    // PUG history feeds the monthly leaderboard; a year is plenty. Abandoned open PUGs close after a day.
+    statement(
+      db,
+      "DELETE FROM decave_streamer_pugs WHERE status IN ('done','cancelled') AND COALESCE(finished_at,created_at)<?",
+      new Date(now - 400 * 86_400_000).toISOString(),
+    ),
+    statement(
+      db,
+      "UPDATE decave_streamer_pugs SET status='cancelled',finished_at=? WHERE status IN ('open','live') AND created_at<?",
+      new Date(now).toISOString(),
+      new Date(now - 86_400_000).toISOString(),
     ),
   ]);
 }

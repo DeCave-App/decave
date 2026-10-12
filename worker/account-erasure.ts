@@ -10,8 +10,8 @@ import { ensureSessionClientSchema, ensureQrLoginSchema, revokeAccountSessions }
 import { ensurePushSchema } from "./push";
 import { ensureReadStateSchema } from "./read-state";
 import { ensureGroupChatSchema } from "./db";
+import { deleteQueuedMedia, ensureMediaDeletionQueueSchema, queueMediaDeletionStatements } from "./lib/media";
 import { streamerMigrationExists, streamerUserErasureStatements } from "./streamer/index.ts";
-import { attemptQueuedMediaDeletion, mediaDeletionQueueStatement } from "./lib/media";
 
 export type AccountErasureObjectStore = {
   delete(keys: string | string[]): Promise<void>;
@@ -26,7 +26,7 @@ export const ACCOUNT_ERASURE_OBJECT_QUERIES = Object.freeze({
     WHERE author_user_id=? AND attachment_key IS NOT NULL`,
   ownedAttachmentAccess: `SELECT r2_key AS object_key
     FROM decave_attachment_access
-    WHERE owner_user_id=? OR peer_user_id=?`,
+    WHERE owner_user_id=?`,
   ownedHubAssets: `SELECT r2_key AS object_key
     FROM decave_hub_assets
     WHERE created_by=?`,
@@ -47,7 +47,7 @@ export const ACCOUNT_ERASURE_OBJECT_QUERIES = Object.freeze({
 });
 
 export const ACCOUNT_ERASURE_CLEANUP_SQL = Object.freeze({
-  deleteOwnedAttachmentAccess: "DELETE FROM decave_attachment_access WHERE owner_user_id=? OR peer_user_id=?",
+  deleteOwnedAttachmentAccess: "DELETE FROM decave_attachment_access WHERE owner_user_id=?",
   deleteOwnedHubAssets: "DELETE FROM decave_hub_assets WHERE created_by=?",
   deleteOwnedSoundboardSounds: "DELETE FROM decave_soundboard_sounds WHERE user_id=?",
   deleteEvidenceReservations: "DELETE FROM decave_report_evidence_upload_reservations WHERE user_id=?",
@@ -73,35 +73,36 @@ export const ACCOUNT_ERASURE_CLEANUP_SQL = Object.freeze({
 
 /**
  * Tables that keep a reference to an erased account on purpose. Every other
- * table with a user-reference column must be cleaned up by eraseAccountData
+ * table with a user-reference column must be handled by eraseAccountData
  * (enforced by scripts/__tests__/account-erasure-coverage.test.mjs).
  */
 export const ACCOUNT_ERASURE_RETAINED_REFERENCES: Readonly<Record<string, string>> = Object.freeze({
   decave_moderation_case_notes:
-    "Staff-authored moderation notes are retained for case history. author_user_id is NOT NULL with ON DELETE RESTRICT, so it keeps pointing at the anonymized tombstone row (no name, email or public id remains).",
+    "Staff-authored moderation notes are kept for case history. author_user_id is NOT NULL (ON DELETE RESTRICT) and keeps pointing at the anonymized tombstone, which holds no name, email or original public id.",
   decave_moderation_actions:
-    "created_by_user_id (staff actor, NOT NULL, RESTRICT) keeps pointing at the anonymized tombstone; target_user_id is cleared by eraseAccountData.",
+    "created_by_user_id (the staff actor, NOT NULL, RESTRICT) keeps the anonymized tombstone id; target_user_id is cleared by eraseAccountData.",
   decave_case_links:
-    "created_by_user_id (staff actor, NOT NULL, RESTRICT) keeps pointing at the anonymized tombstone; links carry no personal content.",
+    "created_by_user_id (the staff actor, NOT NULL, RESTRICT) keeps the anonymized tombstone id; links carry no personal content.",
   decave_platform_audit:
-    "actor_user_id is NOT NULL with ON DELETE RESTRICT; it keeps the anonymized tombstone id while detail_json and target_user_id are cleared. Rows expire after PLATFORM_AUDIT_RETENTION_DAYS.",
+    "actor_user_id is NOT NULL (RESTRICT) and keeps the anonymized tombstone id while detail_json and target_user_id are cleared; rows expire with the platform audit retention period.",
   decave_audit:
-    "actor_user_id is NOT NULL; it keeps the anonymized tombstone id while detail and target_user_id are cleared. Rows expire after HUB_AUDIT_RETENTION_DAYS.",
+    "actor_user_id is NOT NULL and keeps the anonymized tombstone id while detail and target_user_id are cleared; rows expire with the Hub audit retention period.",
   decave_moderation_audit_log:
-    "Append-only by database trigger (decave_moderation_audit_no_update/no_delete). actor_user_id keeps the anonymized tombstone id; rows hold no account profile data.",
+    "Append-only by trigger for 365 days (migration 0067). actor_user_id keeps the anonymized tombstone id; rows hold no profile data and expire after the retention period.",
   decave_sessions: "Deleted by revokeAccountSessions (worker/lib/sessions.ts) before the erasure batch.",
   decave_session_clients: "Deleted by revokeAccountSessions (worker/lib/sessions.ts) before the erasure batch.",
   decave_ws_tokens: "Deleted by revokeAccountSessions (worker/lib/sessions.ts) before the erasure batch.",
   decave_owner_reauth: "Deleted by revokeAccountSessions (worker/lib/sessions.ts) before the erasure batch.",
   decave_owner_login_challenges: "Deleted by revokeAccountSessions (worker/lib/sessions.ts) before the erasure batch.",
-  decave_hubs: "Accounts that own a Hub cannot be claimed for erasure (claimAccountErasure).",
+  decave_hubs: "An account that owns a Hub cannot be claimed for erasure (claimAccountErasure).",
 });
 
 /**
- * Pre-DeCave tables from migrations/0001_initial.sql. The current Worker does
- * not write them, but rows may exist in older databases. Each statement runs
- * only when its table exists. Order matters: legacy hubs use ON DELETE
- * RESTRICT on owner_user_id, so owned hubs go first and users go last.
+ * Tables from the first prototype schema (migrations/0001_initial.sql).
+ * Migration 0067 drops them, but a database that has not run it may still
+ * hold rows, so each statement runs only when its table exists. Order
+ * matters: legacy hubs use ON DELETE RESTRICT on owner_user_id, so owned hubs
+ * go first and the user row goes last.
  */
 export const LEGACY_ACCOUNT_ERASURE_SQL: ReadonlyArray<{ table: string; sql: string; binds: number }> = Object.freeze([
   { table: "hubs", sql: "DELETE FROM hubs WHERE owner_user_id=?", binds: 1 },
@@ -205,15 +206,14 @@ export async function eraseAccountData(
     env.DB.prepare(ACCOUNT_ERASURE_OBJECT_QUERIES.legacyMessageAttachments)
       .bind(target.id)
       .all<{ object_key: string }>(),
-    env.DB.prepare(ACCOUNT_ERASURE_OBJECT_QUERIES.ownedAttachmentAccess)
-      .bind(target.id, target.id)
-      .all<{ object_key: string }>(),
+    env.DB.prepare(ACCOUNT_ERASURE_OBJECT_QUERIES.ownedAttachmentAccess).bind(target.id).all<{ object_key: string }>(),
     env.DB.prepare(ACCOUNT_ERASURE_OBJECT_QUERIES.ownedHubAssets).bind(target.id).all<{ object_key: string }>(),
     env.DB.prepare(ACCOUNT_ERASURE_OBJECT_QUERIES.ownedSoundboardSounds).bind(target.id).all<{ object_key: string }>(),
     env.DB.prepare(ACCOUNT_ERASURE_OBJECT_QUERIES.trustSafetyEvidence).bind(target.id).all<{ object_key: string }>(),
     env.DB.prepare(ACCOUNT_ERASURE_OBJECT_QUERIES.pendingEvidenceUploads).bind(target.id).all<{ object_key: string }>(),
   ]);
 
+  await ensureMediaDeletionQueueSchema(env.DB);
   await ensurePushSchema(env.DB);
   await ensureReadStateSchema(env.DB);
 
@@ -231,20 +231,17 @@ export async function eraseAccountData(
     if (row.object_key) r2Keys.add(row.object_key);
   }
 
-  try {
-    await env.DB.batch([...r2Keys].map((key) => mediaDeletionQueueStatement(env.DB, key, nowIso())));
-    await attemptQueuedMediaDeletion(env, r2Keys);
-  } catch (error) {
-    throw new AccountErasureStorageError(error);
-  }
-
   // Revoke sessions through the common path so realtime credentials and
   // session-bound push registrations receive the same treatment everywhere.
   await revokeAccountSessions(env, target.id, "account_erased");
 
   const erasedAt = target.erased_at ?? nowIso();
   const erasureStatements = [
-    env.DB.prepare(ACCOUNT_ERASURE_CLEANUP_SQL.deleteOwnedAttachmentAccess).bind(target.id, target.id),
+    // Queue object cleanup in the same D1 batch that removes the owning
+    // metadata. A storage outage can then delay deletion without blocking the
+    // privacy cleanup or losing the keys needed for a later retry.
+    ...queueMediaDeletionStatements(env.DB, r2Keys, erasedAt),
+    env.DB.prepare(ACCOUNT_ERASURE_CLEANUP_SQL.deleteOwnedAttachmentAccess).bind(target.id),
     env.DB.prepare(ACCOUNT_ERASURE_CLEANUP_SQL.deleteOwnedHubAssets).bind(target.id),
     env.DB.prepare(ACCOUNT_ERASURE_CLEANUP_SQL.deleteOwnedSoundboardSounds).bind(target.id),
     env.DB.prepare(ACCOUNT_ERASURE_CLEANUP_SQL.deleteEvidenceReservations).bind(target.id),
@@ -280,6 +277,19 @@ export async function eraseAccountData(
     env.DB.prepare("DELETE FROM decave_squad_game_suggestions WHERE user_id=?").bind(target.id),
     env.DB.prepare("UPDATE decave_squad_game_suggestions SET reviewed_by=NULL WHERE reviewed_by=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_room_members WHERE user_id=?").bind(target.id),
+    // Builder-bot children carry no FK to decave_hub_bots (it is created lazily).
+    ...["decave_bot_rules", "decave_bot_commands", "decave_bot_runs", "decave_bot_timers"].map((table) =>
+      env.DB.prepare(`DELETE FROM ${table} WHERE bot_id IN (SELECT id FROM decave_hub_bots WHERE created_by=?)`).bind(
+        target.id,
+      ),
+    ),
+    env.DB.prepare("DELETE FROM decave_bot_variables WHERE user_id=?").bind(target.id),
+    env.DB.prepare("DELETE FROM decave_bot_pending_forms WHERE user_id=?").bind(target.id),
+    env.DB.prepare("DELETE FROM decave_bot_timers WHERE payload_json LIKE ?").bind(`%${target.id}%`),
+    env.DB.prepare("UPDATE decave_bot_rules SET created_by=NULL WHERE created_by=?").bind(target.id),
+    env.DB.prepare("UPDATE decave_bot_rules SET updated_by=NULL WHERE updated_by=?").bind(target.id),
+    env.DB.prepare("UPDATE decave_bot_rules SET published_by=NULL WHERE published_by=?").bind(target.id),
+    env.DB.prepare("UPDATE decave_hub_bots SET published_by=NULL WHERE published_by=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_hub_bots WHERE created_by=?").bind(target.id),
     env.DB.prepare("UPDATE decave_bots SET created_by=NULL WHERE created_by=?").bind(target.id),
     env.DB.prepare(
@@ -310,41 +320,63 @@ export async function eraseAccountData(
     ).bind(target.id, target.id),
     env.DB.prepare("DELETE FROM decave_group_chats WHERE owner_user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_feedback WHERE user_id=?").bind(target.id),
-    env.DB.prepare("DELETE FROM decave_hub_event_rsvps WHERE user_id=?").bind(target.id),
-    env.DB.prepare("DELETE FROM decave_hub_events WHERE created_by=?").bind(target.id),
-    env.DB.prepare("DELETE FROM decave_hub_imports WHERE created_by=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_message_reactions WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_messages WHERE author_user_id=?").bind(target.id),
+    env.DB.prepare("DELETE FROM decave_messages WHERE visible_to_user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_member_roles WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_hub_members WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_invites WHERE created_by=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_bans WHERE user_id=? OR banned_by=?").bind(target.id, target.id),
     env.DB.prepare("DELETE FROM decave_timeouts WHERE user_id=? OR timed_out_by=?").bind(target.id, target.id),
     env.DB.prepare(
-      "UPDATE decave_moderation_cases SET primary_subject_user_id=NULL,subject_public_id_snapshot=NULL,subject_username_snapshot=NULL WHERE primary_subject_user_id=?",
-    ).bind(target.id),
-    env.DB.prepare(
-      "UPDATE decave_reports SET subject_user_id=NULL,target_public_id_snapshot=NULL,target_username_snapshot=NULL WHERE subject_user_id=?",
-    ).bind(target.id),
-    env.DB.prepare(
-      "UPDATE decave_platform_audit SET target_user_id=NULL,detail_json='{}' WHERE target_user_id=? OR actor_user_id=?",
-    ).bind(target.id, target.id),
-    env.DB.prepare(
-      "UPDATE decave_audit SET target_user_id=NULL,detail='' WHERE target_user_id=? OR actor_user_id=?",
-    ).bind(target.id, target.id),
-    env.DB.prepare(
       `UPDATE decave_security_events
        SET ip_hash='erased',user_agent='',detail=''
        WHERE user_id=?`,
     ).bind(target.id),
-    // Keep a Hub's share link working but stop attributing it to this account.
+    env.DB.prepare("DELETE FROM decave_hub_events WHERE created_by=?").bind(target.id),
+    // Keep a Hub's share link and import rollback history working, but stop
+    // attributing them to this account: the Hub owner takes them over.
     env.DB.prepare(
       `UPDATE decave_hub_share_links
        SET created_by=(SELECT owner_id FROM decave_hubs WHERE decave_hubs.id=decave_hub_share_links.hub_id)
        WHERE created_by=?`,
     ).bind(target.id),
+    env.DB.prepare(
+      `UPDATE decave_hub_imports
+       SET created_by=(SELECT owner_id FROM decave_hubs WHERE decave_hubs.id=decave_hub_imports.hub_id)
+       WHERE created_by=?`,
+    ).bind(target.id),
     env.DB.prepare("UPDATE decave_hub_home SET updated_by=NULL WHERE updated_by=?").bind(target.id),
-    env.DB.prepare("UPDATE decave_moderation_actions SET target_user_id=NULL WHERE target_user_id=?").bind(target.id),
+    // Moderation records outside a legal hold stop naming the erased account.
+    env.DB.prepare(
+      `UPDATE decave_moderation_cases
+       SET primary_subject_user_id=NULL,subject_public_id_snapshot=NULL,subject_username_snapshot=NULL
+       WHERE primary_subject_user_id=? AND legal_hold=0`,
+    ).bind(target.id),
+    env.DB.prepare(
+      `UPDATE decave_reports
+       SET subject_user_id=NULL,target_public_id_snapshot=NULL,target_username_snapshot=NULL
+       WHERE subject_user_id=? AND NOT EXISTS(
+         SELECT 1 FROM decave_moderation_cases cases WHERE cases.id=decave_reports.case_id AND cases.legal_hold=1
+       )`,
+    ).bind(target.id),
+    env.DB.prepare(
+      `UPDATE decave_moderation_actions SET target_user_id=NULL
+       WHERE target_user_id=? AND NOT EXISTS(
+         SELECT 1 FROM decave_moderation_cases cases
+         WHERE cases.id=decave_moderation_actions.case_id AND cases.legal_hold=1
+       )`,
+    ).bind(target.id),
+    env.DB.prepare(
+      `UPDATE decave_platform_audit
+       SET target_user_id=CASE WHEN target_user_id=? THEN NULL ELSE target_user_id END,detail_json='{}'
+       WHERE target_user_id=? OR actor_user_id=?`,
+    ).bind(target.id, target.id, target.id),
+    env.DB.prepare(
+      `UPDATE decave_audit
+       SET target_user_id=CASE WHEN target_user_id=? THEN NULL ELSE target_user_id END,detail=''
+       WHERE target_user_id=? OR actor_user_id=?`,
+    ).bind(target.id, target.id, target.id),
     ...(await legacyAccountErasureStatements(env, target.id)),
   ];
 
@@ -415,6 +447,7 @@ export async function eraseAccountData(
   }
 
   await env.DB.batch(erasureStatements);
+  await deleteQueuedMedia(env, [...r2Keys]);
   return { target, erasedAt, alreadyErased };
 }
 

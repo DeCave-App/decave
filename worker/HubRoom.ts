@@ -1,11 +1,17 @@
 import { dmMessageForClient, type ChannelMessageRow } from "./lib/messages";
-import { checkOutgoingDm, checkOutgoingGroupMessage, dmE2eeEnabled, dmPushText } from "./lib/dm-e2ee";
+import {
+  checkOutgoingDm,
+  checkOutgoingGroupMessage,
+  dmE2eeEnabled,
+  dmPushText,
+  insertDirectMessageWithAttachmentGuard,
+} from "./lib/dm-e2ee";
 import { DM_GROUP_MAX_WRAPS, parseDmEnvelope } from "../shared/dm-e2ee-format";
 import { DurableObject } from "cloudflare:workers";
-import { createHash } from "node:crypto";
 import {
   canAccessRoom as dbCanAccessRoom,
   canCreateForumPost,
+  canPostInChatRoom,
   isForumStaff,
   isTimedOut,
   ensureGroupChatSchema,
@@ -24,10 +30,13 @@ import {
   type RoomRow,
   type ServerRole,
   type UserRow,
-  activityTextFor,
+  presenceFieldsFor,
+  presenceOnline,
+  publicUserWithPresence,
+  tokenHash,
 } from "./db";
 import type { Env } from "./index";
-import { consumeSessionBoundWsToken, isActiveSession, securityIpAddressTag } from "./lib/sessions";
+import { consumeSessionBoundWsToken, isActiveSession } from "./lib/sessions";
 import { streamerHubIdsForUser, streamerMigrationExists } from "./streamer/index.ts";
 import { isBlockedEitherDirection } from "./trust-safety";
 import {
@@ -40,6 +49,27 @@ import {
 } from "../shared/forum";
 import { pushPreview, sendPush } from "./push";
 import { loadPushSettings, pushText, shouldPush, type PushContext } from "./push-policy";
+import { nextBotTimerAt, runAllDueBotTimers } from "./bots/timers";
+import { inBackground, queueBotEvent, queueHubMessage, voiceRoomsOf } from "./bots/events";
+import { createRealtimeClient, RealtimeSfuError, screenSfuEnabled } from "./lib/realtime-sfu";
+import {
+  canPull,
+  EMPTY_SFU_FIELDS,
+  keyRelayPayload,
+  MAX_SFU_PULLS,
+  parseMid,
+  parseRequestId,
+  parseRid,
+  parseSdp,
+  pruneViewerPull,
+  sfuCloses,
+  sfuDisabledResult,
+  sfuErrorResult,
+  sfuResult,
+  trackNameFor,
+  type ScreenSfuSocketFields,
+  stopReleasesPublish,
+} from "./screen-sfu-room";
 
 /**
  * Send phone notifications that respect each recipient's synced settings
@@ -91,6 +121,16 @@ const REALTIME_MESSAGE_TYPES = new Set([
   "VOICE_CAMERA_STATE",
   "RTC_DESCRIPTION",
   "RTC_ICE_CANDIDATE",
+  "RTC_SCREEN_WATCH",
+  "RTC_SCREEN_KEY",
+  "RTC_SCREEN_KEY_REQUEST",
+  "RTC_SCREEN_MESH_REQUEST",
+  "RTC_SFU_PUBLISH",
+  "RTC_SFU_PULL",
+  "RTC_SFU_LAYER",
+  "RTC_SFU_RENEGOTIATE",
+  "RTC_SFU_STOP",
+  "VOICE_SFU_CAPABLE",
   "VOICE_MODERATE",
   "VOICE_STATE_REQUEST",
 ]);
@@ -110,8 +150,11 @@ const WS_IDENTIFY_FAILURE_LIMIT_PER_ADDRESS = 60;
 const WS_CONNECTION_LIMIT_PER_ADDRESS = 32;
 const WS_CONNECTION_LIMIT_GLOBAL = 2_048;
 const WS_ADMISSION_KEY_LIMIT = 4_096;
+const BOT_TIMER_MIN_DELAY_MS = 1_000;
+const BOT_TIMER_FAILURE_BACKOFF_MS = 30_000;
 const WS_AUTH_DEADLINE_MS = 30_000;
 const UNKNOWN_WS_ADDRESS = "unknown";
+const MAX_CLIENT_MESSAGE_ID_LENGTH = 128;
 
 type VoiceParticipant = {
   connectionId: string;
@@ -129,6 +172,10 @@ type VoiceParticipant = {
   screenSharing: boolean;
   allowStreamPreview: boolean;
   cameraSharing: boolean;
+  screenSfu: { sessionId: string; trackName: string } | null;
+  sfuScreenCapable: boolean;
+  /** The sharer's display MediaStream id (only while screen sharing). */
+  screenStreamId: string | null;
 };
 
 type RealtimeRateBucket = { startedAt: number; count: number };
@@ -136,7 +183,6 @@ type WebSocketAdmissionWindow = { startedAt: number; attempts: number; identifyF
 
 type SocketState = {
   connectionId: string;
-  peerAddress: string;
   authDeadlineAt: number;
   client: "mobile" | "web" | "desktop";
   userId: string | null;
@@ -150,6 +196,7 @@ type SocketState = {
   voiceServerMuted: boolean;
   voiceServerDeafened: boolean;
   screenSharing: boolean;
+  screenStreamId?: string | null;
   allowStreamPreview: boolean;
   cameraSharing: boolean;
   dmCallId: string | null;
@@ -162,7 +209,9 @@ type SocketState = {
   identifyFailures: number;
   rateLimitViolations: number;
   lastPresenceTouchAt: number;
-};
+  /** Public user id cached at voice join (saves a D1 read per screen-key relay). */
+  publicUserId?: string | null;
+} & ScreenSfuSocketFields;
 
 async function touchRealtimePresence(db: D1Database, userId: string): Promise<void> {
   await db
@@ -233,28 +282,20 @@ type Filter = {
   exceptConnectionId?: string;
 };
 
-// Connection limits keep only a per-address tag in socket state. Prefer the
-// shared keyed IP-tag policy; this domain-separated fallback is transient and
-// keeps per-address limits working when no deployment key is configured.
-async function peerAddressTag(address: string, env: Env): Promise<string> {
-  const keyedTag = await securityIpAddressTag(env, address, "decave-ws-peer-v1");
-  if (keyedTag) return keyedTag;
-  const digest = createHash("sha256").update(`decave-ws-peer-v1\0${address}`).digest("hex");
-  return `sha256:v1:${digest}`;
-}
-
-async function peerAddressForRequest(request: Request, env: Env): Promise<string> {
+// Connection rate limits are keyed by a hash of the client address; the raw
+// IP is never kept in socket state.
+function peerAddressForRequest(request: Request): string {
   const address = request.headers.get("CF-Connecting-IP")?.trim() ?? "";
-  return address && address.length <= 64 ? peerAddressTag(address, env) : UNKNOWN_WS_ADDRESS;
+  return address && address.length <= 64 ? tokenHash(`ws-peer|${address}`).slice(0, 24) : UNKNOWN_WS_ADDRESS;
 }
 
-/** Drop legacy raw addresses from hibernated attachments before they persist. */
-function normalizedPeerAddress(value: unknown): string {
-  if (typeof value !== "string" || !value || value === UNKNOWN_WS_ADDRESS) return UNKNOWN_WS_ADDRESS;
-  if (/^(?:hmac:v1d?:[0-9a-f]{64}|sha256:v1:[0-9a-f]{64}|ip:[0-9a-f]{32}|[0-9a-f]{24})$/.test(value)) {
-    return value;
-  }
-  return UNKNOWN_WS_ADDRESS;
+function boundedClientMessageId(value: unknown): string | null {
+  return typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= MAX_CLIENT_MESSAGE_ID_LENGTH &&
+    /^[A-Za-z0-9_-]+$/.test(value)
+    ? value
+    : null;
 }
 
 /** A well-formed signature next to a session description, or null. */
@@ -287,6 +328,11 @@ function isRelayCandidatePayload(candidate: unknown): boolean {
 export class HubRoom extends DurableObject<Env> {
   private realtimeRate = new Map<string, Map<string, RealtimeRateBucket>>();
   private wsAdmission = new Map<string, WebSocketAdmissionWindow>();
+  // Address-derived rate-limit keys live only in memory. Never serialize them
+  // with a hibernatable WebSocket attachment or persist them in storage.
+  private peerAddressByConnection = new Map<string, string>();
+  // After a failed bot-timer run the next bot wake-up waits this long (auth deadlines don't).
+  private botTimerBackoffUntil = 0;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -304,6 +350,14 @@ export class HubRoom extends DurableObject<Env> {
         } catch {}
         continue;
       }
+    }
+    // Bot timers (schedules, waits, temporary roles). A bot failure must never
+    // stop the auth deadlines above from being re-armed.
+    try {
+      await runAllDueBotTimers(this.env, now);
+    } catch (error) {
+      console.error("bot timers failed", error);
+      this.botTimerBackoffUntil = Date.now() + BOT_TIMER_FAILURE_BACKOFF_MS;
     }
     await this.refreshDeadlineAlarm();
   }
@@ -387,6 +441,15 @@ export class HubRoom extends DurableObject<Env> {
         deadlines.push(state.authDeadlineAt);
       }
     }
+    try {
+      const botTimerAt = await nextBotTimerAt(this.env);
+      // Never re-arm in the past: a due timer the alarm couldn't take (D1
+      // down) would otherwise spin the alarm.
+      if (botTimerAt !== null)
+        deadlines.push(Math.max(botTimerAt, Date.now() + BOT_TIMER_MIN_DELAY_MS, this.botTimerBackoffUntil));
+    } catch (error) {
+      console.error("bot timer lookup failed", error);
+    }
     if (deadlines.length === 0) await this.ctx.storage.deleteAlarm();
     else await this.ctx.storage.setAlarm(Math.min(...deadlines));
   }
@@ -394,7 +457,18 @@ export class HubRoom extends DurableObject<Env> {
   private activeWebSocketsForAddress(address: string): number {
     return this.ctx
       .getWebSockets()
-      .reduce((count, socket) => count + (this.state(socket).peerAddress === address ? 1 : 0), 0);
+      .reduce(
+        (count, socket) =>
+          count + (this.peerAddressByConnection.get(this.state(socket).connectionId) === address ? 1 : 0),
+        0,
+      );
+  }
+
+  private peerAddressForState(state: SocketState): string {
+    // Peer addresses aren't persisted with hibernatable sockets. Keep restored
+    // sockets in independent IDENTIFY failure buckets so one set of revived
+    // unauthenticated sockets can't exhaust a shared "unknown" bucket.
+    return this.peerAddressByConnection.get(state.connectionId) ?? `${UNKNOWN_WS_ADDRESS}:${state.connectionId}`;
   }
 
   private allowWebSocketAdmission(address: string): boolean {
@@ -445,7 +519,7 @@ export class HubRoom extends DurableObject<Env> {
       if ((request.headers.get("Upgrade") ?? "").toLowerCase() !== "websocket") {
         return new Response("Expected WebSocket", { status: 426 });
       }
-      const peerAddress = await peerAddressForRequest(request, this.env);
+      const peerAddress = peerAddressForRequest(request);
       if (!this.allowWebSocketAdmission(peerAddress)) {
         return new Response("Realtime connection temporarily limited.", {
           status: 429,
@@ -460,7 +534,6 @@ export class HubRoom extends DurableObject<Env> {
       const server = pair[1];
       const state: SocketState = {
         connectionId: crypto.randomUUID(),
-        peerAddress,
         authDeadlineAt: Date.now() + WS_AUTH_DEADLINE_MS,
         client: "web",
         userId: null,
@@ -486,7 +559,9 @@ export class HubRoom extends DurableObject<Env> {
         identifyFailures: 0,
         rateLimitViolations: 0,
         lastPresenceTouchAt: 0,
+        ...EMPTY_SFU_FIELDS,
       };
+      this.peerAddressByConnection.set(state.connectionId, peerAddress);
       server.serializeAttachment(state);
       this.ctx.acceptWebSocket(server);
       try {
@@ -499,6 +574,13 @@ export class HubRoom extends DurableObject<Env> {
       }
       server.send(JSON.stringify({ type: "AUTH_REQUIRED" }));
       return new Response(null, { status: 101, webSocket: client });
+    }
+
+    // Wakes the alarm after a bot timer is written. Like every /internal path it
+    // is reachable only through the env binding (index.ts forwards just /connect).
+    if (url.pathname === "/internal/bot-timers/arm" && request.method === "POST") {
+      await this.refreshDeadlineAlarm();
+      return Response.json({ success: true });
     }
 
     if (url.pathname === "/internal/broadcast" && request.method === "POST") {
@@ -583,14 +665,13 @@ export class HubRoom extends DurableObject<Env> {
 
     if (url.pathname === "/internal/count" && request.method === "POST") {
       const body = await request.json<{ hubId?: number }>();
-      const visibleStates = await this.visiblePresenceStates(this.states());
       const ids = new Set(
-        visibleStates
+        this.states()
           .filter((x) => body.hubId === undefined || x.serverId === body.hubId)
           .map((x) => x.userId)
           .filter((x): x is string => !!x),
       );
-      return Response.json({ count: ids.size });
+      return Response.json({ count: (await this.visibleConnectedUserIds([...ids])).size });
     }
 
     // Distinct users connected to each requested voice room (Discover's "in voice" signal).
@@ -603,39 +684,51 @@ export class HubRoom extends DurableObject<Env> {
           .slice(0, 2000),
       );
       const users = new Map<number, Set<string>>();
-      const visibleStates = await this.visiblePresenceStates(this.states());
-      for (const state of visibleStates) {
+      for (const state of this.states()) {
         if (!state.userId || state.voiceChannelId === null || !wanted.has(state.voiceChannelId)) continue;
         const set = users.get(state.voiceChannelId) ?? new Set<string>();
         set.add(state.userId);
         users.set(state.voiceChannelId, set);
       }
+      const connected = [...new Set([...users.values()].flatMap((set) => [...set]))];
+      const visible = await this.visibleConnectedUserIds(connected);
       const counts: Record<string, number> = {};
-      for (const [channelId, set] of users) counts[String(channelId)] = set.size;
+      for (const [channelId, set] of users) {
+        counts[String(channelId)] = [...set].filter((userId) => visible.has(userId)).length;
+      }
       return Response.json({ counts });
     }
 
     if (url.pathname === "/internal/online-users") {
-      const visibleStates = await this.visiblePresenceStates(this.states());
+      const connected = new Set(
+        this.states()
+          .map((x) => x.userId)
+          .filter((x): x is string => !!x),
+      );
       return Response.json({
-        userIds: [...new Set(visibleStates.map((x) => x.userId).filter((x): x is string => !!x))],
+        userIds: [...(await this.visibleConnectedUserIds([...connected]))],
       });
     }
 
     if (url.pathname === "/internal/stats") {
-      const states = await this.visiblePresenceStates(this.states());
+      const states = this.states();
       const authenticatedStates = states.filter((state): state is SocketState & { userId: string } =>
         Boolean(state.userId),
       );
+      const visible = await this.visibleConnectedUserIds([
+        ...new Set(authenticatedStates.map((state) => state.userId)),
+      ]);
       return Response.json({
-        onlineUsers: new Set(authenticatedStates.map((state) => state.userId)).size,
+        onlineUsers: visible.size,
         voiceUsers: new Set(
           authenticatedStates
-            .filter((state) => state.voiceChannelId !== null || state.dmCallAccepted)
+            .filter((state) => visible.has(state.userId) && (state.voiceChannelId !== null || state.dmCallAccepted))
             .map((state) => state.userId),
         ).size,
         screenSharingUsers: new Set(
-          authenticatedStates.filter((state) => state.screenSharing).map((state) => state.userId),
+          authenticatedStates
+            .filter((state) => visible.has(state.userId) && state.screenSharing)
+            .map((state) => state.userId),
         ).size,
       });
     }
@@ -697,7 +790,8 @@ export class HubRoom extends DurableObject<Env> {
 
     if (type === "IDENTIFY") {
       const token = typeof data.token === "string" && data.token.length <= 256 ? data.token : "";
-      if (this.identifyFailuresForAddress(state.peerAddress) >= WS_IDENTIFY_FAILURE_LIMIT_PER_ADDRESS) {
+      const peerAddress = this.peerAddressForState(state);
+      if (this.identifyFailuresForAddress(peerAddress) >= WS_IDENTIFY_FAILURE_LIMIT_PER_ADDRESS) {
         this.send(ws, { type: "AUTH_ERROR", message: "Too many authentication attempts. Try again later." });
         try {
           ws.close(4003, "Too many authentication attempts");
@@ -715,7 +809,7 @@ export class HubRoom extends DurableObject<Env> {
         state = { ...state, identifyFailures: state.identifyFailures + 1 };
         ws.serializeAttachment(state);
         this.send(ws, { type: "AUTH_ERROR", message: "Session expired. Please log in again." });
-        if (state.identifyFailures >= MAX_IDENTIFY_FAILURES || !this.recordIdentifyFailure(state.peerAddress)) {
+        if (state.identifyFailures >= MAX_IDENTIFY_FAILURES || !this.recordIdentifyFailure(peerAddress)) {
           try {
             ws.close(4003, "Too many authentication attempts");
           } catch {}
@@ -906,6 +1000,10 @@ export class HubRoom extends DurableObject<Env> {
         this.send(ws, { type: "ERROR", message: "Only the Hub owner can post in this Hub." });
         return;
       }
+      if (room.kind !== "forum" && !(await canPostInChatRoom(this.env.DB, room, state.userId!))) {
+        this.send(ws, { type: "ERROR", message: `#${room.name} is read-only.`, code: "ROOM_READ_ONLY" });
+        return;
+      }
 
       // A click can race the CHANNEL_JOINED acknowledgement. Once the message
       // itself has passed the same authorization check, synchronize the socket
@@ -1066,11 +1164,14 @@ export class HubRoom extends DurableObject<Env> {
         }
         lockForumPostOnCreate = payload.repliesLocked === true;
       }
-      await this.env.DB.prepare(
+      const inserted = await this.env.DB.prepare(
         `INSERT INTO decave_messages
            (id,room_id,hub_id,author_user_id,text,created_at,reply_to_id,
             attachment_id,attachment_name,attachment_mime,attachment_size,attachment_key)
-           VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
+         SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE ? IS NULL OR EXISTS(
+           SELECT 1 FROM decave_attachment_access
+           WHERE r2_key=? AND kind='channel' AND owner_user_id=? AND hub_id=? AND room_id=?
+         )`,
       )
         .bind(
           id,
@@ -1085,8 +1186,17 @@ export class HubRoom extends DurableObject<Env> {
           typeof attachment?.mimeType === "string" ? attachment.mimeType : null,
           typeof attachment?.size === "number" ? attachment.size : null,
           attachmentKey,
+          attachmentKey,
+          attachmentKey,
+          state.userId,
+          room.hub_id,
+          roomId,
         )
         .run();
+      if (!inserted.meta.changes) {
+        this.send(ws, { type: "ERROR", message: "That attachment isn't available." });
+        return;
+      }
       if (lockForumPostOnCreate) {
         // Row is created by trg_decave_forum_post_insert (migration 0057).
         await this.env.DB.prepare("UPDATE decave_forum_post_state SET locked=1 WHERE message_id=?").bind(id).run();
@@ -1094,6 +1204,23 @@ export class HubRoom extends DurableObject<Env> {
 
       const message = await this.messageForClient(id);
       await this.broadcast({ type: "CHAT_MESSAGE", ...message }, { channelId: roomId });
+
+      // Hub rooms and forums only (DMs and group chats never come through here).
+      // A forum post is matched on its title and body, not its stored payload.
+      const forumPost = room.kind === "forum" && replyToId === null ? parseForumPostPayload(text) : null;
+      queueHubMessage(
+        this.env,
+        {
+          hubId: room.hub_id,
+          roomId,
+          messageId: id,
+          text: forumPost ? `${forumPost.title}\n${forumPost.body}`.trim() : text,
+          actorId: state.userId!,
+          actorIsBot: false,
+          chainDepth: 0,
+        },
+        this.backgroundWork(),
+      );
 
       // Room activity is an account-level notification event, not a
       // current-screen event. Send it to every online member of the Hub so
@@ -1209,6 +1336,14 @@ export class HubRoom extends DurableObject<Env> {
 
     if (type === "DM_MESSAGE") {
       const targetReference = typeof data.targetUserId === "string" ? data.targetUserId : "";
+      const clientMessageId = boundedClientMessageId(data.clientMessageId);
+      const sendDmError = (payload: Record<string, unknown>) =>
+        this.send(ws, {
+          type: "DM_ERROR",
+          targetUserId: targetReference,
+          ...(clientMessageId ? { clientMessageId } : {}),
+          ...payload,
+        });
       const replyToId = typeof data.replyToId === "string" ? data.replyToId : null;
       const targetUser = targetReference ? await userByReference(this.env.DB, targetReference) : null;
       const targetId = targetUser?.id ?? "";
@@ -1218,12 +1353,11 @@ export class HubRoom extends DurableObject<Env> {
         .bind(pair[0], pair[1])
         .first();
       if (!friend) {
-        this.send(ws, { type: "DM_ERROR", message: "Private messages are available between friends." });
+        sendDmError({ message: "Private messages are available between friends." });
         return;
       }
       if (await isBlockedEitherDirection(this.env.DB, state.userId, targetId)) {
-        this.send(ws, {
-          type: "DM_ERROR",
+        sendDmError({
           message: "This user is blocked. Unblock them before sending private messages.",
         });
         return;
@@ -1244,8 +1378,7 @@ export class HubRoom extends DurableObject<Env> {
         // An empty plaintext message is dropped silently, as before.
         if (outgoing.code !== "DM_EMPTY") {
           const envelopeId = (data.envelope as { id?: unknown } | null | undefined)?.id;
-          this.send(ws, {
-            type: "DM_ERROR",
+          sendDmError({
             message: outgoing.error,
             code: outgoing.code,
             messageId: typeof envelopeId === "string" ? envelopeId : null,
@@ -1263,39 +1396,43 @@ export class HubRoom extends DurableObject<Env> {
           .bind(replyToId, state.userId, targetId, targetId, state.userId)
           .first();
         if (!replyTarget) {
-          this.send(ws, { type: "DM_ERROR", message: "The message you are replying to was not found." });
+          sendDmError({ message: "The message you are replying to was not found." });
           return;
         }
       }
       const messageId = outgoing.id ?? crypto.randomUUID();
-      const inserted = await this.env.DB.prepare(
-        `INSERT INTO decave_direct_messages(id,from_user_id,to_user_id,text,envelope,created_at,reply_to_id,attachment_refs)
-         VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`,
-      )
-        .bind(
-          messageId,
-          state.userId,
-          targetId,
-          outgoing.text,
-          outgoing.envelope,
-          nowIso(),
-          replyToId,
-          outgoing.attachmentRefs || null,
-        )
-        .run();
+      const inserted = await insertDirectMessageWithAttachmentGuard(this.env.DB, {
+        id: messageId,
+        fromUserId: state.userId,
+        toUserId: targetId,
+        text: outgoing.text,
+        envelope: outgoing.envelope,
+        createdAt: nowIso(),
+        replyToId,
+        attachmentRefs: outgoing.attachmentRefs || null,
+      });
       if (!inserted.meta.changes) {
-        this.send(ws, { type: "DM_ERROR", message: "That message was already sent.", code: "DM_DUPLICATE" });
+        const duplicate = await this.env.DB.prepare("SELECT 1 FROM decave_direct_messages WHERE id=? LIMIT 1")
+          .bind(messageId)
+          .first();
+        sendDmError(
+          duplicate
+            ? { message: "That message was already sent.", code: "DM_DUPLICATE" }
+            : { message: "That attachment isn't available.", code: "DM_E2EE_INVALID" },
+        );
         return;
       }
       const message = await dmMessageForClient(this.env, messageId);
       if (!message) return;
-      await this.broadcast(
+      await this.broadcastWithClientMessageId(
         {
           type: "DM_MESSAGE",
           message,
           sender: { id: publicIdOf(sender), username: state.username },
         },
         { userIds: [state.userId, targetId] },
+        state.userId,
+        clientMessageId,
       );
       const targetOnline = this.states().some((other) => other.userId === targetId);
       if (!targetOnline) {
@@ -1331,12 +1468,20 @@ export class HubRoom extends DurableObject<Env> {
 
     if (type === "GROUP_MESSAGE") {
       const groupId = typeof data.groupId === "string" ? data.groupId.trim() : "";
+      const clientMessageId = boundedClientMessageId(data.clientMessageId);
+      const sendGroupError = (payload: Record<string, unknown>) =>
+        this.send(ws, {
+          type: "GROUP_ERROR",
+          groupId,
+          ...(clientMessageId ? { clientMessageId } : {}),
+          ...payload,
+        });
       const replyToId = typeof data.replyToId === "string" ? data.replyToId : null;
       const hasEnvelope = data.envelope !== undefined && data.envelope !== null;
       if (!groupId || (!hasEnvelope && !(typeof data.text === "string" && data.text.trim()))) return;
       await ensureGroupChatSchema(this.env.DB);
       if (!(await isGroupChatMember(this.env.DB, groupId, state.userId))) {
-        this.send(ws, { type: "GROUP_ERROR", groupId, message: "You are not a member of this group chat." });
+        sendGroupError({ message: "You are not a member of this group chat." });
         return;
       }
 
@@ -1364,9 +1509,7 @@ export class HubRoom extends DurableObject<Env> {
       });
       if (!outgoing.ok) {
         const envelopeId = (data.envelope as { id?: unknown } | null | undefined)?.id;
-        this.send(ws, {
-          type: "GROUP_ERROR",
-          groupId,
+        sendGroupError({
           message: outgoing.error,
           code: outgoing.code,
           messageId: typeof envelopeId === "string" ? envelopeId : null,
@@ -1381,7 +1524,7 @@ export class HubRoom extends DurableObject<Env> {
           .bind(replyToId, groupId)
           .first();
         if (!replyTarget) {
-          this.send(ws, { type: "GROUP_ERROR", groupId, message: "The message you are replying to was not found." });
+          sendGroupError({ message: "The message you are replying to was not found." });
           return;
         }
       }
@@ -1406,9 +1549,7 @@ export class HubRoom extends DurableObject<Env> {
       }
       const [inserted] = await this.env.DB.batch(statements);
       if (!inserted.meta.changes) {
-        this.send(ws, {
-          type: "GROUP_ERROR",
-          groupId,
+        sendGroupError({
           message: "That message was already sent.",
           code: "DM_DUPLICATE",
         });
@@ -1426,7 +1567,12 @@ export class HubRoom extends DurableObject<Env> {
         timestamp,
         replyToId,
       };
-      await this.broadcast({ type: "GROUP_MESSAGE", groupId, message }, { userIds: memberIds });
+      await this.broadcastWithClientMessageId(
+        { type: "GROUP_MESSAGE", groupId, message },
+        { userIds: memberIds },
+        state.userId,
+        clientMessageId,
+      );
       return;
     }
 
@@ -1610,12 +1756,26 @@ export class HubRoom extends DurableObject<Env> {
         this.send(ws, { type: "VOICE_ERROR", message: "You are currently timed out in this Hub.", code: "TIMED_OUT" });
         return;
       }
+      const cap = Number((room as { user_limit?: number }).user_limit ?? 0);
+      if (cap > 0) {
+        const inside = new Set(
+          this.states()
+            .filter((other) => other.voiceChannelId === room.id && other.userId && other.userId !== state.userId)
+            .map((other) => other.userId),
+        );
+        const role = await getRole(this.env.DB, room.hub_id, state.userId!);
+        if (inside.size >= cap && role !== "owner" && role !== "admin") {
+          this.send(ws, { type: "VOICE_ERROR", message: `This room is full (${cap}/${cap}).`, code: "ROOM_FULL" });
+          return;
+        }
+      }
+      const voiceBefore = voiceRoomsOf(this.states(), state.userId!);
       // DECAVE_PARITY_VOICE_HANDOFF: the newest client wins if this account joins the same voice room elsewhere.
       for (const other of this.ctx.getWebSockets()) {
         if (other === ws) continue;
         const otherState = this.state(other);
         if (otherState.userId === state.userId && otherState.voiceChannelId === room.id)
-          await this.leaveVoice(other, otherState, true);
+          await this.leaveVoice(other, otherState, true, false);
       }
       if (state.voiceChannelId !== null) {
         await this.broadcast(
@@ -1624,7 +1784,7 @@ export class HubRoom extends DurableObject<Env> {
         );
       }
       state = {
-        ...state,
+        ...this.releaseScreenSfu(state),
         serverId: room.hub_id,
         voiceChannelId: room.id,
         voiceMuted: false,
@@ -1637,18 +1797,30 @@ export class HubRoom extends DurableObject<Env> {
       };
       ws.serializeAttachment(state);
       const participant = await this.participant(state);
+      if (participant?.userId) {
+        state = { ...this.state(ws), publicUserId: participant.userId };
+        ws.serializeAttachment(state);
+      }
       const peers = [];
       for (const peerState of this.states()) {
         if (peerState.connectionId !== state.connectionId && peerState.voiceChannelId === room.id) {
           peers.push(await this.participant(peerState));
         }
       }
-      this.send(ws, { type: "VOICE_JOINED", channelId: room.id, participant, peers });
+      // screenSfu: whether this call offers SFU screen share (kill switch); absent/false = mesh only.
+      this.send(ws, {
+        type: "VOICE_JOINED",
+        channelId: room.id,
+        participant,
+        peers,
+        screenSfu: screenSfuEnabled(this.env),
+      });
       await this.broadcast(
         { type: "VOICE_PEER_JOINED", participant },
         { voiceChannelId: room.id, exceptConnectionId: state.connectionId },
       );
       await this.broadcastVoiceState();
+      this.voiceBotEvents(state.userId!, voiceBefore);
       return;
     }
 
@@ -1680,14 +1852,25 @@ export class HubRoom extends DurableObject<Env> {
 
     if (type === "VOICE_SCREEN_STATE") {
       if (data.screenSharing === true && !(await this.voiceMediaAllowed(ws, state))) return;
+      const sharing = data.screenSharing === true;
+      // The display stream id lets viewers tell screen audio from voice; a
+      // message without one (e.g. a preview toggle) keeps the current id.
+      const advertised =
+        typeof data.screenStreamId === "string" && data.screenStreamId.length > 0 && data.screenStreamId.length <= 128
+          ? data.screenStreamId
+          : null;
+      const screenStreamId = sharing ? (advertised ?? state.screenStreamId ?? null) : null;
       if (
-        state.screenSharing === (data.screenSharing === true) &&
-        state.allowStreamPreview === (data.allowStreamPreview !== false)
+        state.screenSharing === sharing &&
+        state.allowStreamPreview === (data.allowStreamPreview !== false) &&
+        (state.screenStreamId ?? null) === screenStreamId
       )
         return;
       state = {
-        ...state,
-        screenSharing: data.screenSharing === true,
+        // Sharing ended: drop the SFU publish too, in case its RTC_SFU_STOP was lost.
+        ...(!sharing && state.screenSfu ? this.releaseScreenSfu(state, true) : state),
+        screenSharing: sharing,
+        screenStreamId,
         allowStreamPreview: data.allowStreamPreview !== false,
       };
       ws.serializeAttachment(state);
@@ -1749,6 +1932,65 @@ export class HubRoom extends DurableObject<Env> {
       state = { ...state, cameraSharing: data.cameraSharing === true };
       ws.serializeAttachment(state);
       await this.broadcastVoiceState();
+      return;
+    }
+
+    if (type.startsWith("RTC_SFU_")) {
+      await this.handleScreenSfu(ws, state, type, data);
+      return;
+    }
+
+    if (type === "VOICE_SFU_CAPABLE") {
+      // Kill switch off: nobody is SFU-capable, so sharers keep sending mesh to everyone.
+      const capable = data.capable === true && screenSfuEnabled(this.env);
+      if (state.voiceChannelId === null || state.sfuScreenCapable === capable) return;
+      state = { ...state, sfuScreenCapable: capable };
+      ws.serializeAttachment(state);
+      await this.broadcastVoiceState();
+      return;
+    }
+
+    // Sealed stream keys and key / mesh-fallback requests: same voice room only.
+    if (type === "RTC_SCREEN_KEY" || type === "RTC_SCREEN_KEY_REQUEST" || type === "RTC_SCREEN_MESH_REQUEST") {
+      const targetConnectionId = typeof data.targetConnectionId === "string" ? data.targetConnectionId : "";
+      const target = this.socketByConnectionId(targetConnectionId);
+      if (!target) return;
+      if (!(await this.socketIsLive(target))) return;
+      const targetState = this.state(target);
+      if (state.voiceChannelId === null || targetState.voiceChannelId !== state.voiceChannelId) return;
+      const key = type === "RTC_SCREEN_KEY" ? keyRelayPayload(data) : null;
+      if (type === "RTC_SCREEN_KEY" && !key) return;
+      let fromUserId = state.publicUserId ?? "";
+      if (!fromUserId) {
+        const sender = await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?")
+          .bind(state.userId)
+          .first<UserRow>();
+        if (!sender) return;
+        fromUserId = publicIdOf(sender);
+      }
+      await this.sendToLive(target, {
+        type,
+        fromConnectionId: state.connectionId,
+        fromUserId,
+        ...(key ?? {}),
+      });
+      return;
+    }
+
+    // A viewer tells a sharer whether it is watching their screen, so the
+    // sharer sends full quality only to viewers who are actually watching.
+    if (type === "RTC_SCREEN_WATCH") {
+      const targetConnectionId = typeof data.targetConnectionId === "string" ? data.targetConnectionId : "";
+      const target = this.socketByConnectionId(targetConnectionId);
+      if (!target) return;
+      if (!(await this.socketIsLive(target))) return;
+      const targetState = this.state(target);
+      if (state.voiceChannelId === null || targetState.voiceChannelId !== state.voiceChannelId) return;
+      await this.sendToLive(target, {
+        type,
+        fromConnectionId: state.connectionId,
+        watching: data.watching === true,
+      });
       return;
     }
 
@@ -1830,19 +2072,28 @@ export class HubRoom extends DurableObject<Env> {
   async webSocketClose(ws: WebSocket): Promise<void> {
     const state = this.state(ws);
     this.realtimeRate.delete(state.connectionId);
+    this.peerAddressByConnection.delete(state.connectionId);
     if (state.userId) await touchRealtimePresence(this.env.DB, state.userId);
     if (state.voiceChannelId !== null) {
+      const voiceBefore = state.userId ? voiceRoomsOf(this.states(), state.userId) : null;
       // Clear the voice binding before rebroadcasting: the closing socket can
       // still be returned by getWebSockets() during this handler, which used to
       // leave a ghost participant in VOICE_STATE.
       try {
-        ws.serializeAttachment({ ...state, voiceChannelId: null, screenSharing: false, cameraSharing: false });
+        ws.serializeAttachment({
+          ...this.releaseScreenSfu(state),
+          voiceChannelId: null,
+          screenSharing: false,
+          screenStreamId: null,
+          cameraSharing: false,
+        });
       } catch {}
+      if (voiceBefore && state.userId) this.voiceBotEvents(state.userId, voiceBefore);
       await this.broadcast(
         { type: "VOICE_PEER_LEFT", connectionId: state.connectionId },
         { voiceChannelId: state.voiceChannelId, exceptConnectionId: state.connectionId },
       );
-    }
+    } else this.releaseScreenSfu(state);
     if (state.dmCallId) {
       await this.endDirectCall(ws, { ...state, voiceChannelId: null }, "peer-offline");
     }
@@ -1855,9 +2106,25 @@ export class HubRoom extends DurableObject<Env> {
     await this.webSocketClose(ws);
   }
 
+  private async visibleConnectedUserIds(userIds: string[]): Promise<Set<string>> {
+    const visible = new Set<string>();
+    for (let offset = 0; offset < userIds.length; offset += 90) {
+      const chunk = userIds.slice(offset, offset + 90);
+      const users = await this.env.DB.prepare(
+        `SELECT id,status FROM decave_users WHERE id IN (${chunk.map(() => "?").join(",")})`,
+      )
+        .bind(...chunk)
+        .all<{ id: string; status: UserRow["status"] }>();
+      for (const user of users.results) if (presenceOnline(user, true)) visible.add(user.id);
+    }
+    return visible;
+  }
+
   private state(ws: WebSocket): SocketState {
-    const attached = ws.deserializeAttachment() as Partial<SocketState> | null;
+    const attached = ws.deserializeAttachment() as (Partial<SocketState> & { peerAddress?: unknown }) | null;
     if (attached) {
+      // Remove address pseudonyms from attachments written by older versions.
+      const { peerAddress: legacyPeerAddress, ...withoutPeerAddress } = attached;
       const authenticated = typeof attached.userId === "string" && attached.userId.length > 0;
       const authDeadlineAt = authenticated
         ? 0
@@ -1867,8 +2134,8 @@ export class HubRoom extends DurableObject<Env> {
           ? attached.authDeadlineAt
           : Date.now() + WS_AUTH_DEADLINE_MS;
       const normalized = {
-        ...attached,
-        peerAddress: normalizedPeerAddress(attached.peerAddress),
+        ...EMPTY_SFU_FIELDS,
+        ...withoutPeerAddress,
         sessionHash: typeof attached.sessionHash === "string" ? attached.sessionHash : null,
         authDeadlineAt,
         identifyFailures:
@@ -1884,7 +2151,7 @@ export class HubRoom extends DurableObject<Env> {
             ? attached.rateLimitViolations
             : 0,
       } as SocketState;
-      if (attached.authDeadlineAt !== authDeadlineAt || attached.peerAddress !== normalized.peerAddress) {
+      if (attached.authDeadlineAt !== authDeadlineAt || legacyPeerAddress !== undefined) {
         try {
           ws.serializeAttachment(normalized);
         } catch {}
@@ -1893,7 +2160,6 @@ export class HubRoom extends DurableObject<Env> {
     }
     return {
       connectionId: crypto.randomUUID(),
-      peerAddress: UNKNOWN_WS_ADDRESS,
       client: "web",
       userId: null,
       sessionHash: null,
@@ -1907,6 +2173,7 @@ export class HubRoom extends DurableObject<Env> {
       voiceServerMuted: false,
       voiceServerDeafened: false,
       screenSharing: false,
+      screenStreamId: null,
       allowStreamPreview: true,
       cameraSharing: false,
       dmCallId: null,
@@ -1919,29 +2186,12 @@ export class HubRoom extends DurableObject<Env> {
       identifyFailures: 0,
       rateLimitViolations: 0,
       lastPresenceTouchAt: 0,
+      ...EMPTY_SFU_FIELDS,
     };
   }
 
   private states(): SocketState[] {
     return this.ctx.getWebSockets().map((ws) => this.state(ws));
-  }
-
-  /** Hide invisible accounts from aggregate and public presence snapshots. */
-  private async visiblePresenceStates(states: SocketState[]): Promise<SocketState[]> {
-    const ids = [...new Set(states.map((state) => state.userId).filter((id): id is string => !!id))];
-    if (!ids.length) return states.filter((state) => !state.userId);
-    const visibleIds = new Set<string>();
-    for (let offset = 0; offset < ids.length; offset += 90) {
-      const batch = ids.slice(offset, offset + 90);
-      const placeholders = batch.map(() => "?").join(",");
-      const rows = await this.env.DB.prepare(
-        `SELECT id FROM decave_users WHERE id IN (${placeholders}) AND status!='invisible' AND deleted_at IS NULL`,
-      )
-        .bind(...batch)
-        .all<{ id: string }>();
-      for (const row of rows.results) visibleIds.add(row.id);
-    }
-    return states.filter((state) => !state.userId || visibleIds.has(state.userId));
   }
 
   private send(ws: WebSocket, payload: unknown): void {
@@ -2038,6 +2288,23 @@ export class HubRoom extends DurableObject<Env> {
     }
   }
 
+  private async broadcastWithClientMessageId(
+    payload: Record<string, unknown>,
+    filter: Filter,
+    senderUserId: string,
+    clientMessageId: string | null,
+  ): Promise<void> {
+    const recipients = await this.liveRecipients(filter);
+    for (const ws of recipients) {
+      const socketState = this.state(ws);
+      const recipientPayload =
+        clientMessageId && socketState.userId === senderUserId ? { ...payload, clientMessageId } : payload;
+      try {
+        ws.send(JSON.stringify(recipientPayload));
+      } catch {}
+    }
+  }
+
   private socketByConnectionId(id: string): WebSocket | null {
     return this.ctx.getWebSockets().find((ws) => this.state(ws).connectionId === id) ?? null;
   }
@@ -2112,6 +2379,22 @@ export class HubRoom extends DurableObject<Env> {
       );
       streamerHubIds = new Set<number>();
     }
+    // Counts are another presence signal: invisible sockets must not contribute
+    // to another member's online count, even when the roster itself is hidden.
+    const liveStates = (await this.liveRecipients({})).map((socket) => this.state(socket));
+    const liveUserIds = [...new Set(liveStates.map((state) => state.userId).filter((id): id is string => !!id))];
+    const visibleUsers = new Set<string>();
+    for (let offset = 0; offset < liveUserIds.length; offset += 90) {
+      const chunk = liveUserIds.slice(offset, offset + 90);
+      const users = await this.env.DB.prepare(
+        `SELECT id,status FROM decave_users WHERE id IN (${chunk.map(() => "?").join(",")})`,
+      )
+        .bind(...chunk)
+        .all<Pick<UserRow, "id" | "status">>();
+      for (const user of users.results) {
+        if (user.id === userId || presenceOnline(user, true)) visibleUsers.add(user.id);
+      }
+    }
     const servers = [];
     for (const h of rows.results) {
       const channelRows = await this.env.DB.prepare("SELECT * FROM decave_rooms WHERE hub_id=? ORDER BY position,id")
@@ -2142,10 +2425,7 @@ export class HubRoom extends DurableObject<Env> {
         visibility: h.visibility,
         memberCount: Number(count?.count ?? 0),
         onlineCount: new Set(
-          (await this.visiblePresenceStates(this.states()))
-            .filter((s) => s.serverId === h.id)
-            .map((s) => s.userId)
-            .filter(Boolean),
+          liveStates.filter((s) => s.serverId === h.id && s.userId && visibleUsers.has(s.userId)).map((s) => s.userId),
         ).size,
         description: h.description,
         accent: h.accent,
@@ -2182,25 +2462,33 @@ export class HubRoom extends DurableObject<Env> {
         if (st.userId !== viewer.userId && !friendIds.has(st.userId) && !sameHub) continue;
         const u = await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(st.userId).first<UserRow>();
         if (!u) continue;
-        if (u.status === "invisible" && st.userId !== viewer.userId) continue;
-        const visibleStatus = u.status;
+        const self = st.userId === viewer.userId;
+        // Roster membership itself reveals a live connection, even with an offline status.
+        if (!self && !presenceOnline(u, true)) continue;
+        const canSeeHub = Boolean(st.serverId && (self || (await getRole(this.env.DB, st.serverId, viewer.userId))));
+        if (!self && !friendIds.has(st.userId) && !canSeeHub) continue;
+        const selectedRoom = canSeeHub && st.channelId ? await getRoom(this.env.DB, st.channelId) : null;
+        const canSeeRoom = Boolean(
+          selectedRoom &&
+          selectedRoom.hub_id === st.serverId &&
+          (self || (await canAccessRoom(this.env.DB, selectedRoom, viewer.userId))),
+        );
+        const presence = presenceFieldsFor(
+          u,
+          true,
+          st.userId === viewer.userId ? "self" : friendIds.has(st.userId) ? "friend" : "other",
+        );
         users.push({
           id: st.connectionId,
           userId: publicIdOf(u),
           username: st.username,
           avatarUrl: publicUser(u).avatarUrl,
-          serverId: st.serverId,
-          channelId: st.channelId,
-          role: st.serverId ? await getRole(this.env.DB, st.serverId, st.userId) : null,
-          status: visibleStatus,
-          statusText: visibleStatus === "invisible" ? "" : u.status_text,
-          activityText:
-            visibleStatus === "invisible"
-              ? ""
-              : activityTextFor(
-                  u,
-                  st.userId === viewer.userId ? "self" : friendIds.has(st.userId) ? "friend" : "other",
-                ),
+          serverId: canSeeHub ? st.serverId : 0,
+          channelId: canSeeRoom ? st.channelId : 0,
+          role: canSeeHub ? await getRole(this.env.DB, st.serverId, st.userId) : null,
+          status: presence.status,
+          statusText: presence.statusText,
+          activityText: presence.activityText,
           bio: u.bio,
           accent: u.accent,
         });
@@ -2232,15 +2520,8 @@ export class HubRoom extends DurableObject<Env> {
         .filter(Boolean),
     );
     const map = (u: UserRow, relation: "friend" | "other") => {
-      const isOnline = online.has(u.id) && u.status !== "invisible";
-      const pub = publicUser(u);
-      return {
-        ...pub,
-        status: isOnline ? u.status : "invisible",
-        statusText: isOnline ? u.status_text : "",
-        activityText: isOnline ? activityTextFor(u, relation) : "",
-        online: isOnline,
-      };
+      const isOnline = presenceOnline(u, online.has(u.id));
+      return { ...publicUserWithPresence(u, isOnline, relation), online: isOnline };
     };
     this.send(ws, {
       type: "SOCIAL_STATE",
@@ -2267,6 +2548,7 @@ export class HubRoom extends DurableObject<Env> {
       serverMuted: s.voiceServerMuted,
       serverDeafened: s.voiceServerDeafened,
       screenSharing: false,
+      screenStreamId: null,
       allowStreamPreview: false,
       cameraSharing: s.dmCallVideo || s.cameraSharing,
     };
@@ -2314,8 +2596,11 @@ export class HubRoom extends DurableObject<Env> {
       serverMuted: s.voiceServerMuted,
       serverDeafened: s.voiceServerDeafened,
       screenSharing: s.screenSharing,
+      screenStreamId: s.screenSharing ? (s.screenStreamId ?? null) : null,
       allowStreamPreview: s.allowStreamPreview,
       cameraSharing: s.cameraSharing,
+      screenSfu: s.screenSfu ? { sessionId: s.screenSfu.sessionId, trackName: s.screenSfu.trackName } : null,
+      sfuScreenCapable: s.sfuScreenCapable === true,
     };
   }
 
@@ -2434,7 +2719,9 @@ export class HubRoom extends DurableObject<Env> {
                   : "You no longer have access to this voice room.",
               code: !voiceRoom ? "ROOM_DELETED" : timedOut ? "TIMED_OUT" : "ACCESS_REVOKED",
             });
+            const voiceBefore = voiceRoomsOf(this.states(), s.userId);
             await this.leaveVoiceQuiet(socket, s);
+            this.voiceBotEvents(s.userId, voiceBefore, hubId);
             s = this.state(socket);
             voiceChanged = true;
             changed++;
@@ -2473,16 +2760,204 @@ export class HubRoom extends DurableObject<Env> {
     return changed;
   }
 
+  /** Best-effort background close of Realtime tracks; logs only the error code. */
+  private closeSfuTracks(sessionId: string, mids: string[]): void {
+    if (mids.length === 0 || !screenSfuEnabled(this.env)) return;
+    const client = createRealtimeClient(this.env);
+    inBackground(async () => {
+      try {
+        await client.closeTracks(sessionId, mids);
+      } catch (error) {
+        console.warn("[screen-sfu] close failed", error instanceof RealtimeSfuError ? error.code : "unknown");
+      }
+    }, this.backgroundWork());
+  }
+
+  /**
+   * Clears this connection's SFU state and closes its Realtime sessions in the
+   * background (best effort). Returns the cleared state; the caller persists it.
+   * `publishOnly` keeps the viewer's pull session and capability (RTC_SFU_STOP).
+   * When a publish ends, every viewer's pull of it is dropped and closed too.
+   */
+  private releaseScreenSfu(state: SocketState, publishOnly = false): SocketState {
+    for (const { sessionId, mids } of sfuCloses(
+      publishOnly ? { ...state, sfuPullSessionId: null, sfuPulls: {} } : state,
+    ))
+      this.closeSfuTracks(sessionId, mids);
+    if (state.screenSfu) {
+      for (const socket of this.ctx.getWebSockets()) {
+        const viewerState = this.state(socket);
+        if (viewerState.connectionId === state.connectionId) continue;
+        const pruned = pruneViewerPull(viewerState, state.connectionId);
+        if (!pruned.close) continue;
+        try {
+          socket.serializeAttachment(pruned.viewer);
+        } catch {}
+        this.closeSfuTracks(pruned.close.sessionId, pruned.close.mids);
+      }
+    }
+    if (publishOnly) return { ...state, screenSfu: null };
+    return { ...state, screenSfu: null, sfuScreenCapable: false, sfuPullSessionId: null, sfuPulls: {} };
+  }
+
+  /** RTC_SFU_* requests drive Cloudflare Realtime for this connection. Each replies RTC_SFU_RESULT. */
+  private async handleScreenSfu(
+    ws: WebSocket,
+    state: SocketState,
+    type: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    const requestId = parseRequestId(data.requestId);
+    if (!requestId) return;
+    if (!screenSfuEnabled(this.env)) {
+      this.send(ws, sfuDisabledResult(requestId));
+      return;
+    }
+    const fail = (error: string) => this.send(ws, sfuErrorResult(requestId, error));
+    const client = createRealtimeClient(this.env);
+    // The pulled track always comes from the sharer's stored state, never from client input.
+    const sharerFor = async () => {
+      const sharerConnectionId = typeof data.sharerConnectionId === "string" ? data.sharerConnectionId : "";
+      const socket = this.socketByConnectionId(sharerConnectionId);
+      if (!socket || !(await this.socketIsLive(socket))) return null;
+      const sharer = this.state(socket);
+      if (!canPull(state, sharer) || !sharer.screenSfu) return null;
+      return {
+        connectionId: sharer.connectionId,
+        sessionId: sharer.screenSfu.sessionId,
+        trackName: sharer.screenSfu.trackName,
+      };
+    };
+    try {
+      if (type === "RTC_SFU_PUBLISH") {
+        const offer = parseSdp(data.offer, "offer");
+        const mid = parseMid(data.mid);
+        if (!offer || !mid) return fail("bad-request");
+        if (!(await this.voiceMediaAllowed(ws, state))) return fail("not-in-voice");
+        if (state.screenSfu) {
+          state = this.releaseScreenSfu(state, true);
+          ws.serializeAttachment(state);
+        }
+        const trackName = trackNameFor(state.connectionId);
+        const { sessionId } = await client.newSession();
+        const { answer } = await client.pushTrack(sessionId, offer, mid, trackName);
+        const published = { sessionId, trackName, mid };
+        // Re-read after the awaits: the socket may have left voice or published concurrently.
+        let current = this.state(ws);
+        if (current.voiceChannelId === null || current.voiceChannelId !== state.voiceChannelId) {
+          this.closeSfuTracks(sessionId, [mid]);
+          return fail("not-in-voice");
+        }
+        // A concurrent publish landed first: close it, the newest publish wins.
+        if (current.screenSfu) current = this.releaseScreenSfu(current, true);
+        ws.serializeAttachment({ ...current, screenSfu: published });
+        this.send(ws, sfuResult(requestId, { sessionId, answer, trackName }));
+        await this.broadcastVoiceState();
+        return;
+      }
+      if (type === "RTC_SFU_PULL") {
+        const rid = parseRid(data.rid);
+        if (!rid) return fail("bad-request");
+        const sharer = await sharerFor();
+        if (!sharer) return fail("forbidden");
+        if (!state.sfuPulls[sharer.connectionId] && Object.keys(state.sfuPulls).length >= MAX_SFU_PULLS)
+          return fail("too-many-pulls");
+        let pullSessionId = state.sfuPullSessionId;
+        if (!pullSessionId) {
+          const created = (await client.newSession()).sessionId;
+          // A concurrent pull may have created the session meanwhile; reuse it (the
+          // unused new session has no tracks and expires on its own).
+          const latest = this.state(ws);
+          if (latest.voiceChannelId !== state.voiceChannelId) return fail("not-in-voice");
+          pullSessionId = latest.sfuPullSessionId ?? created;
+          if (!latest.sfuPullSessionId) ws.serializeAttachment({ ...latest, sfuPullSessionId: pullSessionId });
+        }
+        const pulled = await client.pullTrack(
+          pullSessionId,
+          { sessionId: sharer.sessionId, trackName: sharer.trackName },
+          rid,
+        );
+        const current = this.state(ws);
+        if (current.voiceChannelId !== state.voiceChannelId || current.sfuPullSessionId !== pullSessionId) {
+          this.closeSfuTracks(pullSessionId, [pulled.mid]);
+          return fail("not-in-voice");
+        }
+        const stillSharing = await sharerFor();
+        if (!stillSharing || stillSharing.sessionId !== sharer.sessionId) {
+          this.closeSfuTracks(pullSessionId, [pulled.mid]);
+          return fail("forbidden");
+        }
+        // A repeat (or concurrent) pull of this sharer replaces the old track: close it.
+        const previousMid = current.sfuPulls[sharer.connectionId];
+        if (previousMid && previousMid !== pulled.mid) this.closeSfuTracks(pullSessionId, [previousMid]);
+        ws.serializeAttachment({
+          ...current,
+          sfuPulls: { ...current.sfuPulls, [sharer.connectionId]: pulled.mid },
+        });
+        this.send(
+          ws,
+          sfuResult(requestId, {
+            offer: pulled.offer,
+            mid: pulled.mid,
+            requiresImmediateRenegotiation: pulled.requiresImmediateRenegotiation,
+          }),
+        );
+        return;
+      }
+      if (type === "RTC_SFU_LAYER") {
+        const rid = parseRid(data.rid);
+        const mid = parseMid(data.mid);
+        if (!rid || !mid) return fail("bad-request");
+        const sharer = await sharerFor();
+        if (!sharer || !state.sfuPullSessionId || state.sfuPulls[sharer.connectionId] !== mid) return fail("forbidden");
+        await client.setLayer(
+          state.sfuPullSessionId,
+          mid,
+          { sessionId: sharer.sessionId, trackName: sharer.trackName },
+          rid,
+        );
+        this.send(ws, sfuResult(requestId));
+        return;
+      }
+      if (type === "RTC_SFU_RENEGOTIATE") {
+        const answer = parseSdp(data.answer, "answer");
+        if (!answer) return fail("bad-request");
+        if (!state.sfuPullSessionId) return fail("no-session");
+        await client.renegotiate(state.sfuPullSessionId, answer);
+        this.send(ws, sfuResult(requestId));
+        return;
+      }
+      if (type === "RTC_SFU_STOP") {
+        // Scoped by sessionId when given: a stale stop must not end a newer publish.
+        if (state.screenSfu && !stopReleasesPublish(state.screenSfu, data.sessionId)) {
+          this.send(ws, sfuResult(requestId));
+          return;
+        }
+        const hadPublish = state.screenSfu !== null;
+        ws.serializeAttachment(this.releaseScreenSfu(state, true));
+        this.send(ws, sfuResult(requestId));
+        if (hadPublish) await this.broadcastVoiceState();
+        return;
+      }
+      fail("unknown-request");
+    } catch (error) {
+      const code = error instanceof RealtimeSfuError ? error.code : "sfu-error";
+      console.warn("[screen-sfu] request failed", type, code);
+      fail(code);
+    }
+  }
+
   /** leaveVoice without the per-socket voice-state rebroadcast (caller batches it). */
   private async leaveVoiceQuiet(ws: WebSocket, state: SocketState): Promise<void> {
     const previous = state.voiceChannelId;
     if (previous === null) return;
     ws.serializeAttachment({
-      ...state,
+      ...this.releaseScreenSfu(state),
       voiceChannelId: null,
       voiceServerMuted: false,
       voiceServerDeafened: false,
       screenSharing: false,
+      screenStreamId: null,
       allowStreamPreview: true,
       cameraSharing: false,
     });
@@ -2493,18 +2968,20 @@ export class HubRoom extends DurableObject<Env> {
     this.send(ws, { type: "VOICE_LEFT" });
   }
 
-  private async leaveVoice(ws: WebSocket, state: SocketState, notifySelf: boolean): Promise<void> {
+  private async leaveVoice(ws: WebSocket, state: SocketState, notifySelf: boolean, botEvents = true): Promise<void> {
     const previous = state.voiceChannelId;
     if (previous === null) {
       if (notifySelf) this.send(ws, { type: "VOICE_LEFT" });
       return;
     }
+    const voiceBefore = state.userId ? voiceRoomsOf(this.states(), state.userId) : null;
     const next = {
-      ...state,
+      ...this.releaseScreenSfu(state),
       voiceChannelId: null,
       voiceServerMuted: false,
       voiceServerDeafened: false,
       screenSharing: false,
+      screenStreamId: null,
       allowStreamPreview: true,
       cameraSharing: false,
     };
@@ -2516,6 +2993,45 @@ export class HubRoom extends DurableObject<Env> {
     if (notifySelf) this.send(ws, { type: "VOICE_LEFT" });
 
     await this.broadcastVoiceState();
+    if (botEvents && voiceBefore && state.userId) this.voiceBotEvents(state.userId, voiceBefore);
+  }
+
+  /** waitUntil for background work, when this runtime has one. */
+  private backgroundWork(): ((work: Promise<unknown>) => void) | undefined {
+    return typeof this.ctx.waitUntil === "function" ? (work) => this.ctx.waitUntil(work) : undefined;
+  }
+
+  /**
+   * Bot voiceJoin/voiceLeave for a user's actual change of voice rooms (all
+   * their sockets together), so a device handoff or second device is silent.
+   */
+  private voiceBotEvents(userId: string, before: Set<number>, hubIdHint?: number): void {
+    const after = voiceRoomsOf(this.states(), userId);
+    const changes: [number, "voiceJoin" | "voiceLeave"][] = [
+      ...[...after].filter((id) => !before.has(id)).map((id): [number, "voiceJoin"] => [id, "voiceJoin"]),
+      ...[...before].filter((id) => !after.has(id)).map((id): [number, "voiceLeave"] => [id, "voiceLeave"]),
+    ];
+    for (const [roomId, kind] of changes) {
+      inBackground(async () => {
+        // A deleted room has no row left; the caller then names its hub.
+        const room = await getRoom(this.env.DB, roomId);
+        const hubId = room?.hub_id ?? hubIdHint;
+        if (!hubId) return;
+        queueBotEvent(
+          this.env,
+          {
+            hubId,
+            roomId,
+            kind,
+            actorId: userId,
+            actorIsBot: false,
+            chainDepth: 0,
+            data: { roomId: String(roomId) },
+          },
+          this.backgroundWork(),
+        );
+      }, this.backgroundWork());
+    }
   }
 
   private async messageForClient(id: string) {

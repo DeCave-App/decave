@@ -26,6 +26,7 @@ import type {
   VoiceJoinAttempt,
 } from "../types";
 import type { RealtimeAppHandlers } from "../../realtime/events";
+import type { VoiceEventContext } from "../../realtime/events/voice";
 import type { VoiceCallState } from "../state/voice-call";
 import type { CallMediaState } from "../state/call-media";
 import type { ComposerState } from "../state/composer";
@@ -36,8 +37,11 @@ import type { DirectMessageActions } from "../actions/direct-messages";
 import type { VoiceControlActions } from "../actions/voice-controls";
 import type { NotifyLevels } from "../../features/settings/notifyLevels";
 import type { NotificationPreview } from "../../privacy/notification-preview";
+import type { PendingSocialMessage } from "../actions/social-message-recovery";
 import {
   dmE2ee,
+  discardDmSend,
+  discardGroupSend,
   retryFrameAfterDmError,
   retryGroupFrameAfterError,
   settleDmSend,
@@ -75,9 +79,13 @@ export type RealtimeAppHandlersDeps = {
   groupChats: GroupChat[];
   setActiveGroupChat: Dispatch<SetStateAction<GroupChat | null>>;
   setGroupMessages: Dispatch<SetStateAction<GroupChatMessage[]>>;
+  setGroupDrafts: Dispatch<SetStateAction<Record<string, string>>>;
+  setGroupInput: Dispatch<SetStateAction<string>>;
   setGroupError: Dispatch<SetStateAction<string>>;
   setShowGroupMembers: Dispatch<SetStateAction<boolean>>;
   setDmMessages: Dispatch<SetStateAction<DirectMessage[]>>;
+  setDmDrafts: Dispatch<SetStateAction<Record<string, string>>>;
+  setDmInput: Dispatch<SetStateAction<string>>;
   setDmError: Dispatch<SetStateAction<string>>;
   setDmUnread: Dispatch<SetStateAction<Record<string, number>>>;
   setDmNotice: Dispatch<SetStateAction<DmNotice | null>>;
@@ -124,6 +132,9 @@ export type RealtimeAppHandlersDeps = {
   isServerDeafenedRef: MutableRefObject<boolean>;
   activeDmUserRef: MutableRefObject<SocialUser | null>;
   activeGroupChatRef: MutableRefObject<GroupChat | null>;
+  pendingSocialMessagesRef: MutableRefObject<Map<string, PendingSocialMessage>>;
+  dmDraftRevisionRef: MutableRefObject<Record<string, number>>;
+  groupDraftRevisionRef: MutableRefObject<Record<string, number>>;
   peerSessionsRef: MutableRefObject<Map<string, PeerSession>>;
   dmNoticeTimerRef: MutableRefObject<number | null>;
   storeToken: (token: string) => void;
@@ -148,6 +159,9 @@ export type RealtimeAppHandlersDeps = {
     auth?: unknown,
   ) => Promise<void>;
   handleRtcCandidate: (participant: VoiceParticipant, candidate: RTCIceCandidateInit) => Promise<void>;
+  handleScreenWatch: (fromConnectionId: string, watching: boolean) => void;
+  screenSfu: VoiceEventContext["screenSfu"];
+  screenSfuViewer: VoiceEventContext["screenSfuViewer"];
   finishVoiceJoinAttempt: (channelId: number) => void;
   acceptsVoiceJoinAcknowledgement: (channelId: number) => boolean;
   rejoinVoiceAfterRealtimeReconnect: (channelId: number, socket: WebSocket) => Promise<void>;
@@ -190,9 +204,13 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
     groupChats,
     setActiveGroupChat,
     setGroupMessages,
+    setGroupDrafts,
+    setGroupInput,
     setGroupError,
     setShowGroupMembers,
     setDmMessages,
+    setDmDrafts,
+    setDmInput,
     setDmError,
     setDmUnread,
     setDmNotice,
@@ -224,6 +242,9 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
     isServerDeafenedRef,
     activeDmUserRef,
     activeGroupChatRef,
+    pendingSocialMessagesRef,
+    dmDraftRevisionRef,
+    groupDraftRevisionRef,
     peerSessionsRef,
     dmNoticeTimerRef,
     storeToken,
@@ -244,6 +265,9 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
     ensureVoicePeersFromState,
     handleRtcDescription,
     handleRtcCandidate,
+    handleScreenWatch,
+    screenSfu,
+    screenSfuViewer,
     finishVoiceJoinAttempt,
     acceptsVoiceJoinAcknowledgement,
     rejoinVoiceAfterRealtimeReconnect,
@@ -304,9 +328,13 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
           groupChats,
           setActiveGroupChat,
           setGroupMessages,
+          setGroupDrafts,
+          setGroupInput,
           setGroupError,
           setShowGroupMembers,
           setDmMessages,
+          setDmDrafts,
+          setDmInput,
           setDmError,
           setDmUnread,
           setDmNotice,
@@ -316,6 +344,9 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
           mutedUserIdsRef,
           activeDmUserRef,
           activeGroupChatRef,
+          pendingSocialMessagesRef,
+          dmDraftRevisionRef,
+          groupDraftRevisionRef,
           dmNoticeTimerRef,
           notificationPreviewMode,
           notificationPreviewText,
@@ -331,6 +362,7 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
             open: (message) => dmE2ee.open(message),
             retryFrame: retryFrameAfterDmError,
             settle: settleDmSend,
+            discardDmSend,
             openGroup: (message, groupId) => dmE2ee.openGroup(message, groupId),
             retryGroupFrame: (error) =>
               retryGroupFrameAfterError(error, (groupId) =>
@@ -339,6 +371,7 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
                   : (groupChats.find((group) => group.id === groupId) ?? null),
               ),
             settleGroup: settleGroupSend,
+            discardGroupSend,
           },
         },
         chat: {
@@ -397,6 +430,9 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
           ensureVoicePeersFromState,
           handleRtcDescription,
           handleRtcCandidate,
+          handleScreenWatch,
+          screenSfu,
+          screenSfuViewer,
           finishVoiceJoinAttempt,
           acceptsVoiceJoinAcknowledgement,
           cleanupVoiceLocal,

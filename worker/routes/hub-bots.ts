@@ -1,9 +1,11 @@
 // Hub bots: managing bots and their tokens, and bots posting messages.
 
 import { idFromPath, json, boundedBodyJson } from "../lib/http";
-import { requireUser } from "../lib/sessions";
-import { hasPermission, createRawToken, nowIso, tokenHash, audit, getRoom } from "../db";
+import { accountAccessError, requireUser } from "../lib/sessions";
+import { hasPermission, createRawToken, nowIso, tokenHash, audit, getRoom, type UserRow } from "../db";
 import {
+  botMessageText,
+  postBotMessage,
   type HubBotRecord,
   hubBotForClient,
   normalizeHubBotCapabilities,
@@ -14,11 +16,10 @@ import {
 } from "../lib/hub-bots";
 import { canAccessRoom } from "../lib/hubs";
 import { requireHubPostingPermission } from "../lib/official-hubs";
-import { messageForClient } from "../lib/messages";
-import { realtimeBroadcast } from "../lib/realtime";
+import { queueHubMessage } from "../bots/events";
 import type { ApiContext } from "./context";
 
-export async function handleHubBotRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
+export async function handleHubBotRoutes({ request, env, p, method, ctx }: ApiContext): Promise<Response | null> {
   const hubBots = idFromPath(p, /^\/api\/servers\/(\d+)\/bots$/);
   if (hubBots && (method === "GET" || method === "POST")) {
     const user = await requireUser(request, env);
@@ -28,7 +29,7 @@ export async function handleHubBotRoutes({ request, env, p, method }: ApiContext
       return json({ error: "Manage Rooms permission required" }, 403);
     if (method === "GET") {
       const rows = await env.DB.prepare(
-        "SELECT id,hub_id,name,description,enabled,capabilities,allowed_room_ids,created_at FROM decave_hub_bots WHERE hub_id=? ORDER BY created_at DESC",
+        "SELECT id,hub_id,name,description,enabled,capabilities,allowed_room_ids,created_at FROM decave_hub_bots WHERE hub_id=? AND kind='token' ORDER BY created_at DESC",
       )
         .bind(hubId)
         .all<HubBotRecord>();
@@ -197,6 +198,13 @@ export async function handleHubBotRoutes({ request, env, p, method }: ApiContext
         allowed_room_ids: string | null;
       }>();
     if (!bot || bot.enabled !== 1) return json({ error: "Invalid or disabled bot" }, 401);
+    const creator = await env.DB.prepare("SELECT * FROM decave_users WHERE id=? LIMIT 1")
+      .bind(bot.created_by)
+      .first<UserRow>();
+    if (!creator) return json({ error: "Bot creator no longer has access." }, 403);
+    const creatorAccessError = accountAccessError(creator);
+    if (creatorAccessError) return creatorAccessError;
+
     const body = await boundedBodyJson(request, 16 * 1024);
     if (!body) return json({ error: "Bot request is too large" }, 413, { "Cache-Control": "no-store, private" });
     const action = body.action === undefined ? "send_message" : body.action;
@@ -252,18 +260,31 @@ export async function handleHubBotRoutes({ request, env, p, method }: ApiContext
         return json({ error: "Invalid structured bot payload" }, 400);
       }
     }
-    const id = crypto.randomUUID();
-    const stored = `__DECAVE_BOT__${JSON.stringify({ botId: bot.id, name: bot.name, text })}`;
     const postingError = await requireHubPostingPermission(env.DB, bot.hub_id, bot.created_by);
     if (postingError) return postingError;
-    await env.DB.prepare(
-      "INSERT INTO decave_messages(id,room_id,hub_id,author_user_id,text,created_at) VALUES(?,?,?,?,?,?)",
-    )
-      .bind(id, roomId, bot.hub_id, bot.created_by, stored, nowIso())
-      .run();
-    const message = await messageForClient(env, id);
+    const message = await postBotMessage(env, {
+      hubId: bot.hub_id,
+      roomId,
+      botId: bot.id,
+      authorUserId: bot.created_by,
+      text: botMessageText(bot, text),
+    });
     if (!message) return json({ error: "Could not load bot message" }, 500);
-    await realtimeBroadcast(env, { type: "CHAT_MESSAGE", ...message }, { channelId: roomId });
+    // Builder bots that opt in to bot triggers see token-bot messages (chain depth 1).
+    if (action === "send_message")
+      queueHubMessage(
+        env,
+        {
+          hubId: bot.hub_id,
+          roomId,
+          messageId: message.id,
+          text,
+          actorId: bot.created_by,
+          actorIsBot: true,
+          chainDepth: 1,
+        },
+        ctx ? (work) => ctx.waitUntil(work) : undefined,
+      );
     return json({ message }, 201, { "Cache-Control": "no-store, private" });
   }
 

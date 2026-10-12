@@ -5,6 +5,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import * as webRelay from "../../src/voice/relay-policy.ts";
 import * as mobileRelay from "../../mobile/src/lib/rtc-relay.ts";
+import * as sharedRelay from "../../shared/rtc-relay.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
@@ -14,6 +15,7 @@ const peerConnectionSites = [
   "src/components/DirectCallOverlay.tsx",
   "mobile/src/providers/VoiceProvider.tsx",
   "mobile/src/providers/DirectCallProvider.tsx",
+  "src/voice/screen-sfu/sfu-session.ts",
 ];
 
 function sourceFiles(dir) {
@@ -43,14 +45,54 @@ test("clients drop the STUN-only fallback and refuse to connect without TURN", (
   for (const file of peerConnectionSites) {
     const source = read(file);
     assert.doesNotMatch(source, /stun:stun\.cloudflare\.com/, `${file} must not fall back to STUN`);
-    assert.match(source, /hasRelayIceServer\(/, `${file} must check for a TURN server`);
+    assert.match(
+      source,
+      file.startsWith("mobile/") ? /hasRelayIceServer\(/ : /hasUsableRelayIceServers\(/,
+      `${file} must validate the configured relay servers`,
+    );
     assert.match(source, /RELAY_UNAVAILABLE_MESSAGE/, `${file} must surface the relay-unavailable error`);
     assert.match(source, /isRelayIceCandidate\(/, `${file} must filter ICE candidates`);
   }
   const engine = read("src/voice/engine.ts");
-  assert.match(engine, /if \(!hasRelayIceServer\(iceServers\)\) throw new Error\(RELAY_UNAVAILABLE_MESSAGE\)/);
+  assert.match(engine, /if \(!hasUsableRelayIceServers\(iceServersRef\.current\)\)/);
+  assert.match(
+    engine,
+    /if \(!hasUsableRelayIceServers\(servers\)\) throw new Error\(VOICE_RELAY_UNAVAILABLE_MESSAGE\)/,
+  );
   assert.match(engine, /if \(!event\.candidate \|\| !isRelayIceCandidate\(event\.candidate\)\) return;/);
   assert.match(engine, /if \(!isRelayIceCandidate\(candidate\)\) return;/);
+
+  const directCall = read("src/components/DirectCallOverlay.tsx");
+  assert.match(
+    directCall,
+    /if \(!hasUsableRelayIceServers\(iceRef\.current\)\) throw new Error\(CALL_RELAY_UNAVAILABLE_MESSAGE\)/,
+  );
+  assert.match(directCall, /iceTransportPolicy: "relay"/);
+
+  for (const file of ["mobile/src/providers/VoiceProvider.tsx", "mobile/src/providers/DirectCallProvider.tsx"]) {
+    assert.match(read(file), /if \(!hasRelayIceServer\(/, `${file} must refuse a TURN-less configuration`);
+  }
+});
+
+test("web relay availability requires authenticated TURN credentials", () => {
+  assert.equal(sharedRelay.hasUsableRelayIceServers(undefined), false);
+  assert.equal(sharedRelay.hasUsableRelayIceServers([]), false);
+  assert.equal(sharedRelay.hasUsableRelayIceServers([{ urls: "stun:stun.example:3478" }]), false);
+  assert.equal(sharedRelay.hasUsableRelayIceServers([{ urls: "turn:relay.example:3478" }]), false);
+  assert.equal(
+    sharedRelay.hasUsableRelayIceServers([
+      { urls: "turn:relay.example:3478", username: "user" },
+      { urls: "turn:relay.example:3478", credential: "secret" },
+    ]),
+    false,
+  );
+  assert.equal(
+    sharedRelay.hasUsableRelayIceServers([
+      { urls: "stun:stun.example:3478" },
+      { urls: ["turns:relay.example:5349?transport=tcp"], username: "user", credential: "secret" },
+    ]),
+    true,
+  );
 });
 
 for (const [name, relay] of [

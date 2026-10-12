@@ -89,9 +89,7 @@ test("Voice & Audio opens a real live microphone preview", () => {
 });
 
 test("local voice processors never leak raw audio during startup or processor failure", () => {
-  assert.match(app, /getSettings\(\)\.channelCount/);
-  assert.match(app, /maxChannels: sourceChannelCount/);
-  assert.match(app, /rnnoise\.onprocessorerror/);
+  assert.match(app, /deepFilter\.onprocessorerror/);
   assert.match(app, /aiNoiseProcessorReadyRef/);
   assert.match(app, /analyser\.connect\(voiceActivation, 0, 1\)/);
   assert.match(app, /processedTail\.connect\(voiceActivation, 0, 0\)/);
@@ -170,7 +168,7 @@ test("local processing does not stack browser noise suppression or automatic gai
 
 test("voice channel exposes a direct noise-suppression mode switch", () => {
   assert.match(app, /const cycleNoiseSuppression = \(\) =>/);
-  assert.match(app, /const modes: NoiseSuppressionMode\[\] = \["off", "strong", "ai"\]/);
+  assert.match(app, /const modes: NoiseSuppressionMode\[\] = \["off", "strong", "ai", "deepfilter"\]/);
   assert.match(app, /\["strong", "Standard", "ClearVoice"/);
   assert.match(app, /\[\s*"ai",\s*"DeCave ClearVoice",\s*"Noise Suppression by DeCave"/);
   assert.doesNotMatch(app, /\["standard", "Standard"/);

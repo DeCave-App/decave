@@ -1,9 +1,13 @@
 // Rooms: access, settings, messages, pins, search, reactions, attachments and
 // Hub insights.
 
-import { idFromPath, json, bodyJson } from "../lib/http";
+import { hubCommunityFeatures } from "../lib/hubs";
+import { boundedBodyBytes, idFromPath, json, bodyJson } from "../lib/http";
+import { queueBotEvent } from "../bots/events";
+import { safeUploadedContentType, UploadTypeError } from "../lib/upload-content-type";
 import { requireUser } from "../lib/sessions";
 import { getRoom, hasPermission, nowIso, getRole, canCreateForumPost, publicIdOf, audit } from "../db";
+import { deleteQueuedMedia, ensureMediaDeletionQueueSchema } from "../lib/media";
 import {
   cleanRoomName,
   cleanRoomIcon,
@@ -23,17 +27,11 @@ import {
 import { realtimeRecheckAccess, realtimeBroadcast } from "../lib/realtime";
 import { historyCursor, HISTORY_PAGE_SIZE } from "../lib/social";
 import { messagesForClient, messageForClient } from "../lib/messages";
-import {
-  attemptQueuedMediaDeletion,
-  deleteUnlinkedMedia,
-  mediaDeletionQueueStatement,
-  safeUploadedContentType,
-} from "../lib/media";
 import { requireHubPostingPermission } from "../lib/official-hubs";
 import { decidePollVote } from "../pollVotes";
 import type { ApiContext } from "./context";
 
-export async function handleRoomRoutes({ request, env, url, p, method }: ApiContext): Promise<Response | null> {
+export async function handleRoomRoutes({ request, env, url, p, method, ctx }: ApiContext): Promise<Response | null> {
   const roomAccess = idFromPath(p, /^\/api\/channels\/(\d+)\/access$/);
   if (method === "GET" && roomAccess) {
     const user = await requireUser(request, env);
@@ -109,8 +107,34 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
         if (!parsed.ok) return json({ error: parsed.error, field: "forumTags" }, 400);
         forumTags = parsed.tags;
       }
+      // Read-only chat rooms: who can post (forums use forumPostPolicy).
+      let postPolicy = (room as { post_policy?: string }).post_policy ?? "everyone";
+      let postRoleIds = safeJsonStringArray((room as { post_role_ids_json?: string }).post_role_ids_json ?? "[]");
+      if (room.type === "text" && room.kind !== "forum" && body.postPolicy !== undefined) {
+        if (body.postPolicy !== "everyone" && body.postPolicy !== "staff" && body.postPolicy !== "roles")
+          return json({ error: "Who can post must be everyone, staff or roles", field: "postPolicy" }, 400);
+        postPolicy = body.postPolicy;
+        if (postPolicy === "roles") {
+          const ids = await validatedHubRoleIds(env.DB, room.hub_id, body.postRoleIds ?? []);
+          if (ids === null)
+            return json({ error: "Posting roles must be roles of this Hub", field: "postRoleIds" }, 400);
+          postRoleIds = ids;
+        } else postRoleIds = [];
+      }
+      // Player caps are a custom per-Hub feature; other Hubs keep whatever is stored (0).
+      let userLimit = Number((room as { user_limit?: number }).user_limit ?? 0);
+      if (
+        room.type === "voice" &&
+        body.userLimit !== undefined &&
+        (await hubCommunityFeatures(env.DB, room.hub_id)).voiceLimits
+      ) {
+        const next = Number(body.userLimit);
+        if (!Number.isInteger(next) || next < 0 || next > 99)
+          return json({ error: "Max players must be a whole number from 0 to 99", field: "userLimit" }, 400);
+        userLimit = next;
+      }
       await env.DB.prepare(
-        "UPDATE decave_rooms SET name=?,icon=?,category=?,private=?,forum_guidelines=?,forum_post_policy=?,forum_post_role_ids_json=?,forum_post_member_ids_json=?,forum_tags_json=?,updated_at=? WHERE id=?",
+        "UPDATE decave_rooms SET name=?,icon=?,category=?,private=?,forum_guidelines=?,forum_post_policy=?,forum_post_role_ids_json=?,forum_post_member_ids_json=?,forum_tags_json=?,user_limit=?,post_policy=?,post_role_ids_json=?,updated_at=? WHERE id=?",
       )
         .bind(
           name,
@@ -122,6 +146,9 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
           JSON.stringify(forumPostRoleIds),
           JSON.stringify(forumPostMemberIds),
           JSON.stringify(forumTags),
+          userLimit,
+          postPolicy,
+          JSON.stringify(postRoleIds),
           nowIso(),
           roomId,
         )
@@ -154,25 +181,20 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
     if (Number(count?.count ?? 0) <= 1) return json({ error: "A server must have at least one room" }, 400);
     if (room.type === "text" && Number(count?.texts ?? 0) <= 1)
       return json({ error: "A server must keep at least one text room" }, 400);
-    const attachmentKeys = await env.DB.prepare(
-      `SELECT attachment_key AS object_key FROM decave_messages WHERE room_id=? AND attachment_key IS NOT NULL
-       UNION SELECT r2_key AS object_key FROM decave_attachment_access WHERE room_id=?`,
-    )
-      .bind(roomId, roomId)
-      .all<{ object_key: string }>();
-    const mediaKeys = [...new Set(attachmentKeys.results.map((row) => row.object_key))];
+    await ensureMediaDeletionQueueSchema(env.DB);
+    // Capture sent, legacy and not-yet-sent uploads in the same transaction as
+    // the cascade. A pre-read alone would miss uploads added before deletion.
     await env.DB.batch([
       env.DB.prepare(
-        `INSERT OR IGNORE INTO decave_media_deletion_queue(object_key,queued_at,attempts,last_attempt_at)
-         SELECT object_key,?,0,NULL FROM (
+        `INSERT OR IGNORE INTO decave_media_deletion_queue(object_key,queued_at,attempts)
+         SELECT object_key,?,0 FROM (
            SELECT attachment_key AS object_key FROM decave_messages WHERE room_id=? AND attachment_key IS NOT NULL
            UNION SELECT r2_key AS object_key FROM decave_attachment_access WHERE room_id=?
          )`,
       ).bind(nowIso(), roomId, roomId),
       env.DB.prepare("DELETE FROM decave_rooms WHERE id=?").bind(roomId),
-      env.DB.prepare("DELETE FROM decave_attachment_access WHERE room_id=?").bind(roomId),
     ]);
-    await attemptQueuedMediaDeletion(env, mediaKeys);
+    // The retention job drains the durable queue, including retries after R2 failures.
     const fallback = await env.DB.prepare(
       "SELECT id FROM decave_rooms WHERE hub_id=? ORDER BY CASE WHEN type='text' THEN 0 ELSE 1 END,position,id LIMIT 1",
     )
@@ -216,14 +238,15 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
     );
     if (cursor === false) return json([]);
     const rows = await env.DB.prepare(
-      `SELECT id FROM decave_messages WHERE room_id=?${cursor ? " AND (created_at < ? OR (created_at = ? AND id < ?))" : ""} ORDER BY created_at DESC, id DESC LIMIT ${HISTORY_PAGE_SIZE}`,
+      `SELECT id FROM decave_messages WHERE room_id=? AND (visible_to_user_id IS NULL OR visible_to_user_id = ?)${cursor ? " AND (created_at < ? OR (created_at = ? AND id < ?))" : ""} ORDER BY created_at DESC, id DESC LIMIT ${HISTORY_PAGE_SIZE}`,
     )
-      .bind(roomId, ...(cursor ? [cursor.createdAt, cursor.createdAt, cursor.id] : []))
+      .bind(roomId, user.id, ...(cursor ? [cursor.createdAt, cursor.createdAt, cursor.id] : []))
       .all<{ id: string }>();
     return json(
       await messagesForClient(
         env,
         rows.results.reverse().map((x) => x.id),
+        user.id,
       ),
     );
   }
@@ -239,15 +262,16 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
     if (!(await canAccessRoom(env.DB, room, user.id)))
       return json({ error: "You do not have access to this room" }, 403);
     const rows = await env.DB.prepare(
-      "SELECT id FROM decave_messages WHERE room_id=? AND pinned=1 ORDER BY created_at DESC, id DESC LIMIT 100",
+      "SELECT id FROM decave_messages WHERE room_id=? AND pinned=1 AND (visible_to_user_id IS NULL OR visible_to_user_id = ?) ORDER BY created_at DESC, id DESC LIMIT 100",
     )
-      .bind(roomId)
+      .bind(roomId, user.id)
       .all<{ id: string }>();
     return json(
       {
         pins: await messagesForClient(
           env,
           rows.results.map((row) => row.id),
+          user.id,
         ),
       },
       200,
@@ -356,11 +380,11 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
     const q = (url.searchParams.get("q") ?? "").trim();
     if (!q) return json([]);
     const rows = await env.DB.prepare(
-      `SELECT m.id FROM decave_messages m JOIN decave_users u ON u.id=m.author_user_id WHERE m.room_id=? AND (LOWER(m.text) LIKE LOWER(?) OR LOWER(u.username) LIKE LOWER(?)) ORDER BY m.created_at DESC LIMIT 50`,
+      `SELECT m.id FROM decave_messages m JOIN decave_users u ON u.id=m.author_user_id WHERE m.room_id=? AND (m.visible_to_user_id IS NULL OR m.visible_to_user_id = ?) AND (LOWER(m.text) LIKE LOWER(?) OR LOWER(u.username) LIKE LOWER(?)) ORDER BY m.created_at DESC LIMIT 50`,
     )
-      .bind(roomId, `%${q}%`, `%${q}%`)
+      .bind(roomId, user.id, `%${q}%`, `%${q}%`)
       .all<{ id: string }>();
-    const values = await Promise.all(rows.results.map((x) => messageForClient(env, x.id)));
+    const values = await Promise.all(rows.results.map((x) => messageForClient(env, x.id, user.id)));
     return json(values.filter(Boolean));
   }
 
@@ -373,7 +397,7 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
     const room = await getRoom(env.DB, roomId);
     if (!room || !(await canAccessRoom(env.DB, room, user.id))) return json({ error: "No access" }, 403);
     const row = await env.DB.prepare(
-      "SELECT hub_id,author_user_id,attachment_key,text,reply_to_id FROM decave_messages WHERE id=? AND room_id=?",
+      "SELECT hub_id,author_user_id,attachment_key,text,reply_to_id,bot_id FROM decave_messages WHERE id=? AND room_id=? AND visible_to_user_id IS NULL",
     )
       .bind(messageId, roomId)
       .first<{
@@ -382,12 +406,16 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
         attachment_key: string | null;
         text: string;
         reply_to_id: string | null;
+        bot_id: string | null;
       }>();
     if (!row) return json({ error: "Message not found" }, 404);
+    // Bot messages are stored under the publisher but are not theirs: only the
+    // bot edits them, and only moderators delete them.
+    const ownMessage = row.author_user_id === user.id && !row.bot_id;
     if (method === "PATCH") {
       const postingError = await requireHubPostingPermission(env.DB, row.hub_id, user.id);
       if (postingError) return postingError;
-      if (row.author_user_id !== user.id) return json({ error: "You can only edit your own messages" }, 403);
+      if (!ownMessage) return json({ error: "You can only edit your own messages" }, 403);
       const body = await bodyJson(request);
       const text = typeof body.text === "string" ? body.text.trim().slice(0, 4000) : "";
       if (!text) return json({ error: "Message cannot be empty" }, 400);
@@ -429,7 +457,7 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
       return json(message);
     }
     const role = await getRole(env.DB, row.hub_id, user.id);
-    if (row.author_user_id !== user.id && role !== "owner" && role !== "admin")
+    if (!ownMessage && role !== "owner" && role !== "admin")
       return json({ error: "You can only delete your own messages" }, 403);
     // Deleting a forum post deletes its thread; otherwise replies would become
     // orphaned top-level messages (reply_to_id is ON DELETE SET NULL).
@@ -441,24 +469,45 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
               .all<{ id: string; attachment_key: string | null }>()
           ).results
         : [];
-    const attachmentKeys = [row.attachment_key, ...threadReplies.map((reply) => reply.attachment_key)].filter(
-      (key): key is string => Boolean(key),
-    );
+    // Files go with their messages. Keys are queued in the same batch and the
+    // access rows dropped once no remaining message points at the file, so a
+    // failed R2 delete is retried by the retention job (worker/retention.ts).
+    await ensureMediaDeletionQueueSchema(env.DB);
+    const attachmentKeys = [
+      ...new Set(
+        [row.attachment_key, ...threadReplies.map((reply) => reply.attachment_key)].filter((key): key is string =>
+          Boolean(key),
+        ),
+      ),
+    ];
+    const now = nowIso();
     await env.DB.batch([
-      ...[...new Set(attachmentKeys)].map((key) => mediaDeletionQueueStatement(env.DB, key, nowIso())),
       ...(threadReplies.length
         ? [env.DB.prepare("DELETE FROM decave_messages WHERE reply_to_id=? AND room_id=?").bind(messageId, roomId)]
         : []),
       env.DB.prepare("DELETE FROM decave_messages WHERE id=?").bind(messageId),
-      ...(attachmentKeys.length
-        ? [
-            env.DB.prepare(
-              `DELETE FROM decave_attachment_access WHERE r2_key IN (${[...new Set(attachmentKeys)].map(() => "?").join(",")})`,
-            ).bind(...new Set(attachmentKeys)),
-          ]
-        : []),
+      ...attachmentKeys.flatMap((key) => [
+        env.DB.prepare(
+          `INSERT OR IGNORE INTO decave_media_deletion_queue(object_key,queued_at,attempts)
+           SELECT ?,?,0 WHERE NOT EXISTS(SELECT 1 FROM decave_messages WHERE attachment_key=?)`,
+        ).bind(key, now, key),
+        env.DB.prepare(
+          `DELETE FROM decave_attachment_access WHERE r2_key=? AND kind='channel'
+             AND NOT EXISTS(SELECT 1 FROM decave_messages WHERE attachment_key=?)`,
+        ).bind(key, key),
+      ]),
     ]);
-    await attemptQueuedMediaDeletion(env, attachmentKeys);
+    if (attachmentKeys.length) {
+      const queued = await env.DB.prepare(
+        `SELECT object_key FROM decave_media_deletion_queue WHERE object_key IN (${attachmentKeys.map(() => "?").join(",")})`,
+      )
+        .bind(...attachmentKeys)
+        .all<{ object_key: string }>();
+      await deleteQueuedMedia(
+        env,
+        queued.results.map((item) => item.object_key),
+      );
+    }
     await realtimeBroadcast(
       env,
       { type: "MESSAGE_DELETED", channelId: roomId, messageId, deletedByUserId: publicIdOf(user) },
@@ -475,7 +524,9 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
     const messageId = decodeURIComponent(reaction[2]);
     const room = await getRoom(env.DB, roomId);
     if (!room || !(await canAccessRoom(env.DB, room, user.id))) return json({ error: "No access" }, 403);
-    const row = await env.DB.prepare("SELECT hub_id,reply_to_id,text FROM decave_messages WHERE id=? AND room_id=?")
+    const row = await env.DB.prepare(
+      "SELECT hub_id,reply_to_id,text FROM decave_messages WHERE id=? AND room_id=? AND visible_to_user_id IS NULL",
+    )
       .bind(messageId, roomId)
       .first<{ hub_id: number; reply_to_id: string | null; text: string | null }>();
     if (!row) return json({ error: "Message not found" }, 404);
@@ -517,6 +568,21 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
     }
     const message = await messageForClient(env, messageId);
     await realtimeBroadcast(env, { type: "MESSAGE_UPDATED", message }, { channelId: roomId });
+    // Poll votes and forum votes are internal reactions, not ones bots react to.
+    if (!emoji.startsWith("poll_") && !emoji.startsWith("forum_vote_"))
+      queueBotEvent(
+        env,
+        {
+          hubId: Number(row.hub_id),
+          roomId,
+          kind: exists ? "reactionRemoved" : "reactionAdded",
+          actorId: user.id,
+          actorIsBot: false,
+          chainDepth: 0,
+          data: { emoji, messageId },
+        },
+        ctx ? (work) => ctx.waitUntil(work) : undefined,
+      );
     return json(message);
   }
 
@@ -529,7 +595,7 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
     const room = await getRoom(env.DB, roomId);
     if (!room || !(await canAccessRoom(env.DB, room, user.id))) return json({ error: "No access" }, 403);
     const row = await env.DB.prepare(
-      "SELECT hub_id,pinned,author_user_id FROM decave_messages WHERE id=? AND room_id=?",
+      "SELECT hub_id,pinned,author_user_id FROM decave_messages WHERE id=? AND room_id=? AND visible_to_user_id IS NULL",
     )
       .bind(messageId, roomId)
       .first<{ hub_id: number; pinned: number; author_user_id: string }>();
@@ -555,11 +621,9 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
       return json({ error: "You do not have access to this room" }, 403);
     const postingError = await requireHubPostingPermission(env.DB, room.hub_id, user.id);
     if (postingError) return postingError;
-    const declaredLength = Number(request.headers.get("content-length") ?? 0);
-    if (declaredLength > 25 * 1024 * 1024) return json({ error: "Maximum attachment size is 25 MB" }, 413);
-    const bytes = await request.arrayBuffer();
+    const bytes = await boundedBodyBytes(request, 25 * 1024 * 1024);
+    if (!bytes) return json({ error: "Maximum attachment size is 25 MB" }, 413);
     if (!bytes.byteLength) return json({ error: "Attachment is empty" }, 400);
-    if (bytes.byteLength > 25 * 1024 * 1024) return json({ error: "Maximum attachment size is 25 MB" }, 413);
     let name = "attachment";
     try {
       name =
@@ -569,28 +633,21 @@ export async function handleRoomRoutes({ request, env, url, p, method }: ApiCont
     } catch {}
     let mime: string;
     try {
-      mime = safeUploadedContentType(
-        request.headers.get("X-File-Type") ?? "application/octet-stream",
-        new Uint8Array(bytes),
-      );
+      mime = safeUploadedContentType(request.headers.get("X-File-Type") ?? "", new Uint8Array(bytes));
     } catch (error) {
-      return json({ error: error instanceof Error ? error.message : "Unsupported image data." }, 400);
+      if (error instanceof UploadTypeError) return json({ error: error.message }, 415);
+      throw error;
     }
     const id = crypto.randomUUID();
     const key = `attachments/private/${id}`;
     await env.MEDIA.put(key, bytes, {
       httpMetadata: { contentType: mime, contentDisposition: `attachment; filename="${name.replace(/"/g, "")}"` },
     });
-    try {
-      await env.DB.prepare(
-        `INSERT INTO decave_attachment_access(r2_key,kind,owner_user_id,peer_user_id,hub_id,room_id,created_at) VALUES(?, 'channel', ?, NULL, ?, ?, ?)`,
-      )
-        .bind(key, user.id, room.hub_id, roomId, nowIso())
-        .run();
-    } catch (error) {
-      await deleteUnlinkedMedia(env, key);
-      throw error;
-    }
+    await env.DB.prepare(
+      `INSERT INTO decave_attachment_access(r2_key,kind,owner_user_id,peer_user_id,hub_id,room_id,created_at) VALUES(?, 'channel', ?, NULL, ?, ?, ?)`,
+    )
+      .bind(key, user.id, room.hub_id, roomId, nowIso())
+      .run();
     return json({
       attachment: { id, name: name.slice(0, 180), mimeType: mime, size: bytes.byteLength, url: `/uploads/${key}` },
     });

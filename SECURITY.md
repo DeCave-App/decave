@@ -7,9 +7,10 @@ time is promised.
 ## Report a vulnerability
 
 Use GitHub's private vulnerability reporting for this repository if it is
-enabled. Otherwise, email **security@de-cave.com**. If neither channel is
-available, open a minimal public issue asking for a private reporting channel
-and do not include technical details.
+enabled. Otherwise, email **security@example.invalid**, the security contact listed
+in the project source. If neither channel is available, open a minimal public
+issue asking for a private reporting channel and do not include technical
+details.
 
 Please include a concise description, affected commit or version, the impact,
 and safe steps to reproduce. Redact secrets, account details, IP addresses,
@@ -33,21 +34,32 @@ that could put users at risk, and avoid publishing secrets or personal data.
 
 ## Security model
 
-In release 0.1.132, direct messages and group chats are end-to-end encrypted
-after both direct-message participants, or every group member, have set up keys
-in an up-to-date client. This covers message content and attachments, plus DM
-reactions and poll votes. The Worker stores ciphertext and can see conversation
-metadata, but not this encrypted content. Hub rooms, forums, and messages sent
-before encryption remain readable by the service.
+With `DM_E2EE_ENABLED` enabled in `wrangler.jsonc`, direct messages are
+end-to-end encrypted after both accounts have published encryption keys. Group
+messages become encrypted once every member has a key; they stay encrypted and
+the Worker rejects plaintext messages after that point. Older messages remain
+readable if they were sent before encryption, and conversations without the
+required keys can still use plaintext. Hub rooms and forums are not
+end-to-end encrypted: their messages and attachments are readable by the
+Worker.
 
-Voice, video, and screen-share media in direct calls and voice rooms uses
-DTLS-SRTP between devices through Cloudflare TURN relays. A direct call rejects
-an invalid signature, and rejects a missing signature when the peer's key is
-available or pinned. If no peer key is available or pinned, an unsigned
-description may proceed without a visible verification mark. Voice rooms may
-also admit unverified participants, shown without a lock; a signaling-level
-interception is not ruled out for unverified participants.
-These implementation descriptions are not an independent security audit. The [encryption design and
-known limits](docs/security/DM-E2EE.md) and [launch record and checklist](docs/security/DM-E2EE-LAUNCH.md)
-describe what remains to verify. Do not treat this alpha software as a
-substitute for an independent assessment.
+Encrypted direct-message attachments are encrypted on the sending device before
+upload. Their names, types and file keys are carried inside the encrypted
+message. The Worker and Cloudflare store ciphertext, but can still see traffic
+metadata such as participants, timing, group membership, message sizes and
+attachment sizes. Private message keys stay on users' devices; the server-held
+recovery backup is encrypted and requires the user's recovery code.
+
+Direct-call and voice-room media uses WebRTC DTLS-SRTP. Account-key signatures
+verify call signaling when available. Voice rooms allow unverified participants
+when a device has no usable key, and show them without a verification lock.
+
+## Audit status
+
+On 2026-10-10, a local source audit identified ten findings, and fixes for those
+findings are included in the current source. Validation completed: 837 root
+tests passed and one was skipped; all 15 mobile reliability tests passed; root
+and mobile type checks, lint, formatting checks and the web build passed.
+Native-device testing, verification of a packaged signed Windows update and a
+hosted penetration test were not performed. This audit does not establish that
+all vulnerabilities have been found or that hosted systems are secure.

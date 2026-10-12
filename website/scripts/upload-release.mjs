@@ -11,7 +11,12 @@ assertPublicationReady();
 const require = createRequire(import.meta.url);
 const { normalizePublisherDn, verifyAuthenticodePublisher } = require("../../electron/windows-update-trust.cjs");
 const trustedPublisher = normalizePublisherDn(process.env.DECAVE_WINDOWS_PUBLISHER);
-if (!trustedPublisher) throw new Error("Windows release upload is blocked: DECAVE_WINDOWS_PUBLISHER must contain the full trusted certificate subject DN.");
+// Signing is advisory until a certificate exists (scripts/release/windows-signing-readiness.mjs):
+// without a publisher, upload only an unsigned build whose app opted into unsigned updates.
+// DECAVE_ENFORCE_WINDOWS_SIGNING=true keeps the hard block.
+if (!trustedPublisher && process.env.DECAVE_ENFORCE_WINDOWS_SIGNING === "true") {
+  throw new Error("Windows release upload is blocked: DECAVE_WINDOWS_PUBLISHER must contain the full trusted certificate subject DN.");
+}
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const websiteRoot = path.resolve(scriptDir, "..");
@@ -62,8 +67,19 @@ await verifyWindowsUpdateArtifacts({
   installerName: installer.name,
   version: packageJson.version,
 });
-const signature = verifyAuthenticodePublisher(installer.file, trustedPublisher);
-if (!signature.ok) throw new Error(`Windows release upload is blocked: ${signature.reason}`);
+if (trustedPublisher) {
+  const signature = verifyAuthenticodePublisher(installer.file, trustedPublisher);
+  if (!signature.ok) throw new Error(`Windows release upload is blocked: ${signature.reason}`);
+} else {
+  const updateConfig = await fs.readFile(path.join(releaseDir, "win-unpacked", "resources", "app-update.yml"), "utf8");
+  // scripts/release/build-windows.mjs opts the app into unsigned updates exactly when it has no publisher.
+  if (/^publisherName:/m.test(updateConfig)) {
+    throw new Error(
+      "Windows release upload is blocked: this build expects a trusted publisher but DECAVE_WINDOWS_PUBLISHER is not set.",
+    );
+  }
+  console.warn("Windows signing is not configured: uploading an unsigned build (integrity relies on update-feed hashes).");
+}
 
 console.log(
   `Using ${installer.name} (${(installer.size / 1024 / 1024).toFixed(1)} MiB)`,

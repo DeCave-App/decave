@@ -36,6 +36,19 @@ import { renderForumMarkdown, type ResolveRoomLink } from "./forumRichText";
 import "../shared/shared.css";
 import "./forum.css";
 import { Icon } from "../../components/Icon";
+import { BotBadge } from "../bot-cards";
+import { messageBotFields } from "../../../shared/bots/card-view";
+
+/** BOT badge for forum posts and replies a bot wrote. */
+function ForumBotBadge({ message }: { message: object }) {
+  const { bot } = messageBotFields(message);
+  return bot ? <BotBadge bot={bot} /> : null;
+}
+
+/** A bot is the author of what it posts, not the admin who published it. */
+function authorName(message: { username: string }): string {
+  return messageBotFields(message).bot?.name ?? message.username;
+}
 
 const SORTS: ForumSort[] = ["active", "new", "top", "unanswered"];
 
@@ -329,6 +342,7 @@ export function ForumView(props: ForumViewProps) {
             data.reactions && typeof data.reactions === "object" ? (data.reactions as Record<string, string[]>) : {},
           attachment:
             data.attachment && typeof data.attachment === "object" ? (data.attachment as ForumAttachment) : null,
+          ...messageBotFields(data),
         };
         if (!message.replyToId) {
           const payload = parseForumPostPayload(message.text);
@@ -745,7 +759,8 @@ export function ForumView(props: ForumViewProps) {
                   {payload.tags.slice(0, 4).map((item) => (
                     <TagChip key={item} tag={item} />
                   ))}
-                  <span className="fx-meta-text">{message.username}</span>
+                  <span className="fx-meta-text">{authorName(message)}</span>
+                  <ForumBotBadge message={message} />
                   <span
                     className="fx-meta-text"
                     title={`${entry.replyCount} ${entry.replyCount === 1 ? "reply" : "replies"}`}
@@ -920,10 +935,12 @@ export function ForumView(props: ForumViewProps) {
             <h2>{selected.payload.title}</h2>
             <div className="fx-author">
               <span className="fx-avatar-sm" aria-hidden="true">
-                {props.renderAvatar(selected.message.username, selected.message.avatarUrl)}
+                {messageBotFields(selected.message).bot
+                  ? messageBotFields(selected.message).bot!.avatarEmoji || "🤖"
+                  : props.renderAvatar(selected.message.username, selected.message.avatarUrl)}
               </span>
               <span>
-                <strong>{selected.message.username}</strong>
+                <strong>{authorName(selected.message)}</strong> <ForumBotBadge message={selected.message} />
                 <small>
                   {props.formatTimestamp(selected.message.timestamp)}
                   {selected.message.editedAt ? " · edited" : ""}
@@ -991,11 +1008,14 @@ export function ForumView(props: ForumViewProps) {
                   className={`fx-reply${isSolution ? " solution" : ""}`}
                 >
                   <span className="fx-avatar-sm" aria-hidden="true">
-                    {props.renderAvatar(reply.username, reply.avatarUrl)}
+                    {messageBotFields(reply).bot
+                      ? messageBotFields(reply).bot!.avatarEmoji || "🤖"
+                      : props.renderAvatar(reply.username, reply.avatarUrl)}
                   </span>
                   <div className="fx-reply-main">
                     <header>
-                      <strong>{reply.username}</strong>
+                      <strong>{authorName(reply)}</strong>
+                      <ForumBotBadge message={reply} />
                       {selected.message.userId && reply.userId === selected.message.userId && (
                         <span className="fx-badge op">Author</span>
                       )}

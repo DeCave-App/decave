@@ -16,9 +16,21 @@ export function attachmentKeysIn(text: string): string[] {
   return [...new Set(text.match(/attachments\/private\/[0-9a-f-]{36}/g) ?? [])];
 }
 
-type PendingSend = { targetId: string; text: string; replyToId: string | null; retried: boolean };
+type PendingSend = {
+  targetId: string;
+  envelopeId: string | null;
+  text: string;
+  replyToId: string | null;
+  retried: boolean;
+};
 type GroupLike = { id: string; e2ee?: boolean; members: ReadonlyArray<{ id: string }> };
-type PendingGroupSend = { group: GroupLike; text: string; replyToId: string | null; retried: boolean };
+type PendingGroupSend = {
+  group: GroupLike;
+  envelopeId: string | null;
+  text: string;
+  replyToId: string | null;
+  retried: boolean;
+};
 
 function remember<T>(map: Map<string, T>, key: string, value: T) {
   map.set(key, value);
@@ -52,15 +64,47 @@ export function createDmE2eeSending(session: DmE2eeSession) {
   ): Promise<Record<string, unknown>> {
     const sealed = await dmSealedBody(targetId, text, { refreshKeys: retried, replyToId });
     const envelopeId = (sealed.envelope as { id?: string } | undefined)?.id;
-    remember(pendingSends, envelopeId ?? `plain:${targetId}`, { targetId, text, replyToId, retried });
+    const clientMessageId = crypto.randomUUID();
+    remember(pendingSends, clientMessageId, {
+      targetId,
+      envelopeId: envelopeId ?? null,
+      text,
+      replyToId,
+      retried,
+    });
     // An encrypted message carries its reply link inside; the server never sees it.
-    return { type: "DM_MESSAGE", targetUserId: targetId, replyToId: envelopeId ? null : replyToId, ...sealed };
+    return {
+      type: "DM_MESSAGE",
+      clientMessageId,
+      targetUserId: targetId,
+      replyToId: envelopeId ? null : replyToId,
+      ...sealed,
+    };
   }
 
   /** The message arrived; nothing to retry. */
-  function settleDmSend(messageId: string, targetId: string) {
-    pendingSends.delete(messageId);
-    pendingSends.delete(`plain:${targetId}`);
+  function findDmPendingId(messageId: unknown, targetId: unknown, clientMessageId?: unknown): string {
+    if (typeof clientMessageId === "string") {
+      const pending = pendingSends.get(clientMessageId);
+      if (pending && (typeof targetId !== "string" || pending.targetId === targetId)) return clientMessageId;
+    }
+    if (typeof messageId === "string" && messageId) {
+      for (const [id, pending] of pendingSends) {
+        if (pending.envelopeId === messageId && (typeof targetId !== "string" || pending.targetId === targetId)) {
+          return id;
+        }
+      }
+    }
+    return "";
+  }
+
+  function settleDmSend(messageId: string, targetId: string, clientMessageId?: unknown) {
+    const pendingId = findDmPendingId(messageId, targetId, clientMessageId);
+    if (pendingId) pendingSends.delete(pendingId);
+  }
+
+  function discardDmSend(clientMessageId: unknown) {
+    if (typeof clientMessageId === "string") pendingSends.delete(clientMessageId);
   }
 
   /**
@@ -70,12 +114,14 @@ export function createDmE2eeSending(session: DmE2eeSession) {
   async function retryFrameAfterDmError(error: {
     code?: unknown;
     messageId?: unknown;
+    clientMessageId?: unknown;
+    targetUserId?: unknown;
   }): Promise<Record<string, unknown> | null> {
-    if (error.code !== "DM_E2EE_STALE_KEY" && error.code !== "DM_E2EE_REQUIRED") return null;
-    let key = typeof error.messageId === "string" ? error.messageId : "";
-    if (!key) key = [...pendingSends.keys()].reverse().find((candidate) => candidate.startsWith("plain:")) ?? "";
-    const pending = pendingSends.get(key);
+    const key = findDmPendingId(error.messageId, error.targetUserId, error.clientMessageId);
+    const pending = key ? pendingSends.get(key) : undefined;
+    if (!pending) return null;
     pendingSends.delete(key);
+    if (error.code !== "DM_E2EE_STALE_KEY" && error.code !== "DM_E2EE_REQUIRED") return null;
     if (!pending || pending.retried) return null;
     return dmSocketFrame(pending.targetId, pending.text, pending.replyToId, true);
   }
@@ -111,14 +157,40 @@ export function createDmE2eeSending(session: DmE2eeSession) {
       text,
       { markedEncrypted: Boolean(group.e2ee), refreshKeys: retried, replyToId },
     );
-    const key = "envelope" in sealed ? sealed.envelope.id : `plain:${group.id}`;
-    remember(pendingGroupSends, key, { group, text, replyToId, retried });
-    return { type: "GROUP_MESSAGE", groupId: group.id, replyToId: "envelope" in sealed ? null : replyToId, ...sealed };
+    const envelopeId = "envelope" in sealed ? sealed.envelope.id : null;
+    const clientMessageId = crypto.randomUUID();
+    remember(pendingGroupSends, clientMessageId, { group, envelopeId, text, replyToId, retried });
+    return {
+      type: "GROUP_MESSAGE",
+      clientMessageId,
+      groupId: group.id,
+      replyToId: "envelope" in sealed ? null : replyToId,
+      ...sealed,
+    };
   }
 
-  function settleGroupSend(messageId: string, groupId: string) {
-    pendingGroupSends.delete(messageId);
-    pendingGroupSends.delete(`plain:${groupId}`);
+  function findGroupPendingId(messageId: unknown, groupId: unknown, clientMessageId?: unknown): string {
+    if (typeof clientMessageId === "string") {
+      const pending = pendingGroupSends.get(clientMessageId);
+      if (pending && (typeof groupId !== "string" || pending.group.id === groupId)) return clientMessageId;
+    }
+    if (typeof messageId === "string" && messageId) {
+      for (const [id, pending] of pendingGroupSends) {
+        if (pending.envelopeId === messageId && (typeof groupId !== "string" || pending.group.id === groupId)) {
+          return id;
+        }
+      }
+    }
+    return "";
+  }
+
+  function settleGroupSend(messageId: string, groupId: string, clientMessageId?: unknown) {
+    const pendingId = findGroupPendingId(messageId, groupId, clientMessageId);
+    if (pendingId) pendingGroupSends.delete(pendingId);
+  }
+
+  function discardGroupSend(clientMessageId: unknown) {
+    if (typeof clientMessageId === "string") pendingGroupSends.delete(clientMessageId);
   }
 
   /**
@@ -127,15 +199,16 @@ export function createDmE2eeSending(session: DmE2eeSession) {
    * the group as the app knows it now.
    */
   async function retryGroupFrameAfterError(
-    error: { code?: unknown; messageId?: unknown; groupId?: unknown },
+    error: { code?: unknown; messageId?: unknown; clientMessageId?: unknown; groupId?: unknown },
     latest: (groupId: string) => GroupLike | null,
   ): Promise<Record<string, unknown> | null> {
-    if (error.code !== "DM_E2EE_STALE_KEY" && error.code !== "DM_E2EE_REQUIRED") return null;
     const groupId = typeof error.groupId === "string" ? error.groupId : "";
-    const key = typeof error.messageId === "string" && error.messageId ? error.messageId : `plain:${groupId}`;
-    const pending = pendingGroupSends.get(key);
+    const key = findGroupPendingId(error.messageId, groupId, error.clientMessageId);
+    const pending = key ? pendingGroupSends.get(key) : undefined;
+    if (!pending || !groupId || pending.group.id !== groupId) return null;
     pendingGroupSends.delete(key);
-    if (!pending || pending.retried) return null;
+    if (error.code !== "DM_E2EE_STALE_KEY" && error.code !== "DM_E2EE_REQUIRED") return null;
+    if (pending.retried) return null;
     const group = latest(pending.group.id) ?? pending.group;
     // Refused as plaintext: the group is encrypted now.
     return groupSocketFrame(
@@ -193,10 +266,12 @@ export function createDmE2eeSending(session: DmE2eeSession) {
     dmSealedBody,
     dmSocketFrame,
     settleDmSend,
+    discardDmSend,
     retryFrameAfterDmError,
     dmReactionBody,
     groupSocketFrame,
     settleGroupSend,
+    discardGroupSend,
     retryGroupFrameAfterError,
     groupPreview,
     decryptConversationPreviews,

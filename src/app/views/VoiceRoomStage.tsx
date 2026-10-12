@@ -307,6 +307,17 @@ export function VoiceRoomStage({
                         >
                           Pop Out
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWatchedScreenConnections((current) => ({ ...current, [screen.connectionId]: false }));
+                            setFocusedVideo((current) =>
+                              current?.connectionId === screen.connectionId ? null : current,
+                            );
+                          }}
+                        >
+                          Stop Watching
+                        </button>
                       </>
                     )}
                   </div>

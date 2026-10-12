@@ -7,11 +7,19 @@ function builtInRoleIcon(role?: ServerRole | null): string {
   return role === "owner" ? "👑" : role === "admin" ? "🛡️" : "👤";
 }
 
-export function memberRoleIcons(member: { role?: ServerRole | null; customRoles?: CustomRoleView[] }): string {
+export function memberRoleIcons(member: {
+  role?: ServerRole | null;
+  customRoles?: CustomRoleView[];
+  faceitLevel?: number;
+}): string {
   const custom = (member.customRoles ?? [])
     .map((role) => role.icon || (/^mod(erator)?$/i.test(role.name) ? "⚔️" : ""))
     .filter(Boolean);
-  return Array.from(new Set([builtInRoleIcon(member.role), ...custom])).join(" ");
+  const faceit =
+    typeof member.faceitLevel === "number" && member.faceitLevel >= 1 && member.faceitLevel <= 10
+      ? `LVL${member.faceitLevel}`
+      : "";
+  return Array.from(new Set([builtInRoleIcon(member.role), ...custom, faceit])).filter(Boolean).join(" ");
 }
 
 export function resolveAvatarUrl(value?: string | null): string {

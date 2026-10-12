@@ -41,6 +41,7 @@ import type {
   UiSoundEvent,
 } from "../types";
 import { HTTP_URL } from "../env";
+import { messageBotFields } from "../../../shared/bots/card-view";
 import { EMOJI_GROUPS } from "../constants";
 import {
   POLL_PREFIX,
@@ -829,7 +830,9 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
 
   const canDeleteMessage = (message: ChatMessage): boolean => {
     if (!currentUser) return false;
-    if (message.userId === currentUser.id) return true;
+    // Bot messages are stored under the publisher but are not theirs: only
+    // moderators delete them, as with anyone else's message.
+    if (message.userId === currentUser.id && !messageBotFields(message).bot) return true;
     return currentServer.myRole === "owner" || currentServer.myRole === "admin";
   };
 
@@ -941,6 +944,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     voteOnForumPost,
     voteInDmPoll,
     handleMessageKeyDown,
+    authorizedFetch,
     canDeleteMessage,
     sendReaction,
     togglePinMessage,

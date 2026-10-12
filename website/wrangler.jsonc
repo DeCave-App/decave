@@ -13,7 +13,7 @@
   ],
 
   "vars": {
-    "PUBLIC_RELEASE_MODE": "disabled"
+    "PUBLIC_RELEASE_MODE": "approved"
   },
 
   "assets": {

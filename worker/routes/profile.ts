@@ -11,10 +11,10 @@ import {
   userByReference,
   usersSharePublicContext,
   usersAreFriends,
-  publicUser,
-  activityTextFor,
+  publicUserWithPresence,
+  presenceOnline,
 } from "../db";
-import { broadcastProfileUpdate, realtimeFetch } from "../lib/realtime";
+import { broadcastProfileUpdate, connectedUserIds } from "../lib/realtime";
 import type { ApiContext } from "./context";
 
 export async function handleActivityStatusRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
@@ -163,26 +163,21 @@ export async function handleProfileRoutes({ request, env, p, method }: ApiContex
     if (!(await usersSharePublicContext(env.DB, viewer.id, row.id))) {
       return json({ error: "No shared context with this account." }, 403);
     }
-    const onlineResponse = await realtimeFetch(env, "/internal/online-users");
-    const onlineData = onlineResponse.ok ? ((await onlineResponse.json()) as { userIds?: string[] }) : {};
-    const online = row.status !== "invisible" && (onlineData.userIds ?? []).includes(row.id);
+    const online = presenceOnline(row, (await connectedUserIds(env)).has(row.id));
+    const relation =
+      row.id === viewer.id ? "self" : (await usersAreFriends(env.DB, viewer.id, row.id)) ? "friend" : "other";
+    // Last seen is only shared with friends (and self), never for invisible accounts.
     const presence =
-      row.status === "invisible"
+      row.status === "invisible" || relation === "other"
         ? null
         : await env.DB.prepare("SELECT last_seen_at FROM decave_presence_activity WHERE user_id=?")
             .bind(row.id)
             .first<{ last_seen_at: string }>();
-    const relation =
-      row.id === viewer.id ? "self" : (await usersAreFriends(env.DB, viewer.id, row.id)) ? "friend" : "other";
     return json(
       {
-        ...publicUser(row),
-        ...(relation === "self" || relation === "friend"
-          ? { createdAt: row.created_at, lastOnlineAt: presence?.last_seen_at ?? null }
-          : {}),
-        status: online ? row.status : "invisible",
-        statusText: online ? row.status_text : "",
-        activityText: online ? activityTextFor(row, relation) : "",
+        ...publicUserWithPresence(row, online, relation),
+        ...(relation === "other" ? {} : { createdAt: row.created_at }),
+        lastOnlineAt: presence?.last_seen_at ?? null,
         online,
       },
       200,

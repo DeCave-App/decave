@@ -100,10 +100,11 @@ export const dmE2ee = new DmE2eeSession({
     });
     if (previous && previous !== name) deleteFile(previous);
   },
-  forgetKeyring: async (accountId) => {
+  forgetKeyring: async (accountId, options) => {
     const previous = await keyringFileName(accountId);
     await SecureStore.deleteItemAsync(seedKey(accountId)).catch(() => undefined);
     if (previous) deleteFile(previous);
+    if (options?.preserveDeviceState) return;
     try {
       const file = stateFile(accountId);
       if (file.exists) file.delete();
@@ -119,7 +120,7 @@ export const dmE2ee = new DmE2eeSession({
         recoveryCodeUnconfirmed: raw.recoveryCodeUnconfirmed === true,
       };
     } catch {
-      return { pins: {} };
+      throw new Error("Could not read this device's encryption security state.");
     }
   },
   saveDeviceState: async (accountId, state) => {
@@ -127,7 +128,9 @@ export const dmE2ee = new DmE2eeSession({
       const file = stateFile(accountId);
       if (!file.exists) file.create();
       file.write(JSON.stringify(state));
-    } catch {}
+    } catch {
+      throw new Error("Could not save this device's encryption security state.");
+    }
   },
 });
 
@@ -155,10 +158,12 @@ export const {
   dmSealedBody,
   dmSocketFrame,
   settleDmSend,
+  discardDmSend,
   retryFrameAfterDmError,
   dmReactionBody,
   groupSocketFrame,
   settleGroupSend,
+  discardGroupSend,
   retryGroupFrameAfterError,
   groupPreview,
   decryptConversationPreviews,

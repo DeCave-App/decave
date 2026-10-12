@@ -23,6 +23,8 @@ export type SidebarRoom = {
   category?: string;
   private?: boolean;
   icon?: string;
+  /** Voice room player cap (0/absent = none). */
+  userLimit?: number;
 };
 
 export type SidebarVoiceParticipant = {
@@ -367,7 +369,8 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
             <span className="hbx-name">{room.name}</span>
             <small>
               {connected ? "You're here · " : ""}
-              {participants.length} in voice{sharing ? " · sharing" : ""}
+              {room.userLimit ? `${participants.length}/${room.userLimit}` : participants.length} in voice
+              {sharing ? " · sharing" : ""}
             </small>
           </span>
           {lockFor(room)}

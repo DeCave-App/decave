@@ -75,6 +75,15 @@ test("every table with a user-reference column is erased, anonymized, or explici
     handled.add(match[1]);
   const tables = userReferenceTables();
   assert.ok(tables.size > 40, "the migration scan found the schema");
+  for (const table of [
+    "decave_dm_keys",
+    "decave_dm_key_backups",
+    "decave_dm_key_settings",
+    "decave_dm_link_requests",
+    "decave_dm_reaction_envelopes",
+  ]) {
+    assert.ok(tables.has(table), `the scan covers the end-to-end encryption table ${table}`);
+  }
   const uncovered = [];
   for (const [table, columns] of tables) {
     if (handled.has(table)) continue;
@@ -90,25 +99,6 @@ test("every table with a user-reference column is erased, anonymized, or explici
 
 test("erasure scrubs share links, Hub home edits, moderation targets and legacy 0001 tables", async () => {
   const past = "2025-01-01T00:00:00.000Z";
-  // The current migration set deliberately drops the 0001 prototype schema.
-  // Recreate only the legacy tables this compatibility test exercises.
-  db.exec("CREATE TABLE users(id TEXT PRIMARY KEY, username TEXT NOT NULL, password_hash TEXT NOT NULL)");
-  db.exec(`CREATE TABLE hubs(
-    id TEXT PRIMARY KEY,
-    owner_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    name TEXT NOT NULL
-  )`);
-  db.exec(
-    "CREATE TABLE sessions(id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL, expires_at TEXT NOT NULL)",
-  );
-  db.exec(`CREATE TABLE audit_log(
-    id TEXT PRIMARY KEY,
-    hub_id TEXT NOT NULL,
-    actor_user_id TEXT,
-    target_user_id TEXT,
-    action TEXT NOT NULL,
-    details_json TEXT NOT NULL
-  )`);
   for (const [id, deleted] of [
     ["erase-me", true],
     ["hub-owner", false],
@@ -154,6 +144,8 @@ test("erasure scrubs share links, Hub home edits, moderation targets and legacy 
   );
   // Legacy 0001 tables: the erased account owns a legacy hub (ON DELETE
   // RESTRICT), has a session, and appears in another hub's audit log.
+  // Migration 0067 drops these tables; recreate them as an unmigrated database has them.
+  db.sqlite.exec(read("migrations/0001_initial.sql"));
   db.exec(
     "INSERT INTO users(id,username,password_hash) VALUES('erase-me','legacy-erase','x'),('other','legacy-other','x')",
   );
@@ -165,7 +157,44 @@ test("erasure scrubs share links, Hub home edits, moderation targets and legacy 
     "INSERT INTO audit_log(id,hub_id,actor_user_id,target_user_id,action,details_json) VALUES('a1','legacy-other','erase-me','other','kick','{\"why\":\"x\"}')",
   );
 
+  // End-to-end encryption rows: public keys, the encrypted key backup, link
+  // requests, the history setting, reaction envelopes and message envelopes.
+  db.exec(
+    "INSERT INTO decave_dm_keys(key_id,user_id,x25519_public,ed25519_public,created_at) VALUES('k1','erase-me','x','e',?)",
+    past,
+  );
+  db.exec(
+    "INSERT INTO decave_dm_key_backups(user_id,key_id,backup,updated_at) VALUES('erase-me','k1','cipher',?)",
+    past,
+  );
+  db.exec("INSERT INTO decave_dm_key_settings(user_id,history_days,updated_at) VALUES('erase-me',30,?)", past);
+  db.exec(
+    `INSERT INTO decave_dm_link_requests(id,user_id,requester_session_hash,link_public,created_at,expires_at)
+     VALUES('l1','erase-me','h','p',?,?)`,
+    past,
+    past,
+  );
+  db.exec(
+    `INSERT INTO decave_direct_messages(id,from_user_id,to_user_id,text,envelope,created_at)
+     VALUES('dm1','staff','erase-me','','{"v":1}',?)`,
+    past,
+  );
+  db.exec(
+    "INSERT INTO decave_dm_reaction_envelopes(message_id,user_id,envelope,updated_at) VALUES('dm1','staff','cipher',?)",
+    past,
+  );
   assert.equal(await eraseDueAccounts(env), 1);
+  for (const table of [
+    "decave_dm_keys",
+    "decave_dm_key_backups",
+    "decave_dm_key_settings",
+    "decave_dm_link_requests",
+  ]) {
+    assert.equal(db.scalar(`SELECT COUNT(*) FROM ${table} WHERE user_id='erase-me'`), 0, table);
+  }
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_direct_messages WHERE id='dm1'"), 0);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_dm_reaction_envelopes WHERE message_id='dm1'"), 0);
+  assert.notEqual(db.scalar("SELECT public_id FROM decave_users WHERE id='erase-me'"), null);
   assert.equal(db.scalar("SELECT created_by FROM decave_hub_share_links WHERE hub_id=5"), "hub-owner");
   assert.equal(db.scalar("SELECT updated_by FROM decave_hub_home WHERE hub_id=5"), null);
   assert.equal(db.scalar("SELECT target_user_id FROM decave_moderation_actions WHERE id='action-1'"), null);
@@ -186,7 +215,9 @@ test("erasure scrubs share links, Hub home edits, moderation targets and legacy 
 test("legacy erasure skips 0001 tables that do not exist", async () => {
   // Reuse the database from the previous test: Worker lazy-schema promises are
   // cached per module instance, exactly like one long-lived Worker isolate.
+  db.sqlite.exec("PRAGMA foreign_keys=OFF");
   for (const { table } of LEGACY_ACCOUNT_ERASURE_SQL) db.sqlite.exec(`DROP TABLE IF EXISTS ${table}`);
+  db.sqlite.exec("PRAGMA foreign_keys=ON");
   const past = "2025-01-01T00:00:00.000Z";
   db.exec(
     `INSERT INTO decave_users(id,username,password_salt,password_hash,created_at,platform_role,deleted_at,delete_after)

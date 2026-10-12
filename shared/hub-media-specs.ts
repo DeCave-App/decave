@@ -1,13 +1,15 @@
 // Required artwork dimensions for Hub media, shared by the web client (pre-upload
 // validation + Manage Hub hints) and the worker (authoritative upload check).
 //
-// Banner: painted full-height behind the left Hub sidebar with background-size:
-// cover. The sidebar is 240-300 CSS px wide and ~800-1400 px tall, i.e. an aspect
+// Banner: painted full-height behind the left Hub sidebar, scaled to fit (never
+// cropped) over a blurred fill. The sidebar is 240-300 CSS px wide and ~800-1400 px tall, i.e. an aspect
 // of roughly 0.24-0.35, so a 1:3 portrait image (600x1800 = 300x900 @2x) covers
-// every layout while cropping at most ~28% of the width on very tall windows.
+// most layouts with little blurred fill. Wide Hub headers show it whole over the same fill.
+// Header image: the wide Hub Home / Streamer Overview header (3:1), shown whole
+// over a blurred fill; without one those headers fall back to the banner.
 // Chat background: painted behind the message list (landscape, 16:9 desktop).
 
-export type HubMediaKind = "icon" | "banner" | "chat-background";
+export type HubMediaKind = "icon" | "banner" | "header" | "chat-background";
 
 export type HubMediaSpec = {
   /** Recommended (ideal) size in pixels. */
@@ -18,6 +20,8 @@ export type HubMediaSpec = {
   minHeight: number;
   orientation: "portrait" | "landscape";
   label: string;
+  /** Accepted width/height range for images shown whole (not cropped); otherwise the exact aspect ±5%. */
+  aspectRange?: [number, number];
 };
 
 /** Accepted deviation from the required aspect ratio (±5%). */
@@ -25,6 +29,15 @@ export const HUB_MEDIA_ASPECT_TOLERANCE = 0.05;
 
 export const HUB_MEDIA_SPECS: Record<Exclude<HubMediaKind, "icon">, HubMediaSpec> = {
   banner: { width: 600, height: 1800, minWidth: 400, minHeight: 1200, orientation: "portrait", label: "Banner" },
+  header: {
+    width: 1500,
+    height: 500,
+    minWidth: 900,
+    minHeight: 225,
+    orientation: "landscape",
+    label: "Header image",
+    aspectRange: [4 / 3, 4],
+  },
   "chat-background": {
     width: 1920,
     height: 1080,
@@ -37,6 +50,8 @@ export const HUB_MEDIA_SPECS: Record<Exclude<HubMediaKind, "icon">, HubMediaSpec
 
 export function hubMediaHint(kind: Exclude<HubMediaKind, "icon">): string {
   const spec = HUB_MEDIA_SPECS[kind];
+  if (spec.aspectRange)
+    return `Recommended: ${spec.width}×${spec.height} px; any wide image from 4:3 to 4:1 works (at least ${spec.minWidth} px wide)`;
   return `Recommended: ${spec.width}×${spec.height} px, ${spec.orientation} (minimum ${spec.minWidth}×${spec.minHeight})`;
 }
 
@@ -47,8 +62,16 @@ export function validateHubMediaDimensions(kind: HubMediaKind, width: number, he
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
     return `${spec.label} image size could not be read. Use a PNG, JPG, WebP or GIF of ${spec.width}×${spec.height} px.`;
   }
-  const required = spec.width / spec.height;
   const actual = width / height;
+  if (spec.aspectRange) {
+    const [min, max] = spec.aspectRange;
+    if (actual < min || actual > max)
+      return `${spec.label} is ${width}×${height} px. Use a wide image between 4:3 and 4:1, such as ${spec.width}×${spec.height} px.`;
+    if (width < spec.minWidth || height < spec.minHeight)
+      return `${spec.label} is ${width}×${height} px, which is too small. Use at least ${spec.minWidth} px wide.`;
+    return null;
+  }
+  const required = spec.width / spec.height;
   const deviation = Math.abs(actual - required) / required;
   const shape = `${spec.width}×${spec.height} px ${spec.orientation}`;
   if (deviation > HUB_MEDIA_ASPECT_TOLERANCE) {

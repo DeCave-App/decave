@@ -139,6 +139,85 @@ export type OutgoingDm =
   | { ok: true; text: string; envelope: string | null; id: string | null; attachmentRefs: string | null }
   | { ok: false; status: number; error: string; code: string };
 
+type DmMessageWrite = {
+  id: string;
+  fromUserId: string;
+  toUserId: string;
+  text: string;
+  envelope: string | null;
+  createdAt: string;
+  replyToId: string | null;
+  attachmentRefs: string | null;
+};
+
+function attachmentAccessGuard(attachmentRefs: string | null): { sql: string; bindings: string[] } {
+  if (!attachmentRefs) return { sql: "", bindings: [] };
+  const keys = [...new Set(attachmentRefs.split(" ").filter(Boolean))];
+  if (!keys.length || keys.length > 10 || !keys.every((key) => PRIVATE_UPLOAD.test(key))) {
+    return { sql: "AND 0", bindings: [] };
+  }
+  return {
+    sql: `AND ${keys
+      .map(
+        () =>
+          "EXISTS (SELECT 1 FROM decave_attachment_access WHERE r2_key=? AND kind='dm' AND owner_user_id=? AND peer_user_id=?)",
+      )
+      .join(" AND ")}`,
+    bindings: keys.flatMap((key) => [key]),
+  };
+}
+
+/** Insert only while every encrypted attachment is still authorized for the conversation. */
+export async function insertDirectMessageWithAttachmentGuard(
+  db: D1Database,
+  input: DmMessageWrite,
+): Promise<{ meta: { changes: number } }> {
+  const guard = attachmentAccessGuard(input.attachmentRefs);
+  return db
+    .prepare(
+      `INSERT INTO decave_direct_messages(id,from_user_id,to_user_id,text,envelope,created_at,reply_to_id,attachment_refs)
+       SELECT ?,?,?,?,?,?,?,? WHERE 1=1 ${guard.sql} ON CONFLICT(id) DO NOTHING`,
+    )
+    .bind(
+      input.id,
+      input.fromUserId,
+      input.toUserId,
+      input.text,
+      input.envelope,
+      input.createdAt,
+      input.replyToId,
+      input.attachmentRefs,
+      ...guard.bindings.flatMap((key) => [key, input.fromUserId, input.toUserId]),
+    )
+    .run();
+}
+
+/** Keep edits from reattaching an upload whose access row was concurrently removed. */
+export async function updateDirectMessageWithAttachmentGuard(
+  db: D1Database,
+  input: Omit<DmMessageWrite, "fromUserId" | "toUserId" | "createdAt" | "replyToId"> & {
+    fromUserId: string;
+    toUserId: string;
+  },
+): Promise<{ meta: { changes: number } }> {
+  const guard = attachmentAccessGuard(input.attachmentRefs);
+  return db
+    .prepare(
+      `UPDATE decave_direct_messages SET text=?, envelope=?, attachment_refs=?
+       WHERE id=? AND from_user_id=? AND to_user_id=? ${guard.sql}`,
+    )
+    .bind(
+      input.text,
+      input.envelope,
+      input.attachmentRefs,
+      input.id,
+      input.fromUserId,
+      input.toUserId,
+      ...guard.bindings.flatMap((key) => [key, input.fromUserId, input.toUserId]),
+    )
+    .run();
+}
+
 /**
  * Decide how a DM may be stored. With an envelope it must come from the
  * sender's current key and be readable by both accounts' current keys. Without

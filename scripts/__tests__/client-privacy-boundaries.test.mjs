@@ -14,11 +14,9 @@ const { loadAuthenticatedAttachmentImage } = await import("../../mobile/src/lib/
 const { enqueuePushAction, processPendingPushActions } = await import("../../mobile/src/lib/push-revocation-queue.ts");
 const { DEFAULT_NOTIFICATION_SETTINGS, NotificationSettingsStore, notificationSettingsStorageKey } =
   await import("../../mobile/src/lib/notification-settings-store.ts");
-const { accountExportStatus } = await import("../../shared/account-export.ts");
 
 globalThis.window = { location: { origin: "https://client.example.test" } };
 const { createHubDirectoryActions } = await import("../../src/app/actions/hub-directory.ts");
-const webMediaModule = await import("../../src/app/message-payloads.ts");
 delete globalThis.window;
 
 const root = path.resolve(process.cwd());
@@ -341,61 +339,6 @@ test("drafts and last voice room reject stale account hydration and keep storage
   ]);
 });
 
-test("logout deletes drafts and last-room writes that were already in flight without touching device settings", async () => {
-  const values = new Map([["device.settings", "keep"]]);
-  const draftWriteStarted = deferred();
-  const finishDraftWrite = deferred();
-  const voiceWriteStarted = deferred();
-  const finishVoiceWrite = deferred();
-  const secureStore = {
-    deleteItemAsync: async (key) => values.delete(key),
-    getItemAsync: async (key) => values.get(key) ?? null,
-    setItemAsync: async (key, value) => {
-      if (key.startsWith("decave.drafts.")) {
-        draftWriteStarted.resolve();
-        await finishDraftWrite.promise;
-      } else if (key.startsWith("decave.lastVoiceRoom.")) {
-        voiceWriteStarted.resolve();
-        await finishVoiceWrite.promise;
-      }
-      values.set(key, value);
-    },
-  };
-  const scheduledTimers = [];
-  const drafts = compileClientModule("mobile/src/lib/drafts.ts", {
-    SecureStore: secureStore,
-    setTimeout: (callback) => (scheduledTimers.push(callback), scheduledTimers.length),
-    clearTimeout: () => {},
-  });
-  const voice = compileClientModule("mobile/src/lib/last-voice-room.ts", { SecureStore: secureStore });
-
-  drafts.setDraftAccount("logout-a");
-  drafts.setDraft("private-room", "private draft");
-  scheduledTimers.at(-1)();
-  await draftWriteStarted.promise;
-  drafts.setDraftAccount(null);
-  finishDraftWrite.resolve();
-  await new Promise((resolve) => setImmediate(resolve));
-
-  voice.setLastVoiceRoomAccount("logout-a");
-  const pendingVoiceWrite = voice.saveLastVoiceRoom({ channelId: 71, hubId: 7, name: "Private room" });
-  await voiceWriteStarted.promise;
-  voice.setLastVoiceRoomAccount(null);
-  finishVoiceWrite.resolve();
-  await pendingVoiceWrite;
-  await new Promise((resolve) => setImmediate(resolve));
-
-  assert.equal(
-    [...values.keys()].some((key) => key.startsWith("decave.drafts.")),
-    false,
-  );
-  assert.equal(
-    [...values.keys()].some((key) => key.startsWith("decave.lastVoiceRoom.")),
-    false,
-  );
-  assert.equal(values.get("device.settings"), "keep");
-});
-
 test("useDraftInput refreshes after delayed secure-store hydration", async () => {
   const hydration = deferred();
   const secureStore = {
@@ -466,71 +409,157 @@ test("home notes are saved and loaded from account-scoped keys and discard the l
   assert.equal(values.has("decave_home_notes_v1"), false);
 });
 
-test("logout purge removes only that account's notes and forum draft and rejects a late forum save", () => {
-  const values = new Map();
-  const localStorage = {
-    get length() {
-      return values.size;
+test("signing out deletes that account's drafts and last room after writes already in flight", async () => {
+  const values = new Map([["device.settings", "keep"]]);
+  const draftWriteStarted = deferred();
+  const finishDraftWrite = deferred();
+  const voiceWriteStarted = deferred();
+  const finishVoiceWrite = deferred();
+  const secureStore = {
+    deleteItemAsync: async (key) => values.delete(key),
+    getItemAsync: async (key) => values.get(key) ?? null,
+    setItemAsync: async (key, value) => {
+      if (key.startsWith("decave.drafts.")) {
+        draftWriteStarted.resolve();
+        await finishDraftWrite.promise;
+      } else if (key.startsWith("decave.lastVoiceRoom.")) {
+        voiceWriteStarted.resolve();
+        await finishVoiceWrite.promise;
+      }
+      values.set(key, value);
     },
-    key: (index) => [...values.keys()][index] ?? null,
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, value),
-    removeItem: (key) => values.delete(key),
   };
-  const home = compileClientModule("src/app/home-dashboard.ts", { localStorage, URL });
-  const forum = compileClientModule("src/features/forum/forumModel.ts", { window: { localStorage } });
-  values.set(home.homeNotesStorageKey("account-a"), "A private note");
-  values.set(home.homeNotesStorageKey("account-b"), "B private note");
-  const staleVersion = forum.forumDraftSessionVersion("account-a");
-  forum.saveForumDraft("account-a", 9, { body: "A private post" }, staleVersion);
-  forum.saveForumDraft("account-b", 9, { body: "B private post" });
+  const scheduledTimers = [];
+  const drafts = compileClientModule("mobile/src/lib/drafts.ts", {
+    SecureStore: secureStore,
+    setTimeout: (callback) => (scheduledTimers.push(callback), scheduledTimers.length),
+    clearTimeout: () => {},
+  });
+  const voice = compileClientModule("mobile/src/lib/last-voice-room.ts", { SecureStore: secureStore });
 
-  values.delete(home.homeNotesStorageKey("account-a"));
-  forum.clearForumDraftsForAccount("account-a");
-  forum.saveForumDraft("account-a", 9, { body: "late save from old session" }, staleVersion);
+  drafts.setDraftAccount("logout-a");
+  drafts.setDraft("private-room", "private draft");
+  scheduledTimers.at(-1)();
+  await draftWriteStarted.promise;
+  drafts.setDraftAccount(null);
+  const forgetDrafts = drafts.forgetStoredDrafts("logout-a");
+  finishDraftWrite.resolve();
+  await forgetDrafts;
 
-  assert.equal(values.has(home.homeNotesStorageKey("account-a")), false);
-  assert.equal(values.has(forum.forumDraftStorageKey("account-a", 9)), false);
-  assert.equal(values.get(home.homeNotesStorageKey("account-b")), "B private note");
-  assert.deepEqual(JSON.parse(values.get(forum.forumDraftStorageKey("account-b", 9))), { body: "B private post" });
+  voice.setLastVoiceRoomAccount("logout-a");
+  const pendingVoiceWrite = voice.saveLastVoiceRoom({ channelId: 71, hubId: 7, name: "Private room" });
+  await voiceWriteStarted.promise;
+  const forgetVoice = voice.forgetLastVoiceRoom("logout-a");
+  finishVoiceWrite.resolve();
+  await pendingVoiceWrite;
+  await forgetVoice;
+
+  assert.equal(
+    [...values.keys()].some((key) => key.startsWith("decave.drafts.")),
+    false,
+  );
+  assert.equal(
+    [...values.keys()].some((key) => key.startsWith("decave.lastVoiceRoom.")),
+    false,
+  );
+  assert.equal(values.get("device.settings"), "keep");
 });
 
-test("legacy GIPHY sources are validated and proxied to the authenticated same-origin media endpoint", () => {
-  const apiBase = "https://client.example.test";
-  const mobileMedia = compileClientModule("mobile/src/lib/chat-media.ts", { API_BASE: apiBase, URL });
-  const webMedia = webMediaModule;
-  const legacy = "https://media.giphy.com/media/abc/giphy.webp";
-  for (const media of [mobileMedia, webMedia]) {
-    assert.equal(media.safeGiphyUrl(legacy), legacy);
-    const proxyUrl = new URL(media.giphyMediaProxyUrl(legacy));
-    assert.equal(proxyUrl.origin, apiBase);
-    assert.equal(proxyUrl.pathname, "/api/giphy/media");
-    assert.equal(proxyUrl.searchParams.has("u"), true);
-    assert.equal(media.safeGiphyUrl("/api/giphy/media?u=https%3A%2F%2Fevil.example%2Fx.png"), null);
-    assert.equal(media.safeGiphyUrl("https://evil.example/api/giphy/media"), null);
-    assert.equal(media.safeGiphyUrl("//evil.example/image.webp"), null);
-    assert.equal(media.giphyMediaProxyUrl("https://evil.example/image.webp"), null);
+test("a different account signing in on a phone deletes the previous account's local data", async () => {
+  const values = new Map();
+  const forgotten = [];
+  const secureStore = {
+    deleteItemAsync: async (key) => values.delete(key),
+    getItemAsync: async (key) => values.get(key) ?? null,
+    setItemAsync: async (key, value) => values.set(key, value),
+  };
+  const local = compileClientModule("mobile/src/lib/account-local-data.ts", {
+    SecureStore: secureStore,
+    forgetStoredDrafts: async (id) => forgotten.push(`drafts:${id}`),
+    forgetLastVoiceRoom: async (id) => forgotten.push(`voice:${id}`),
+    notificationSettingsStorageKey: (id) => `notify:${id}`,
+  });
+  values.set("notify:a", "{}");
+  await local.claimAccountLocalData("a");
+  await local.claimAccountLocalData("a");
+  assert.deepEqual(forgotten, [], "the same account keeps its data");
+  await local.claimAccountLocalData("b");
+  assert.deepEqual(forgotten, ["drafts:a", "voice:a"]);
+  assert.equal(values.has("notify:a"), false);
+  await local.forgetSignedOutAccount("b");
+  assert.deepEqual(forgotten.slice(2), ["drafts:b", "voice:b"]);
+  assert.equal(values.has("decave.localDataOwner.v1"), false);
+});
+
+test("web sign-out clears account-scoped storage but keeps device preferences and E2EE device state", async () => {
+  function fakeStorage(entries) {
+    const values = new Map(entries);
+    return {
+      values,
+      get length() {
+        return values.size;
+      },
+      key: (index) => [...values.keys()][index] ?? null,
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, String(value)),
+      removeItem: (key) => values.delete(key),
+    };
   }
-  const imageSource = mobileMedia.giphyImageSource(legacy, "session-token");
-  assert.equal(new URL(imageSource.uri).origin, apiBase);
-  assert.equal(imageSource.headers.Authorization, "Bearer session-token");
-  assert.equal(mobileMedia.giphyImageSource(legacy, null), null);
-
-  const mediaSource = fs.readFileSync(path.join(root, "mobile/src/components/MessageMedia.tsx"), "utf8");
-  const composerSource = fs.readFileSync(path.join(root, "mobile/src/components/ComposerMediaSheet.tsx"), "utf8");
-  assert.match(mediaSource, /const giphySource = authenticated \? null : giphyImageSource\(url, token\)/);
-  assert.match(mediaSource, /giphySource \?\? \(isGiphy \? undefined : \{ uri: url \}\)/);
-  assert.match(composerSource, /giphyImageSource\(item\.previewUrl, token\) \?\? giphyImageSource\(item\.url, token\)/);
+  const localStorage = fakeStorage([
+    ["decave_home_notes_v1:a", "private note"],
+    ["decave.forum.draft.v2:a:9", "{}"],
+    ["decave_muted_users_v1", "[]"],
+    ["gamerchat_voice_user_volumes_v1", "{}"],
+    ["vadrion_notifications_v1", "{}"],
+    ["vadrion_skin_v1", "dark"],
+    ["decave_extra_settings_v1", "{}"],
+    ["gamerchat_audio_settings_v2", "{}"],
+    ["decave_language_time_v1", "{}"],
+    ["decave.e2ee.device.a", "{}"],
+    ["other-site-key", "x"],
+  ]);
+  const sessionStorage = fakeStorage([["decave_session_thing", "x"]]);
+  let desktopCleared = 0;
+  const storage = compileClientModule("src/app/actions/clear-account-storage.ts", {
+    window: { localStorage, sessionStorage },
+    clearDesktopBrowserSession: async () => (desktopCleared += 1),
+    LANGUAGE_TIME_KEY: "decave_language_time_v1",
+    AUDIO_SETTINGS_KEY: "gamerchat_audio_settings_v2",
+    VADRION_SKIN_KEY: "vadrion_skin_v1",
+    EXTRA_SETTINGS_KEY: "decave_extra_settings_v1",
+    crypto: globalThis.crypto,
+    TextEncoder,
+  });
+  assert.equal(await storage.claimAccountStorage("a"), "claimed");
+  localStorage.setItem("decave_home_notes_v1:a", "private note");
+  await storage.clearAccountDataOnSignOut();
+  assert.deepEqual(
+    [...localStorage.values.keys()].sort(),
+    [
+      "decave.e2ee.device.a",
+      "decave_extra_settings_v1",
+      "decave_language_time_v1",
+      "decave_storage_owner_v1",
+      "gamerchat_audio_settings_v2",
+      "other-site-key",
+      "vadrion_skin_v1",
+    ].sort(),
+  );
+  assert.equal(sessionStorage.values.size, 0);
+  assert.equal(desktopCleared, 1);
+  assert.equal(await storage.claimAccountStorage("a"), "same");
+  localStorage.setItem("decave_muted_users_v1", '["a\'s mute"]');
+  assert.equal(await storage.claimAccountStorage("b"), "switched");
+  assert.equal(localStorage.getItem("decave_muted_users_v1"), null);
+  assert.equal(desktopCleared, 2);
 });
 
-test("account export clients recognize complete streams and surface interrupted exports", () => {
-  assert.deepEqual(accountExportStatus('{"friends":[],"complete":true}'), { complete: true });
-  assert.deepEqual(accountExportStatus('{"friends":[],"complete":false,"error":"Retry the download."}'), {
-    complete: false,
-    error: "Retry the download.",
-  });
-  assert.deepEqual(accountExportStatus('{"friends":['), {
-    complete: false,
-    error: "The export did not finish. Retry the download.",
-  });
+test("web sign-out purges local data only when the person chose to sign out", () => {
+  const auth = fs.readFileSync(path.join(root, "src/app/actions/auth.ts"), "utf8");
+  assert.match(auth, /dmE2ee\.stop\(\{ forget: !signedOutElsewhere \}\)/);
+  assert.match(auth, /signedOutElsewhere \? Promise\.resolve\(\) : clearAccountDataOnSignOut\(\)/);
+  assert.match(fs.readFileSync(path.join(root, "src/App.tsx"), "utf8"), /useAccountStorageOwner\(currentUser\?\.id\)/);
+  const session = fs.readFileSync(path.join(root, "mobile/src/providers/SessionProvider.tsx"), "utf8");
+  assert.match(session, /forgetSignedOutAccount\(previousUserId\)/);
+  assert.equal((session.match(/void claimAccountLocalData\(data\.user\.id\)/g) ?? []).length, 2);
 });

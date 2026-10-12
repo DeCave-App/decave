@@ -151,7 +151,14 @@ export function steamOpenIdUrl(request: Request, state: string): string {
   return openId.toString();
 }
 
-export function steamCallbackPage(title: string, message: string, ok: boolean): Response {
+/** Result page for a third-party account link opened in the browser (Steam, FACEIT). */
+export function steamCallbackPage(
+  title: string,
+  message: string,
+  ok: boolean,
+  showOpenDeCaveLink = false,
+  brand = "Steam",
+): Response {
   const escape = (value: string) =>
     value.replace(
       /[&<>"']/g,
@@ -165,8 +172,11 @@ export function steamCallbackPage(title: string, message: string, ok: boolean): 
         })[char] ?? char,
     );
   const accent = ok ? "#64e6a6" : "#ff6b7a";
+  const openDeCaveLink = showOpenDeCaveLink
+    ? `<p style="margin:20px 0 0"><a href="${escape("/")}" style="color:#9bbcff">Open DeCave in this browser</a></p>`
+    : "";
   return new Response(
-    `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)}</title></head><body style="margin:0;background:#050712;color:#eaf3ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:grid;place-items:center;min-height:100vh"><main style="max-width:520px;margin:24px;padding:30px;border:1px solid rgba(120,160,255,.2);border-radius:18px;background:#0b1220;box-shadow:0 24px 80px rgba(0,0,0,.38)"><div style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:${accent};font-weight:800">DeCave · Steam</div><h1 style="font-size:26px;margin:10px 0 10px">${escape(title)}</h1><p style="color:#aebbd0;line-height:1.6;margin:0">${escape(message)}</p><p style="color:#77849a;font-size:13px;margin:20px 0 0">You can close this tab and return to DeCave.</p></main></body></html>`,
+    `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)}</title></head><body style="margin:0;background:#050712;color:#eaf3ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:grid;place-items:center;min-height:100vh"><main style="max-width:520px;margin:24px;padding:30px;border:1px solid rgba(120,160,255,.2);border-radius:18px;background:#0b1220;box-shadow:0 24px 80px rgba(0,0,0,.38)"><div style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:${accent};font-weight:800">DeCave · ${escape(brand)}</div><h1 style="font-size:26px;margin:10px 0 10px">${escape(title)}</h1><p style="color:#aebbd0;line-height:1.6;margin:0">${escape(message)}</p>${openDeCaveLink}<p style="color:#77849a;font-size:13px;margin:20px 0 0">You can close this tab and return to DeCave.</p></main></body></html>`,
     { status: ok ? 200 : 400, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } },
   );
 }

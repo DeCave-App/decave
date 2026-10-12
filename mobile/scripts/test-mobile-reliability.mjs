@@ -19,6 +19,49 @@ function compile(code, globals, exportedName) {
   return context;
 }
 
+function sourceBetween(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start);
+  assert.notEqual(start, -1, `missing source marker: ${startMarker}`);
+  assert.notEqual(end, -1, `missing source marker: ${endMarker}`);
+  return source.slice(start, end);
+}
+
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+function mediaTrack(id) {
+  return {
+    id,
+    kind: "video",
+    stopped: 0,
+    enabled: true,
+    onended: null,
+    stop() { this.stopped += 1; },
+  };
+}
+
+function videoStream(track) {
+  return {
+    getVideoTracks: () => [track],
+    getTracks: () => [track],
+  };
+}
+
+async function flush() {
+  await Promise.resolve();
+  await new Promise((resolve) => setImmediate(resolve));
+  await Promise.resolve();
+  await new Promise((resolve) => setImmediate(resolve));
+}
+
 function captureRuntime({ initialTrack, replacementStream, replacementError, delayed = false, senderFailure }) {
   const captureStart = voiceSource.indexOf("function captureConstraints");
   const captureEnd = voiceSource.indexOf("export function VoiceProvider", captureStart);
@@ -91,13 +134,6 @@ function voiceTimers() {
     setTimeout: (callback, delay) => { const id = ++nextId; timers.set(id, { callback, delay }); return id; },
     clearTimeout: (id) => { timers.delete(id); },
   };
-}
-
-async function flush() {
-  await Promise.resolve();
-  await new Promise((resolve) => setImmediate(resolve));
-  await Promise.resolve();
-  await new Promise((resolve) => setImmediate(resolve));
 }
 
 async function testCaptureFallbackAndRollback() {
@@ -255,6 +291,7 @@ async function testDirectCallRevocation() {
   const updates = {};
   const calls = [];
   const refs = {
+    callOperationGenerationRef: { current: 0 }, callOperationPendingRef: { current: false },
     phaseRef: { current: "connected" }, outgoingRef: { current: true }, iceServersRef: { current: ["turn"] },
     connectedAtRef: { current: Date.now() },
   };
@@ -277,10 +314,330 @@ async function testDirectCallRevocation() {
   assert.deepEqual([...refs.iceServersRef.current], []);
 }
 
+function voiceCaptureRuntime({ permission, cameraMedia, screenMedia, queuePeer } = {}) {
+  const refs = {
+    voiceOperationGenerationRef: { current: 1 },
+    voiceChannelRef: { current: 10 },
+    sessionScopeRef: { current: { identity: "account-a:token-a", generation: 1 } },
+    localCameraStreamRef: { current: null },
+    localScreenStreamRef: { current: null },
+    peerSessionsRef: { current: new Map() },
+    voiceSettingsRef: { current: { screenShareQuality: "balanced" } },
+  };
+  const state = { events: [], errors: [], screenErrors: [], cameraSharing: [], screenSharing: [], stopCamera: 0, stopScreen: 0, cameraMediaCalls: 0, screenMediaCalls: 0 };
+  const permissionRequest = permission ?? Promise.resolve("granted");
+  const mediaDevices = {
+    getUserMedia: async () => { state.cameraMediaCalls += 1; return cameraMedia ? await cameraMedia : videoStream(mediaTrack("camera")); },
+    getDisplayMedia: async () => { state.screenMediaCalls += 1; return screenMedia ? await screenMedia : videoStream(mediaTrack("screen")); },
+  };
+  const makePeer = () => {
+    const senders = [];
+    return {
+      senders,
+      pc: {
+        getSenders: () => senders,
+        removeTrack: (sender) => { const index = senders.indexOf(sender); if (index >= 0) senders.splice(index, 1); },
+      },
+    };
+  };
+  const oldPeer = makePeer();
+  refs.peerSessionsRef.current.set("peer-a", oldPeer);
+  const globals = {
+    ...refs,
+    sessionIdentity: "account-a:token-a",
+    sessionGeneration: 1,
+    Platform: { OS: "android" },
+    PermissionsAndroid: {
+      PERMISSIONS: { CAMERA: "camera" }, RESULTS: { GRANTED: "granted" },
+      request: async () => await permissionRequest,
+    },
+    mediaDevices,
+    requestIosBroadcast: async () => true,
+    send: (event) => { state.events.push(event); return true; },
+    setVoiceError: (value) => state.errors.push(value),
+    setScreenShareError: (value) => state.screenErrors.push(value),
+    setCameraSharing: (value) => state.cameraSharing.push(value),
+    setScreenSharing: (value) => state.screenSharing.push(value),
+    stopCamera: () => { state.stopCamera += 1; refs.localCameraStreamRef.current = null; },
+    stopScreenShare: () => { state.stopScreen += 1; refs.localScreenStreamRef.current = null; },
+    errorMessage: (_cause, fallback) => fallback,
+    console: { warn() {} },
+    queueLocalTracksToPeer: async (session) => {
+      if (queuePeer) await queuePeer(session, refs);
+      else {
+        const tracks = [
+          ...((refs.localCameraStreamRef.current?.getTracks?.()) ?? []),
+          ...((refs.localScreenStreamRef.current?.getTracks?.()) ?? []),
+        ];
+        for (const track of tracks) session.pc.getSenders().push({ track });
+      }
+    },
+  };
+  const code = sourceBetween(voiceSource, "  const requestCamera =", "  realtimeEventHandlerRef.current =") +
+    "\nglobalThis.startScreenShare = startScreenShare;";
+  const context = compile(code, globals, "startCamera");
+  return { context, refs, state, oldPeer, makePeer };
+}
+
+function switchVoiceAccount(runtime) {
+  runtime.context.sessionIdentity = "account-b:token-b";
+  runtime.context.sessionGeneration = 2;
+  runtime.refs.sessionScopeRef.current = { identity: "account-b:token-b", generation: 2 };
+  runtime.refs.voiceOperationGenerationRef.current += 1;
+  runtime.refs.voiceChannelRef.current = 20;
+  runtime.refs.peerSessionsRef.current = new Map([["peer-b", runtime.makePeer()]]);
+}
+
+async function testVoiceLateCameraPermissionAfterAccountSwitch() {
+  const permission = deferred();
+  const cameraMedia = deferred();
+  const runtime = voiceCaptureRuntime({ permission: permission.promise, cameraMedia: cameraMedia.promise });
+  const pending = runtime.context.startCamera();
+  await flush();
+  switchVoiceAccount(runtime);
+  permission.resolve("granted");
+  assert.equal(await pending, false);
+  assert.equal(runtime.state.cameraMediaCalls, 0);
+  assert.equal(runtime.state.events.length, 0);
+  assert.equal(runtime.refs.localCameraStreamRef.current, null);
+}
+
+async function testVoiceLateCameraMediaAfterAccountSwitch() {
+  const cameraMedia = deferred();
+  const runtime = voiceCaptureRuntime({ cameraMedia: cameraMedia.promise });
+  const pending = runtime.context.startCamera();
+  await flush();
+  switchVoiceAccount(runtime);
+  const track = mediaTrack("late-camera");
+  cameraMedia.resolve(videoStream(track));
+  assert.equal(await pending, false);
+  assert.equal(track.stopped, 1);
+  assert.equal(runtime.state.events.length, 0);
+  assert.equal([...runtime.refs.peerSessionsRef.current.values()][0].pc.getSenders().length, 0);
+  assert.equal(runtime.refs.localCameraStreamRef.current, null);
+}
+
+async function testVoiceLateScreenMediaAfterRoomSwitch() {
+  const screenMedia = deferred();
+  const runtime = voiceCaptureRuntime({ screenMedia: screenMedia.promise });
+  const pending = runtime.context.startScreenShare();
+  await flush();
+  runtime.refs.voiceOperationGenerationRef.current += 1;
+  runtime.refs.voiceChannelRef.current = 11;
+  runtime.refs.peerSessionsRef.current = new Map([["peer-next-room", runtime.makePeer()]]);
+  const track = mediaTrack("late-screen");
+  screenMedia.resolve(videoStream(track));
+  assert.equal(await pending, false);
+  assert.equal(track.stopped, 1);
+  assert.equal(runtime.state.events.length, 0);
+  assert.equal([...runtime.refs.peerSessionsRef.current.values()][0].pc.getSenders().length, 0);
+  assert.equal(runtime.refs.localScreenStreamRef.current, null);
+}
+
+async function testVoiceSameAccountCaptureAndEndedCallbacks() {
+  const runtime = voiceCaptureRuntime();
+  const camera = videoStream(mediaTrack("camera-a"));
+  const originalGetUserMedia = runtime.context.mediaDevices.getUserMedia;
+  runtime.context.mediaDevices.getUserMedia = async () => camera;
+  assert.equal(await runtime.context.startCamera(), true);
+  assert.equal(runtime.refs.localCameraStreamRef.current, camera);
+  assert.equal(runtime.state.events[0].cameraSharing, true);
+  const cameraTrack = camera.getVideoTracks()[0];
+  assert.equal(typeof cameraTrack.onended, "function");
+  cameraTrack.onended();
+  assert.equal(runtime.state.stopCamera, 1, "a current camera track end still stops its capture");
+  assert.equal(runtime.refs.localCameraStreamRef.current, null);
+
+  switchVoiceAccount(runtime);
+  const accountBStream = videoStream(mediaTrack("camera-b"));
+  runtime.refs.localCameraStreamRef.current = accountBStream;
+  cameraTrack.onended();
+  assert.equal(runtime.state.stopCamera, 1, "an old track callback cannot stop the new account's camera");
+  assert.equal(runtime.refs.localCameraStreamRef.current, accountBStream);
+
+  // A still-current capture retains the normal stop behavior on track end.
+  runtime.context.sessionIdentity = "account-b:token-b";
+  runtime.context.sessionGeneration = 2;
+  runtime.refs.sessionScopeRef.current = { identity: "account-b:token-b", generation: 2 };
+  runtime.refs.voiceOperationGenerationRef.current += 1;
+  runtime.refs.localCameraStreamRef.current = null;
+  const screen = videoStream(mediaTrack("screen-b"));
+  runtime.context.mediaDevices.getDisplayMedia = async () => screen;
+  assert.equal(await runtime.context.startScreenShare(), true);
+  screen.getVideoTracks()[0].onended();
+  assert.equal(runtime.state.stopScreen, 1);
+  runtime.context.mediaDevices.getUserMedia = originalGetUserMedia;
+}
+
+async function testVoiceRoomSwitchDuringPeerQueue() {
+  const queueStarted = deferred();
+  const queueRelease = deferred();
+  const track = mediaTrack("queued-camera");
+  const runtime = voiceCaptureRuntime({
+    cameraMedia: Promise.resolve(videoStream(track)),
+    queuePeer: async (session, refs) => {
+      session.pc.getSenders().push({ track: refs.localCameraStreamRef.current.getVideoTracks()[0] });
+      queueStarted.resolve();
+      await queueRelease.promise;
+    },
+  });
+  const pending = runtime.context.startCamera();
+  await queueStarted.promise;
+  runtime.refs.voiceOperationGenerationRef.current += 1;
+  runtime.refs.voiceChannelRef.current = 11;
+  queueRelease.resolve();
+  assert.equal(await pending, false);
+  assert.equal(track.stopped, 1);
+  assert.equal(runtime.oldPeer.pc.getSenders().length, 0);
+  assert.equal(runtime.refs.localCameraStreamRef.current, null);
+}
+
+function directCallRuntime({ permission, media, ice, phase = "idle" } = {}) {
+  const state = { events: [], eventSockets: [], errors: [], permissionCalls: [], apiTokens: [], mediaCalls: 0, iceWrites: [], localStream: null, remoteStream: null };
+  const refs = {
+    sessionIdentityRef: { current: "account-a:token-a" },
+    callOperationGenerationRef: { current: 0 }, callOperationPendingRef: { current: false },
+    phaseRef: { current: phase }, videoRef: { current: false }, peerRef: { current: phase === "incoming" ? { userId: "friend" } : null },
+    outgoingRef: { current: false }, localStreamRef: { current: null }, remoteStreamRef: { current: null },
+    pcRef: { current: null }, pendingCandidatesRef: { current: [] }, iceServersRef: { current: [] }, connectedAtRef: { current: null },
+  };
+  const permissionResult = permission ?? Promise.resolve("granted");
+  const mediaResult = media ?? Promise.resolve(videoStream(mediaTrack("call-media")));
+  const iceResult = ice ?? Promise.resolve({ iceServers: [{ urls: "turn:relay.example" }] });
+  const socketRef = { current: "socket-a" };
+  const globals = {
+    ...refs,
+    sessionIdentity: "account-a:token-a", token: "token-a", user: { id: "account-a" }, connectionState: "connected",
+    socketRef,
+    PermissionsAndroid: {
+      PERMISSIONS: { RECORD_AUDIO: "microphone", CAMERA: "camera" }, RESULTS: { GRANTED: "granted" },
+      request: async (permissionName) => { state.permissionCalls.push(permissionName); return await permissionResult; },
+    },
+    Platform: { OS: "android" },
+    mediaDevices: { getUserMedia: async () => { state.mediaCalls += 1; return await mediaResult; } },
+    apiJson: async (_path, _options, authToken) => { state.apiTokens.push(authToken); return await iceResult; },
+    hasRelayIceServer: (servers) => servers.some((server) => String(server.urls).startsWith("turn:")),
+    RELAY_UNAVAILABLE_MESSAGE: "relay unavailable",
+    provisionalPeer: (userId, username) => ({ userId, username, connectionId: "provisional" }),
+    send: (event) => { state.events.push(event); state.eventSockets.push(socketRef.current); return true; },
+    clearCallVerdict: () => {},
+    closePeer: () => { refs.pcRef.current = null; refs.remoteStreamRef.current = null; state.remoteStream = null; },
+    stopLocalMedia: () => {
+      for (const track of refs.localStreamRef.current?.getTracks?.() ?? []) track.stop();
+      refs.localStreamRef.current = null;
+      state.localStream = null;
+    },
+    setPeer: (value) => { refs.peerRef.current = value; },
+    setVideo: (value) => { refs.videoRef.current = value; },
+    setPhase: (value) => { refs.phaseRef.current = value; },
+    setMuted: () => {}, setCameraEnabled: () => {}, setDurationSeconds: () => {}, setVolumeOpen: () => {}, setMinimized: () => {},
+    setError: (value) => state.errors.push(value),
+    setLocalStream: (value) => { state.localStream = value; },
+    setRemoteStream: (value) => { state.remoteStream = value; },
+    errorMessage: (_cause, fallback) => fallback,
+    callDescriptionAuth: () => ({}),
+  };
+  const operationStart = callsSource.indexOf("  const isCurrentCallOperation");
+  const operationEnd = callsSource.indexOf("  const sendDescription", operationStart);
+  const flowStart = callsSource.indexOf("  const startCall");
+  const flowEnd = callsSource.indexOf("  const declineCall", flowStart);
+  const authStart = callsSource.indexOf('    if (phaseRef.current !== "idle" || callOperationPendingRef.current) resetLocal();');
+  const authEnd = callsSource.indexOf("\n  }, [user?.id, token]);", authStart);
+  assert.notEqual(authStart, -1, "auth-change effect must reset pending call setup");
+  const code = callsSource.slice(operationStart, operationEnd) + callsSource.slice(flowStart, flowEnd) +
+    `\nglobalThis.acceptCall = acceptCall;\nglobalThis.runAuthReset = () => { ${callsSource.slice(authStart, authEnd)} };`;
+  const context = compile(code, globals, "startCall");
+  return { context, refs, state, socketRef };
+}
+
+function switchDirectCallAccount(runtime) {
+  runtime.context.sessionIdentity = "account-b:token-b";
+  runtime.context.token = "token-b";
+  runtime.context.user = { id: "account-b" };
+  runtime.refs.sessionIdentityRef.current = "account-b:token-b";
+  runtime.refs.callOperationGenerationRef.current += 1;
+  runtime.socketRef.current = "socket-b";
+  runtime.context.runAuthReset();
+}
+
+async function testDirectCallLateIceAfterAccountSwitch() {
+  const ice = deferred();
+  const runtime = directCallRuntime({ ice: ice.promise });
+  const pending = runtime.context.startCall("friend", false);
+  await flush();
+  switchDirectCallAccount(runtime);
+  ice.resolve({ iceServers: [{ urls: "turn:relay.example" }] });
+  assert.equal(await pending, false);
+  assert.equal(runtime.state.permissionCalls.length, 0);
+  assert.equal(runtime.state.mediaCalls, 0);
+  assert.equal(runtime.state.events.length, 0);
+  assert.deepEqual([...runtime.refs.iceServersRef.current], []);
+}
+
+async function testDirectCallLatePermissionAfterAccountSwitch() {
+  const permission = deferred();
+  const runtime = directCallRuntime({ permission: permission.promise });
+  const pending = runtime.context.startCall("friend", false);
+  await flush();
+  assert.deepEqual(runtime.state.permissionCalls, ["microphone"]);
+  switchDirectCallAccount(runtime);
+  permission.resolve("granted");
+  assert.equal(await pending, false);
+  assert.equal(runtime.state.mediaCalls, 0);
+  assert.equal(runtime.state.events.length, 0);
+  assert.equal(runtime.refs.phaseRef.current, "idle");
+}
+
+async function testDirectCallLateMediaAfterAccountSwitch() {
+  const media = deferred();
+  const runtime = directCallRuntime({ media: media.promise });
+  const pending = runtime.context.startCall("friend", false);
+  await flush();
+  assert.equal(runtime.state.mediaCalls, 1);
+  switchDirectCallAccount(runtime);
+  const track = mediaTrack("late-call-media");
+  media.resolve(videoStream(track));
+  assert.equal(await pending, false);
+  assert.equal(track.stopped, 1);
+  assert.equal(runtime.state.events.length, 0);
+  assert.equal(runtime.refs.localStreamRef.current, null);
+  assert.equal(runtime.state.localStream, null);
+}
+
+async function testDirectCallSameAccountAndPendingAcceptReset() {
+  const runtime = directCallRuntime();
+  assert.equal(await runtime.context.startCall("friend", true), true);
+  assert.equal(runtime.refs.phaseRef.current, "ringing");
+  assert.deepEqual(runtime.state.events.map((event) => event.type), ["DM_CALL_START"]);
+  assert.deepEqual(runtime.state.eventSockets, ["socket-a"]);
+  assert.equal(runtime.refs.localStreamRef.current.getTracks()[0].stopped, 0);
+
+  const permission = deferred();
+  const incoming = directCallRuntime({ phase: "incoming", permission: permission.promise });
+  const accepting = incoming.context.acceptCall();
+  await flush();
+  assert.equal(incoming.refs.callOperationPendingRef.current, true);
+  switchDirectCallAccount(incoming);
+  permission.resolve("granted");
+  await accepting;
+  assert.equal(incoming.refs.phaseRef.current, "idle");
+  assert.equal(incoming.state.events.length, 0, "a stale accept cannot accept or decline the new account's call");
+  assert.equal(incoming.state.mediaCalls, 0);
+}
+
 await testCaptureFallbackAndRollback();
 await testCaptureGenerationCancellation();
 await testBoundedIceRecoveryCancellation();
 await testStatsSpeakingAndUnavailable();
 await testRevocationCleanup();
 await testDirectCallRevocation();
-console.log("mobile reliability runtime checks passed (6)");
+await testVoiceLateCameraPermissionAfterAccountSwitch();
+await testVoiceLateCameraMediaAfterAccountSwitch();
+await testVoiceLateScreenMediaAfterRoomSwitch();
+await testVoiceSameAccountCaptureAndEndedCallbacks();
+await testVoiceRoomSwitchDuringPeerQueue();
+await testDirectCallLateIceAfterAccountSwitch();
+await testDirectCallLatePermissionAfterAccountSwitch();
+await testDirectCallLateMediaAfterAccountSwitch();
+await testDirectCallSameAccountAndPendingAcceptReset();
+console.log("mobile reliability runtime checks passed (15)");

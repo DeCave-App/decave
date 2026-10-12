@@ -2,8 +2,15 @@
 // client.
 
 import type { Env } from "./env";
-import { type UserRow, publicUserWithPresence, ensureGroupChatSchema, type GroupChatRow, publicIdOf } from "../db";
-import { realtimeFetch } from "./realtime";
+import {
+  type UserRow,
+  publicUserWithPresence,
+  presenceOnline,
+  ensureGroupChatSchema,
+  type GroupChatRow,
+  publicIdOf,
+} from "../db";
+import { connectedUserIds } from "./realtime";
 import { DM_GROUP_MAX_WRAPS, parseDmEnvelope } from "../../shared/dm-e2ee-format";
 
 export async function usersHaveMutualFriend(db: D1Database, firstId: string, secondId: string): Promise<boolean> {
@@ -57,16 +64,11 @@ export async function socialState(env: Env, userId: string) {
     .bind(userId)
     .all<UserRow>();
 
-  const onlineResponse = await realtimeFetch(env, "/internal/online-users");
-  const onlineData = onlineResponse.ok ? ((await onlineResponse.json()) as { userIds?: string[] }) : {};
-  const onlineIds = new Set(onlineData.userIds ?? []);
+  const onlineIds = await connectedUserIds(env);
 
   const decorate = (row: UserRow, relation: "friend" | "other") => {
-    const online = row.status !== "invisible" && onlineIds.has(row.id);
-    return {
-      ...publicUserWithPresence(row, online, relation),
-      online,
-    };
+    const online = presenceOnline(row, onlineIds.has(row.id));
+    return { ...publicUserWithPresence(row, online, relation), online };
   };
   return {
     friends: friends.results.map((row) => decorate(row, "friend")),
@@ -80,6 +82,7 @@ export async function groupChatForClient(
   groupId: string,
   includeLatestMessage = true,
   viewerUserId?: string,
+  onlineIds?: Set<string>,
 ) {
   await ensureGroupChatSchema(env.DB);
   const group = await env.DB.prepare("SELECT * FROM decave_group_chats WHERE id=?").bind(groupId).first<GroupChatRow>();
@@ -111,11 +114,9 @@ export async function groupChatForClient(
     .bind(groupId)
     .first<{ text?: string; envelope?: string | null; created_at: string }>();
 
-  const onlineResponse = await realtimeFetch(env, "/internal/online-users");
-  const onlineData = onlineResponse.ok ? ((await onlineResponse.json()) as { userIds?: string[] }) : {};
-  const onlineIds = new Set(onlineData.userIds ?? []);
+  const connected = onlineIds ?? (await connectedUserIds(env));
   const members = memberRows.results.map((row) =>
-    publicUserWithPresence(row, row.status !== "invisible" && onlineIds.has(row.id)),
+    publicUserWithPresence(row, connected.has(row.id), row.id === viewerUserId ? "self" : "other"),
   );
   const ownerRow = memberRows.results.find((row) => row.id === group.owner_user_id);
 

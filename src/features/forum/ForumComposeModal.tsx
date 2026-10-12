@@ -27,6 +27,7 @@ import {
   encodeForumPost,
   loadForumDraft,
   saveForumDraft,
+  forumDraftSessionVersion,
   uploadForumFile,
   type ForumAttachment,
   type ForumFetch,
@@ -170,6 +171,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
     () => restoreDraft(loadForumDraft<unknown>(props.viewerId ?? "", props.roomId)),
     [props.viewerId, props.roomId],
   );
+  const forumDraftVersion = useMemo(() => forumDraftSessionVersion(props.viewerId ?? ""), [props.viewerId]);
   const [draft, setDraft] = useState<Draft>(initial ?? EMPTY);
   const [restored, setRestored] = useState(Boolean(initial));
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -198,14 +200,14 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
   // Autosave (debounced) per room.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      if (isDraftEmpty(draft)) saveForumDraft(props.viewerId ?? "", props.roomId, null);
+      if (isDraftEmpty(draft)) saveForumDraft(props.viewerId ?? "", props.roomId, null, forumDraftVersion);
       else {
-        saveForumDraft(props.viewerId ?? "", props.roomId, draft);
+        saveForumDraft(props.viewerId ?? "", props.roomId, draft, forumDraftVersion);
         setSavedAt(Date.now());
       }
     }, 600);
     return () => window.clearTimeout(timer);
-  }, [draft, props.roomId]);
+  }, [draft, props.roomId, forumDraftVersion]);
 
   const { type } = draft;
   const meta = FORUM_TYPE_META[type];
@@ -457,7 +459,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
       const text = encodeForumPost(buildPayload(Date.now()));
       if (!(await props.publish(text, draft.attachment)))
         throw new Error("Realtime is reconnecting. Try again in a moment.");
-      saveForumDraft(props.viewerId ?? "", props.roomId, null);
+      saveForumDraft(props.viewerId ?? "", props.roomId, null, forumDraftVersion);
       props.onPublished();
     } catch (publishError) {
       setError(publishError instanceof Error ? publishError.message : "Could not publish the post.");
@@ -467,7 +469,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
   };
 
   const discardDraft = () => {
-    saveForumDraft(props.viewerId ?? "", props.roomId, null);
+    saveForumDraft(props.viewerId ?? "", props.roomId, null, forumDraftVersion);
     setDraft(EMPTY);
     setTagDraft("");
     setRestored(false);

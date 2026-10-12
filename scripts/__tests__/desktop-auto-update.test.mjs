@@ -20,13 +20,39 @@ test("desktop updater uses a fixed packaged feed and guarded IPC", async () => {
   assert.doesNotMatch(main, /setFeedURL\s*\(/);
   assert.match(main, /autoUpdater\.disableWebInstaller\s*=\s*true/);
   assert.match(main, /autoUpdater\.allowPrerelease\s*=\s*false/);
-  assert.match(main, /readUnsignedWindowsUpdatesOptIn\(path\.join\(app\.getAppPath\(\), "package\.json"\)\)/);
-  assert.match(main, /configureWindowsUpdateTrust\(\{[\s\S]*?allowUnsignedUpdates,[\s\S]*?autoUpdater/);
+  const startupStart = main.indexOf("function startDesktopUpdater() {");
+  const startupEnd = main.indexOf("function sendVoiceShortcut", startupStart);
+  const startupFunction = main.slice(startupStart, startupEnd);
+  const windowsStart = startupFunction.indexOf('if (process.platform === "win32") {');
+  const startupEnabled = startupFunction.indexOf("  updaterStarted = true;");
+  const windowsStartup = startupFunction.slice(windowsStart, startupEnabled);
+  assert.ok(startupStart >= 0 && startupEnd > startupStart && windowsStart >= 0 && startupEnabled > windowsStart);
+  assert.match(windowsStartup, /autoUpdater\.autoDownload\s*=\s*false/);
+  assert.match(windowsStartup, /autoUpdater\.autoInstallOnAppQuit\s*=\s*false/);
+  assert.match(windowsStartup, /configureWindowsUpdateTrust\(\{[\s\S]*?autoUpdater/);
+  assert.match(windowsStartup, /catch \(error\)[\s\S]*?status: "disabled"[\s\S]*?return;/);
+  assert.ok(
+    windowsStartup.indexOf("autoUpdater.autoDownload = false") < windowsStartup.indexOf("configureWindowsUpdateTrust"),
+  );
+  assert.ok(
+    windowsStartup.indexOf("autoUpdater.autoInstallOnAppQuit = false") <
+      windowsStartup.indexOf("configureWindowsUpdateTrust"),
+  );
+  assert.ok(startupFunction.indexOf("catch (error)") < startupFunction.indexOf("updaterStarted = true;"));
+  assert.match(windowsStartup, /readUnsignedWindowsUpdatesOptIn\(path\.join\(app\.getAppPath\(\), "package\.json"\)\)/);
+  assert.match(windowsStartup, /configureWindowsUpdateTrust\(\{[\s\S]*?allowUnsignedUpdates,[\s\S]*?autoUpdater/);
   assert.match(main, /updates are not publisher-authenticated; integrity relies on update-feed hashes/i);
   assert.match(main, /ipcMain\.handle\("decave:update:check"[\s\S]*?trustedMainRenderer\(event\)/);
   assert.match(main, /ipcMain\.handle\("decave:update:restart"[\s\S]*?trustedMainRenderer\(event\)/);
+  assert.match(main, /if \(!app\.isPackaged \|\| desktopUpdateState\.status !== "downloaded"\) return false;/);
   assert.match(preload, /checkForUpdates:\s*\(\)\s*=>\s*ipcRenderer\.invoke\("decave:update:check"\)/);
   assert.doesNotMatch(preload, /setFeedURL|feedUrl|updateUrl/i);
+});
+
+test("unsigned Windows builds opt in to feed-hash-checked updates; signed builds don't", async () => {
+  const build = await read("scripts/release/build-windows.mjs");
+  assert.match(build, /const signed = assertWindowsSigningReady\(\)/);
+  assert.match(build, /: \{ extraMetadata: \{ decaveAllowUnsignedWindowsUpdates: true \} \};/);
 });
 
 test("release upload publishes immutable artifacts before latest.yml", async () => {

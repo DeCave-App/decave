@@ -6,7 +6,7 @@ import { test } from "node:test";
 register("../test-support/cloudflare-workers-test-loader.mjs", import.meta.url);
 const { D1Mock, MediaMock } = await import("../test-support/worker-sqlite-test-fixture.mjs");
 const { handleAccountSecurityRoutes } = await import("../../worker/routes/account.ts");
-const { pruneExpiredPrivacyData } = await import("../../worker/lib/retention.ts");
+const { pruneExpiredPersonalData } = await import("../../worker/retention.ts");
 
 const db = new D1Mock();
 const media = new MediaMock();
@@ -79,6 +79,7 @@ const mediaKeys = {
   legacyChannel: "attachments/1/1/legacy-own-image",
   dm1: "attachments/private/own-dm-one",
   dm2: "attachments/private/own-dm-two",
+  e2eeDm: "attachments/private/own-e2ee-dm",
   otherDm: "attachments/private/other-user-file",
 };
 db.exec(
@@ -139,9 +140,22 @@ db.exec(
   now,
 );
 db.exec(
+  `INSERT INTO decave_direct_messages(id,from_user_id,to_user_id,text,envelope,created_at,attachment_refs)
+   VALUES('own-e2ee-dm','u1','u2','',?,?,?)`,
+  JSON.stringify({ v: 1, ciphertext: "opaque" }),
+  now,
+  mediaKeys.e2eeDm,
+);
+db.exec(
   `INSERT INTO decave_attachment_access(r2_key,kind,owner_user_id,peer_user_id,created_at)
    VALUES(?,'dm','u2','u1',?)`,
   mediaKeys.otherDm,
+  now,
+);
+db.exec(
+  `INSERT INTO decave_attachment_access(r2_key,kind,owner_user_id,peer_user_id,created_at)
+   VALUES(?,'dm','u1','u2',?)`,
+  mediaKeys.e2eeDm,
   now,
 );
 
@@ -182,7 +196,7 @@ async function accountRoute(path) {
   return handleAccountSecurityRoutes({ request, env, p: new URL(request.url).pathname, method: request.method });
 }
 
-test("account export streams complete own records, consent, feedback and safe attachment downloads", async () => {
+test("account export streams own records, consent and feedback while attachment downloads stay scoped", async () => {
   const insert = db.sqlite.prepare(
     `INSERT INTO decave_direct_messages(id,from_user_id,to_user_id,text,created_at)
      VALUES(?,?,?,?,?)`,
@@ -207,24 +221,34 @@ test("account export streams complete own records, consent, feedback and safe at
   assert.equal(data.format, "decave-account-export-v2");
   assert.equal(data.account.consent.terms_version, "terms-2025-02");
   assert.equal(data.account.consent.privacy_version, "privacy-2025-02");
-  assert.equal(data.account.phoneNumber, undefined, "retired phone data is not included in account exports");
   assert.equal(data.account.twoFactorEnabled, true);
   assert.ok(!text.includes("MFA-DO-NOT-EXPORT"));
   assert.ok(!text.includes(ipHash));
-  assert.equal(data.directMessagesReceived.length, 2, "DMs received by the account are part of its export");
-  assert.ok(data.directMessagesReceived.some((row) => row.text === "private peer reply" && row.sender === "user-u2"));
+  assert.ok(!Object.hasOwn(data, "directMessagesReceived"));
+  assert.ok(!text.includes("private peer reply"), "another person's authored DM is not in the export");
   assert.equal(data.feedback.length, 1);
   assert.equal(data.feedback[0].message, "my own feedback");
-  assert.equal(data.directMessagesSent.length, 20_002);
+  assert.equal(data.directMessagesSent.length, 20_003);
   assert.equal(data.hubRoomAttachments.length, 1);
   assert.equal(data.legacyHubRoomAttachments.length, 1);
-  assert.equal(data.directMessageAttachments.length, 2, "pagination emits both attachments referenced by one DM row");
+  assert.equal(
+    data.directMessageAttachments.length,
+    3,
+    "the export includes plaintext and E2EE attachments from its own messages",
+  );
+  assert.ok(
+    !JSON.stringify(data).includes(mediaKeys.otherDm),
+    "attachments referenced only by another person's message are not included",
+  );
 
   const ownDownload = await accountRoute(`/api/account/export/attachment?key=${encodeURIComponent(mediaKeys.channel)}`);
   assert.equal(ownDownload.status, 200);
   assert.equal(ownDownload.headers.get("content-type"), "application/octet-stream");
   assert.match(ownDownload.headers.get("content-disposition") ?? "", /attachment; filename="stored-name.html"/);
   assert.equal(await ownDownload.text(), "<script>unsafe()</script>");
+
+  const e2eeDownload = await accountRoute(`/api/account/export/attachment?key=${encodeURIComponent(mediaKeys.e2eeDm)}`);
+  assert.equal(e2eeDownload.status, 200, "a key in attachment_refs authorizes the sender's E2EE attachment export");
 
   const legacyDownload = await accountRoute(
     `/api/account/export/attachment?key=${encodeURIComponent(mediaKeys.legacyChannel)}`,
@@ -236,20 +260,20 @@ test("account export streams complete own records, consent, feedback and safe at
   assert.equal(otherUserDownload.status, 404, "export download cannot expose a counterpart-owned file");
 });
 
-test("account export marks streamed database failures incomplete instead of returning empty sections", async () => {
+test("account export treats a missing lazy database section as empty", async () => {
   db.sqlite.exec("DROP TABLE decave_known_devices");
   const response = await accountRoute("/api/account/export");
   assert.equal(response.status, 200);
   const data = JSON.parse(await response.text());
-  assert.equal(data.complete, false);
-  assert.equal(data.error, "The export could not be completed. Retry the download.");
+  assert.equal(data.complete, true);
+  assert.deepEqual(data.knownDevices, []);
   // Restore the table for the retention test below.
   db.sqlite.exec(`CREATE TABLE decave_known_devices (
     user_id TEXT NOT NULL, fingerprint TEXT NOT NULL, label TEXT NOT NULL DEFAULT '',
     first_seen_at TEXT NOT NULL, last_seen_at TEXT NOT NULL, PRIMARY KEY (user_id, fingerprint))`);
 });
 
-test("scheduled privacy cleanup is bounded, expires credentials, defaults old evidence to 365 days and respects holds", async () => {
+test("scheduled privacy cleanup expires credentials, prunes 180-day security events and closed-case evidence after 183 days, and respects holds", async () => {
   const expired = "2026-10-04T00:00:00.000Z";
   const active = "2026-11-04T00:00:00.000Z";
   const old = "2024-01-01T00:00:00.000Z";
@@ -290,15 +314,15 @@ test("scheduled privacy cleanup is bounded, expires credentials, defaults old ev
     "INSERT INTO decave_ws_tokens(token_hash,user_id,expires_at,created_at,session_hash) VALUES(?,?,?,?,?)",
     "expired-ws",
     "u1",
-    active,
+    expired,
     old,
     expiredHash,
   );
   db.exec(
     "INSERT INTO decave_ws_tokens(token_hash,user_id,expires_at,created_at,session_hash) VALUES(?,?,?,?,?)",
-    "old-ws-direct-expiry",
+    "active-ws",
     "u1",
-    expired,
+    active,
     old,
     activeHash,
   );
@@ -349,21 +373,22 @@ test("scheduled privacy cleanup is bounded, expires credentials, defaults old ev
     now,
   );
   for (const item of [
-    { id: "expired-evidence-explicit", hold: 0, caseHold: 0, expires: old, created: old },
-    { id: "expired-evidence-null-default", hold: 0, caseHold: 0, expires: null, created: old },
-    { id: "held-evidence-item", hold: 0, caseHold: 1, expires: old, created: old },
-    { id: "fresh-evidence-item", hold: 0, caseHold: 0, expires: active, created: fresh },
+    { id: "expired-evidence-explicit", hold: 0, caseHold: 0, expires: old, created: old, closed: old },
+    { id: "expired-evidence-null-default", hold: 0, caseHold: 0, expires: null, created: old, closed: old },
+    { id: "held-evidence-item", hold: 0, caseHold: 1, expires: old, created: old, closed: old },
+    { id: "fresh-evidence-item", hold: 0, caseHold: 0, expires: active, created: fresh, closed: fresh },
   ]) {
     const caseId = `case-${item.id}`;
     const reportId = `report-${item.id}`;
     db.exec(
       `INSERT INTO decave_moderation_cases
-         (id,case_number,category,urgency_recommended,urgency_effective,created_at,updated_at,legal_hold)
-       VALUES(?,?, 'harassment','low','low',?,?,?)`,
+         (id,case_number,category,urgency_recommended,urgency_effective,created_at,updated_at,closed_at,legal_hold)
+       VALUES(?,?, 'harassment','low','low',?,?,?,?)`,
       caseId,
       `CASE-${caseId}`,
       item.created,
       item.created,
+      item.closed,
       item.caseHold,
     );
     db.exec(
@@ -397,16 +422,16 @@ test("scheduled privacy cleanup is bounded, expires credentials, defaults old ev
   media.delete = async () => {
     throw new Error("temporary R2 failure");
   };
-  await assert.rejects(pruneExpiredPrivacyData(env, new Date(now)), /remain retryable/);
+  assert.deepEqual(await pruneExpiredPersonalData(env), []);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_sessions WHERE token_hash=?", expiredHash), 0);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_sessions WHERE token_hash=?", activeHash), 1);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_session_clients WHERE token_hash=?", expiredHash), 0);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_ws_tokens WHERE token_hash='expired-ws'"), 0);
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_ws_tokens WHERE token_hash='old-ws-direct-expiry'"), 0);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_ws_tokens WHERE token_hash='active-ws'"), 1);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_auth_tokens WHERE id='expired-auth'"), 0);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_auth_tokens WHERE id='active-auth'"), 1);
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_security_events WHERE created_at=?", old), 1);
-  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_feedback WHERE created_at=?", old), 1);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_security_events WHERE created_at=?", old), 0);
+  assert.equal(db.scalar("SELECT COUNT(*) FROM decave_feedback WHERE created_at=?", old), 0);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_report_evidence WHERE id='expired-evidence-explicit'"), 0);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_report_evidence WHERE id='expired-evidence-null-default'"), 0);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_report_evidence WHERE id='held-evidence-item'"), 1);
@@ -415,7 +440,7 @@ test("scheduled privacy cleanup is bounded, expires credentials, defaults old ev
   assert.equal(media.objects.has("safety-evidence/held-evidence-item.bin"), true);
 
   media.delete = previousDelete;
-  await pruneExpiredPrivacyData(env, new Date(now));
+  assert.deepEqual(await pruneExpiredPersonalData(env), []);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_security_events WHERE created_at=?", old), 0);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_feedback WHERE created_at=?", old), 0);
   assert.equal(db.scalar("SELECT COUNT(*) FROM decave_media_deletion_queue"), 0);

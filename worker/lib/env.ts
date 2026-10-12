@@ -34,7 +34,25 @@ export interface Env {
   STEAM_WEB_API_KEY?: string;
   GIPHY_API_KEY?: string;
   STREAMER_HUBS_ENABLED?: string;
+  BOTS_BUILDER_ENABLED?: string;
+  ANTHROPIC_API_KEY?: string;
   STREAMER_GIVEAWAYS_ENABLED?: string;
+  /** Twitch app credentials for Streamer Hub auto-live (EventSub). All three unset = feature off. */
+  TWITCH_CLIENT_ID?: string;
+  TWITCH_CLIENT_SECRET?: string;
+  /** 10–100 character secret Twitch signs EventSub deliveries with. */
+  TWITCH_EVENTSUB_SECRET?: string;
+  /** FACEIT Data API server key for the Streamer Hub leaderboard (FACEIT ELO). Unset = linking off. */
+  FACEIT_API_KEY?: string;
+  /** FACEIT Connect (OAuth, PKCE) client for verified FACEIT linking; redirect URI /api/account/faceit/callback. */
+  FACEIT_CLIENT_ID?: string;
+  /** Only for a confidential FACEIT client; App Studio PKCE clients have none. */
+  FACEIT_CLIENT_SECRET?: string;
   /** "true" turns on end-to-end encrypted DMs (docs/security/DM-E2EE.md). */
   DM_E2EE_ENABLED?: string;
+  /** Cloudflare Realtime (SFU) app for encrypted screen share. */
+  CLOUDFLARE_REALTIME_APP_ID?: string;
+  CLOUDFLARE_REALTIME_APP_TOKEN?: string;
+  /** "true" routes screen share through the SFU; anything else keeps it off. */
+  SCREEN_SFU_ENABLED?: string;
 }

@@ -26,3 +26,13 @@ id = "generic-api-key"
   regexTarget = "line"
   paths = ["^worker/HubRoom\\.ts$"]
   regexes = ["\\Q        attachmentKey = ownedAttachment.r2_key;\\E"]
+
+  [[rules.allowlists]]
+  description = "The same two setting keys where they lived in src/App.tsx before the settings-storage split (history only); exact path and lines only"
+  condition = "AND"
+  regexTarget = "line"
+  paths = ["^src/App\\.tsx$"]
+  regexes = [
+    "\\Qconst MUTED_HUBS_KEY = \"decave_muted_hubs_v1\";\\E",
+    "\\Qconst NOTIFICATION_SETTINGS_KEY = \"vadrion_notifications_v1\";\\E",
+  ]

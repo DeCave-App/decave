@@ -14,7 +14,7 @@ test("unexpected capture audio is stopped and removed before protected transport
   assert.deepEqual(stopped, [0, 1]);
   assert.deepEqual(removed, tracks);
   const app = readAppSource();
-  const capture = app.indexOf("const screen = await navigator.mediaDevices.getDisplayMedia");
+  const capture = app.indexOf("await navigator.mediaDevices.getDisplayMedia");
   const discard = app.indexOf("discardUnapprovedDisplayAudio(screen, captureSystemAudio)", capture);
   const publish = app.indexOf("localScreenStreamRef.current = screen", capture);
   assert(capture >= 0 && discard > capture && publish > discard);

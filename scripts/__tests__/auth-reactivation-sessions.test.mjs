@@ -252,10 +252,11 @@ test("forgot-password responds before the account lookup and email run (waitUnti
 test("QR sign-in issues a short non-persistent session", () => {
   const auth = source("worker/routes/auth.ts");
   const claim = auth.slice(auth.indexOf('p === "/api/auth/qr/claim"'));
-  const block = claim.slice(0, claim.indexOf("return null;"));
-  assert.match(block, /createSession\(env, user\.id, SHORT_SESSION_TTL_MS\)/);
+  const block = claim.slice(0, claim.indexOf('p === "/api/auth/change-password"'));
+  assert.match(block, /claimed_at IS NULL AND claim_id IS NULL AND expires_at>\?/);
+  assert.match(block, /INSERT INTO decave_sessions[\s\S]*?SELECT \?,user_id,\?,\? FROM decave_qr_login_challenges/);
+  assert.match(block, /new Date\(Date\.now\(\) \+ SHORT_SESSION_TTL_MS\)/);
   assert.match(block, /sessionCookie\(request, sessionToken, null\)/);
-  assert.doesNotMatch(block, /30 \* 86400/);
   assert.match(auth, /const SHORT_SESSION_TTL_MS = 12 \* 60 \* 60 \* 1000;/);
 });
 
@@ -279,12 +280,10 @@ test("current-password checks are throttled per account, not per IP", async () =
   assert.deepEqual(recoveryKeys, ["change-password:pw-user", "change-password:pw-user"]);
 
   const account = source("worker/routes/account.ts");
-  for (const key of ["account-username", "account-state"]) {
-    assert.match(account, new RegExp("key: `" + key + ":\\$\\{user\\.id\\}`"));
-  }
-  assert.doesNotMatch(account, /account-phone/);
+  assert.equal((account.match(/await currentPasswordThrottle\(env, user\.id\)/g) ?? []).length, 4);
+  assert.match(source("worker/lib/sessions.ts"), /key: `current-password:\$\{userId\}`/);
   assert.doesNotMatch(account, /requestKey\(request, `account-/);
-  assert.match(source("worker/routes/auth.ts"), /key: `add-email:\$\{user\.id\}`/);
+  assert.match(source("worker/routes/auth.ts"), /currentPasswordThrottle\(env, user\.id\)/);
 });
 
 test("CSP derives the realtime origin from the request and drops unused hosts", async () => {
@@ -333,9 +332,15 @@ test("writes reject browser cross-origin fetch metadata; /ws enforces an Origin 
 
 test("realtime admission keys never keep the raw client IP", () => {
   const hubRoom = source("worker/HubRoom.ts");
-  assert.match(hubRoom, /securityIpAddressTag\(env, address, "decave-ws-peer-v1"\)/);
-  assert.match(hubRoom, /createHash\("sha256"\)\.update\(`decave-ws-peer-v1\\0\$\{address\}`\)/);
-  assert.match(hubRoom, /await peerAddressForRequest\(request, this\.env\)/);
-  assert.match(hubRoom, /normalizedPeerAddress\(attached\.peerAddress\)/);
-  assert.doesNotMatch(hubRoom, /peerAddress:\s*address/);
+  const fn = hubRoom.slice(hubRoom.indexOf("function peerAddressForRequest"));
+  const body = fn.match(/function peerAddressForRequest\(request: Request\): string \{[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(body, /tokenHash\(`ws-peer\|\$\{address\}`\)/);
+  assert.match(hubRoom, /private peerAddressByConnection = new Map<string, string>\(\)/);
+  assert.match(hubRoom, /this\.peerAddressByConnection\.set\(state\.connectionId, peerAddress\)/);
+  assert.match(hubRoom, /const \{ peerAddress: legacyPeerAddress, \.\.\.withoutPeerAddress \} = attached/);
+  assert.match(hubRoom, /ws\.serializeAttachment\(normalized\)/);
+  assert.doesNotMatch(body, /return\s+address\s*;/);
+  const socketTypeStart = hubRoom.indexOf("type SocketState = {");
+  const socketTypeEnd = hubRoom.indexOf("};", socketTypeStart);
+  assert.doesNotMatch(hubRoom.slice(socketTypeStart, socketTypeEnd), /peerAddress/);
 });

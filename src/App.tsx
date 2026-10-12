@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { isRoomMuted, useRoomMute } from "./app/hooks/useRoomMute";
 import type { VoiceActivationGateMetrics } from "./audio/clearvoice/VoiceActivationGate";
 import type { HubTemplateId } from "../shared/hub-templates";
 import { CreateHubModal } from "./features/create-hub/CreateHubModal";
@@ -11,6 +12,7 @@ import {
 } from "../shared/discord-template";
 import "./styles/app.css";
 import { Icon, type IconName } from "./components/Icon";
+import { EmailVerificationHandoff } from "./app/components/EmailVerificationHandoff";
 import "./styles/hub-templates.css";
 import { DiscordImportReview } from "./components/studio";
 import { resolveSkin, motionReduced } from "./features/settings";
@@ -170,6 +172,7 @@ import { NoHubsPlaceholder } from "./app/views/NoHubsPlaceholder";
 import { createAdminActions } from "./app/actions/admin";
 import { createHubActions } from "./app/actions/hubs";
 import { createDirectMessageActions } from "./app/actions/direct-messages";
+import { mergeConversationHistory, type PendingSocialMessage } from "./app/actions/social-message-recovery";
 import { createAccountActions } from "./app/actions/account";
 import { createProfileMediaActions } from "./app/actions/profile-media";
 import { createActivityActions } from "./app/actions/activity";
@@ -202,6 +205,7 @@ import { useCloseMenusOnOutsidePointer } from "./app/hooks/useCloseMenusOnOutsid
 import { useSpeakingDetection } from "./voice/useSpeakingDetection";
 import { useRtcStatsPolling } from "./voice/useRtcStatsPolling";
 import { useAuthBootstrap } from "./app/hooks/useAuthBootstrap";
+import { useAccountStorageOwner } from "./app/hooks/useAccountStorageOwner";
 import { useSessionKitRepository } from "./app/hooks/useSessionKitRepository";
 import { AccountEditDialog } from "./app/views/AccountEditDialog";
 import { SquadFinderDialog } from "./app/views/SquadFinderDialog";
@@ -273,6 +277,7 @@ import { useGameActivityTracking } from "./app/hooks/useGameActivityTracking";
 import { useHomePersistence } from "./app/hooks/useHomePersistence";
 import { usePreferencePersistence } from "./app/hooks/usePreferencePersistence";
 import { useTransientUiDismissal } from "./app/hooks/useTransientUiDismissal";
+import { useScreenWatchReporter } from "./app/hooks/useScreenWatchReporter";
 import { dmE2ee, useDmE2ee } from "./e2ee/dm-e2ee-client";
 import { DmEncryptionDialogs } from "./e2ee/DmEncryptionUi";
 
@@ -288,6 +293,7 @@ function App() {
   const [serversReady, setServersReady] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
   const preferences = usePreferencesState();
+  const toggleRoomMute = useRoomMute(preferences);
   const extraSettingsRef = useRef(preferences.extraSettings);
   extraSettingsRef.current = preferences.extraSettings;
   const { prefersDark, systemReducedMotion } = useSystemAppearance();
@@ -559,6 +565,7 @@ function App() {
   const [groupChats, setGroupChats] = useState<GroupChat[]>([]);
   const [activeGroupChat, setActiveGroupChat] = useState<GroupChat | null>(null);
   const [groupMessages, setGroupMessages] = useState<GroupChatMessage[]>([]);
+  const [groupDrafts, setGroupDrafts] = useState<Record<string, string>>({});
   const [groupInput, setGroupInput] = useState("");
   const [groupReplyingTo, setGroupReplyingTo] = useState<GroupChatMessage | null>(null);
   const [groupError, setGroupError] = useState("");
@@ -724,6 +731,9 @@ function App() {
   const activeChannelRef = useRef(selectedChannel);
 
   const resetPrivateAccountState = () => {
+    pendingSocialMessagesRef.current.clear();
+    dmDraftRevisionRef.current = {};
+    groupDraftRevisionRef.current = {};
     if (currentUser?.id) {
       clearForumDraftsForAccount(currentUser.id);
       try {
@@ -771,6 +781,7 @@ function App() {
     setGroupChats([]);
     setActiveGroupChat(null);
     setGroupMessages([]);
+    setGroupDrafts({});
     setProfileDetails({});
     setHomeCalendarEvents([]);
     setHomeCalendarBusy(false);
@@ -895,6 +906,19 @@ function App() {
   const isServerDeafenedRef = useRef(false);
   const activeDmUserRef = useRef<SocialUser | null>(null);
   const activeGroupChatRef = useRef<GroupChat | null>(null);
+  const pendingSocialMessagesRef = useRef(new Map<string, PendingSocialMessage>());
+  const dmDraftRevisionRef = useRef<Record<string, number>>({});
+  const groupDraftRevisionRef = useRef<Record<string, number>>({});
+  const setDmInputTracked = (value: string | ((current: string) => string)) => {
+    const userId = activeDmUserRef.current?.id;
+    if (userId) dmDraftRevisionRef.current[userId] = (dmDraftRevisionRef.current[userId] ?? 0) + 1;
+    setDmInput(value);
+  };
+  const setGroupInputTracked = (value: string | ((current: string) => string)) => {
+    const groupId = activeGroupChatRef.current?.id;
+    if (groupId) groupDraftRevisionRef.current[groupId] = (groupDraftRevisionRef.current[groupId] ?? 0) + 1;
+    setGroupInput(value);
+  };
   const dmHistoryLoadGenerationRef = useRef(0);
   const groupHistoryLoadGenerationRef = useRef(0);
   const localScreenStreamRef = useRef<MediaStream | null>(null);
@@ -1052,17 +1076,8 @@ function App() {
         // Some capture sources cannot switch quality without restarting sharing.
       });
 
-    for (const session of peerSessionsRef.current.values()) {
-      for (const sender of session.pc.getSenders()) {
-        if (sender.track?.id === track.id) {
-          session.screenConfigPending = session.screenConfigPending
-            .then(() => configureScreenSender(sender, session.pc))
-            .catch((error) => {
-              console.warn("Could not update screen sender configuration:", error);
-            });
-        }
-      }
-    }
+    // Mesh senders and the SFU "f" layer both follow the new preset.
+    reapplyScreenSenders();
   }, [callMedia.screenQuality]);
 
   useEffect(() => {
@@ -1294,6 +1309,8 @@ function App() {
   );
   const streamerBannerPath = isStreamerHub ? streamerLocalMediaPath(currentServer.bannerUrl) : "";
   const streamerSidebarProps = streamerSidebarBinding(isStreamerHub, streamerBannerPath, streamerMediaUrl);
+  // The wide Overview header prefers the Hub's header image; the tall banner is the fallback.
+  const streamerHeaderPath = isStreamerHub ? streamerLocalMediaPath(currentServer.headerUrl) || streamerBannerPath : "";
 
   useEffect(() => {
     roomChatVisibleRef.current = currentChannel.type !== "voice" || voiceCall.voiceChatOpen;
@@ -1319,8 +1336,18 @@ function App() {
         .find((member) => member.userId === currentUser.id)
         ?.customRoles?.some((role) => role.permissions.includes("manageRooms")),
     );
+  // Mirrors worker hasPermission(..., "manageBots"): manageRooms includes it.
+  const canManageCurrentBots =
+    canManageCurrentRooms ||
+    Boolean(
+      currentUser &&
+      hubMembers
+        .find((member) => member.userId === currentUser.id)
+        ?.customRoles?.some((role) => role.permissions.includes("manageBots")),
+    );
   const isCurrentServerOwner = currentServer.myRole === "owner";
-  const canPostInCurrentHub = currentServer.ownerOnlyPosting !== true || isCurrentServerOwner;
+  const canPostInCurrentHub =
+    (currentServer.ownerOnlyPosting !== true || isCurrentServerOwner) && currentChannel.canPost !== false;
 
   const storeToken = (token: string) => {
     // WebSocket credentials are memory-only. The durable browser login session
@@ -1334,7 +1361,10 @@ function App() {
       const target = new URL(path, base);
       if (
         target.origin !== base.origin ||
-        !/^\/api\/servers\/\d+\/streamer(?:\/[^/]+(?:\/[^/]+)?)?$/.test(target.pathname)
+        (!/^\/api\/servers\/\d+\/streamer(?:\/[^/]+(?:\/[^/]+)?)?$/.test(target.pathname) &&
+          target.pathname !== "/api/account/faceit" &&
+          target.pathname !== "/api/account/faceit/connect" &&
+          !/^\/api\/account\/twitch(?:\/(?:connect|recheck))?$/.test(target.pathname))
       ) {
         throw new Error("Invalid Streamer request.");
       }
@@ -1426,6 +1456,7 @@ function App() {
     activityActions,
   });
 
+  useAccountStorageOwner(currentUser?.id);
   useAuthBootstrap({
     resetPrivateAccountState,
     setCurrentUser,
@@ -1539,6 +1570,10 @@ function App() {
     [hubEventsScopeKey, accountSessionSnapshot.accountKey, accountSessionSnapshot.generation],
   );
   const hubEvents = useHubEvents(hubEventsApi);
+  const hubHomeActive = hubPanels.showHubHome && !isStreamerHub;
+  useEffect(() => {
+    if (hubHomeActive && currentServer.id > 0) void hubEvents.loadUpcoming([currentServer.id]);
+  }, [hubHomeActive, currentServer.id, hubEvents.loadUpcoming]);
 
   const { upsertHomeCalendarEvent, removeHomeCalendarMessage, syncHomeCalendar } = createHomeCalendarActions({
     authToken,
@@ -1667,6 +1702,7 @@ function App() {
   const openDirectMessage = async (user: SocialUser) => {
     const loadGeneration = ++dmHistoryLoadGenerationRef.current;
     const previousDm = activeDmUserRef.current;
+    const reopeningSameDm = previousDm?.id === user.id;
     if (previousDm && previousDm.id !== user.id) {
       setDmDrafts((current) => ({ ...current, [previousDm.id]: dmInput }));
     }
@@ -1683,7 +1719,8 @@ function App() {
     setGroupReplyingTo(null);
     setActiveDmUser(user);
     activeDmUserRef.current = user;
-    setDmInput(dmDrafts[user.id] ?? "");
+    if (!reopeningSameDm) setDmInput(dmDrafts[user.id] ?? "");
+    setDmMessages([]);
     setDmReplyingTo(null);
     setDmError("");
     setDmEditingId(null);
@@ -1703,7 +1740,15 @@ function App() {
       }
       const firstDmPage = await dmE2ee.openAll(Array.isArray(data.messages) ? data.messages : [], user.id);
       if (loadGeneration !== dmHistoryLoadGenerationRef.current || activeDmUserRef.current?.id !== user.id) return;
-      setDmMessages(firstDmPage);
+      setDmMessages((current) =>
+        mergeConversationHistory(
+          firstDmPage,
+          current,
+          (message) =>
+            (message.fromUserId === currentUser?.id && message.toUserId === user.id) ||
+            (message.toUserId === currentUser?.id && message.fromUserId === user.id),
+        ),
+      );
       setOlderHistory((current) => ({ ...current, dm: firstDmPage.length >= HISTORY_PAGE_SIZE }));
       void directMessages.loadDmConversations();
     } catch (error) {
@@ -1838,6 +1883,8 @@ function App() {
     setGroupChats,
     setActiveGroupChat,
     setGroupMessages,
+    groupDrafts,
+    setGroupDrafts,
     setGroupInput,
     groupInput,
     setGroupReplyingTo,
@@ -1870,6 +1917,9 @@ function App() {
     dmAttachmentRetryFileRef,
     activeDmUserRef,
     activeGroupChatRef,
+    pendingSocialMessagesRef,
+    dmDraftRevisionRef,
+    groupDraftRevisionRef,
     groupHistoryLoadGenerationRef,
     playUiSound,
     authorizedFetch,
@@ -2302,12 +2352,15 @@ function App() {
     stopMicTest,
     upsertVoiceParticipant,
     closePeer,
-    configureScreenSender,
+    reapplyScreenSenders,
     addLocalTracksToPeer,
     ensurePeer,
     ensureVoicePeersFromState,
     handleRtcDescription,
     handleRtcCandidate,
+    handleScreenWatch,
+    screenSfu,
+    screenSfuViewer,
     cancelVoiceJoinAttempt,
     finishVoiceJoinAttempt,
     acceptsVoiceJoinAcknowledgement,
@@ -2593,6 +2646,13 @@ function App() {
     servers,
   ]);
 
+  useScreenWatchReporter(
+    callMedia.remoteScreens,
+    callMedia.watchedScreenConnections,
+    sendSocket,
+    screenSfuViewer.watchChanged,
+  );
+
   useEffect(() => {
     if (voiceChannelId !== null) void voiceControls.loadSoundboardSounds();
   }, [voiceChannelId, currentUser?.id, currentServer.id]);
@@ -2629,6 +2689,7 @@ function App() {
     sendSocket,
     applyMicrophoneEnabledState,
     addLocalTracksToPeer,
+    screenSfu,
     stopCamera,
     soundboard,
     cameraShareOptions,
@@ -3148,9 +3209,13 @@ function App() {
     groupChats,
     setActiveGroupChat,
     setGroupMessages,
+    setGroupDrafts,
+    setGroupInput,
     setGroupError,
     setShowGroupMembers,
     setDmMessages,
+    setDmDrafts,
+    setDmInput,
     setDmError,
     setDmUnread,
     setDmNotice,
@@ -3182,6 +3247,9 @@ function App() {
     isServerDeafenedRef,
     activeDmUserRef,
     activeGroupChatRef,
+    pendingSocialMessagesRef,
+    dmDraftRevisionRef,
+    groupDraftRevisionRef,
     peerSessionsRef,
     dmNoticeTimerRef,
     storeToken,
@@ -3202,6 +3270,9 @@ function App() {
     ensureVoicePeersFromState,
     handleRtcDescription,
     handleRtcCandidate,
+    handleScreenWatch,
+    screenSfu,
+    screenSfuViewer,
     finishVoiceJoinAttempt,
     acceptsVoiceJoinAcknowledgement,
     rejoinVoiceAfterRealtimeReconnect,
@@ -3285,10 +3356,10 @@ function App() {
     reactionPickerPosition,
     setOutbox,
     hubAssets,
-    setGroupInput,
+    setGroupInput: setGroupInputTracked,
     groupReplyingTo,
     setGroupReplyingTo,
-    setDmInput,
+    setDmInput: setDmInputTracked,
     dmReplyingTo,
     setDmReplyingTo,
     setShowPollComposer,
@@ -3886,7 +3957,6 @@ function App() {
     outputDeviceIds: audioSetup.audioOutputs.map((device) => device.deviceId).filter(Boolean),
   };
   // ---- Hub Home and room boxes ----
-  const hubHomeActive = hubPanels.showHubHome && !isStreamerHub;
   const currentHubHome = normalizeHubHomeConfig(currentServer.home);
   const hubHomeLive: HubHomeLiveRoom[] = currentServer.channels.flatMap((room) => {
     if (room.type !== "voice") return [];
@@ -4128,6 +4198,7 @@ function App() {
         } as CSSProperties
       }
     >
+      <EmailVerificationHandoff />
       {voiceMiniPlayerVisible && activeVoiceLocation && (
         <VoiceMiniPlayer
           voiceParticipants={voiceParticipants}
@@ -4322,6 +4393,7 @@ function App() {
         streamerSidebarProps={streamerSidebarProps}
         canManageCurrentServer={canManageCurrentServer}
         canManageCurrentRooms={canManageCurrentRooms}
+        canManageCurrentBots={canManageCurrentBots}
         isCurrentServerOwner={isCurrentServerOwner}
         hubEvents={hubEvents}
         syncHomeCalendar={syncHomeCalendar}
@@ -4446,7 +4518,6 @@ function App() {
                 selectedServer={selectedServer}
                 selectedChannel={selectedChannel}
                 messages={messages}
-                connectionStatus={connectionStatus}
                 currentServer={currentServer}
                 currentChannel={currentChannel}
                 streamerOverviewActive={streamerOverviewActive}
@@ -4458,6 +4529,8 @@ function App() {
                 hubHomeActive={hubHomeActive}
                 hubPanels={hubPanels}
                 voiceCall={voiceCall}
+                roomMuted={isRoomMuted(preferences.notifyLevels, currentChannel.id)}
+                toggleRoomMute={() => toggleRoomMute(currentChannel.id)}
               />
 
               <div className="messages">
@@ -4478,7 +4551,7 @@ function App() {
                     hubPanels={hubPanels}
                     currentServer={currentServer}
                     announcementAvailable={announcementAvailable}
-                    streamerBannerPath={streamerBannerPath}
+                    streamerBannerPath={streamerHeaderPath}
                     streamerTransport={streamerTransport}
                     pageNavigation={pageNavigation}
                     changeChannel={changeChannel}
@@ -4487,6 +4560,8 @@ function App() {
                     streamerEvents={streamerEvents}
                     openStreamerEvent={openStreamerEvent}
                     openHubCalendar={openHubCalendar}
+                    joinVoiceRoom={(roomId) => void joinVoiceChannel(roomId)}
+                    currentVoiceRoomId={() => voiceChannelRef.current}
                   />
                 ) : hubHomeActive ? (
                   <HubHomePanel
@@ -4759,7 +4834,7 @@ function App() {
           activeGroupChat={activeGroupChat}
           groupMessages={groupMessages}
           groupInput={groupInput}
-          setGroupInput={setGroupInput}
+          setGroupInput={setGroupInputTracked}
           groupReplyingTo={groupReplyingTo}
           setGroupReplyingTo={setGroupReplyingTo}
           groupError={groupError}
@@ -4767,7 +4842,7 @@ function App() {
           setShowGroupMembers={setShowGroupMembers}
           dmMessages={dmMessages}
           dmInput={dmInput}
-          setDmInput={setDmInput}
+          setDmInput={setDmInputTracked}
           setDmDrafts={setDmDrafts}
           dmReplyingTo={dmReplyingTo}
           setDmReplyingTo={setDmReplyingTo}
@@ -4900,6 +4975,8 @@ function App() {
           setResourceContextMenu={setResourceContextMenu}
           setResourceContextMoreOpen={setResourceContextMoreOpen}
           toggleMutedHub={settingsActions.toggleMutedHub}
+          isRoomMuted={(roomId) => isRoomMuted(preferences.notifyLevels, roomId)}
+          toggleRoomMute={toggleRoomMute}
           changeServer={changeServer}
           changeChannel={changeChannel}
           contextMenus={contextMenus}
@@ -5385,6 +5462,7 @@ function App() {
           authorizedFetch={authorizedFetch}
           isOwner={isCurrentServerOwner}
           canManage={canManageCurrentServer}
+          canManageBots={canManageCurrentBots}
           currentUserId={currentUser?.id}
           error={serverManageError}
           renderAvatar={(person) => <UserAvatar username={person.username} avatarUrl={person.avatarUrl} />}
@@ -5523,6 +5601,12 @@ function App() {
             <RoomSettingsPanel
               key={managedRoom.id}
               mode="manage"
+              initialUserLimit={currentServer.communityFeatures?.voiceLimits ? (managedRoom.userLimit ?? 0) : undefined}
+              initialPostPolicy={
+                managedRoom.type === "text"
+                  ? { policy: managedRoom.postPolicy ?? "everyone", roleIds: managedRoom.postRoleIds ?? [] }
+                  : undefined
+              }
               hubName={currentServer.name}
               values={{
                 name: manageChannelName,

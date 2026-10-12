@@ -1,19 +1,37 @@
 // In-app feedback and bug reports.
 
 import { requireUser } from "../lib/sessions";
-import { bodyJson, json } from "../lib/http";
+import { boundedBodyJson, json, requestKey } from "../lib/http";
 import { nowIso, publicIdOf } from "../db";
 import type { ApiContext } from "./context";
+
+const FEEDBACK_BODY_LIMIT = 32 * 1024;
 
 export async function handleFeedbackRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
   if (method === "POST" && p === "/api/feedback") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
 
-    const body = await bodyJson(request);
-    const type = body.type === "feature" ? "feature" : "bug";
-    const message = typeof body.message === "string" ? body.message.trim().slice(0, 4000) : "";
-    const contact = typeof body.contact === "string" ? body.contact.trim().slice(0, 254) : "";
+    const [accountLimit, ipLimit] = await Promise.all([
+      env.AUTH_RATE_LIMITER.limit({ key: `feedback-account:${user.id}` }),
+      env.AUTH_RATE_LIMITER.limit({ key: requestKey(request, "feedback") }),
+    ]);
+    if (!accountLimit.success || !ipLimit.success) {
+      return json({ error: "Too many feedback submissions. Try again shortly." }, 429);
+    }
+
+    const body = await boundedBodyJson(request, FEEDBACK_BODY_LIMIT);
+    if (!body) return json({ error: "Feedback request is too large." }, 413);
+
+    const type = body.type === undefined ? "bug" : body.type;
+    if (type !== "bug" && type !== "feature") return json({ error: "Feedback type must be bug or feature." }, 400);
+    const message = typeof body.message === "string" ? body.message.trim() : "";
+    if (message.length > 4000) return json({ error: "Feedback message must be 4000 characters or fewer." }, 400);
+    const contact = typeof body.contact === "string" ? body.contact.trim() : "";
+    if (body.contact !== undefined && typeof body.contact !== "string") {
+      return json({ error: "Contact email must be text." }, 400);
+    }
+    if (contact.length > 254) return json({ error: "Contact email must be 254 characters or fewer." }, 400);
 
     if (!message) return json({ error: "Feedback cannot be empty." }, 400);
 

@@ -2,13 +2,15 @@ import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent as React
 import { CallVerificationMark } from "../e2ee/DmEncryptionUi";
 import { callDescriptionAuth, checkCallDescription, clearCallVerdict } from "../e2ee/call-verification";
 import { DESKTOP_VOICE_JOIN_TIMEOUT_MS } from "../voice/desktop-voice-reliability";
+import { hasUsableRelayIceServers } from "../../shared/rtc-relay";
+import { CALL_RELAY_UNAVAILABLE_MESSAGE } from "../app/voice";
 import {
   applyVoiceCodecPreferences,
   applyVoiceSenderParameters,
   VOICE_OPUS_BITRATE,
   withVoiceOpusBitrate,
 } from "../voice/voice-transport";
-import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "../voice/relay-policy";
+import { isRelayIceCandidate } from "../voice/relay-policy";
 import { Icon } from "./Icon";
 import "./DirectCallOverlay.css";
 import type { RealtimeFrame, RealtimeSendWindow } from "../realtime/connection";
@@ -181,16 +183,14 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
   const loadIce = async (): Promise<boolean> => {
     try {
       const iceServers = await loadIceServers();
-      if (!Array.isArray(iceServers) || iceServers.length === 0)
-        throw new Error("No approved ICE configuration is available.");
-      // Calls are relay-only: without a TURN server no connection can ever
-      // form, so refuse up front instead of ringing into a call that hangs.
-      if (!hasRelayIceServer(iceServers)) throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+      if (!hasUsableRelayIceServers(iceServers)) throw new Error(CALL_RELAY_UNAVAILABLE_MESSAGE);
       iceRef.current = iceServers;
       return true;
     } catch (cause) {
+      // Calls are relay-only; never fall back to a direct connection that would expose IPs.
+      console.warn("Direct call relay unavailable", cause);
       iceRef.current = [];
-      setError(cause instanceof Error ? cause.message : "Calls are unavailable.");
+      setError(CALL_RELAY_UNAVAILABLE_MESSAGE);
       return false;
     }
   };
@@ -267,6 +267,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
 
   const ensurePc = (participant: Peer) => {
     if (pcRef.current) return pcRef.current;
+    if (!hasUsableRelayIceServers(iceRef.current)) throw new Error(CALL_RELAY_UNAVAILABLE_MESSAGE);
     // Relay-only: peers never exchange host/srflx candidates, so neither side
     // learns the other's IP address.
     const pc = new RTCPeerConnection({ iceServers: iceRef.current, iceTransportPolicy: "relay" });

@@ -1,4 +1,4 @@
-// Account emails: verification, password reset and sign-in alerts.
+// Account emails: verification, password reset, sign-in alerts and email-change notices.
 
 import type { Env } from "./env";
 import { escapeHtml } from "./http";
@@ -10,7 +10,9 @@ export async function sendVerificationEmail(
   token: string,
   baseUrl: string,
 ): Promise<void> {
-  const link = `${baseUrl}/api/auth/verify-email#token=${encodeURIComponent(token)}`;
+  // Keep the one-time credential out of the request URL: mail scanners can
+  // fetch the page without sending the fragment to the Worker.
+  const link = `${baseUrl}/#token=${encodeURIComponent(token)}`;
   await env.EMAIL.send({
     to: email,
     from: { email: "security@example.invalid", name: "DeCave Security" },
@@ -27,7 +29,7 @@ export async function sendResetEmail(
   token: string,
   baseUrl: string,
 ): Promise<void> {
-  const link = `${baseUrl}/api/auth/reset-password#token=${encodeURIComponent(token)}`;
+  const link = `${baseUrl}/api/auth/reset?token=${encodeURIComponent(token)}`;
   await env.EMAIL.send({
     to: email,
     from: { email: "security@example.invalid", name: "DeCave Security" },
@@ -46,6 +48,7 @@ export async function sendSignInAlertEmail(
   token: string,
   baseUrl: string,
 ): Promise<void> {
+  // Tokens in fragments are not sent in HTTP requests or referrer headers.
   const link = `${baseUrl}/api/auth/secure-account#token=${encodeURIComponent(token)}`;
   const when = new Date(at).toUTCString();
   await env.EMAIL.send({
@@ -62,14 +65,14 @@ export async function sendEmailChangeNotice(
   oldEmail: string,
   username: string,
   newEmail: string,
-  baseUrl: string,
 ): Promise<void> {
-  const settingsLink = `${baseUrl}/settings/account`;
   await env.EMAIL.send({
     to: oldEmail,
     from: { email: "security@example.invalid", name: "DeCave Security" },
     subject: "Your DeCave email address was changed",
-    text: `Hi ${username},\n\nThe email address on your DeCave account was changed to ${newEmail}. If you did not make this change, secure your account at ${settingsLink} and change your password.`,
-    html: `<div style="font-family:Arial,sans-serif;background:#080d18;color:#eef4ff;padding:28px"><h2>Your DeCave email address changed</h2><p>Hi ${escapeHtml(username)},</p><p>The email address on your account changed to <strong>${escapeHtml(newEmail)}</strong>.</p><p>If you did not make this change, <a href="${settingsLink}" style="color:#63dfff">secure your account</a> and change your password.</p></div>`,
+    text: `Hi ${username},
+
+The email address on your DeCave account was changed to ${newEmail}. If you did not make this change, sign in to DeCave, change your password and sign out other devices in Settings > Account & security.`,
+    html: `<div style="font-family:Arial,sans-serif;background:#080d18;color:#eef4ff;padding:28px"><h2 style="margin-top:0">Your DeCave email address changed</h2><p>Hi ${escapeHtml(username)},</p><p>The email address on your account was changed to <strong>${escapeHtml(newEmail)}</strong>.</p><p>If you did not make this change, sign in to DeCave, change your password and sign out other devices in Settings &gt; Account &amp; security.</p></div>`,
   });
 }

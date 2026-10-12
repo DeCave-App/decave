@@ -232,3 +232,49 @@ test("group history shows the newest messages after 200 and pages back", async (
   assert.equal(ids.length, TOTAL);
   assert.equal(new Set(ids).size, TOTAL);
 });
+
+test("private bot notices for someone else never shorten a history page", async () => {
+  db.exec(
+    `INSERT INTO decave_rooms(id,hub_id,name,type,category,position,private,created_at,updated_at,kind,forum_guidelines,forum_post_policy,forum_post_role_ids_json,forum_post_member_ids_json)
+    VALUES(14,1,'room-14','text','General',0,0,?,?,'chat','','everyone','[]','[]')`,
+    NOW,
+    NOW,
+  );
+  // 120 messages; the newest 20 are notices addressed to u2 only.
+  for (let index = 0; index < 120; index++)
+    db.exec(
+      "INSERT INTO decave_messages(id,room_id,hub_id,author_user_id,text,created_at,pinned,visible_to_user_id) VALUES(?,14,1,'u1',?,?,1,?)",
+      `n-${String(index).padStart(4, "0")}`,
+      `notice-test ${index}`,
+      stamp(index),
+      index >= 100 ? "u2" : null,
+    );
+  const forU1 = await api("/api/channels/14/messages", "u1");
+  assert.equal(forU1.data.length, 100, "a full page for the viewer");
+  assert.ok(forU1.data.every((message) => Number(message.text.split(" ")[1]) < 100));
+  const forU2 = await api("/api/channels/14/messages", "u2");
+  assert.equal(forU2.data.length, 100);
+  assert.equal(forU2.data.at(-1).id, "n-0119", "the addressee still sees their notices");
+
+  const pins = await api("/api/channels/14/pins", "u1");
+  assert.equal(pins.data.pins.length, 100, "pins skip notices for others in SQL");
+  const search = await api("/api/channels/14/search?q=notice-test", "u1");
+  assert.equal(search.data.length, 50, "search fills its page with visible rows");
+  assert.ok(search.data.every((message) => Number(message.text.split(" ")[1]) < 100));
+});
+
+test("a bot's message cannot be edited through the normal message route, even by its publisher", async () => {
+  db.exec(
+    "INSERT INTO decave_messages(id,room_id,hub_id,author_user_id,text,created_at,bot_id) VALUES('bot-msg',10,1,'u2','beep',?,'bot-1')",
+    NOW,
+  );
+  const edit = await api("/api/channels/10/messages/bot-msg", "u2", { method: "PATCH", body: { text: "hijacked" } });
+  assert.equal(edit.response.status, 403);
+  const row = db.sqlite.prepare("SELECT text FROM decave_messages WHERE id='bot-msg'").get();
+  assert.equal(row.text, "beep");
+  // Not the publisher's own message to delete either; moderators still can.
+  const publisherDelete = await api("/api/channels/10/messages/bot-msg", "u2", { method: "DELETE" });
+  assert.equal(publisherDelete.response.status, 403);
+  const ownerDelete = await api("/api/channels/10/messages/bot-msg", "u1", { method: "DELETE" });
+  assert.equal(ownerDelete.response.status, 200);
+});

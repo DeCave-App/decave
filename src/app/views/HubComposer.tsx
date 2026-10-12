@@ -5,6 +5,8 @@ import { ComposerPlusMenu } from "../../features/hub-sidebar/ComposerPlusMenu";
 import type { Channel, ComposerTarget, Server } from "../types";
 import type { ComposerState } from "../state/composer";
 import type { HubChatActions } from "../actions/hub-chat";
+import { HTTP_URL } from "../env";
+import { BotCommandSuggestions, commandInsertText, useBotCommands } from "../../features/bot-cards";
 
 type Props = {
   setShowEmojiPicker: Dispatch<SetStateAction<boolean>>;
@@ -47,6 +49,7 @@ export function HubComposer({
     openPollComposer,
     openEventComposer,
     handleMessageKeyDown,
+    authorizedFetch,
   } = hubChat;
   const {
     messageInput,
@@ -57,8 +60,19 @@ export function HubComposer({
     showComposerPlusMenu,
     setShowComposerPlusMenu,
   } = composer;
+  const botCommands = useBotCommands(currentServer.id, messageInput, HTTP_URL, authorizedFetch);
+  const chooseCommand = (command: Parameters<typeof commandInsertText>[0]) => {
+    handleComposerChange(commandInsertText(command));
+    messageInputRef.current?.focus();
+  };
   return (
     <div className="composer-shell">
+      <BotCommandSuggestions
+        suggestions={botCommands.suggestions}
+        activeIndex={botCommands.activeIndex}
+        onHover={botCommands.setActive}
+        onChoose={chooseCommand}
+      />
       {(pendingAttachment || attachmentBusy || attachmentError) && (
         <div className="attachment-composer-state">
           {attachmentBusy ? (
@@ -164,11 +178,17 @@ export function HubComposer({
           ref={messageInputRef}
           rows={1}
           placeholder={
-            canPostInCurrentHub ? `Message #${currentChannel.name}` : "Only the Hub owner can post in this Hub"
+            canPostInCurrentHub
+              ? `Message #${currentChannel.name}`
+              : currentChannel.canPost === false
+                ? `#${currentChannel.name} is read-only`
+                : "Only the Hub owner can post in this Hub"
           }
           value={messageInput}
           onChange={(event) => handleComposerChange(event.target.value)}
-          onKeyDown={handleMessageKeyDown}
+          onKeyDown={(event) => {
+            if (!botCommands.onKeyDown(event, chooseCommand)) handleMessageKeyDown(event);
+          }}
           disabled={!canPostInCurrentHub || connectionStatus !== "Connected"}
         />
         <span className="dc-composer-popover-anchor" data-composer-popover="true">

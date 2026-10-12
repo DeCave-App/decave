@@ -252,7 +252,10 @@ export function loadAudioSettings(): AudioSettings {
           ? clamp(value.sensitivityDb, -80, -10)
           : DEFAULT_AUDIO_SETTINGS.sensitivityDb,
       noiseSuppression:
-        storedNoiseSuppression === "off" || storedNoiseSuppression === "strong" || storedNoiseSuppression === "ai"
+        storedNoiseSuppression === "off" ||
+        storedNoiseSuppression === "strong" ||
+        storedNoiseSuppression === "ai" ||
+        storedNoiseSuppression === "deepfilter"
           ? storedNoiseSuppression
           : DEFAULT_AUDIO_SETTINGS.noiseSuppression,
       echoCancellation:

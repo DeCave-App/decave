@@ -214,7 +214,9 @@ export function createActivityActions(deps: ActivityActionsDeps) {
       } else {
         window.open(data.url, "_blank", "noopener,noreferrer");
       }
-      setActivityNotice("Complete the Steam sign-in in your browser. DeCave will detect the link automatically.");
+      setActivityNotice(
+        "Complete Steam sign-in in a browser signed in to the same DeCave account. If needed, sign in there and start Steam linking again from Settings → Activity; DeCave will detect the link automatically.",
+      );
 
       if (steamLinkPollTimerRef.current !== null) {
         window.clearInterval(steamLinkPollTimerRef.current);

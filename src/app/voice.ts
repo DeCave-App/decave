@@ -27,14 +27,41 @@ export const SCREEN_SHARE_PROFILES: Record<ScreenQuality, ScreenShareProfile> = 
   "1440p60": { width: 2560, height: 1440, fps: 60, maxBitrate: 28_000_000 },
 };
 
+// Mesh voice uploads one encoded copy per viewer, so the per-viewer ceiling
+// shrinks as viewers are added. One viewer still gets the full preset; more
+// viewers split a shared uplink budget, never dropping below a usable floor.
+const SCREEN_UPLINK_BUDGET_BPS = 12_000_000;
+const SCREEN_MIN_VIEWER_BPS = 1_500_000;
+export const SCREEN_PREVIEW_BITRATE = 250_000;
+export const SCREEN_PREVIEW_FPS = 5;
+export const SCREEN_PREVIEW_DOWNSCALE = 4;
+
+export function screenBitratePerViewer(presetMaxBitrate: number, viewers: number): number {
+  const budget = Math.max(presetMaxBitrate, SCREEN_UPLINK_BUDGET_BPS);
+  const share = budget / Math.max(1, viewers);
+  return Math.round(Math.min(presetMaxBitrate, Math.max(SCREEN_MIN_VIEWER_BPS, share)));
+}
+
 export const voiceMiniDragState = new WeakMap<HTMLElement, VoiceMiniDragState>();
 
 export function noiseSuppressionLabel(mode: NoiseSuppressionMode): string {
-  return mode === "ai" ? "DeCave ClearVoice" : mode === "strong" || mode === "standard" ? "Standard" : "Off";
+  return mode === "ai"
+    ? "DeCave ClearVoice"
+    : mode === "deepfilter"
+      ? "DeepFilterNet"
+      : mode === "strong" || mode === "standard"
+        ? "Standard"
+        : "Off";
 }
 
 export function noiseSuppressionShortLabel(mode: NoiseSuppressionMode): string {
-  return mode === "ai" ? "CV" : mode === "strong" || mode === "standard" ? "STD" : "OFF";
+  return mode === "ai"
+    ? "CV"
+    : mode === "deepfilter"
+      ? "DFN"
+      : mode === "strong" || mode === "standard"
+        ? "STD"
+        : "OFF";
 }
 
 /** Shown when the relay (TURN) service is unreachable; voice never falls back to direct peer connections. */

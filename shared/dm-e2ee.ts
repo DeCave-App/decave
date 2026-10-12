@@ -27,6 +27,7 @@ import {
   DM_E2EE_VERSION,
   DM_KEYRING_MAX,
   DM_REACTIONS_MAX,
+  SCREEN_KEY_MAX_WRAPS,
   backupKeyStatement,
   base64UrlToBytes,
   bytesToBase64Url,
@@ -63,7 +64,7 @@ export type DmPlainPayload = { t: string; r?: string };
  * encrypted, so an envelope sealed for one purpose can't be passed off as another
  * (a reaction as a message, a DM as a group message).
  */
-export type DmEnvelopeScope = "message" | "reactions" | "group";
+export type DmEnvelopeScope = "message" | "reactions" | "group" | "screen-key";
 
 /** An account's keys, newest (current) first. */
 export type DmKeyring = readonly DmAccountKeys[];
@@ -702,6 +703,50 @@ export function openGroupMessage(input: {
 }): DmPlainPayload {
   const { id, from, groupId } = input.expected;
   return messagePayload(openEnvelope("group", input, { id, from, to: groupId }));
+}
+
+// ---------------------------------------------------------------- screen share keys
+
+const SCREEN_KEY_BYTES = 16;
+
+/**
+ * A screen share's per-frame stream key, wrapped for each viewer's account key
+ * so the relay only ever sees the sealed envelope. `binding`
+ * (`screen:<channelId>:<sharerConnectionId>:<keyIndex>`) is the envelope id, so a
+ * key can't be replayed for another share or key index.
+ */
+export function sealScreenKey(input: {
+  binding: string;
+  from: string;
+  streamKey: Uint8Array;
+  sender: DmAccountKeys;
+  recipients: readonly DmPublicKey[];
+}): DmEnvelope {
+  if (input.streamKey.length !== SCREEN_KEY_BYTES) throw new DmCryptoError("Bad stream key.", "bad-envelope");
+  if (input.recipients.length + 1 > SCREEN_KEY_MAX_WRAPS) throw new DmCryptoError("Too many recipients.", "bad-envelope");
+  return sealEnvelope(
+    "screen-key",
+    { id: input.binding, from: input.from, to: "room", sender: input.sender, recipients: input.recipients },
+    utf8(JSON.stringify({ k: bytesToBase64Url(input.streamKey) })),
+  );
+}
+
+export function openScreenKey(input: {
+  envelope: DmEnvelope;
+  reader: DmAccountKeys | DmKeyring;
+  senderKey: DmPublicKey;
+  expected: { binding: string; from: string };
+}): Uint8Array {
+  const { binding, from } = input.expected;
+  const raw = openEnvelope("screen-key", input, { id: binding, from, to: "room" }) as { k?: unknown } | null;
+  let key: Uint8Array | null = null;
+  try {
+    if (typeof raw?.k === "string") key = base64UrlToBytes(raw.k);
+  } catch {
+    key = null;
+  }
+  if (!key || key.length !== SCREEN_KEY_BYTES) throw new DmCryptoError("This key could not be decrypted.", "decrypt-failed");
+  return key;
 }
 
 // ---------------------------------------------------------------- reports

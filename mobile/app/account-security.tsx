@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Clipboard, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { accountExportStatus } from "../../shared/account-export";
 import { router } from "expo-router";
 import * as FileSystem from "expo-file-system/legacy";
 import { Screen } from "@/src/components/Screen";
 import { apiFetch, apiJson } from "@/src/lib/api";
 import { loadAccountPreferences, updateAccountPreferences } from "@/src/lib/account-preferences";
 import { useSession } from "@/src/providers/SessionProvider";
+import { accountExportStatus } from "@/src/lib/account-export";
 import { colors } from "@/src/theme";
 
 export default function AccountSecurityScreen() {
@@ -15,6 +15,7 @@ export default function AccountSecurityScreen() {
   const [email, setEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
   const [emailMfaCode, setEmailMfaCode] = useState("");
+  const [emailMfaRequired, setEmailMfaRequired] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -191,11 +192,18 @@ export default function AccountSecurityScreen() {
     if (!email.trim() || !emailPassword) { setError("Enter the new email and your current password."); return; }
     setBusy(true);
     try {
-      await apiJson("/api/auth/add-email", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:email.trim(),password:emailPassword,...(emailMfaCode.trim()?{mfaCode:emailMfaCode.trim()}: {})}) }, token);
+      const code = emailMfaCode.trim();
+      await apiJson("/api/auth/add-email", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:email.trim(),password:emailPassword,...(code?{mfaCode:code}:{})}) }, token);
       await refreshUser();
       setEmail(""); setEmailPassword(""); setEmailMfaCode("");
       setNotice("Verification email sent. Open it to verify your new address.");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not update email."); }
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Could not update email.";
+      // The server asks for a second factor even if the 2FA status has not loaded.
+      if (/authenticator|recovery code/i.test(message)) setEmailMfaRequired(true);
+      setError(message);
+      setEmailMfaCode("");
+    }
     finally { setBusy(false); }
   };
 
@@ -248,8 +256,8 @@ export default function AccountSecurityScreen() {
           <View style={styles.divider}/>
           <Field label={user?.email?"New email address":"Email address"} value={email} onChangeText={setEmail} secure={false} keyboardType="email-address" />
           <Field label="Current password" value={emailPassword} onChangeText={setEmailPassword} />
-          {mfa?.enabled && <Field label="Authenticator or recovery code" value={emailMfaCode} onChangeText={setEmailMfaCode} secure={false} keyboardType="number-pad" />}
-          <Pressable accessibilityRole="button" style={[styles.primary,busy&&styles.disabled]} disabled={busy||!email.trim()||!emailPassword} onPress={()=>void updateEmail()}><Text style={styles.primaryText}>{user?.email?"Change / Verify Email":"Add Email"}</Text></Pressable>
+          {(mfa?.enabled || emailMfaRequired) && <View style={{ marginBottom: 10 }}><Text style={styles.label}>Authenticator or recovery code</Text><TextInput value={emailMfaCode} onChangeText={(value) => setEmailMfaCode(value.toUpperCase().replace(/\s/g, "").slice(0, 19))} autoCapitalize="characters" autoCorrect={false} textContentType="oneTimeCode" autoComplete="one-time-code" accessibilityLabel="Authenticator or recovery code" placeholder="6-digit code" placeholderTextColor={colors.faint} style={styles.input} /></View>}
+          <Pressable accessibilityRole="button" style={[styles.primary,busy&&styles.disabled]} disabled={busy||!email.trim()||!emailPassword||((mfa?.enabled||emailMfaRequired)&&!emailMfaCode.trim())} onPress={()=>void updateEmail()}><Text style={styles.primaryText}>{user?.email?"Change / Verify Email":"Add Email"}</Text></Pressable>
         </View>
 
         <Text style={styles.section}>CHANGE PASSWORD</Text>

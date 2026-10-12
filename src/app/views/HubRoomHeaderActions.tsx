@@ -17,6 +17,9 @@ type Props = {
   canManageCurrentRooms: boolean;
   leaveCurrentSquadRoom: () => Promise<void>;
   openManageChannel: () => void;
+  /** This room is muted (notifications "Nothing"). */
+  roomMuted: boolean;
+  toggleRoomMute: () => void;
 };
 
 export function HubRoomHeaderActions({
@@ -33,6 +36,8 @@ export function HubRoomHeaderActions({
   canManageCurrentRooms,
   leaveCurrentSquadRoom,
   openManageChannel,
+  roomMuted,
+  toggleRoomMute,
 }: Props) {
   return (
     <>
@@ -97,6 +102,17 @@ export function HubRoomHeaderActions({
             : ""}
         </button>
       )}
+
+      <button
+        type="button"
+        className={roomMuted ? "is-muted" : undefined}
+        title={roomMuted ? `Unmute #${currentChannel.name}` : `Mute #${currentChannel.name}`}
+        aria-label={roomMuted ? `Unmute #${currentChannel.name}` : `Mute #${currentChannel.name}`}
+        aria-pressed={roomMuted}
+        onClick={toggleRoomMute}
+      >
+        {roomMuted ? "🔕" : "🔔"}
+      </button>
 
       {canManageCurrentRooms && (
         <button type="button" title="Manage room" aria-label="Manage room" onClick={openManageChannel}>

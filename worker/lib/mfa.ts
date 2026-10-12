@@ -75,6 +75,7 @@ export async function ownerTotpAt(secret: string, step: number): Promise<string>
   return String(binary % 1_000_000).padStart(6, "0");
 }
 
+// Returns the timestep the code matches (newest wins), or null.
 export async function ownerMatchingTotpStep(secret: string, code: string, nowMs = Date.now()): Promise<number | null> {
   if (!/^\d{6}$/.test(code)) return null;
   const step = Math.floor(nowMs / 30000);
@@ -88,6 +89,29 @@ export async function ownerMatchingTotpStep(secret: string, code: string, nowMs 
 
 export async function ownerVerifyTotp(secret: string, code: string): Promise<boolean> {
   return (await ownerMatchingTotpStep(secret, code)) !== null;
+}
+
+// Accepts a TOTP only if its timestep is newer than the last accepted one,
+// recording it with a compare-and-set so a code (or a concurrent replay of
+// it) can be spent at most once.
+async function consumeTotp(
+  env: Env,
+  table: "decave_user_mfa" | "decave_owner_mfa",
+  userId: string,
+  row: { secret_ciphertext: string; last_totp_step: number | null },
+  code: string,
+): Promise<boolean> {
+  const secret = await ownerDecryptMfa(env, row.secret_ciphertext);
+  const step = await ownerMatchingTotpStep(secret, code);
+  if (step === null || (row.last_totp_step !== null && step <= row.last_totp_step)) return false;
+  const accepted = await env.DB.prepare(
+    `UPDATE ${table} SET last_totp_step=?
+     WHERE user_id=? AND secret_ciphertext=? AND enabled_at IS NOT NULL
+       AND (last_totp_step IS NULL OR last_totp_step<?)`,
+  )
+    .bind(step, userId, row.secret_ciphertext, step)
+    .run();
+  return Number(accepted.meta?.changes ?? 0) === 1;
 }
 
 export function ownerB64(bytes: Uint8Array): string {
@@ -232,17 +256,7 @@ export async function ownerVerifyMfaOrRecovery(
   if (!row?.enabled_at) return null;
 
   if (/^\d{6}$/.test(code)) {
-    const secret = await ownerDecryptMfa(env, row.secret_ciphertext);
-    const step = await ownerMatchingTotpStep(secret, code);
-    if (step === null || (row.last_totp_step !== null && step <= row.last_totp_step)) return null;
-    const accepted = await env.DB.prepare(
-      `UPDATE decave_owner_mfa SET last_totp_step=?
-       WHERE user_id=? AND secret_ciphertext=? AND enabled_at IS NOT NULL
-         AND (last_totp_step IS NULL OR last_totp_step<?)`,
-    )
-      .bind(step, userId, row.secret_ciphertext, step)
-      .run();
-    return Number(accepted.meta?.changes ?? 0) === 1 ? "totp" : null;
+    return (await consumeTotp(env, "decave_owner_mfa", userId, row, code)) ? "totp" : null;
   }
 
   if (!/^[A-Z2-7]{4}(?:-[A-Z2-7]{4}){3}$/.test(code)) return null;
@@ -290,17 +304,7 @@ export async function userVerifyMfaOrRecovery(
     .first<{ secret_ciphertext: string; enabled_at: string | null; last_totp_step: number | null }>();
   if (!row?.enabled_at) return null;
   if (/^\d{6}$/.test(code)) {
-    const secret = await ownerDecryptMfa(env, row.secret_ciphertext);
-    const step = await ownerMatchingTotpStep(secret, code);
-    if (step === null || (row.last_totp_step !== null && step <= row.last_totp_step)) return null;
-    const accepted = await env.DB.prepare(
-      `UPDATE decave_user_mfa SET last_totp_step=?
-       WHERE user_id=? AND secret_ciphertext=? AND enabled_at IS NOT NULL
-         AND (last_totp_step IS NULL OR last_totp_step<?)`,
-    )
-      .bind(step, userId, row.secret_ciphertext, step)
-      .run();
-    return Number(accepted.meta?.changes ?? 0) === 1 ? "totp" : null;
+    return (await consumeTotp(env, "decave_user_mfa", userId, row, code)) ? "totp" : null;
   }
   if (!/^[A-Z2-7]{4}(?:-[A-Z2-7]{4}){3}$/.test(code)) return null;
   // Single statement so a recovery code can only be spent once, even when two

@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { TypeToConfirmDialog } from "../shared/TypeToConfirmDialog";
+import { BotApiError, createBotsApi } from "../bots/api";
 import type { AuthorizedFetch, HubCustomRole, HubMemberRow, HubPermission } from "./types";
 
 export const PERMISSION_GROUPS: Array<{
@@ -17,6 +18,11 @@ export const PERMISSION_GROUPS: Array<{
         description: "Create, edit, reorder and delete rooms, including private room access.",
       },
       { id: "manageEvents", label: "Manage events", description: "Create, edit and cancel Hub calendar events." },
+      {
+        id: "manageBots",
+        label: "Manage bots",
+        description: "Build, publish and turn off Hub bots. Manage rooms includes this.",
+      },
       {
         id: "createInvites",
         label: "Create invites",
@@ -91,6 +97,21 @@ export function RolesSection({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // "Manage bots" only means something when the server has the bot builder:
+  // the same 404 signal the Bots tab uses.
+  const [botsAvailable, setBotsAvailable] = useState(false);
+  useEffect(() => {
+    let live = true;
+    createBotsApi(apiBaseUrl, authorizedFetch, hubId)
+      .overview()
+      .then(
+        () => live && setBotsAvailable(true),
+        (caught) => live && setBotsAvailable(!(caught instanceof BotApiError && caught.status === 404)),
+      );
+    return () => {
+      live = false;
+    };
+  }, [apiBaseUrl, authorizedFetch, hubId]);
   const baseId = useId();
 
   const selected = roles.find((role) => role.id === selectedId) ?? null;
@@ -297,26 +318,28 @@ export function RolesSection({
                 <div className="dcx-card-head">
                   <h4 id={`${baseId}-group-${group.id}`}>{group.label}</h4>
                 </div>
-                {group.items.map((item) => (
-                  <div className="dcx-row" key={item.id}>
-                    <div className="dcx-row-copy">
-                      <label htmlFor={`${baseId}-perm-${item.id}`}>{item.label}</label>
-                      <small id={`${baseId}-perm-${item.id}-d`}>{item.description}</small>
+                {group.items
+                  .filter((item) => item.id !== "manageBots" || botsAvailable)
+                  .map((item) => (
+                    <div className="dcx-row" key={item.id}>
+                      <div className="dcx-row-copy">
+                        <label htmlFor={`${baseId}-perm-${item.id}`}>{item.label}</label>
+                        <small id={`${baseId}-perm-${item.id}-d`}>{item.description}</small>
+                      </div>
+                      <div className="dcx-row-control">
+                        <label className="dcx-switch">
+                          <input
+                            id={`${baseId}-perm-${item.id}`}
+                            type="checkbox"
+                            aria-describedby={`${baseId}-perm-${item.id}-d`}
+                            checked={draft.permissions.includes(item.id)}
+                            onChange={() => togglePermission(item.id)}
+                          />
+                          <span aria-hidden="true" />
+                        </label>
+                      </div>
                     </div>
-                    <div className="dcx-row-control">
-                      <label className="dcx-switch">
-                        <input
-                          id={`${baseId}-perm-${item.id}`}
-                          type="checkbox"
-                          aria-describedby={`${baseId}-perm-${item.id}-d`}
-                          checked={draft.permissions.includes(item.id)}
-                          onChange={() => togglePermission(item.id)}
-                        />
-                        <span aria-hidden="true" />
-                      </label>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </section>
             ))}
             {error && (
