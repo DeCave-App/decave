@@ -44,7 +44,8 @@
     "test:worker-reliability": "node --experimental-transform-types --test --test-isolation=none scripts/__tests__/worker-reliability-boundaries.test.mjs",
     "release:next": "node scripts/release/prepare-next-release-version.mjs",
     "release:upload": "npm run publication:check && node website/scripts/upload-release.mjs",
-    "release": "npm run publication:check && npm run release:upload && npm run cf:deploy && npm --prefix website run deploy",
+    "release": "npm run publication:check && npm run release:upload && npm run cf:deploy && npm --prefix website run deploy && npm run release:public-source",
+    "release:public-source": "node scripts/release/sync-public-source.mjs",
     "desktop:dir:mac": "npm run build:web && electron-builder --mac --dir",
     "desktop:build:mac": "npm run build:web && electron-builder --mac dmg zip --arm64 --x64",
     "release:upload:mac": "npm run publication:check && node website/scripts/upload-release-mac.mjs"
