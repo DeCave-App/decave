@@ -8,7 +8,8 @@
 //    email, or any term listed in the untracked .release-denylist.txt.
 // 3. Replaces the public repository's contents with the snapshot and runs
 //    Gitleaks over the staged change.
-// 4. Pushes one commit, or does nothing when the source is unchanged.
+// 4. Commits as the project identity (never the maintainer's personal email,
+//    never AI attribution trailers) and pushes one commit, or does nothing when the source is unchanged.
 //
 // Usage: node scripts/release/sync-public-source.mjs [--dry-run]
 
@@ -90,6 +91,25 @@ function assertGitleaksClean(checkout) {
   if (result.status !== 0) throw new Error("Gitleaks found possible secrets in the snapshot; refusing to publish.");
 }
 
+const publicIdentity = { name: "DeCave", email: "security@de-cave.com" };
+const attributionPattern = /co-authored-by:\s*claude|generated with \[?claude code/i;
+
+function assertNoAttribution(snapshot) {
+  const hits = [];
+  for (const file of walk(snapshot)) {
+    if (attributionPattern.test(readFileSync(file).toString("latin1"))) hits.push(path.relative(snapshot, file));
+  }
+  if (hits.length) throw new Error(`Refusing to publish; AI attribution text found in:\n  ${hits.join("\n  ")}`);
+}
+
+function assertCleanPublicHistory(checkout) {
+  const log = run("git", ["log", "--format=%an <%ae> %cn <%ce>%n%B"], { cwd: checkout });
+  const identities = new Set(log.match(/<[^>]+>/g));
+  identities.delete(`<${publicIdentity.email}>`);
+  if (identities.size) throw new Error(`Refusing to push; unexpected author/committer emails: ${[...identities].join(", ")}`);
+  if (attributionPattern.test(log)) throw new Error("Refusing to push; AI attribution text found in public commit messages.");
+}
+
 const version = JSON.parse(readFileSync(path.join(repositoryRoot, "package.json"), "utf8")).version;
 const workRoot = mkdtempSync(path.join(os.tmpdir(), "decave-public-sync-"));
 const snapshot = path.join(workRoot, "snapshot");
@@ -98,6 +118,7 @@ const checkout = path.join(workRoot, "public");
 try {
   run("node", ["scripts/release/export-open-source.mjs", "--destination", snapshot], { stdio: ["ignore", "ignore", "inherit"] });
   assertNoPrivateTerms(snapshot);
+  assertNoAttribution(snapshot);
 
   run("git", ["clone", "--quiet", publicRepository, checkout]);
   for (const entry of readdirSync(checkout)) {
@@ -113,7 +134,24 @@ try {
     console.log(run("git", ["status", "--short"], { cwd: checkout }));
     console.log(`Dry run: would publish release ${version} to ${publicRepository}.`);
   } else {
-    run("git", ["commit", "--quiet", "-m", `Update review source to ${version}`], { cwd: checkout });
+    // Public commits use the project identity, never the maintainer's personal git identity,
+    // and carry no tool attribution trailers.
+    run(
+      "git",
+      [
+        "-c",
+        `user.name=${publicIdentity.name}`,
+        "-c",
+        `user.email=${publicIdentity.email}`,
+        "commit",
+        "--quiet",
+        "--no-verify",
+        "-m",
+        `Update review source to ${version}`,
+      ],
+      { cwd: checkout },
+    );
+    assertCleanPublicHistory(checkout);
     run("git", ["push", "--quiet", "origin", "HEAD"], { cwd: checkout, stdio: "inherit" });
     console.log(`Published release ${version} source to ${publicRepository}.`);
   }

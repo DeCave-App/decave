@@ -1,7 +1,7 @@
 {
   "name": "decave",
   "private": true,
-  "version": "0.1.150",
+  "version": "0.1.151",
   "description": "DeCave gaming chat and voice desktop client",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",

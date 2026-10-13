@@ -11,4 +11,13 @@ if git grep --cached -n -I -E -e "$pattern" -- .; then
   exit 1
 fi
 
+# Keep CI's `npm run format:check` green: check only the files being committed.
+staged=$(git diff --cached --name-only --diff-filter=ACMR -z | tr '\0' '\n')
+if [ -n "$staged" ]; then
+  if ! printf '%s\n' "$staged" | tr '\n' '\0' | xargs -0 npx --no-install prettier --check --ignore-unknown --log-level warn; then
+    echo "ERROR: staged files are not formatted. Run: npx prettier --write <files>, then re-stage." >&2
+    exit 1
+  fi
+fi
+
 exit 0
