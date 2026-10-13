@@ -17,6 +17,7 @@ import { isRelayIceCandidate } from "./relay-policy";
 import { inputMeterLevelDb } from "./input-meter";
 import { t } from "./i18n";
 import clearVoiceWorkletPath from "../audio/clearvoice/ClearVoiceProcessor.worklet.ts?worker&url";
+import { DEEP_FILTER_JITTER_CUSHION_SECONDS } from "../audio/deepfilter/jitterCushion";
 import voiceActivationWorkletPath from "../audio/clearvoice/VoiceActivationProcessor.worklet.ts?worker&url";
 import { createClearVoiceAiRuntime, type ClearVoiceAiRuntime } from "../audio/clearvoice/ClearVoiceAiRuntime";
 import { createDeepFilterRuntime, type DeepFilterRuntime } from "../audio/deepfilter/DeepFilterRuntime";
@@ -939,6 +940,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
 
     let source!: MediaStreamAudioSourceNode;
     let deepFilter: AudioWorkletNode | null = null;
+    let gateSidechainDelay: DelayNode | null = null;
     let clearVoice: AudioWorkletNode | null = null;
     let clearVoiceAi: AudioWorkletNode | null = null;
     let highpass: BiquadFilterNode | null = null;
@@ -964,6 +966,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         processedAnalyser?.disconnect();
         processedTail?.disconnect();
         voiceActivation?.disconnect();
+        gateSidechainDelay?.disconnect();
         destination?.disconnect();
         processingKeepAlive?.disconnect();
       } catch {
@@ -1128,7 +1131,16 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         // processor startup, so a silent processor can never leak raw microphone
         // audio into the call.
         if (customProcessor && processedTail) {
-          analyser.connect(voiceActivation, 0, 1);
+          if (deepFilter) {
+            // DeepFilterNet's output runs a jitter cushion behind the raw mic;
+            // delay the detection sidechain to match so word onsets aren't clipped.
+            gateSidechainDelay = new DelayNode(context, {
+              delayTime: DEEP_FILTER_JITTER_CUSHION_SECONDS,
+              maxDelayTime: 0.1,
+            });
+            analyser.connect(gateSidechainDelay);
+            gateSidechainDelay.connect(voiceActivation, 0, 1);
+          } else analyser.connect(voiceActivation, 0, 1);
           processedTail.connect(voiceActivation, 0, 0);
           // ClearVoice's speech score (input 2) lets the gate hold quiet
           // syllables open; Standard and DeepFilterNet leave the input unconnected.

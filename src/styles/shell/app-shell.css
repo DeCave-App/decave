@@ -1259,3 +1259,13 @@
 .members.dc-global-friends-sidebar .dc-friend-avatar > i.offline {
   background: color-mix(in srgb, var(--ds-text) 45%, transparent);
 }
+
+/* Voice-card avatar stack: round, opaque chips so overlapped ones don't bleed together. */
+.members.dc-global-friends-sidebar .dc-friends-voice-avatars > :is(div, i) {
+  border-radius: 50% !important;
+  font-size: 11px;
+  font-weight: 700;
+}
+.members.dc-global-friends-sidebar .dc-friends-voice-avatars > i {
+  background: var(--gc-bg-2, var(--ds-surface-3)) !important;
+}

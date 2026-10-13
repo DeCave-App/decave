@@ -43,10 +43,9 @@ export function createAudioDeviceActions(deps: AudioDeviceActionsDeps) {
   };
 
   const cycleNoiseSuppression = () => {
-    // Keep V6 available from the in-channel control. If this device cannot
-    // initialize it, buildMicrophonePipeline performs the normal safe fallback
-    // and reports the actual active mode instead of hiding the choice.
-    const modes: NoiseSuppressionMode[] = ["off", "strong", "ai", "deepfilter"];
+    // If this device cannot initialize DeepFilterNet, buildMicrophonePipeline
+    // performs the normal safe fallback and reports the actual active mode.
+    const modes: NoiseSuppressionMode[] = ["off", "strong", "deepfilter"];
     const current = activeNoiseSuppressionMode;
     const next = modes[(Math.max(0, modes.indexOf(current)) + 1) % modes.length];
     const nextSettings: AudioSettings = {

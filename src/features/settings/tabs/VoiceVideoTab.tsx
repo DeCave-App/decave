@@ -15,7 +15,7 @@ import { useSettingsT } from "../useSettingsT";
 import { pushToTalkLabel } from "./GamingOverlayTab";
 import { MIC_TESTED_KEY } from "../checkup/checks";
 
-const NOISE_MODES: NoiseSuppressionMode[] = ["off", "strong", "ai", "deepfilter"];
+const NOISE_MODES: NoiseSuppressionMode[] = ["off", "strong", "deepfilter"];
 
 type Props = SettingsWindowProps & { onJump?: (tab: "gaming", anchor: string) => void };
 

@@ -169,7 +169,7 @@ test("local processing does not stack browser noise suppression or automatic gai
 
 test("voice channel exposes a direct noise-suppression mode switch", () => {
   assert.match(app, /const cycleNoiseSuppression = \(\) =>/);
-  assert.match(app, /const modes: NoiseSuppressionMode\[\] = \["off", "strong", "ai", "deepfilter"\]/);
+  assert.match(app, /const modes: NoiseSuppressionMode\[\] = \["off", "strong", "deepfilter"\]/);
   // Settings → Voice & video labels: Off / Standard / DeCave ClearVoice, each with its own description.
   const modes = JSON.parse(fs.readFileSync(path.join(root, "shared/i18n/locales/en/settings.json"), "utf8")).voice.noise
     .modes;

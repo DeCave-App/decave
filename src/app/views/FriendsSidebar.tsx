@@ -191,7 +191,12 @@ export function FriendsSidebar({
                         </span>
                         <span className="dc-friends-voice-avatars">
                           {group.members.slice(0, 4).map(({ friend }) => (
-                            <UserAvatar key={friend.id} username={friend.username} avatarUrl={friend.avatarUrl} />
+                            <UserAvatar
+                              key={friend.id}
+                              username={friend.username}
+                              avatarUrl={friend.avatarUrl}
+                              style={letterAvatarTint(friend.username)}
+                            />
                           ))}
                           {group.members.length > 4 && <i>+{group.members.length - 4}</i>}
                         </span>
@@ -307,18 +312,22 @@ function FriendAvatar({
   avatarUrl?: string | null;
   status: "online" | "offline";
 }) {
-  let hash = 0;
-  for (const ch of username) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
-  const hue = Math.abs(hash) % 360;
   return (
     <div className="dc-friend-avatar">
       <UserAvatar
         username={username}
         avatarUrl={avatarUrl}
         className="dc-friend-avatar-img"
-        style={{ background: `hsl(${hue} 45% 30%)`, color: `hsl(${hue} 80% 85%)` }}
+        style={letterAvatarTint(username)}
       />
       <i className={status} />
     </div>
   );
+}
+
+function letterAvatarTint(username: string) {
+  let hash = 0;
+  for (const ch of username) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  const hue = Math.abs(hash) % 360;
+  return { background: `hsl(${hue} 45% 30%)`, color: `hsl(${hue} 80% 85%)` };
 }

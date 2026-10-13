@@ -4,6 +4,8 @@
 // the audio thread, so a slow CPU produces a reported underrun instead of a
 // glitching render quantum.
 
+import { DEEP_FILTER_JITTER_CUSHION_SAMPLES } from "./jitterCushion";
+
 declare const sampleRate: number;
 
 declare abstract class AudioWorkletProcessor {
@@ -67,6 +69,7 @@ class DeepFilterProcessor extends AudioWorkletProcessor {
   private modelPort: MessagePort | null = null;
   private modelReady = false;
   private modelStarted = false;
+  private buffering = true;
   private nextSequence = 0;
   private nextResultSequence = 0;
   private lastOutputSample = 0;
@@ -105,6 +108,7 @@ class DeepFilterProcessor extends AudioWorkletProcessor {
     this.consecutiveUnderruns = 0;
     this.reportedUnderrun = false;
     this.modelStarted = false;
+    this.buffering = true;
   }
 
   private handleModelMessage(message: ModelPortMessage): void {
@@ -166,13 +170,16 @@ class DeepFilterProcessor extends AudioWorkletProcessor {
       for (const channel of outputChannels) channel.fill(0);
       return true;
     }
+    if (this.buffering && this.processedQueue.length >= DEEP_FILTER_JITTER_CUSHION_SAMPLES) this.buffering = false;
     for (let index = 0; index < output.length; index += 1) {
-      let value = this.processedQueue.pop();
+      let value = this.buffering ? undefined : this.processedQueue.pop();
       if (value !== undefined) {
         this.modelStarted = true;
         this.consecutiveUnderruns = 0;
         this.reportedUnderrun = false;
       } else {
+        // Rebuild the cushion before resuming, or every late hop chops again.
+        this.buffering = true;
         // Same policy as ClearVoice V6: on an inference miss, fade the last
         // processed sample instead of leaking unprocessed room noise.
         this.consecutiveUnderruns += 1;

@@ -240,7 +240,14 @@ export function loadAudioSettings(): AudioSettings {
     // The old Standard profile was weaker than the current gaming profile.
     // Migrate its persisted value to the renamed Standard option so users do
     // not keep receiving a mode that is no longer presented in the UI.
-    const storedNoiseSuppression = value.noiseSuppression === "standard" ? "strong" : value.noiseSuppression;
+    // DeCave ClearVoice ("ai") is no longer offered; move it to the other
+    // local AI filter.
+    const storedNoiseSuppression =
+      value.noiseSuppression === "standard"
+        ? "strong"
+        : value.noiseSuppression === "ai"
+          ? "deepfilter"
+          : value.noiseSuppression;
     return {
       inputDeviceId: typeof value.inputDeviceId === "string" ? value.inputDeviceId : "",
       outputDeviceId: typeof value.outputDeviceId === "string" ? value.outputDeviceId : "",
@@ -254,7 +261,6 @@ export function loadAudioSettings(): AudioSettings {
       noiseSuppression:
         storedNoiseSuppression === "off" ||
         storedNoiseSuppression === "strong" ||
-        storedNoiseSuppression === "ai" ||
         storedNoiseSuppression === "deepfilter"
           ? storedNoiseSuppression
           : DEFAULT_AUDIO_SETTINGS.noiseSuppression,
