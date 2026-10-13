@@ -50,7 +50,7 @@ export async function handleFeedbackRoutes({ request, env, p, method }: ApiConte
       try {
         await env.EMAIL.send({
           to: env.FEEDBACK_TO_EMAIL,
-          from: { email: "security@example.invalid", name: "DeCave Feedback" },
+          from: { email: "security@de-cave.com", name: "DeCave Feedback" },
           subject: `[DeCave ${type === "bug" ? "Bug" : "Feature"}] ${user.username}`,
           text:
             `Type: ${type}\n` +

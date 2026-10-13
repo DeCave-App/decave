@@ -171,7 +171,7 @@ modify, distribute, publicly perform, or create derivative works from DeCave
 materials except as allowed by law or in writing by us.
 
 If you believe content on the Service infringes your copyright or other rights,
-send a sufficiently detailed notice to **security@example.invalid**. A final
+send a sufficiently detailed notice to **security@de-cave.com**. A final
 copyright-agent name, address, and formal notice process must be added before a
 jurisdiction-specific notice is relied on.
 
@@ -256,7 +256,7 @@ DeCave’s own unlawful conduct, and consumer laws may limit this section.
 
 ## 15. Disputes
 
-Before bringing a formal claim, contact **security@example.invalid** with a clear
+Before bringing a formal claim, contact **security@de-cave.com** with a clear
 description of the issue and the relief requested. This informal step does not
 limit a non-waivable right to contact a regulator, bring a statutory consumer
 claim, or seek urgent relief where applicable law permits.
@@ -282,5 +282,5 @@ Service, except for written terms that expressly supplement them.
 ## 18. Contact
 
 **General support:** support@de-cave.com  
-**Legal, privacy, and security:** security@example.invalid  
+**Legal, privacy, and security:** security@de-cave.com  
 **Legal entity:** DeCave

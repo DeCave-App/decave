@@ -13,7 +13,7 @@ export const WINDOWS_DOWNLOAD_URL = "https://downloads.de-cave.com/DeCave-Setup.
 export const MAC_APPLE_SILICON_URL = "https://downloads.de-cave.com/DeCave-Mac-arm64.dmg";
 export const MAC_INTEL_URL = "https://downloads.de-cave.com/DeCave-Mac-x64.dmg";
 export const SUPPORT_EMAIL = "support@de-cave.com";
-export const SECURITY_EMAIL = "security@example.invalid";
+export const SECURITY_EMAIL = "security@de-cave.com";
 
 export function Brand() {
   return (

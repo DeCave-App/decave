@@ -7,7 +7,7 @@ time is promised.
 ## Report a vulnerability
 
 Use GitHub's private vulnerability reporting for this repository if it is
-enabled. Otherwise, email **security@example.invalid**, the security contact listed
+enabled. Otherwise, email **security@de-cave.com**, the security contact listed
 in the project source. If neither channel is available, open a minimal public
 issue asking for a private reporting channel and do not include technical
 details.

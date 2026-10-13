@@ -27,7 +27,7 @@ export const PRIVACY_POLICY = {
       title: "1. Who is responsible",
       blocks: [
         {
-          p: "The controller is **DeCave**. Contact us about privacy at security@example.invalid. We have not appointed a data protection officer.",
+          p: "The controller is **DeCave**. Contact us about privacy at security@de-cave.com. We have not appointed a data protection officer.",
         },
       ],
     },
@@ -81,7 +81,7 @@ export const PRIVACY_POLICY = {
       blocks: [
         { p: "**End-to-end encrypted direct messages and group chats.** These are encrypted on the sender's device and can only be read on the devices of the people in the conversation (in a group, its members at the time a message is sent). Reactions and poll votes in direct messages are encrypted too. We store the encrypted messages, each account's public keys, and a copy of your keys locked with a recovery code that only you have. Your key changes every month. You can choose to have your devices forget old keys after 30, 90 or 365 days; encrypted messages older than that then can't be read on your devices any more. We still see who messaged whom and when, who is in a group, message sizes, and that someone reacted. If you lose every signed-in device and your recovery code, we can't recover your encrypted messages. If you report an encrypted message, your device includes a proof that lets our safety team confirm who sent it and what it said." },
         { p: "**End-to-end encrypted calls.** Voice, video and screen sharing in direct calls and voice rooms are end-to-end encrypted: they travel directly between the participants' devices (WebRTC, DTLS-SRTP), and Cloudflare's relay and DeCave's servers only forward encrypted media. Up-to-date apps also check each participant's connection against their account key, so a connection can't be secretly intercepted: a direct call refuses an unverified connection, and voice rooms show a lock next to verified participants. All call traffic goes through Cloudflare's relay servers, so the people you talk to never see your IP address. We still see who is in a call or voice room and when. Web traffic is protected by TLS." },
-        { p: "We protect data with hashed passwords and tokens, access controls, rate limits, two-factor authentication for accounts that enable it, and limited staff access. No system is completely secure; tell us promptly at security@example.invalid if you suspect a problem." },
+        { p: "We protect data with hashed passwords and tokens, access controls, rate limits, two-factor authentication for accounts that enable it, and limited staff access. No system is completely secure; tell us promptly at security@de-cave.com if you suspect a problem." },
       ],
     },
     {
@@ -135,7 +135,7 @@ export const PRIVACY_POLICY = {
       blocks: [
         { p: "You can access, correct, delete or download your data, object to or restrict processing based on legitimate interest, and withdraw consent at any time (for example by turning off game activity or unlinking Steam). Download your data in Settings → Account → Download my data, or delete your account in Settings → Account." },
         { p: "The download is a JSON file of the records tied to your account. It ends with a marker showing it is complete, so an interrupted download can be recognised and retried. Messages other people sent are not included; conversations name the other person. End-to-end encrypted data (keys, the key backup and encrypted messages) is included exactly as we store it, as encrypted data we cannot read. Push notification registrations are shown with only their last characters." },
-        { p: "For anything else, email security@example.invalid with the subject \"Privacy request\". We answer within one month and may ask you to confirm the request comes from your account. You can also complain to your local data-protection authority." },
+        { p: "For anything else, email security@de-cave.com with the subject \"Privacy request\". We answer within one month and may ask you to confirm the request comes from your account. You can also complain to your local data-protection authority." },
         { p: "We do not make decisions about you based solely on automated processing. Rate limits and spam checks only slow down or pause actions; moderation decisions are made by people." },
       ],
     },
@@ -152,7 +152,7 @@ export const PRIVACY_POLICY = {
       nav: "Age",
       title: "9. Age requirement",
       blocks: [
-        { p: "DeCave is for adults only. You must be at least 18, or older where local law sets a higher age of majority. We do not knowingly collect data from anyone under 18. If you believe someone under 18 has an account, tell us at security@example.invalid." },
+        { p: "DeCave is for adults only. You must be at least 18, or older where local law sets a higher age of majority. We do not knowingly collect data from anyone under 18. If you believe someone under 18 has an account, tell us at security@de-cave.com." },
       ],
     },
     {
@@ -168,7 +168,7 @@ export const PRIVACY_POLICY = {
       nav: "Contact",
       title: "11. Contact",
       blocks: [
-        { p: "**Controller:** DeCave. **Privacy and security:** security@example.invalid." },
+        { p: "**Controller:** DeCave. **Privacy and security:** security@de-cave.com." },
         { p: "Please don't include passwords or private conversations in an email to us." },
       ],
     },

@@ -35,7 +35,6 @@ const infrastructurePlaceholders = [
   ["group.com.example.decave", "group.com.example.decave"],
   ["com.example.decave", "com.example.decave"],
   ["example-owner", "example-owner"],
-  ["security@example.invalid", "security@example.invalid"],
 ];
 const textExtensions = new Set([
   ".cjs", ".css", ".html", ".js", ".json", ".jsonc", ".md", ".mjs", ".podspec", ".ps1", ".py", ".scss",

@@ -177,7 +177,7 @@ export function TermsPage() {
           <section id="terms-ip">
             <h2>8. DeCave intellectual property</h2>
             <p>The Service, software, visual design, logos, names, documentation, and other DeCave materials belong to DeCave or its licensors. Subject to these Terms, we grant you a limited, revocable, non-exclusive, non-transferable license for personal or authorized community use. Do not copy, sell, sublicense, modify, distribute, or create derivative works from DeCave materials except as allowed by law or in writing.</p>
-            <p>Rights complaints can be sent to <a href="mailto:security@example.invalid">security@example.invalid</a>.</p>
+            <p>Rights complaints can be sent to <a href="mailto:security@de-cave.com">security@de-cave.com</a>.</p>
           </section>
 
           <section id="terms-ending">
@@ -194,13 +194,13 @@ export function TermsPage() {
 
           <section id="terms-disputes">
             <h2>11. Disputes</h2>
-            <p>Contact <a href="mailto:security@example.invalid">security@example.invalid</a> first with a clear description of a dispute; this does not remove a non-waivable right to contact a regulator or seek urgent relief.</p>
+            <p>Contact <a href="mailto:security@de-cave.com">security@de-cave.com</a> first with a clear description of a dispute; this does not remove a non-waivable right to contact a regulator or seek urgent relief.</p>
           </section>
 
           <section id="terms-contact">
             <h2>12. Changes and contact</h2>
             <p>We may update these Terms when the Service or law changes. We will update the effective date and provide additional notice or consent where required. If you continue using the Service after the effective date, the updated Terms apply to future use. If you do not agree, stop using the Service and request deletion.</p>
-            <p><strong>General support:</strong> <a href="mailto:support@de-cave.com">support@de-cave.com</a><br /><strong>Legal, privacy, and security:</strong> <a href="mailto:security@example.invalid">security@example.invalid</a><br /><strong>Legal entity:</strong> DeCave</p>
+            <p><strong>General support:</strong> <a href="mailto:support@de-cave.com">support@de-cave.com</a><br /><strong>Legal, privacy, and security:</strong> <a href="mailto:security@de-cave.com">security@de-cave.com</a><br /><strong>Legal entity:</strong> DeCave</p>
           </section>
 
         </article>
