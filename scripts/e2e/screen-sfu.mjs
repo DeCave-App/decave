@@ -67,7 +67,9 @@ const INBOUND_WIDTH = `(async () => {
 
 async function main() {
   await assertServerUp();
-  const ice = await fetch(`${BASE}/api/rtc/ice-servers`).then((r) => r.json()).catch(() => null);
+  const ice = await fetch(`${BASE}/api/rtc/ice-servers`)
+    .then((r) => r.json())
+    .catch(() => null);
   if (!ice?.turnEnabled) {
     throw new Error(
       "TURN is not configured (/api/rtc/ice-servers turnEnabled is false). Set CLOUDFLARE_TURN_KEY_ID and CLOUDFLARE_TURN_API_TOKEN in .dev.vars and restart the Worker; calls are relay-only.",
@@ -83,7 +85,9 @@ async function main() {
     const hubId = await a.evaluate(
       `fetch("/api/servers", { credentials: "include" }).then((r) => r.json()).then((list) => (Array.isArray(list) ? list : list.servers).find((s) => s.name === ${JSON.stringify(HUB_NAME)})?.id)`,
     );
-    await b.evaluate(`fetch("/api/servers/${hubId}/join", { method: "POST", credentials: "include" }).then((r) => r.status)`);
+    await b.evaluate(
+      `fetch("/api/servers/${hubId}/join", { method: "POST", credentials: "include" }).then((r) => r.status)`,
+    );
     await openApp(b);
     await waitFor(b, "realtime connection", `!!document.querySelector(".dc-bottom-bar-status.is-online")`);
     await joinVoiceRoom(a);
@@ -98,16 +102,28 @@ async function main() {
     const rids = await waitFor(a, "SFU sender with simulcast rids", `(${SFU_RIDS})`, 30_000).catch(() => null);
     check("sharer sends one video track through the SFU with rids f,p", rids === "f,p" || rids === "p,f", String(rids));
 
-    const gate = await waitFor(b, "Start Watching button", `!!__e2e.button("Start Watching")`, 30_000).catch(() => false);
+    const gate = await waitFor(b, "Start Watching button", `!!__e2e.button("Start Watching")`, 30_000).catch(
+      () => false,
+    );
     check("viewer sees the preview tile with Start Watching", !!gate);
 
     await b.evaluate(`__e2e.button("Start Watching").click()`);
-    const full = await waitFor(b, "full-size inbound frames", `(${INBOUND_WIDTH}).then((w) => w >= 1000)`, 30_000).catch(() => false);
+    const full = await waitFor(
+      b,
+      "full-size inbound frames",
+      `(${INBOUND_WIDTH}).then((w) => w >= 1000)`,
+      30_000,
+    ).catch(() => false);
     check("viewer decodes full-size frames while watching", !!full);
 
     await waitFor(b, "Stop Watching button", `!!__e2e.button("Stop Watching")`);
     await b.evaluate(`__e2e.button("Stop Watching").click()`);
-    const small = await waitFor(b, "preview-size inbound frames", `(${INBOUND_WIDTH}).then((w) => w > 0 && w <= 400)`, 20_000).catch(() => false);
+    const small = await waitFor(
+      b,
+      "preview-size inbound frames",
+      `(${INBOUND_WIDTH}).then((w) => w > 0 && w <= 400)`,
+      20_000,
+    ).catch(() => false);
     check("Stop Watching drops the viewer to the preview size", !!small);
   } finally {
     a.close();

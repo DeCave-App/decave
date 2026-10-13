@@ -66,7 +66,11 @@ function h264ClearBytes(data: Uint8Array): number {
   return 0;
 }
 
-export async function encryptFrame(data: ArrayBuffer, opts: FrameOpts, keyring: ScreenFrameKeyring): Promise<ArrayBuffer> {
+export async function encryptFrame(
+  data: ArrayBuffer,
+  opts: FrameOpts,
+  keyring: ScreenFrameKeyring,
+): Promise<ArrayBuffer> {
   const index = keyring.currentIndex;
   const key = index === null ? undefined : keyring.get(index);
   if (index === null || !key) throw new Error("no frame key");
@@ -75,7 +79,11 @@ export async function encryptFrame(data: ArrayBuffer, opts: FrameOpts, keyring: 
   const iv = crypto.getRandomValues(new Uint8Array(IV_LEN));
   const header = src.subarray(0, clear);
   const cipher = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: header, tagLength: 128 }, key, src.subarray(clear)),
+    await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv, additionalData: header, tagLength: 128 },
+      key,
+      src.subarray(clear),
+    ),
   );
   const out = new Uint8Array(clear + cipher.length + TRAILER_LEN);
   out.set(header, 0);
@@ -87,7 +95,11 @@ export async function encryptFrame(data: ArrayBuffer, opts: FrameOpts, keyring: 
 }
 
 // Returns null when the frame can't be authenticated; callers must drop it.
-export async function decryptFrame(data: ArrayBuffer, opts: FrameOpts, keyring: ScreenFrameKeyring): Promise<ArrayBuffer | null> {
+export async function decryptFrame(
+  data: ArrayBuffer,
+  opts: FrameOpts,
+  keyring: ScreenFrameKeyring,
+): Promise<ArrayBuffer | null> {
   const src = new Uint8Array(data);
   const clear = unencryptedBytes(src, opts.codec, opts.keyFrame);
   if (src.length < clear + TAG_LEN + TRAILER_LEN) return null;

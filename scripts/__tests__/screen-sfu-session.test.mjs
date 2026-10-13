@@ -4,7 +4,10 @@ import { createSfuSignaller } from "../../src/voice/screen-sfu/sfu-session.ts";
 
 function setup() {
   const sent = [];
-  const s = createSfuSignaller((p) => { sent.push(p); return true; });
+  const s = createSfuSignaller((p) => {
+    sent.push(p);
+    return true;
+  });
   return { sent, s };
 }
 
@@ -15,7 +18,10 @@ test("reply is matched by requestId and resolves with data", async () => {
   assert.equal(sent[0].type, "RTC_SFU_PUBLISH");
   assert.equal(sent[0].mid, "0");
   assert.equal(typeof sent[0].requestId, "string");
-  assert.equal(s.handleResult({ type: "RTC_SFU_RESULT", requestId: sent[0].requestId, ok: true, sessionId: "s1" }), true);
+  assert.equal(
+    s.handleResult({ type: "RTC_SFU_RESULT", requestId: sent[0].requestId, ok: true, sessionId: "s1" }),
+    true,
+  );
   const r = await p;
   assert.equal(r.sessionId, "s1");
 });
@@ -57,7 +63,13 @@ test("send failure rejects immediately", async () => {
 
 test("local SDP keeps only relay candidates", async () => {
   const { stripNonRelayCandidates } = await import("../../src/voice/screen-sfu/sfu-session.ts");
-  const sdp = ["v=0", "a=candidate:1 1 udp 1 10.0.0.1 5000 typ host", "a=candidate:2 1 udp 1 1.2.3.4 3478 typ relay raddr 0.0.0.0 rport 0", "a=mid:0", ""].join("\r\n");
+  const sdp = [
+    "v=0",
+    "a=candidate:1 1 udp 1 10.0.0.1 5000 typ host",
+    "a=candidate:2 1 udp 1 1.2.3.4 3478 typ relay raddr 0.0.0.0 rport 0",
+    "a=mid:0",
+    "",
+  ].join("\r\n");
   const out = stripNonRelayCandidates(sdp);
   assert.doesNotMatch(out, /typ host/);
   assert.match(out, /typ relay/);
@@ -77,21 +89,53 @@ test("viewer attaches the decrypt transform before the answer is sent", async ()
   const log = [];
   const receiver = { track: { kind: "video" }, getParameters: () => ({ codecs: [{ mimeType: "video/VP8" }] }) };
   Object.defineProperty(receiver, "transform", {
-    set(v) { if (v) log.push("transform"); },
-    get() { return null; },
+    set(v) {
+      if (v) log.push("transform");
+    },
+    get() {
+      return null;
+    },
   });
-  const saved = { pc: globalThis.RTCPeerConnection, w: globalThis.Worker, st: globalThis.RTCRtpScriptTransform, ms: globalThis.MediaStream };
+  const saved = {
+    pc: globalThis.RTCPeerConnection,
+    w: globalThis.Worker,
+    st: globalThis.RTCRtpScriptTransform,
+    ms: globalThis.MediaStream,
+  };
   globalThis.RTCPeerConnection = class {
-    constructor(cfg) { assert.equal(cfg.iceTransportPolicy, "relay"); this.localDescription = null; }
-    async setRemoteDescription() { log.push("setRemote"); }
-    getTransceivers() { return [{ mid: "3", receiver }]; }
-    async createAnswer() { log.push("createAnswer"); return { type: "answer", sdp: "v=0" }; }
-    async setLocalDescription(d) { log.push("setLocal"); this.localDescription = d; }
+    constructor(cfg) {
+      assert.equal(cfg.iceTransportPolicy, "relay");
+      this.localDescription = null;
+    }
+    async setRemoteDescription() {
+      log.push("setRemote");
+    }
+    getTransceivers() {
+      return [{ mid: "3", receiver }];
+    }
+    async createAnswer() {
+      log.push("createAnswer");
+      return { type: "answer", sdp: "v=0" };
+    }
+    async setLocalDescription(d) {
+      log.push("setLocal");
+      this.localDescription = d;
+    }
     close() {}
   };
-  globalThis.Worker = class { postMessage(m) { if (m.type === "key") log.push("key"); } addEventListener() {} terminate() {} };
+  globalThis.Worker = class {
+    postMessage(m) {
+      if (m.type === "key") log.push("key");
+    }
+    addEventListener() {}
+    terminate() {}
+  };
   globalThis.RTCRtpScriptTransform = class {};
-  globalThis.MediaStream = class { constructor(t) { this.tracks = t; } };
+  globalThis.MediaStream = class {
+    constructor(t) {
+      this.tracks = t;
+    }
+  };
   try {
     const { createSfuViewer } = await import("../../src/voice/screen-sfu/sfu-session.ts");
     const signaller = {
@@ -102,7 +146,10 @@ test("viewer attaches the decrypt transform before the answer is sent", async ()
       handleResult: () => false,
       rejectAll() {},
     };
-    const viewer = createSfuViewer({ signaller, iceServers: [{ urls: "turn:t.example:3478", username: "u", credential: "c" }] });
+    const viewer = createSfuViewer({
+      signaller,
+      iceServers: [{ urls: "turn:t.example:3478", username: "u", credential: "c" }],
+    });
     viewer.setKey("sharer", 1, new Uint8Array(16));
     await viewer.pull("sharer", "f");
     const at = (x) => log.indexOf(x);
@@ -112,20 +159,37 @@ test("viewer attaches the decrypt transform before the answer is sent", async ()
     assert.ok(at("setLocal") < at("RTC_SFU_RENEGOTIATE"), log.join(","));
     viewer.close();
   } finally {
-    globalThis.RTCPeerConnection = saved.pc; globalThis.Worker = saved.w;
-    globalThis.RTCRtpScriptTransform = saved.st; globalThis.MediaStream = saved.ms;
+    globalThis.RTCPeerConnection = saved.pc;
+    globalThis.Worker = saved.w;
+    globalThis.RTCRtpScriptTransform = saved.st;
+    globalThis.MediaStream = saved.ms;
   }
 });
 
 function withFakeRtc(pcClass, fn) {
-  const saved = { pc: globalThis.RTCPeerConnection, w: globalThis.Worker, st: globalThis.RTCRtpScriptTransform, ms: globalThis.MediaStream };
+  const saved = {
+    pc: globalThis.RTCPeerConnection,
+    w: globalThis.Worker,
+    st: globalThis.RTCRtpScriptTransform,
+    ms: globalThis.MediaStream,
+  };
   globalThis.RTCPeerConnection = pcClass;
-  globalThis.Worker = class { postMessage() {} addEventListener() {} terminate() {} };
+  globalThis.Worker = class {
+    postMessage() {}
+    addEventListener() {}
+    terminate() {}
+  };
   globalThis.RTCRtpScriptTransform = class {};
-  globalThis.MediaStream = class { constructor(t) { this.tracks = t; } };
+  globalThis.MediaStream = class {
+    constructor(t) {
+      this.tracks = t;
+    }
+  };
   return fn().finally(() => {
-    globalThis.RTCPeerConnection = saved.pc; globalThis.Worker = saved.w;
-    globalThis.RTCRtpScriptTransform = saved.st; globalThis.MediaStream = saved.ms;
+    globalThis.RTCPeerConnection = saved.pc;
+    globalThis.Worker = saved.w;
+    globalThis.RTCRtpScriptTransform = saved.st;
+    globalThis.MediaStream = saved.ms;
   });
 }
 const relayIce = [{ urls: "turn:t.example:3478", username: "u", credential: "c" }];
@@ -133,12 +197,18 @@ const relayIce = [{ urls: "turn:t.example:3478", username: "u", credential: "c" 
 test("publisher stop is scoped to its own publish session", () =>
   withFakeRtc(
     class {
-      constructor() { this.localDescription = null; }
+      constructor() {
+        this.localDescription = null;
+      }
       addTransceiver() {
         return { mid: "0", sender: { getParameters: () => ({ codecs: [{ mimeType: "video/VP8" }], encodings: [] }) } };
       }
-      async createOffer() { return { type: "offer", sdp: "v=0" }; }
-      async setLocalDescription(d) { this.localDescription = d; }
+      async createOffer() {
+        return { type: "offer", sdp: "v=0" };
+      }
+      async setLocalDescription(d) {
+        this.localDescription = d;
+      }
       async setRemoteDescription() {}
       close() {}
     },
@@ -153,7 +223,10 @@ test("publisher stop is scoped to its own publish session", () =>
         handleResult: () => false,
         rejectAll() {},
       };
-      const pub = await publishScreen({ kind: "video" }, { signaller, iceServers: relayIce, codec: "vp8", fullEncoding: {} });
+      const pub = await publishScreen(
+        { kind: "video" },
+        { signaller, iceServers: relayIce, codec: "vp8", fullEncoding: {} },
+      );
       await pub.stop();
       assert.deepEqual(requests.at(-1), { type: "RTC_SFU_STOP", body: { sessionId: "s-1" } });
     },
@@ -163,11 +236,19 @@ test("a pull whose mid has no transceiver leaves no stale mid behind", () => {
   const receiver = { track: { kind: "video" }, getParameters: () => ({ codecs: [{ mimeType: "video/VP8" }] }) };
   return withFakeRtc(
     class {
-      constructor() { this.localDescription = null; }
+      constructor() {
+        this.localDescription = null;
+      }
       async setRemoteDescription() {}
-      getTransceivers() { return [{ mid: "3", receiver }]; }
-      async createAnswer() { return { type: "answer", sdp: "v=0" }; }
-      async setLocalDescription(d) { this.localDescription = d; }
+      getTransceivers() {
+        return [{ mid: "3", receiver }];
+      }
+      async createAnswer() {
+        return { type: "answer", sdp: "v=0" };
+      }
+      async setLocalDescription(d) {
+        this.localDescription = d;
+      }
       close() {}
     },
     async () => {

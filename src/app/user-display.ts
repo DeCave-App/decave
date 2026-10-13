@@ -19,7 +19,9 @@ export function memberRoleIcons(member: {
     typeof member.faceitLevel === "number" && member.faceitLevel >= 1 && member.faceitLevel <= 10
       ? `LVL${member.faceitLevel}`
       : "";
-  return Array.from(new Set([builtInRoleIcon(member.role), ...custom, faceit])).filter(Boolean).join(" ");
+  return Array.from(new Set([builtInRoleIcon(member.role), ...custom, faceit]))
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function resolveAvatarUrl(value?: string | null): string {

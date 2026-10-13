@@ -190,7 +190,14 @@ test("key index wraps 255 -> 0", async () => {
   assert.equal(km.currentIndex(), 0);
 });
 
-function sharerHarness({ publishFails = false, disabled = false, e2eeReady = true, publish, sealFails, offered = true } = {}) {
+function sharerHarness({
+  publishFails = false,
+  disabled = false,
+  e2eeReady = true,
+  publish,
+  sealFails,
+  offered = true,
+} = {}) {
   const sent = [];
   const requests = [];
   const refreshes = [];
@@ -374,7 +381,13 @@ test("sharer: a stale publish from an ended share is stopped through its own (sc
   let resolveFirst;
   let calls = 0;
   const stops = [];
-  const make = (name) => ({ setKey() {}, async updateFull() {}, async stop() { stops.push(name); } });
+  const make = (name) => ({
+    setKey() {},
+    async updateFull() {},
+    async stop() {
+      stops.push(name);
+    },
+  });
   const h = sharerHarness({
     publish: () => (++calls === 1 ? new Promise((r) => (resolveFirst = () => r(make("old")))) : make("new")),
   });

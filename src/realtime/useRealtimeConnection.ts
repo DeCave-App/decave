@@ -99,6 +99,8 @@ export function useRealtimeConnection(deps: RealtimeConnectionDeps): void {
         client: hasDesktopActivityBridge() ? "desktop" : "web", // DECAVE_PARITY_WEB_IDENTIFY_CLIENT
         serverId: activeServerRef.current,
         channelId: activeChannelRef.current,
+        // Server sends USERS_DIFF frames instead of full rosters on every change.
+        features: ["presence-diff"],
       }),
       refreshToken: fetchWsToken,
       isSessionExpired: async () => {

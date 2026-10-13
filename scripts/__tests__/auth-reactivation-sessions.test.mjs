@@ -338,7 +338,7 @@ test("realtime admission keys never keep the raw client IP", () => {
   assert.match(hubRoom, /private peerAddressByConnection = new Map<string, string>\(\)/);
   assert.match(hubRoom, /this\.peerAddressByConnection\.set\(state\.connectionId, peerAddress\)/);
   assert.match(hubRoom, /const \{ peerAddress: legacyPeerAddress, \.\.\.withoutPeerAddress \} = attached/);
-  assert.match(hubRoom, /ws\.serializeAttachment\(normalized\)/);
+  assert.match(hubRoom, /this\.attach\(ws, normalized\)/);
   assert.doesNotMatch(body, /return\s+address\s*;/);
   const socketTypeStart = hubRoom.indexOf("type SocketState = {");
   const socketTypeEnd = hubRoom.indexOf("};", socketTypeStart);

@@ -292,6 +292,7 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
           setMessages,
           setOnlineUsers,
           setFriends,
+          setHubMembers,
           setPendingAttachment: composer.setPendingAttachment,
           setAttachmentError: composer.setAttachmentError,
           setActiveForumPostId: forumRoomUi.setActiveForumPostId,

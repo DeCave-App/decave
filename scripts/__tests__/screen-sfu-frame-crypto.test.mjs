@@ -1,10 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  ScreenFrameKeyring,
-  encryptFrame,
-  decryptFrame,
-} from "../../src/voice/screen-sfu/frame-crypto.ts";
+import { ScreenFrameKeyring, encryptFrame, decryptFrame } from "../../src/voice/screen-sfu/frame-crypto.ts";
 
 const rnd = (n) => crypto.getRandomValues(new Uint8Array(n));
 const ring = async (index = 0, key = rnd(16)) => {

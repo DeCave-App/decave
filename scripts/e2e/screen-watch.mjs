@@ -69,7 +69,9 @@ async function main() {
     const hubId = await a.evaluate(
       `fetch("/api/servers", { credentials: "include" }).then((r) => r.json()).then((list) => (Array.isArray(list) ? list : list.servers).find((s) => s.name === ${JSON.stringify(HUB_NAME)})?.id)`,
     );
-    await b.evaluate(`fetch("/api/servers/${hubId}/join", { method: "POST", credentials: "include" }).then((r) => r.status)`);
+    await b.evaluate(
+      `fetch("/api/servers/${hubId}/join", { method: "POST", credentials: "include" }).then((r) => r.status)`,
+    );
     await openApp(b);
     await waitFor(b, "realtime connection", `!!document.querySelector(".dc-bottom-bar-status.is-online")`);
     await joinVoiceRoom(a);
@@ -82,14 +84,24 @@ async function main() {
     await a.evaluate(`document.querySelector(".dc-media-start-button").click()`);
     await waitFor(b, "Start Watching button", `!!__e2e.button("Start Watching")`, 30_000);
 
-    const preview = await waitFor(a, "preview encoding", `(${SCREEN_SENDER})?.maxBitrate === 250000 && (${SCREEN_SENDER})`, 15_000).catch(() => null);
+    const preview = await waitFor(
+      a,
+      "preview encoding",
+      `(${SCREEN_SENDER})?.maxBitrate === 250000 && (${SCREEN_SENDER})`,
+      15_000,
+    ).catch(() => null);
     check("A sends only a preview before B watches", !!preview, JSON.stringify(preview));
     await sleep(3000);
     const previewKbps = await videoSentKbps(a);
     check("preview video stays small", previewKbps < 600, `${previewKbps} kbps`);
 
     await b.evaluate(`__e2e.button("Start Watching").click()`);
-    const full = await waitFor(a, "full encoding", `(${SCREEN_SENDER})?.maxBitrate > 1000000 && (${SCREEN_SENDER})`, 15_000).catch(() => null);
+    const full = await waitFor(
+      a,
+      "full encoding",
+      `(${SCREEN_SENDER})?.maxBitrate > 1000000 && (${SCREEN_SENDER})`,
+      15_000,
+    ).catch(() => null);
     check("A sends full quality while B watches", !!full, JSON.stringify(full));
     await sleep(6000);
     const fullKbps = await videoSentKbps(a);
@@ -97,7 +109,9 @@ async function main() {
 
     await waitFor(b, "Stop Watching button", `!!__e2e.button("Stop Watching")`);
     await b.evaluate(`__e2e.button("Stop Watching").click()`);
-    const back = await waitFor(a, "preview again", `(${SCREEN_SENDER})?.maxBitrate === 250000`, 15_000).catch(() => false);
+    const back = await waitFor(a, "preview again", `(${SCREEN_SENDER})?.maxBitrate === 250000`, 15_000).catch(
+      () => false,
+    );
     check("Stop Watching returns A to the preview", !!back);
     const gate = await waitFor(b, "Start Watching again", `!!__e2e.button("Start Watching")`, 5_000).catch(() => false);
     check("B sees Start Watching again", !!gate);

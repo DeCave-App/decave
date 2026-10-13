@@ -370,7 +370,7 @@ test("hibernated revoked sockets cannot receive fanout, profile, voice, or direc
 
   stale.sent.length = 0;
   active.sent.length = 0;
-  await room["broadcastUsers"]();
+  for (const socket of [stale, active, peer]) await room["sendRoster"](socket);
   await room["broadcastVoiceState"]();
   assert.ok(!stale.sent.some((event) => ["USERS_UPDATE", "SERVERS_UPDATE", "VOICE_STATE"].includes(event.type)));
   assert.ok(active.sent.some((event) => event.type === "USERS_UPDATE"));
@@ -379,7 +379,7 @@ test("hibernated revoked sockets cannot receive fanout, profile, voice, or direc
   stale.sent.length = 0;
   active.sent.length = 0;
   peer.sent.length = 0;
-  stale.attachment = { ...stale.attachment, voiceChannelId: null, identifiedAt: Date.now() + 2000 };
+  room["attach"](stale, { ...stale.attachment, voiceChannelId: null, identifiedAt: Date.now() + 2000 });
   await room.webSocketMessage(active, JSON.stringify({ type: "DM_CALL_START", targetUserId: "DC-0000000000000001" }));
   assert.ok(!stale.sent.some((event) => event.type === "DM_CALL_INCOMING"));
   assert.ok(peer.sent.some((event) => event.type === "DM_CALL_INCOMING"));
@@ -518,7 +518,12 @@ test("live roster hides invisible accounts and filters private locations per vie
   );
   const room = roomFor([viewer, friend, stranger]);
   const roster = async () => {
-    await room["broadcastUsers"]();
+    // Statuses and memberships are edited in D1 directly here, without the
+    // PROFILE_UPDATED / SERVERS_REFRESH events that clear these caches.
+    room["directory"].forgetUsers();
+    room["directory"].forgetMemberships();
+    room["onlineUsersCache"] = null;
+    for (const socket of [viewer, friend, stranger]) await room["sendRoster"](socket);
     return viewer.sent.filter((e) => e.type === "USERS_UPDATE").at(-1).users;
   };
   db.exec("UPDATE decave_users SET status='invisible' WHERE id IN ('u91','u92')");
@@ -543,18 +548,98 @@ test("live roster hides invisible accounts and filters private locations per vie
   db.exec("INSERT INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(901,'u90','member',?)", now);
   db.exec("UPDATE decave_users SET status='invisible' WHERE id='u91'");
   await roster();
-  assert.equal(
-    viewer.sent
-      .filter((e) => e.type === "SERVERS_UPDATE")
-      .at(-1)
-      .servers.find((h) => h.id === 901).onlineCount,
-    1,
-    "online counts must not disclose invisible sockets",
+  room["onlineUsersCache"] = null;
+  const count = await room.fetch(
+    new Request("https://internal.decave/internal/count", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ hubId: 901 }),
+    }),
   );
+  assert.equal((await count.json()).count, 1, "online counts must not disclose invisible sockets");
   db.exec("UPDATE decave_users SET status='online' WHERE id='u91'");
   seen = (await roster()).find((u) => u.userId === "DC-0000000000000091");
   assert.deepEqual([seen.serverId, seen.channelId], [901, 0], "membership does not reveal a private room");
   db.exec("INSERT INTO decave_room_members(room_id,user_id,granted_by,created_at) VALUES(901,'u90','u91',?)", now);
   seen = (await roster()).find((u) => u.userId === "DC-0000000000000091");
   assert.deepEqual([seen.serverId, seen.channelId], [901, 901], "explicit room membership retains allowed location");
+});
+
+test("presence diffs reach only related viewers and never disclose invisible accounts", async () => {
+  for (const id of ["u95", "u96", "u97", "u98"]) seedUser(id);
+  db.exec(
+    "INSERT INTO decave_hubs(id,name,icon,owner_id,created_at,updated_at) VALUES(951,'diff hub','T','u95',?,?)",
+    now,
+    now,
+  );
+  for (const id of ["u95", "u96"])
+    db.exec("INSERT INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(951,?,'member',?)", id, now);
+  const mover = new FakeSocket(
+    socketState("u95", seedSession("u95", "diff-mover"), { serverId: 951, presenceDiff: true }),
+  );
+  const member = new FakeSocket(
+    socketState("u96", seedSession("u96", "diff-member"), { serverId: 951, presenceDiff: true }),
+  );
+  const outsider = new FakeSocket(socketState("u97", seedSession("u97", "diff-outsider"), { presenceDiff: true }));
+  const legacy = new FakeSocket(socketState("u98", seedSession("u98", "diff-legacy"), { serverId: 951 }));
+  db.exec("INSERT INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(951,'u98','member',?)", now);
+  const room = roomFor([mover, member, outsider, legacy]);
+
+  await room["presenceChanged"](mover.attachment);
+  await room["flushPresence"]();
+  const diff = member.sent.find((e) => e.type === "USERS_DIFF");
+  assert.equal(diff.upsert[0].userId, "DC-0000000000000095");
+  assert.deepEqual(diff.presence[0], {
+    userId: "DC-0000000000000095",
+    online: true,
+    status: "online",
+    statusText: "",
+    activityText: "",
+  });
+  assert.ok(!outsider.sent.some((e) => e.type === "USERS_DIFF"), "unrelated sockets are not told");
+  assert.ok(!legacy.sent.some((e) => e.type === "USERS_DIFF"), "older clients never get frames they can't apply");
+  assert.ok(room["legacyRosterPending"].has(legacy.attachment.connectionId), "older clients get a coalesced roster");
+  clearTimeout(room["legacyRosterTimer"]);
+
+  member.sent.length = 0;
+  db.exec("UPDATE decave_users SET status='invisible' WHERE id='u95'");
+  room["directory"].forgetUsers(); // what the PROFILE_UPDATED for this change does
+  await room["presenceChanged"](mover.attachment);
+  await room["flushPresence"]();
+  const hidden = member.sent.find((e) => e.type === "USERS_DIFF");
+  assert.deepEqual(hidden.upsert, [], "an invisible account is removed, not upserted");
+  assert.deepEqual(hidden.remove, [mover.attachment.connectionId]);
+  assert.equal(hidden.presence[0].online, false);
+  assert.equal(hidden.presence[0].status, "invisible");
+
+  member.sent.length = 0;
+  db.exec("UPDATE decave_users SET status='online' WHERE id='u95'");
+  room["directory"].forgetUsers();
+  await room["presenceChanged"](mover.attachment, { gone: true });
+  await room["flushPresence"]();
+  const gone = member.sent.find((e) => e.type === "USERS_DIFF");
+  assert.deepEqual(gone.remove, [mover.attachment.connectionId]);
+  assert.equal(gone.presence[0].online, false, "the last connection closing marks the account offline");
+  clearTimeout(room["legacyRosterTimer"]);
+});
+
+test("profile and membership broadcasts clear cached presence inputs", async () => {
+  const room = roomFor([]);
+  const directory = room["directory"];
+  const now = Date.now();
+  directory.setUser("u1", null, now);
+  directory.setRoles("u1", [], now);
+  const post = (event) =>
+    room.fetch(
+      new Request("https://internal.decave/internal/broadcast", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ event, filter: { userIds: [] } }),
+      }),
+    );
+  await post({ type: "PROFILE_UPDATED", user: {} });
+  assert.equal(directory.user("u1", now), undefined, "a profile change drops cached user rows");
+  assert.deepEqual(directory.roles("u1", now), [], "memberships survive a profile change");
+  await post({ type: "SERVERS_REFRESH" });
+  assert.equal(directory.roles("u1", now), undefined, "a membership change drops cached roles");
 });

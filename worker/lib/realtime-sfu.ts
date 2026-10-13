@@ -65,7 +65,10 @@ export function createRealtimeClient(
     // Never echo the response body or request headers: they could carry the token.
     const data = (await response.json().catch(() => ({}))) as SfuResponse;
     if (!response.ok) {
-      throw new RealtimeSfuError(data.errorCode ?? `http_${response.status}`, `Realtime SFU returned HTTP ${response.status}`);
+      throw new RealtimeSfuError(
+        data.errorCode ?? `http_${response.status}`,
+        `Realtime SFU returned HTTP ${response.status}`,
+      );
     }
     if (data.errorCode) {
       throw new RealtimeSfuError(data.errorCode, data.errorDescription ?? "Realtime SFU error");

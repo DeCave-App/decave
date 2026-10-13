@@ -71,7 +71,7 @@ test("WebSocket admission and message processing are bounded", () => {
   assert.match(hub, /this\.realtimeRate\.delete\(state\.connectionId\)/);
   assert.match(hub, /CF-Connecting-IP/);
   assert.match(hub, /const WS_CONNECTION_LIMIT_PER_ADDRESS = 32/);
-  assert.match(hub, /const WS_CONNECTION_LIMIT_GLOBAL = 2_048/);
+  assert.match(hub, /const WS_CONNECTION_LIMIT_GLOBAL = 12_000/);
   assert.match(hub, /const WS_HANDSHAKE_LIMIT_PER_ADDRESS = 60/);
   assert.match(hub, /if \(!this\.allowWebSocketAdmission\(peerAddress\)\)/);
 });

@@ -133,6 +133,7 @@ import { formatActivityElapsed, clamp } from "./app/format";
 import { hasDesktopActivityBridge, setDesktopStreamerMode, setDesktopVoiceOverlayState } from "./app/desktop";
 import { isStreamerServer, streamerLocalMediaPath, streamerMediaUrl } from "./app/streamer";
 import {
+  SESSION_FALLBACK_CHECK_MS,
   DEFAULT_ROOM_ICONS,
   REFERENCE_ROOM_ICONS,
   ROLE_ICON_CHOICES,
@@ -195,6 +196,7 @@ import { HomePage } from "./app/views/HomePage";
 import { SocialPage } from "./app/views/SocialPage";
 import { AdminDashboardPage } from "./app/views/admin/AdminDashboardPage";
 import { useRealtimeConnection } from "./realtime/useRealtimeConnection";
+import { liveHubOnlineCount } from "./realtime/presence";
 import { useForumRoomPreviews } from "./app/hooks/useForumRoomPreviews";
 import { useVoiceSessionRecap } from "./app/hooks/useVoiceSessionRecap";
 import { useWorkspaceHistoryShortcuts } from "./app/hooks/useWorkspaceHistoryShortcuts";
@@ -1292,7 +1294,15 @@ function App() {
     chooseAppSkin,
   });
 
-  const currentServer = servers.find((server) => server.id === selectedServer) || servers[0] || EMPTY_SERVER;
+  const selectedServerRow = servers.find((server) => server.id === selectedServer) || servers[0] || EMPTY_SERVER;
+  const liveOnlineCount = liveHubOnlineCount(onlineUsers, selectedServerRow.id);
+  const currentServer = useMemo(
+    () =>
+      selectedServerRow.onlineCount == null || selectedServerRow.onlineCount === liveOnlineCount
+        ? selectedServerRow
+        : { ...selectedServerRow, onlineCount: liveOnlineCount },
+    [selectedServerRow, liveOnlineCount],
+  );
 
   const currentChannel = currentServer.channels.find((channel) => channel.id === selectedChannel) ||
     currentServer.channels[0] || {
@@ -1495,15 +1505,23 @@ function App() {
       }
     };
 
+    // The realtime socket delivers SESSION_REVOKED the moment this session is
+    // replaced; this poll is only the fallback for a dropped socket, so it
+    // runs slowly (2.5 s polling was 400 req/s at 1000 users) and on refocus.
     const timer = window.setInterval(() => {
       void checkStillActive();
-    }, 2500);
+    }, SESSION_FALLBACK_CHECK_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void checkStillActive();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     void checkStillActive();
 
     return () => {
       stopped = true;
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [currentUser?.id]);
 

@@ -30,14 +30,20 @@ import {
   type RoomRow,
   type ServerRole,
   type UserRow,
-  presenceFieldsFor,
   presenceOnline,
   publicUserWithPresence,
   tokenHash,
 } from "./db";
 import type { Env } from "./index";
 import { consumeSessionBoundWsToken, isActiveSession } from "./lib/sessions";
-import { streamerHubIdsForUser, streamerMigrationExists } from "./streamer/index.ts";
+import {
+  RealtimeDirectory,
+  RealtimeLookup,
+  SessionValidityCache,
+  type PresenceHint,
+  type RosterEntry,
+  type RosterSocket,
+} from "./lib/realtime-roster";
 import { isBlockedEitherDirection } from "./trust-safety";
 import {
   FORUM_POST_PREFIX,
@@ -148,7 +154,21 @@ const WS_ADMISSION_WINDOW_MS = 60_000;
 const WS_HANDSHAKE_LIMIT_PER_ADDRESS = 60;
 const WS_IDENTIFY_FAILURE_LIMIT_PER_ADDRESS = 60;
 const WS_CONNECTION_LIMIT_PER_ADDRESS = 32;
-const WS_CONNECTION_LIMIT_GLOBAL = 2_048;
+// Hibernated sockets cost no CPU; this only bounds one object's memory.
+const WS_CONNECTION_LIMIT_GLOBAL = 12_000;
+// How long a validated session may receive broadcasts before D1 is asked again.
+const SESSION_RECHECK_MS = 30_000;
+// User rows and memberships shared by presence passes (see RealtimeDirectory).
+const DIRECTORY_TTL_MS = 10_000;
+// Presence changes are applied in one batched pass per window.
+const PRESENCE_FLUSH_MS = 250;
+// Older clients without "presence-diff" get one coalesced full roster per window.
+const LEGACY_ROSTER_FLUSH_MS = 1_000;
+// REST presence projections (/internal/online-users) reuse one answer this long.
+const ONLINE_USERS_CACHE_MS = 2_000;
+// Mesh voice: every participant uploads one stream per listener, which stops
+// working well beyond this. Rooms without an explicit limit use it.
+export const DEFAULT_VOICE_ROOM_LIMIT = 10;
 const WS_ADMISSION_KEY_LIMIT = 4_096;
 const BOT_TIMER_MIN_DELAY_MS = 1_000;
 const BOT_TIMER_FAILURE_BACKOFF_MS = 30_000;
@@ -209,20 +229,27 @@ type SocketState = {
   identifyFailures: number;
   rateLimitViolations: number;
   lastPresenceTouchAt: number;
+  /** Client applies USERS_DIFF frames instead of needing full USERS_UPDATE rosters. */
+  presenceDiff?: boolean;
   /** Public user id cached at voice join (saves a D1 read per screen-key relay). */
   publicUserId?: string | null;
 } & ScreenSfuSocketFields;
 
+let presenceTableReady = false;
+
 async function touchRealtimePresence(db: D1Database, userId: string): Promise<void> {
-  await db
-    .prepare(
-      `CREATE TABLE IF NOT EXISTS decave_presence_activity (
+  if (!presenceTableReady) {
+    await db
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS decave_presence_activity (
         user_id TEXT PRIMARY KEY,
         last_seen_at TEXT NOT NULL,
         FOREIGN KEY(user_id) REFERENCES decave_users(id) ON DELETE CASCADE
       )`,
-    )
-    .run();
+      )
+      .run();
+    presenceTableReady = true;
+  }
   await db
     .prepare(
       `INSERT INTO decave_presence_activity(user_id,last_seen_at)
@@ -333,6 +360,13 @@ export class HubRoom extends DurableObject<Env> {
   private peerAddressByConnection = new Map<string, string>();
   // After a failed bot-timer run the next bot wake-up waits this long (auth deadlines don't).
   private botTimerBackoffUntil = 0;
+  private sessionValidity = new SessionValidityCache(SESSION_RECHECK_MS);
+  private directory = new RealtimeDirectory(DIRECTORY_TTL_MS);
+  private legacyRosterPending = new Set<string>();
+  private pendingPresence = new Map<string, { state: SocketState; gone: boolean; previousHubs: Set<number> }>();
+  private presenceTimer: ReturnType<typeof setTimeout> | null = null;
+  private legacyRosterTimer: ReturnType<typeof setTimeout> | null = null;
+  private onlineUsersCache: { at: number; userIds: string[] } | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -423,7 +457,7 @@ export class HubRoom extends DurableObject<Env> {
 
   private rejectRealtimeRate(ws: WebSocket, state: SocketState): SocketState {
     const next = { ...state, rateLimitViolations: state.rateLimitViolations + 1 };
-    ws.serializeAttachment(next);
+    this.attach(ws, next);
     this.send(ws, { type: "ERROR", message: "Too many realtime requests. Slow down." });
     if (next.rateLimitViolations >= MAX_REALTIME_RATE_VIOLATIONS) {
       try {
@@ -562,7 +596,7 @@ export class HubRoom extends DurableObject<Env> {
         ...EMPTY_SFU_FIELDS,
       };
       this.peerAddressByConnection.set(state.connectionId, peerAddress);
-      server.serializeAttachment(state);
+      this.attach(server, state);
       this.ctx.acceptWebSocket(server);
       try {
         await this.refreshDeadlineAlarm();
@@ -586,6 +620,12 @@ export class HubRoom extends DurableObject<Env> {
     if (url.pathname === "/internal/broadcast" && request.method === "POST") {
       const data = await request.json<{ event: unknown; filter?: Filter }>();
       const event = data.event && typeof data.event === "object" ? (data.event as Record<string, unknown>) : null;
+      // Cached presence inputs that this event may have made stale.
+      if (event?.type === "PROFILE_UPDATED") {
+        this.onlineUsersCache = null;
+        this.directory.forgetUsers();
+      }
+      if (event?.type === "SERVERS_REFRESH" || event?.type === "ACCESS_REVOKED") this.directory.forgetMemberships();
 
       if (event?.type === "SESSION_REVOKED") {
         const filter = data.filter ?? {};
@@ -623,7 +663,7 @@ export class HubRoom extends DurableObject<Env> {
               socketState = this.state(socket);
             }
             if (socketState.serverId === serverId) {
-              socket.serializeAttachment({ ...socketState, serverId: 0, channelId: 0 });
+              this.attach(socket, { ...socketState, serverId: 0, channelId: 0 });
             }
           }
           this.send(socket, event);
@@ -644,7 +684,7 @@ export class HubRoom extends DurableObject<Env> {
             for (const socket of this.ctx.getWebSockets()) {
               const socketState = this.state(socket);
               if (socketState.userId !== changedUser.id) continue;
-              socket.serializeAttachment({ ...socketState, username });
+              this.attach(socket, { ...socketState, username });
             }
           }
         }
@@ -659,19 +699,21 @@ export class HubRoom extends DurableObject<Env> {
       const hubId = Number(body.hubId);
       if (!Number.isSafeInteger(hubId) || hubId <= 0)
         return Response.json({ error: "hubId required" }, { status: 400 });
+      this.directory.forgetMemberships();
       const changed = await this.recheckHubAccess(hubId, typeof body.message === "string" ? body.message : undefined);
       return Response.json({ success: true, changed });
     }
 
     if (url.pathname === "/internal/count" && request.method === "POST") {
       const body = await request.json<{ hubId?: number }>();
+      const visible = await this.visibleOnlineUserIds();
       const ids = new Set(
         this.states()
           .filter((x) => body.hubId === undefined || x.serverId === body.hubId)
           .map((x) => x.userId)
-          .filter((x): x is string => !!x),
+          .filter((x): x is string => !!x && visible.has(x)),
       );
-      return Response.json({ count: (await this.visibleConnectedUserIds([...ids])).size });
+      return Response.json({ count: ids.size });
     }
 
     // Distinct users connected to each requested voice room (Discover's "in voice" signal).
@@ -700,14 +742,7 @@ export class HubRoom extends DurableObject<Env> {
     }
 
     if (url.pathname === "/internal/online-users") {
-      const connected = new Set(
-        this.states()
-          .map((x) => x.userId)
-          .filter((x): x is string => !!x),
-      );
-      return Response.json({
-        userIds: [...(await this.visibleConnectedUserIds([...connected]))],
-      });
+      return Response.json({ userIds: [...(await this.visibleOnlineUserIds())] });
     }
 
     if (url.pathname === "/internal/stats") {
@@ -747,10 +782,8 @@ export class HubRoom extends DurableObject<Env> {
     }
     let state = this.state(ws);
     if (state.userId) {
-      let active = false;
-      try {
-        active = await isActiveSession(this.env, state.userId, state.sessionHash ?? "");
-      } catch {
+      const active = await this.sessionIsActive(state);
+      if (active === "unavailable") {
         this.revokeSocket(ws, "session_validation_unavailable");
         return;
       }
@@ -780,7 +813,7 @@ export class HubRoom extends DurableObject<Env> {
     }
     if (state.rateLimitViolations !== 0) {
       state = { ...state, rateLimitViolations: 0 };
-      ws.serializeAttachment(state);
+      this.attach(ws, state);
     }
 
     if (!knownType) {
@@ -807,7 +840,7 @@ export class HubRoom extends DurableObject<Env> {
       }
       if (!credentials) {
         state = { ...state, identifyFailures: state.identifyFailures + 1 };
-        ws.serializeAttachment(state);
+        this.attach(ws, state);
         this.send(ws, { type: "AUTH_ERROR", message: "Session expired. Please log in again." });
         if (state.identifyFailures >= MAX_IDENTIFY_FAILURES || !this.recordIdentifyFailure(peerAddress)) {
           try {
@@ -881,8 +914,10 @@ export class HubRoom extends DurableObject<Env> {
         identifyFailures: 0,
         authDeadlineAt: 0,
         lastPresenceTouchAt: Date.now(),
+        presenceDiff: Array.isArray(data.features) && data.features.includes("presence-diff"),
       };
-      ws.serializeAttachment(state);
+      this.attach(ws, state);
+      this.sessionValidity.set(sessionHash, true);
       await touchRealtimePresence(this.env.DB, user.id);
       await this.refreshDeadlineAlarm();
       this.send(ws, {
@@ -893,8 +928,11 @@ export class HubRoom extends DurableObject<Env> {
         serverId,
         channelId,
       });
-      await this.sendServers(ws, user.id);
-      await this.broadcastUsers();
+      // Clients load their Hub list over REST (it carries per-user grants);
+      // this only tells them to do so.
+      this.send(ws, { type: "SERVERS_REFRESH" });
+      await this.sendRoster(ws);
+      await this.presenceChanged(state);
       await this.sendSocial(ws, user.id);
       await this.sendVoiceState(ws, user.id);
       return;
@@ -908,7 +946,7 @@ export class HubRoom extends DurableObject<Env> {
     if (type === "PING") {
       if (state.userId && Date.now() - Number(state.lastPresenceTouchAt || 0) >= 60_000) {
         state = { ...state, lastPresenceTouchAt: Date.now() };
-        ws.serializeAttachment(state);
+        this.attach(ws, state);
         await touchRealtimePresence(this.env.DB, state.userId!);
       }
       this.send(ws, {
@@ -936,10 +974,11 @@ export class HubRoom extends DurableObject<Env> {
           break;
         }
       }
+      const previousServerId = state.serverId;
       state = { ...state, serverId: hubId, channelId };
-      ws.serializeAttachment(state);
+      this.attach(ws, state);
       this.send(ws, { type: "SERVER_JOINED", serverId: state.serverId, channelId: state.channelId });
-      await this.broadcastUsers();
+      await this.presenceChanged(state, { previousServerId });
       return;
     }
 
@@ -950,14 +989,14 @@ export class HubRoom extends DurableObject<Env> {
         return;
       }
       state = { ...state, channelId: room.id };
-      ws.serializeAttachment(state);
+      this.attach(ws, state);
       this.send(ws, { type: "CHANNEL_JOINED", channelId: room.id });
       // A client may be on an older bundle that does not issue the explicit
       // VOICE_STATE_REQUEST after navigation. Push the authoritative voice
       // roster whenever the active text/channel subscription changes so web
       // and desktop converge on the same live-room view.
       await this.sendVoiceState(ws, state.userId!);
-      await this.broadcastUsers();
+      await this.presenceChanged(state);
       return;
     }
 
@@ -1010,7 +1049,7 @@ export class HubRoom extends DurableObject<Env> {
       // subscription before broadcasting so the sender also receives the event.
       if (state.channelId !== room.id) {
         state = { ...state, channelId: room.id };
-        ws.serializeAttachment(state);
+        this.attach(ws, state);
       }
       const timeout = await this.env.DB.prepare("SELECT expires_at FROM decave_timeouts WHERE hub_id=? AND user_id=?")
         .bind(room.hub_id, state.userId)
@@ -1235,32 +1274,37 @@ export class HubRoom extends DurableObject<Env> {
         ),
       ];
 
+      // One batched pass: Hub members' roles and usernames load once, and the
+      // recipients are validated together instead of once per online user.
+      const activityLookup = new RealtimeLookup(this.env.DB);
+      await activityLookup.loadHubMembers(room.hub_id);
+      const activityTargets: string[] = [];
       for (const targetUserId of onlineUserIds) {
-        if (!(await canAccessRoom(this.env.DB, room, targetUserId))) continue;
-
-        const target = await this.env.DB.prepare("SELECT username FROM decave_users WHERE id=?")
-          .bind(targetUserId)
-          .first<{ username: string }>();
-        if (!target) continue;
-
-        const mentioned = messageMentions(text, target.username);
-        await this.broadcast(
-          {
-            type: "ROOM_ACTIVITY",
-            serverId: room.hub_id,
-            channelId: roomId,
-            channelName: room.name,
-            userId: publicIdOf(
-              (await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(state.userId).first<UserRow>())!,
-            ),
-            username: state.username,
-            messageId: id,
-            timestamp: createdAt,
-            text,
-            mentioned,
-          },
-          { userIds: [targetUserId] },
-        );
+        if (await activityLookup.canAccessRoom(room, targetUserId)) activityTargets.push(targetUserId);
+      }
+      await activityLookup.loadUsers([...activityTargets, state.userId!]);
+      const author = activityLookup.user(state.userId!);
+      if (author && activityTargets.length) {
+        const activity = {
+          type: "ROOM_ACTIVITY",
+          serverId: room.hub_id,
+          channelId: roomId,
+          channelName: room.name,
+          userId: publicIdOf(author),
+          username: state.username,
+          messageId: id,
+          timestamp: createdAt,
+          text,
+        };
+        const plain = JSON.stringify({ ...activity, mentioned: false });
+        const mentionedFrame = JSON.stringify({ ...activity, mentioned: true });
+        for (const socket of await this.liveRecipients({ userIds: activityTargets })) {
+          const target = activityLookup.user(this.state(socket).userId!);
+          if (!target) continue;
+          try {
+            socket.send(messageMentions(text, target.username) ? mentionedFrame : plain);
+          } catch {}
+        }
       }
 
       // Phone notifications for members who are not connected:
@@ -1637,7 +1681,7 @@ export class HubRoom extends DurableObject<Env> {
         dmCallAccepted: false,
         dmCallVideo: video,
       };
-      ws.serializeAttachment(callerNext);
+      this.attach(ws, callerNext);
       const caller = await this.callParticipant(callerNext);
       let peer = null;
       for (const target of targets) {
@@ -1650,7 +1694,7 @@ export class HubRoom extends DurableObject<Env> {
           dmCallAccepted: false,
           dmCallVideo: video,
         };
-        target.serializeAttachment(targetNext);
+        this.attach(target, targetNext);
         peer ??= await this.callParticipant(targetNext);
       }
       this.send(ws, { type: "DM_CALL_RINGING", callId, video, peer });
@@ -1685,14 +1729,14 @@ export class HubRoom extends DurableObject<Env> {
         dmCallIncoming: false,
         dmCallAccepted: true,
       };
-      ws.serializeAttachment(selfNext);
-      peerSocket.serializeAttachment(peerNext);
+      this.attach(ws, selfNext);
+      this.attach(peerSocket, peerNext);
       // Stop the call ringing on this user's other devices.
       for (const other of this.ctx.getWebSockets()) {
         if (other === ws) continue;
         const otherState = this.state(other);
         if (otherState.userId !== state.userId || otherState.dmCallId !== state.dmCallId) continue;
-        other.serializeAttachment(this.withoutDirectCall(otherState));
+        this.attach(other, this.withoutDirectCall(otherState));
         await this.sendToLive(other, { type: "DM_CALL_ENDED", callId: state.dmCallId, reason: "answered-elsewhere" });
       }
       this.send(ws, {
@@ -1724,8 +1768,8 @@ export class HubRoom extends DurableObject<Env> {
         return;
       const selfNext = { ...state, dmCallVideo: true };
       const peerNext = { ...peerState, dmCallVideo: true };
-      ws.serializeAttachment(selfNext);
-      peerSocket.serializeAttachment(peerNext);
+      this.attach(ws, selfNext);
+      this.attach(peerSocket, peerNext);
       const event = {
         type: "DM_CALL_VIDEO_UPGRADED",
         callId: state.dmCallId,
@@ -1756,20 +1800,22 @@ export class HubRoom extends DurableObject<Env> {
         this.send(ws, { type: "VOICE_ERROR", message: "You are currently timed out in this Hub.", code: "TIMED_OUT" });
         return;
       }
-      const cap = Number((room as { user_limit?: number }).user_limit ?? 0);
-      if (cap > 0) {
-        const inside = new Set(
-          this.states()
-            .filter((other) => other.voiceChannelId === room.id && other.userId && other.userId !== state.userId)
-            .map((other) => other.userId),
-        );
+      const configuredCap = Number((room as { user_limit?: number }).user_limit ?? 0);
+      const cap = configuredCap > 0 ? configuredCap : DEFAULT_VOICE_ROOM_LIMIT;
+      const inside = new Set(
+        this.states()
+          .filter((other) => other.voiceChannelId === room.id && other.userId && other.userId !== state.userId)
+          .map((other) => other.userId),
+      );
+      if (inside.size >= cap) {
         const role = await getRole(this.env.DB, room.hub_id, state.userId!);
-        if (inside.size >= cap && role !== "owner" && role !== "admin") {
+        if (role !== "owner" && role !== "admin") {
           this.send(ws, { type: "VOICE_ERROR", message: `This room is full (${cap}/${cap}).`, code: "ROOM_FULL" });
           return;
         }
       }
       const voiceBefore = voiceRoomsOf(this.states(), state.userId!);
+      const previousVoiceHub = state.voiceChannelId === null ? null : await this.hubOfRoom(state.voiceChannelId);
       // DECAVE_PARITY_VOICE_HANDOFF: the newest client wins if this account joins the same voice room elsewhere.
       for (const other of this.ctx.getWebSockets()) {
         if (other === ws) continue;
@@ -1795,11 +1841,11 @@ export class HubRoom extends DurableObject<Env> {
         allowStreamPreview: true,
         cameraSharing: false,
       };
-      ws.serializeAttachment(state);
+      this.attach(ws, state);
       const participant = await this.participant(state);
       if (participant?.userId) {
         state = { ...this.state(ws), publicUserId: participant.userId };
-        ws.serializeAttachment(state);
+        this.attach(ws, state);
       }
       const peers = [];
       for (const peerState of this.states()) {
@@ -1819,7 +1865,8 @@ export class HubRoom extends DurableObject<Env> {
         { type: "VOICE_PEER_JOINED", participant },
         { voiceChannelId: room.id, exceptConnectionId: state.connectionId },
       );
-      await this.broadcastVoiceState();
+      await this.broadcastVoiceState(room.hub_id);
+      if (previousVoiceHub && previousVoiceHub !== room.hub_id) await this.broadcastVoiceState(previousVoiceHub);
       this.voiceBotEvents(state.userId!, voiceBefore);
       return;
     }
@@ -1837,16 +1884,16 @@ export class HubRoom extends DurableObject<Env> {
     if (type === "VOICE_MUTE") {
       if (state.voiceMuted === (data.muted === true)) return;
       state = { ...state, voiceMuted: data.muted === true };
-      ws.serializeAttachment(state);
-      await this.broadcastVoiceState();
+      this.attach(ws, state);
+      await this.broadcastVoiceState(await this.hubOfRoom(state.voiceChannelId));
       return;
     }
 
     if (type === "VOICE_DEAFEN") {
       if (state.voiceDeafened === (data.deafened === true)) return;
       state = { ...state, voiceDeafened: data.deafened === true };
-      ws.serializeAttachment(state);
-      await this.broadcastVoiceState();
+      this.attach(ws, state);
+      await this.broadcastVoiceState(await this.hubOfRoom(state.voiceChannelId));
       return;
     }
 
@@ -1873,8 +1920,8 @@ export class HubRoom extends DurableObject<Env> {
         screenStreamId,
         allowStreamPreview: data.allowStreamPreview !== false,
       };
-      ws.serializeAttachment(state);
-      await this.broadcastVoiceState();
+      this.attach(ws, state);
+      await this.broadcastVoiceState(await this.hubOfRoom(state.voiceChannelId));
       return;
     }
 
@@ -1930,8 +1977,8 @@ export class HubRoom extends DurableObject<Env> {
       if (data.cameraSharing === true && !(await this.voiceMediaAllowed(ws, state))) return;
       if (state.cameraSharing === (data.cameraSharing === true)) return;
       state = { ...state, cameraSharing: data.cameraSharing === true };
-      ws.serializeAttachment(state);
-      await this.broadcastVoiceState();
+      this.attach(ws, state);
+      await this.broadcastVoiceState(await this.hubOfRoom(state.voiceChannelId));
       return;
     }
 
@@ -1945,8 +1992,8 @@ export class HubRoom extends DurableObject<Env> {
       const capable = data.capable === true && screenSfuEnabled(this.env);
       if (state.voiceChannelId === null || state.sfuScreenCapable === capable) return;
       state = { ...state, sfuScreenCapable: capable };
-      ws.serializeAttachment(state);
-      await this.broadcastVoiceState();
+      this.attach(ws, state);
+      await this.broadcastVoiceState(await this.hubOfRoom(state.voiceChannelId));
       return;
     }
 
@@ -2058,13 +2105,13 @@ export class HubRoom extends DurableObject<Env> {
       if (action === "unmute") next.voiceServerMuted = false;
       if (action === "deafen") next.voiceServerDeafened = true;
       if (action === "undeafen") next.voiceServerDeafened = false;
-      target.serializeAttachment(next);
+      this.attach(target, next);
       await this.sendToLive(target, {
         type: "VOICE_MODERATION_STATE",
         serverMuted: next.voiceServerMuted,
         serverDeafened: next.voiceServerDeafened,
       });
-      await this.broadcastVoiceState();
+      await this.broadcastVoiceState(await this.hubOfRoom(next.voiceChannelId));
       return;
     }
   }
@@ -2080,7 +2127,7 @@ export class HubRoom extends DurableObject<Env> {
       // still be returned by getWebSockets() during this handler, which used to
       // leave a ghost participant in VOICE_STATE.
       try {
-        ws.serializeAttachment({
+        this.attach(ws, {
           ...this.releaseScreenSfu(state),
           voiceChannelId: null,
           screenSharing: false,
@@ -2097,13 +2144,30 @@ export class HubRoom extends DurableObject<Env> {
     if (state.dmCallId) {
       await this.endDirectCall(ws, { ...state, voiceChannelId: null }, "peer-offline");
     }
-    await this.broadcastUsers();
-    await this.broadcastVoiceState();
+    await this.presenceChanged(state, { gone: true });
+    if (state.voiceChannelId !== null) await this.broadcastVoiceState(await this.hubOfRoom(state.voiceChannelId));
     await this.refreshDeadlineAlarm();
   }
 
   async webSocketError(ws: WebSocket): Promise<void> {
     await this.webSocketClose(ws);
+  }
+
+  /**
+   * Connected accounts that are not invisible. Member lists, profile broadcasts
+   * and Hub online counts all ask this; one answer per ONLINE_USERS_CACHE_MS
+   * instead of re-reading every connected account each time.
+   */
+  private async visibleOnlineUserIds(): Promise<Set<string>> {
+    if (!this.onlineUsersCache || Date.now() - this.onlineUsersCache.at > ONLINE_USERS_CACHE_MS) {
+      const connected = new Set(
+        this.states()
+          .map((x) => x.userId)
+          .filter((x): x is string => !!x),
+      );
+      this.onlineUsersCache = { at: Date.now(), userIds: [...(await this.visibleConnectedUserIds([...connected]))] };
+    }
+    return new Set(this.onlineUsersCache.userIds);
   }
 
   private async visibleConnectedUserIds(userIds: string[]): Promise<Set<string>> {
@@ -2120,7 +2184,25 @@ export class HubRoom extends DurableObject<Env> {
     return visible;
   }
 
+  // Parsed attachments, so fan-out over every socket doesn't structured-clone
+  // each attachment again. Every write goes through attach(); after
+  // hibernation the map starts empty and refills on first read.
+  private stateCache = new WeakMap<WebSocket, SocketState>();
+
+  private attach(ws: WebSocket, value: SocketState): void {
+    ws.serializeAttachment(value);
+    this.stateCache.set(ws, value);
+  }
+
   private state(ws: WebSocket): SocketState {
+    const cached = this.stateCache.get(ws);
+    if (cached) return cached;
+    const state = this.readState(ws);
+    this.stateCache.set(ws, state);
+    return state;
+  }
+
+  private readState(ws: WebSocket): SocketState {
     const attached = ws.deserializeAttachment() as (Partial<SocketState> & { peerAddress?: unknown }) | null;
     if (attached) {
       // Remove address pseudonyms from attachments written by older versions.
@@ -2153,7 +2235,7 @@ export class HubRoom extends DurableObject<Env> {
       } as SocketState;
       if (attached.authDeadlineAt !== authDeadlineAt || legacyPeerAddress !== undefined) {
         try {
-          ws.serializeAttachment(normalized);
+          this.attach(ws, normalized);
         } catch {}
       }
       return normalized;
@@ -2207,14 +2289,24 @@ export class HubRoom extends DurableObject<Env> {
       this.revokeSocket(ws, "session_revoked");
       return false;
     }
-    try {
-      if (await isActiveSession(this.env, state.userId, state.sessionHash)) return true;
-    } catch {
-      this.revokeSocket(ws, "session_validation_unavailable");
-      return false;
-    }
-    this.revokeSocket(ws, "session_revoked");
+    const active = await this.sessionIsActive(state);
+    if (active === true) return true;
+    this.revokeSocket(ws, active === "unavailable" ? "session_validation_unavailable" : "session_revoked");
     return false;
+  }
+
+  /** Cached isActiveSession (see SESSION_RECHECK_MS). */
+  private async sessionIsActive(state: SocketState): Promise<boolean | "unavailable"> {
+    if (!state.userId || !state.sessionHash) return false;
+    const cached = this.sessionValidity.fresh(state.sessionHash);
+    if (cached !== undefined) return cached;
+    try {
+      const live = await isActiveSession(this.env, state.userId, state.sessionHash);
+      this.sessionValidity.set(state.sessionHash, live);
+      return live;
+    } catch {
+      return "unavailable";
+    }
   }
 
   private async sendToLive(ws: WebSocket, payload: unknown): Promise<boolean> {
@@ -2225,7 +2317,7 @@ export class HubRoom extends DurableObject<Env> {
 
   private matches(state: SocketState, filter: Filter): boolean {
     if (filter.exceptConnectionId && state.connectionId === filter.exceptConnectionId) return false;
-    if (filter.userIds && (!state.userId || !filter.userIds.includes(state.userId))) return false;
+    if (filter.userIds && (!state.userId || !this.idSet(filter.userIds).has(state.userId))) return false;
     if (filter.sessionHashes && (!state.sessionHash || !filter.sessionHashes.includes(state.sessionHash))) return false;
     if (filter.hubId !== undefined && state.serverId !== filter.hubId) return false;
     if (filter.channelId !== undefined && state.channelId !== filter.channelId) return false;
@@ -2233,7 +2325,16 @@ export class HubRoom extends DurableObject<Env> {
     return true;
   }
 
+  // Broadcast filters can list thousands of ids; match against a Set built once per filter.
+  private idSets = new WeakMap<string[], Set<string>>();
+  private idSet(ids: string[]): Set<string> {
+    let set = this.idSets.get(ids);
+    if (!set) this.idSets.set(ids, (set = new Set(ids)));
+    return set;
+  }
+
   private revokeSocket(ws: WebSocket, reason: string): void {
+    this.sessionValidity.forget(this.state(ws).sessionHash);
     this.send(ws, { type: "SESSION_REVOKED", reason });
     // Closing invokes webSocketClose, which clears voice/call state and
     // rebroadcasts presence for hibernated as well as in-memory sockets.
@@ -2242,19 +2343,31 @@ export class HubRoom extends DurableObject<Env> {
     } catch {}
   }
 
-  /** Validate recipients in bounded D1 batches before any server event delivery. */
+  /**
+   * Validate recipients before any server event delivery. Sessions are
+   * re-checked against D1 in bounded batches at most every SESSION_RECHECK_MS;
+   * explicit revocations close sockets directly. If D1 is unavailable, sockets
+   * whose session was last known live keep receiving events and nobody is
+   * disconnected for an outage.
+   */
   private async liveRecipients(filter: Filter): Promise<WebSocket[]> {
-    const candidates = this.ctx.getWebSockets().filter((ws) => this.matches(this.state(ws), filter));
-    const authenticated = candidates.filter((ws) => Boolean(this.state(ws).userId));
-    const keyed = authenticated.map((ws) => ({ ws, state: this.state(ws) }));
-    const sessionHashes = [
-      ...new Set(keyed.map(({ state }) => state.sessionHash).filter((value): value is string => !!value)),
+    const keyed: { ws: WebSocket; state: SocketState }[] = [];
+    for (const ws of this.ctx.getWebSockets()) {
+      const state = this.state(ws);
+      if (state.userId && this.matches(state, filter)) keyed.push({ ws, state });
+    }
+    const now = Date.now();
+    const stale = [
+      ...new Set(
+        keyed
+          .map(({ state }) => state.sessionHash)
+          .filter((value): value is string => !!value && this.sessionValidity.fresh(value, now) === undefined),
+      ),
     ];
-    const live = new Set<string>();
+    let unavailable = false;
     try {
-      for (let offset = 0; offset < sessionHashes.length; offset += 90) {
-        const chunk = sessionHashes.slice(offset, offset + 90);
-        if (!chunk.length) continue;
+      for (let offset = 0; offset < stale.length; offset += 90) {
+        const chunk = stale.slice(offset, offset + 90);
         const rows = await this.env.DB.prepare(
           `SELECT s.token_hash FROM decave_sessions s
            JOIN decave_users u ON u.id=s.user_id
@@ -2265,16 +2378,22 @@ export class HubRoom extends DurableObject<Env> {
         )
           .bind(...chunk, nowIso(), nowIso())
           .all<{ token_hash: string }>();
-        for (const row of rows.results) live.add(row.token_hash);
+        const live = new Set(rows.results.map((row) => row.token_hash));
+        for (const hash of chunk) this.sessionValidity.set(hash, live.has(hash), now);
       }
     } catch {
-      for (const { ws } of keyed) this.revokeSocket(ws, "session_validation_unavailable");
-      return [];
+      unavailable = true;
     }
     const result: WebSocket[] = [];
     for (const { ws, state } of keyed) {
-      if (state.sessionHash && live.has(state.sessionHash)) result.push(ws);
-      else this.revokeSocket(ws, "session_revoked");
+      const hash = state.sessionHash;
+      const live = hash
+        ? unavailable
+          ? this.sessionValidity.lastKnown(hash)
+          : this.sessionValidity.fresh(hash, now)
+        : false;
+      if (live) result.push(ws);
+      else if (!unavailable || live === false) this.revokeSocket(ws, "session_revoked");
     }
     return result;
   }
@@ -2343,158 +2462,163 @@ export class HubRoom extends DurableObject<Env> {
     };
   }
 
-  private async sendServers(ws: WebSocket, userId: string): Promise<void> {
-    const rows = await this.env.DB.prepare(
-      `SELECT h.*, hm.role my_role FROM decave_hubs h JOIN decave_hub_members hm ON hm.hub_id=h.id WHERE hm.user_id=? ORDER BY h.id`,
-    )
-      .bind(userId)
-      .all<{
-        id: number;
-        name: string;
-        icon: string;
-        owner_id: string;
-        visibility: "private" | "public";
-        description: string;
-        accent: string;
-        category: string;
-        slow_mode_seconds: number;
-        icon_key: string | null;
-        banner_key: string | null;
-        my_role: ServerRole;
-      }>();
-    let streamerHubIds = new Set<number>();
-    try {
-      if (
-        (await streamerMigrationExists(this.env.DB)) &&
-        this.env.STREAMER_HUBS_ENABLED?.trim().toLowerCase() === "true"
-      ) {
-        streamerHubIds = await streamerHubIdsForUser(this.env.DB, userId);
-      }
-    } catch (error) {
-      // A missing/partially-applied migration must serialize the safe standard
-      // layout and never turn websocket server updates into a hard failure.
-      console.error(
-        "Could not serialize Streamer Hub layouts for realtime server updates",
-        error instanceof Error ? error.name : "UnknownError",
-      );
-      streamerHubIds = new Set<number>();
-    }
-    // Counts are another presence signal: invisible sockets must not contribute
-    // to another member's online count, even when the roster itself is hidden.
-    const liveStates = (await this.liveRecipients({})).map((socket) => this.state(socket));
-    const liveUserIds = [...new Set(liveStates.map((state) => state.userId).filter((id): id is string => !!id))];
-    const visibleUsers = new Set<string>();
-    for (let offset = 0; offset < liveUserIds.length; offset += 90) {
-      const chunk = liveUserIds.slice(offset, offset + 90);
-      const users = await this.env.DB.prepare(
-        `SELECT id,status FROM decave_users WHERE id IN (${chunk.map(() => "?").join(",")})`,
-      )
-        .bind(...chunk)
-        .all<Pick<UserRow, "id" | "status">>();
-      for (const user of users.results) {
-        if (user.id === userId || presenceOnline(user, true)) visibleUsers.add(user.id);
-      }
-    }
-    const servers = [];
-    for (const h of rows.results) {
-      const channelRows = await this.env.DB.prepare("SELECT * FROM decave_rooms WHERE hub_id=? ORDER BY position,id")
-        .bind(h.id)
-        .all<RoomRow>();
-      const channels = [];
-      for (const room of channelRows.results) {
-        if (await canAccessRoom(this.env.DB, room, userId)) channels.push({ ...room, private: room.private === 1 });
-      }
-      const count = await this.env.DB.prepare("SELECT COUNT(*) count FROM decave_hub_members WHERE hub_id=?")
-        .bind(h.id)
-        .first<{ count: number }>();
-      const tags = await this.env.DB.prepare("SELECT tag FROM decave_hub_tags WHERE hub_id=?")
-        .bind(h.id)
-        .all<{ tag: string }>();
-      servers.push({
-        id: h.id,
-        name: h.name,
-        icon: h.icon,
-        channels,
-        ownerId:
-          (
-            await this.env.DB.prepare("SELECT public_id FROM decave_users WHERE id=?")
-              .bind(h.owner_id)
-              .first<{ public_id: string | null }>()
-          )?.public_id ?? "",
-        myRole: h.my_role,
-        visibility: h.visibility,
-        memberCount: Number(count?.count ?? 0),
-        onlineCount: new Set(
-          liveStates.filter((s) => s.serverId === h.id && s.userId && visibleUsers.has(s.userId)).map((s) => s.userId),
-        ).size,
-        description: h.description,
-        accent: h.accent,
-        category: h.category,
-        tags: tags.results.map((x) => x.tag),
-        slowModeSeconds: h.slow_mode_seconds,
-        iconUrl: h.icon_key ? `/uploads/${h.icon_key}` : null,
-        bannerUrl: h.banner_key ? `/uploads/${h.banner_key}` : null,
-        layout: streamerHubIds.has(h.id) ? "streamer" : "standard",
-      });
-    }
-    this.send(ws, { type: "SERVERS_UPDATE", servers });
+  /** Full online roster for one socket (sent once after IDENTIFY). */
+  private async sendRoster(ws: WebSocket): Promise<void> {
+    const viewer = this.state(ws);
+    if (!viewer.userId) return;
+    const lookup = new RealtimeLookup(this.env.DB, this.directory);
+    const states = (await this.liveRecipients({})).map((socket) => this.state(socket));
+    await this.sendToLive(ws, { type: "USERS_UPDATE", users: await this.rosterFor(viewer, states, lookup) });
   }
 
-  private async broadcastUsers(): Promise<void> {
-    // This is an unsolicited account-wide event. Validate every recipient in
-    // one bounded D1 pass so a failed revocation RPC cannot leave a stale
-    // attachment eligible to receive a social graph update.
-    const recipients = await this.liveRecipients({});
-    const states = recipients.map((socket) => this.state(socket));
-    for (const targetWs of recipients) {
-      const viewer = this.state(targetWs);
-      if (!viewer.userId) continue;
-      const friendRows = await this.env.DB.prepare(
-        `SELECT CASE WHEN user_a=? THEN user_b ELSE user_a END friend_id FROM decave_friendships WHERE user_a=? OR user_b=?`,
-      )
-        .bind(viewer.userId, viewer.userId, viewer.userId)
-        .all<{ friend_id: string }>();
-      const friendIds = new Set(friendRows.results.map((r) => r.friend_id));
-      const users = [];
-      for (const st of states) {
-        if (!st.userId || !st.username) continue;
-        const sameHub = Boolean(viewer.serverId && st.serverId === viewer.serverId);
-        if (st.userId !== viewer.userId && !friendIds.has(st.userId) && !sameHub) continue;
-        const u = await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(st.userId).first<UserRow>();
-        if (!u) continue;
-        const self = st.userId === viewer.userId;
-        // Roster membership itself reveals a live connection, even with an offline status.
-        if (!self && !presenceOnline(u, true)) continue;
-        const canSeeHub = Boolean(st.serverId && (self || (await getRole(this.env.DB, st.serverId, viewer.userId))));
-        if (!self && !friendIds.has(st.userId) && !canSeeHub) continue;
-        const selectedRoom = canSeeHub && st.channelId ? await getRoom(this.env.DB, st.channelId) : null;
-        const canSeeRoom = Boolean(
-          selectedRoom &&
-          selectedRoom.hub_id === st.serverId &&
-          (self || (await canAccessRoom(this.env.DB, selectedRoom, viewer.userId))),
-        );
-        const presence = presenceFieldsFor(
-          u,
-          true,
-          st.userId === viewer.userId ? "self" : friendIds.has(st.userId) ? "friend" : "other",
-        );
-        users.push({
-          id: st.connectionId,
-          userId: publicIdOf(u),
-          username: st.username,
-          avatarUrl: publicUser(u).avatarUrl,
-          serverId: canSeeHub ? st.serverId : 0,
-          channelId: canSeeRoom ? st.channelId : 0,
-          role: canSeeHub ? await getRole(this.env.DB, st.serverId, st.userId) : null,
-          status: presence.status,
-          statusText: presence.statusText,
-          activityText: presence.activityText,
-          bio: u.bio,
-          accent: u.accent,
-        });
+  private async rosterFor(viewer: SocketState, states: SocketState[], lookup: RealtimeLookup) {
+    if (!viewer.userId) return [];
+    await lookup.loadFriends([viewer.userId]);
+    const friends = lookup.friends(viewer.userId);
+    const candidates = states.filter(
+      (st) =>
+        st.userId &&
+        (st.userId === viewer.userId ||
+          friends.has(st.userId) ||
+          Boolean(viewer.serverId && st.serverId === viewer.serverId)),
+    );
+    await lookup.loadUsers(candidates.map((st) => st.userId!));
+    // Roles of everyone listed (and the viewer's own) in one batched pass.
+    await lookup.loadMembershipsOf([viewer.userId, ...candidates.map((st) => st.userId!)]);
+    await lookup.loadRooms(candidates.map((st) => st.channelId));
+    const users = [];
+    for (const st of candidates) {
+      const entry = await lookup.rosterEntry({ userId: viewer.userId, serverId: viewer.serverId }, st as RosterSocket);
+      if (entry) users.push(entry);
+    }
+    return users;
+  }
+
+  /**
+   * One connection appeared, moved Hub/room, or closed. Changes are queued and
+   * applied together every PRESENCE_FLUSH_MS, so a burst of N connects costs
+   * one batched pass and one frame per viewer instead of N of each.
+   */
+  private async presenceChanged(
+    changed: SocketState,
+    options: { previousServerId?: number; gone?: boolean } = {},
+  ): Promise<void> {
+    if (!changed.userId) return;
+    const pending = this.pendingPresence.get(changed.connectionId);
+    const previousHubs = pending?.previousHubs ?? new Set<number>();
+    if (options.previousServerId) previousHubs.add(options.previousServerId);
+    this.pendingPresence.set(changed.connectionId, { state: changed, gone: options.gone === true, previousHubs });
+    if (this.presenceTimer) return;
+    this.presenceTimer = setTimeout(() => {
+      this.presenceTimer = null;
+      this.inBackground(
+        this.flushPresence().catch((error) =>
+          console.error("Presence flush failed", error instanceof Error ? error.name : "UnknownError"),
+        ),
+      );
+    }, PRESENCE_FLUSH_MS);
+  }
+
+  /**
+   * Tell only viewers who can be affected: the account's own devices, its
+   * friends, and sockets viewing a Hub the account is (or just was) in.
+   * Clients that announced "presence-diff" get one USERS_DIFF with every
+   * changed connection plus the accounts' presence for member/friend lists;
+   * older clients get a coalesced full USERS_UPDATE.
+   */
+  private async flushPresence(): Promise<void> {
+    if (this.presenceTimer) {
+      clearTimeout(this.presenceTimer);
+      this.presenceTimer = null;
+    }
+    const changes = [...this.pendingPresence.values()];
+    this.pendingPresence = new Map();
+    if (!changes.length) return;
+    const goneIds = new Set(changes.filter((c) => c.gone).map((c) => c.state.connectionId));
+    const live = (await this.liveRecipients({}))
+      .map((socket) => ({ socket, st: this.state(socket) }))
+      .filter(({ st }) => !goneIds.has(st.connectionId));
+    const lookup = new RealtimeLookup(this.env.DB, this.directory);
+    const changedUsers = [...new Set(changes.map((c) => c.state.userId!))];
+    await lookup.loadUsers(changedUsers);
+    await lookup.loadFriends(changedUsers);
+    await lookup.loadMembershipsOf(changedUsers);
+    const connected = new Set(live.map(({ st }) => st.userId));
+    const audiences = changes.map((change) => {
+      const userId = change.state.userId!;
+      const hubs = new Set([...lookup.hubs(userId), ...change.previousHubs]);
+      if (change.state.serverId) hubs.add(change.state.serverId);
+      return { change, userId, hubs, friends: lookup.friends(userId) };
+    });
+    const viewers = live.filter(({ st }) =>
+      audiences.some(
+        (a) => st.userId && (st.userId === a.userId || a.friends.has(st.userId) || a.hubs.has(st.serverId)),
+      ),
+    );
+    if (!viewers.length) return;
+    await lookup.loadFriends(viewers.map(({ st }) => st.userId!));
+    for (const hubId of new Set(changes.map((c) => c.state.serverId))) await lookup.loadHubMembers(hubId);
+    await lookup.loadRooms(changes.map((c) => c.state.channelId));
+    const legacy: string[] = [];
+    for (const { socket, st } of viewers) {
+      if (!st.presenceDiff) {
+        legacy.push(st.connectionId);
+        continue;
       }
-      this.send(targetWs, { type: "USERS_UPDATE", users });
-      await this.sendServers(targetWs, viewer.userId);
+      const upsert: RosterEntry[] = [];
+      const remove: string[] = [];
+      const presence: PresenceHint[] = [];
+      for (const { change, userId, hubs, friends } of audiences) {
+        if (st.userId !== userId && !friends.has(st.userId!) && !hubs.has(st.serverId)) continue;
+        const entry = change.gone
+          ? null
+          : await lookup.rosterEntry({ userId: st.userId!, serverId: st.serverId }, change.state as RosterSocket);
+        if (entry) upsert.push(entry);
+        else remove.push(change.state.connectionId);
+        const hint = lookup.presenceHint(st.userId!, userId, connected.has(userId));
+        if (hint && !presence.some((p) => p.userId === hint.userId)) presence.push(hint);
+      }
+      this.send(socket, { type: "USERS_DIFF", upsert, remove, presence });
+    }
+    if (legacy.length) this.queueLegacyRoster(legacy);
+  }
+
+  private inBackground(work: Promise<unknown>): void {
+    if (typeof this.ctx.waitUntil === "function") this.ctx.waitUntil(work);
+    else void work;
+  }
+
+  private queueLegacyRoster(connectionIds: string[]): void {
+    for (const id of connectionIds) this.legacyRosterPending.add(id);
+    if (this.legacyRosterTimer) return;
+    this.legacyRosterTimer = setTimeout(() => {
+      this.legacyRosterTimer = null;
+      const pending = this.legacyRosterPending;
+      this.legacyRosterPending = new Set();
+      this.inBackground(
+        this.flushLegacyRoster(pending).catch((error) =>
+          console.error("Legacy roster flush failed", error instanceof Error ? error.name : "UnknownError"),
+        ),
+      );
+    }, LEGACY_ROSTER_FLUSH_MS);
+  }
+
+  private async flushLegacyRoster(connectionIds: Set<string>): Promise<void> {
+    const live = await this.liveRecipients({});
+    const states = live.map((socket) => this.state(socket));
+    const lookup = new RealtimeLookup(this.env.DB, this.directory);
+    const viewerIds = states
+      .filter((st) => connectionIds.has(st.connectionId))
+      .map((st) => st.userId)
+      .filter((id): id is string => !!id);
+    await lookup.loadUsers(states.map((st) => st.userId).filter((id): id is string => !!id));
+    await lookup.loadFriends(viewerIds);
+    await lookup.loadMembershipsOf(viewerIds);
+    await lookup.loadRooms(states.map((st) => st.channelId));
+    for (const socket of live) {
+      const viewer = this.state(socket);
+      if (!connectionIds.has(viewer.connectionId)) continue;
+      this.send(socket, { type: "USERS_UPDATE", users: await this.rosterFor(viewer, states, lookup) });
     }
   }
 
@@ -2565,7 +2689,7 @@ export class HubRoom extends DurableObject<Env> {
         (other) =>
           other.connectionId !== state.connectionId && other.userId === state.userId && other.dmCallId === callId,
       );
-    ws.serializeAttachment(this.withoutDirectCall(state));
+    this.attach(ws, this.withoutDirectCall(state));
     await this.sendToLive(ws, { type: "DM_CALL_ENDED", callId, reason });
     if (!callId || ringingElsewhere) return;
     // Call ids are unique, so this reaches the peer and any device still ringing.
@@ -2573,22 +2697,26 @@ export class HubRoom extends DurableObject<Env> {
       if (other === ws) continue;
       const otherState = this.state(other);
       if (otherState.dmCallId !== callId) continue;
-      other.serializeAttachment(this.withoutDirectCall(otherState));
+      this.attach(other, this.withoutDirectCall(otherState));
       await this.sendToLive(other, { type: "DM_CALL_ENDED", callId, reason });
     }
   } // DECAVE_PARITY_END_DIRECT_CALL
 
-  private async participant(s: SocketState): Promise<VoiceParticipant | null> {
+  private async participant(
+    s: SocketState,
+    lookup = new RealtimeLookup(this.env.DB),
+  ): Promise<VoiceParticipant | null> {
     if (!s.userId || !s.username || s.voiceChannelId === null) return null;
-    const user = await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(s.userId).first<UserRow>();
-    const room = await getRoom(this.env.DB, s.voiceChannelId);
+    await lookup.loadUsers([s.userId]);
+    const user = lookup.user(s.userId);
+    const room = await lookup.room(s.voiceChannelId);
     return {
       connectionId: s.connectionId,
       userId: user ? publicIdOf(user) : "",
       username: s.username,
       avatarUrl: user ? publicUser(user).avatarUrl : null,
       channelId: s.voiceChannelId,
-      role: room ? await getRole(this.env.DB, room.hub_id, s.userId) : null,
+      role: room ? await lookup.role(room.hub_id, s.userId) : null,
       muted: s.voiceMuted || s.voiceDeafened || s.voiceServerMuted || s.voiceServerDeafened,
       selfMuted: s.voiceMuted,
       deafened: s.voiceDeafened || s.voiceServerDeafened,
@@ -2608,17 +2736,25 @@ export class HubRoom extends DurableObject<Env> {
     return (await this.liveRecipients({})).map((socket) => this.state(socket));
   }
 
-  private async voiceParticipantsSnapshot(states: SocketState[] = this.states()) {
-    // One room + participant lookup per voice socket, shared by every viewer
-    // (previously N viewers x M participants D1 queries per broadcast).
-    const rooms = new Map<number, RoomRow | null>();
+  private async hubOfRoom(roomId: number | null): Promise<number | null> {
+    if (roomId === null) return null;
+    return (await getRoom(this.env.DB, roomId))?.hub_id ?? null;
+  }
+
+  private async voiceParticipantsSnapshot(
+    states: SocketState[] = this.states(),
+    lookup = new RealtimeLookup(this.env.DB),
+  ) {
+    // Users, rooms and roles load in batches shared by every viewer.
+    const voice = states.filter((s) => s.voiceChannelId !== null && s.userId);
+    await lookup.loadUsers(voice.map((s) => s.userId!));
+    await lookup.loadRooms(voice.map((s) => s.voiceChannelId!));
+    await lookup.loadMembershipsOf(voice.map((s) => s.userId!));
     const entries: { room: RoomRow; participant: VoiceParticipant }[] = [];
-    for (const s of states) {
-      if (s.voiceChannelId === null) continue;
-      if (!rooms.has(s.voiceChannelId)) rooms.set(s.voiceChannelId, await getRoom(this.env.DB, s.voiceChannelId));
-      const room = rooms.get(s.voiceChannelId);
+    for (const s of voice) {
+      const room = await lookup.room(s.voiceChannelId!);
       if (!room) continue;
-      const p = await this.participant(s);
+      const p = await this.participant(s, lookup);
       if (p) entries.push({ room, participant: p });
     }
     return entries;
@@ -2628,37 +2764,46 @@ export class HubRoom extends DurableObject<Env> {
     ws: WebSocket,
     userId: string,
     snapshot?: { room: RoomRow; participant: VoiceParticipant }[],
-    accessCache?: Map<string, boolean>,
+    lookup = new RealtimeLookup(this.env.DB),
     recipientIsLive = false,
   ): Promise<void> {
-    const entries = snapshot ?? (await this.voiceParticipantsSnapshot(await this.liveStates()));
-    const cache = accessCache ?? new Map<string, boolean>();
+    const entries = snapshot ?? (await this.voiceParticipantsSnapshot(await this.liveStates(), lookup));
     const participants = [];
     for (const { room, participant } of entries) {
-      const key = `${room.id}:${userId}`;
-      let allowed = cache.get(key);
-      if (allowed === undefined) {
-        allowed = await canAccessRoom(this.env.DB, room, userId);
-        cache.set(key, allowed);
-      }
-      if (allowed) participants.push(participant);
+      if (await lookup.canAccessRoom(room, userId)) participants.push(participant);
     }
     const event = { type: "VOICE_STATE", participants };
     if (recipientIsLive) this.send(ws, event);
     else await this.sendToLive(ws, event);
   }
 
-  private async broadcastVoiceState(): Promise<void> {
+  /**
+   * Push the voice roster after a change. With `hubId`, only members of that
+   * Hub are sent a new snapshot: nobody else can see its rooms, so their view
+   * did not change. Without it (unknown scope) every live socket is updated.
+   */
+  private async broadcastVoiceState(hubId?: number | null): Promise<void> {
     // Snapshot and recipients come from the same validated socket set; this
     // prevents expired or revoked hibernating attachments leaking into voice
     // state after an internal revocation notification failed.
     const live = await this.liveRecipients({});
     const states = live.map((socket) => this.state(socket));
-    const snapshot = await this.voiceParticipantsSnapshot(states);
-    const accessCache = new Map<string, boolean>();
-    for (const ws of live) {
+    const lookup = new RealtimeLookup(this.env.DB);
+    const snapshot = await this.voiceParticipantsSnapshot(states, lookup);
+    let recipients = live;
+    if (hubId) {
+      await lookup.loadHubMembers(hubId);
+      const members = new Set<string>();
+      for (const st of states) if (st.userId && (await lookup.role(hubId, st.userId))) members.add(st.userId);
+      recipients = live.filter((ws) => {
+        const st = this.state(ws);
+        return st.userId && members.has(st.userId);
+      });
+    }
+    await lookup.loadMembershipsOf(recipients.map((ws) => this.state(ws).userId).filter((id): id is string => !!id));
+    for (const ws of recipients) {
       const s = this.state(ws);
-      if (s.userId) await this.sendVoiceState(ws, s.userId, snapshot, accessCache, true);
+      if (s.userId) await this.sendVoiceState(ws, s.userId, snapshot, lookup, true);
     }
   }
 
@@ -2744,7 +2889,7 @@ export class HubRoom extends DurableObject<Env> {
             }
           }
           const lostChannelId = s.channelId;
-          socket.serializeAttachment({ ...s, channelId: fallback });
+          this.attach(socket, { ...s, channelId: fallback });
           this.send(socket, {
             type: "ROOM_ACCESS_REVOKED",
             serverId: hubId,
@@ -2756,7 +2901,7 @@ export class HubRoom extends DurableObject<Env> {
         }
       }
     }
-    if (voiceChanged) await this.broadcastVoiceState();
+    if (voiceChanged) await this.broadcastVoiceState(hubId);
     return changed;
   }
 
@@ -2791,7 +2936,7 @@ export class HubRoom extends DurableObject<Env> {
         const pruned = pruneViewerPull(viewerState, state.connectionId);
         if (!pruned.close) continue;
         try {
-          socket.serializeAttachment(pruned.viewer);
+          this.attach(socket, pruned.viewer);
         } catch {}
         this.closeSfuTracks(pruned.close.sessionId, pruned.close.mids);
       }
@@ -2836,7 +2981,7 @@ export class HubRoom extends DurableObject<Env> {
         if (!(await this.voiceMediaAllowed(ws, state))) return fail("not-in-voice");
         if (state.screenSfu) {
           state = this.releaseScreenSfu(state, true);
-          ws.serializeAttachment(state);
+          this.attach(ws, state);
         }
         const trackName = trackNameFor(state.connectionId);
         const { sessionId } = await client.newSession();
@@ -2850,9 +2995,9 @@ export class HubRoom extends DurableObject<Env> {
         }
         // A concurrent publish landed first: close it, the newest publish wins.
         if (current.screenSfu) current = this.releaseScreenSfu(current, true);
-        ws.serializeAttachment({ ...current, screenSfu: published });
+        this.attach(ws, { ...current, screenSfu: published });
         this.send(ws, sfuResult(requestId, { sessionId, answer, trackName }));
-        await this.broadcastVoiceState();
+        await this.broadcastVoiceState(await this.hubOfRoom(state.voiceChannelId));
         return;
       }
       if (type === "RTC_SFU_PULL") {
@@ -2870,7 +3015,7 @@ export class HubRoom extends DurableObject<Env> {
           const latest = this.state(ws);
           if (latest.voiceChannelId !== state.voiceChannelId) return fail("not-in-voice");
           pullSessionId = latest.sfuPullSessionId ?? created;
-          if (!latest.sfuPullSessionId) ws.serializeAttachment({ ...latest, sfuPullSessionId: pullSessionId });
+          if (!latest.sfuPullSessionId) this.attach(ws, { ...latest, sfuPullSessionId: pullSessionId });
         }
         const pulled = await client.pullTrack(
           pullSessionId,
@@ -2890,7 +3035,7 @@ export class HubRoom extends DurableObject<Env> {
         // A repeat (or concurrent) pull of this sharer replaces the old track: close it.
         const previousMid = current.sfuPulls[sharer.connectionId];
         if (previousMid && previousMid !== pulled.mid) this.closeSfuTracks(pullSessionId, [previousMid]);
-        ws.serializeAttachment({
+        this.attach(ws, {
           ...current,
           sfuPulls: { ...current.sfuPulls, [sharer.connectionId]: pulled.mid },
         });
@@ -2934,9 +3079,9 @@ export class HubRoom extends DurableObject<Env> {
           return;
         }
         const hadPublish = state.screenSfu !== null;
-        ws.serializeAttachment(this.releaseScreenSfu(state, true));
+        this.attach(ws, this.releaseScreenSfu(state, true));
         this.send(ws, sfuResult(requestId));
-        if (hadPublish) await this.broadcastVoiceState();
+        if (hadPublish) await this.broadcastVoiceState(await this.hubOfRoom(state.voiceChannelId));
         return;
       }
       fail("unknown-request");
@@ -2951,7 +3096,7 @@ export class HubRoom extends DurableObject<Env> {
   private async leaveVoiceQuiet(ws: WebSocket, state: SocketState): Promise<void> {
     const previous = state.voiceChannelId;
     if (previous === null) return;
-    ws.serializeAttachment({
+    this.attach(ws, {
       ...this.releaseScreenSfu(state),
       voiceChannelId: null,
       voiceServerMuted: false,
@@ -2985,14 +3130,14 @@ export class HubRoom extends DurableObject<Env> {
       allowStreamPreview: true,
       cameraSharing: false,
     };
-    ws.serializeAttachment(next);
+    this.attach(ws, next);
     await this.broadcast(
       { type: "VOICE_PEER_LEFT", connectionId: state.connectionId },
       { voiceChannelId: previous, exceptConnectionId: state.connectionId },
     );
     if (notifySelf) this.send(ws, { type: "VOICE_LEFT" });
 
-    await this.broadcastVoiceState();
+    await this.broadcastVoiceState(await this.hubOfRoom(previous));
     if (botEvents && voiceBefore && state.userId) this.voiceBotEvents(state.userId, voiceBefore);
   }
 

@@ -9,11 +9,12 @@ import type {
   SocialUser,
   AttachmentMeta,
   ChatMessage,
+  ServerMemberView,
   VoiceJoinAttempt,
 } from "../../app/types";
 import type { HubEventsStore } from "../../features/events";
 import type { RealtimeFrame } from "../connection";
-import { applyFriendPresence } from "../presence";
+import { applyFriendPresence, applyPresenceHints, applyUsersDiff, parseUsersDiff } from "../presence";
 
 export type HubEventContext = {
   setTypingUsers: Dispatch<SetStateAction<Record<string, number>>>;
@@ -25,6 +26,7 @@ export type HubEventContext = {
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   setOnlineUsers: Dispatch<SetStateAction<OnlineUser[]>>;
   setFriends: Dispatch<SetStateAction<SocialUser[]>>;
+  setHubMembers: Dispatch<SetStateAction<ServerMemberView[]>>;
   setPendingAttachment: Dispatch<SetStateAction<AttachmentMeta | null>>;
   setAttachmentError: Dispatch<SetStateAction<string>>;
   setActiveForumPostId: Dispatch<SetStateAction<string | null>>;
@@ -61,6 +63,7 @@ export function handleHubEvent(data: RealtimeFrame, context: HubEventContext): b
     setMessages,
     setOnlineUsers,
     setFriends,
+    setHubMembers,
     setPendingAttachment,
     setAttachmentError,
     setActiveForumPostId,
@@ -99,6 +102,17 @@ export function handleHubEvent(data: RealtimeFrame, context: HubEventContext): b
     setOnlineUsers(users);
     setFriends((current) => applyFriendPresence(current, users));
     if (activeServerRef.current > 0) void loadHubMembers(activeServerRef.current);
+    return true;
+  }
+
+  // One connection changed (sent to clients that IDENTIFY with "presence-diff").
+  // Patches the roster, friends and member list in place; no refetch, so a
+  // busy Hub doesn't turn every connect into a request from every member.
+  if (data.type === "USERS_DIFF") {
+    const diff = parseUsersDiff(data);
+    setOnlineUsers((current) => applyUsersDiff(current, diff));
+    setFriends((current) => applyPresenceHints(current, diff.presence, (friend) => friend.id));
+    setHubMembers((current) => applyPresenceHints(current, diff.presence, (member) => member.userId));
     return true;
   }
 
