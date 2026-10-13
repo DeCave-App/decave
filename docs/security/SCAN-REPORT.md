@@ -67,6 +67,10 @@ We will pick up an `electron-builder` release that drops or replaces EJS when on
 
 - **node-forge** is dual-licensed **BSD-3-Clause OR GPL-2.0** (see [`vendor/node-forge/LICENSE`](../../vendor/node-forge/LICENSE)). Some scanners report only the GPL option. We use it under **BSD-3-Clause**, whose notice is retained.
 - **lightningcss** is **MPL-2.0**, a file-level copyleft license. It is used unmodified as a CSS build tool by Vite and Metro. MPL-2.0 only requires sharing changes to the MPL-licensed files themselves, and we do not modify them, so it places no requirements on DeCave's own code.
+- **sharp / libvips** (`@img/sharp-*`) are **LGPL-3.0-or-later**. They are pulled in by the website's image build step and by Wrangler's local development server. They run only at build or development time, unmodified, and are not shipped in the app.
+- **truncate-utf8-bytes** is **WTFPL**, a public-domain-style permissive license. Some scanners flag it only because it is unusual. It comes in through `electron-builder` and is not shipped.
+
+The packaged desktop app (`app.asar`) contains none of EJS, node-forge, lightningcss, sharp or truncate-utf8-bytes. Trivy 0.75.0 (vulnerabilities and licenses, dev dependencies included) reports no vulnerabilities in this repository beyond the patched `decode-uri-component` noted above.
 
 ## Ongoing scanning
 
