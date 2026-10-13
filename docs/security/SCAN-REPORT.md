@@ -51,6 +51,23 @@ Electronegativity raised three "global" warnings: no Content-Security-Policy, no
 
 The tool could not detect our Electron version and does not follow `.cjs` files, which is why it missed these.
 
+## Known flags we accept
+
+Some scanners that read NVD/EUVD data directly report the following. We have reviewed each one.
+
+### EJS: CVE-2023-29827 / EUVD-2023-33364 (rated critical)
+
+- **Where it comes from:** `ejs@3.1.10` is pulled in only by `electron-builder` (via `app-builder-lib`), a dev dependency used on the maintainer's machine to package the desktop installer. It is not shipped in the app, the Worker, the website or the mobile build.
+- **What the CVE says:** template injection is possible *if an attacker controls the template file*. The EJS maintainers dispute it, because templates are not meant to be untrusted input. NVD records it as disputed and lists no fixed version. The GitHub advisory database and OSV do not flag it, which is why `npm audit` and OSV-Scanner stay clean.
+- **Why it doesn't apply:** `electron-builder` only renders its own bundled templates with our build config. No user or network input ever reaches EJS.
+
+We will pick up an `electron-builder` release that drops or replaces EJS when one is available.
+
+### Licenses
+
+- **node-forge** is dual-licensed **BSD-3-Clause OR GPL-2.0** (see [`vendor/node-forge/LICENSE`](../../vendor/node-forge/LICENSE)). Some scanners report only the GPL option. We use it under **BSD-3-Clause**, whose notice is retained.
+- **lightningcss** is **MPL-2.0**, a file-level copyleft license. It is used unmodified as a CSS build tool by Vite and Metro. MPL-2.0 only requires sharing changes to the MPL-licensed files themselves, and we do not modify them, so it places no requirements on DeCave's own code.
+
 ## Ongoing scanning
 
 Every push runs Gitleaks, Trivy and Semgrep in GitHub Actions ([`secret-scan.yml`](../../.github/workflows/secret-scan.yml), [`security-scan.yml`](../../.github/workflows/security-scan.yml)), with a weekly scheduled run so newly published advisories surface without a push. Dependabot security alerts are enabled.
