@@ -21,7 +21,13 @@ const mallory = deriveAccountKeys(generateAccountSeed());
 const binding = "screen:chan-1:conn-9:0";
 const streamKey = crypto.getRandomValues(new Uint8Array(16));
 const seal = () =>
-  sealScreenKey({ binding, from: "alice", streamKey, sender: alice, recipients: [publicKeyOf(bob), publicKeyOf(carol)] });
+  sealScreenKey({
+    binding,
+    from: "alice",
+    streamKey,
+    sender: alice,
+    recipients: [publicKeyOf(bob), publicKeyOf(carol)],
+  });
 const open = (envelope, reader, extra = {}) =>
   openScreenKey({ envelope, reader, senderKey: publicKeyOf(alice), expected: { binding, from: "alice" }, ...extra });
 
@@ -40,7 +46,13 @@ test("a different binding is rejected", () => {
   const envelope = seal();
   for (const other of ["screen:chan-2:conn-9:0", "screen:chan-1:conn-9:1"]) {
     assert.throws(
-      () => openScreenKey({ envelope, reader: bob, senderKey: publicKeyOf(alice), expected: { binding: other, from: "alice" } }),
+      () =>
+        openScreenKey({
+          envelope,
+          reader: bob,
+          senderKey: publicKeyOf(alice),
+          expected: { binding: other, from: "alice" },
+        }),
       DmCryptoError,
     );
   }
@@ -63,13 +75,18 @@ test("a DM envelope cannot be opened as a screen key", () => {
 });
 
 test("only 16-byte keys are sealed", () => {
-  assert.throws(() => sealScreenKey({ binding, from: "alice", streamKey: new Uint8Array(15), sender: alice, recipients: [] }));
+  assert.throws(() =>
+    sealScreenKey({ binding, from: "alice", streamKey: new Uint8Array(15), sender: alice, recipients: [] }),
+  );
 });
 
 test("the envelope parser accepts a screen-key envelope when told to", () => {
   const envelope = seal();
   assert.equal(parseDmEnvelope(envelope), null);
-  assert.deepEqual(parseDmEnvelope(envelope, 20, (id) => id === binding), envelope);
+  assert.deepEqual(
+    parseDmEnvelope(envelope, 20, (id) => id === binding),
+    envelope,
+  );
 });
 
 test("an envelope opened with the wrong sender id is rejected", () => {
@@ -78,7 +95,10 @@ test("an envelope opened with the wrong sender id is rejected", () => {
 
 test("sealing refuses more recipients than an envelope can carry", () => {
   const many = Array.from({ length: 20 }, () => publicKeyOf(deriveAccountKeys(generateAccountSeed())));
-  assert.throws(() => sealScreenKey({ binding, from: "alice", streamKey, sender: alice, recipients: many }), DmCryptoError);
+  assert.throws(
+    () => sealScreenKey({ binding, from: "alice", streamKey, sender: alice, recipients: many }),
+    DmCryptoError,
+  );
 });
 
 function sessionFixture(Session, viewers) {
@@ -133,7 +153,12 @@ for (const [platform, Session] of [
       assert.ok(envelope.w.length <= SCREEN_KEY_MAX_WRAPS);
       for (const id of sealedFor) {
         assert.deepEqual(
-          openScreenKey({ envelope, reader: viewers.get(id).keys, senderKey: publicKeyOf(alice), expected: { binding, from: "alice" } }),
+          openScreenKey({
+            envelope,
+            reader: viewers.get(id).keys,
+            senderKey: publicKeyOf(alice),
+            expected: { binding, from: "alice" },
+          }),
           streamKey,
         );
       }

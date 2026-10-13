@@ -12,7 +12,8 @@ export function attachScreenTransform(
   codec: ScreenCodec,
 ): ScreenTransformHandle {
   const worker = new Worker(new URL("./transform.worker.ts", import.meta.url), { type: "module" });
-  const Ctor = (globalThis as unknown as { RTCRtpScriptTransform: new (w: Worker, o: unknown) => unknown }).RTCRtpScriptTransform;
+  const Ctor = (globalThis as unknown as { RTCRtpScriptTransform: new (w: Worker, o: unknown) => unknown })
+    .RTCRtpScriptTransform;
   (target as unknown as { transform: unknown }).transform = new Ctor(worker, { role, codec });
   return {
     worker,

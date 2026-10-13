@@ -723,7 +723,8 @@ export function sealScreenKey(input: {
   recipients: readonly DmPublicKey[];
 }): DmEnvelope {
   if (input.streamKey.length !== SCREEN_KEY_BYTES) throw new DmCryptoError("Bad stream key.", "bad-envelope");
-  if (input.recipients.length + 1 > SCREEN_KEY_MAX_WRAPS) throw new DmCryptoError("Too many recipients.", "bad-envelope");
+  if (input.recipients.length + 1 > SCREEN_KEY_MAX_WRAPS)
+    throw new DmCryptoError("Too many recipients.", "bad-envelope");
   return sealEnvelope(
     "screen-key",
     { id: input.binding, from: input.from, to: "room", sender: input.sender, recipients: input.recipients },
@@ -745,7 +746,8 @@ export function openScreenKey(input: {
   } catch {
     key = null;
   }
-  if (!key || key.length !== SCREEN_KEY_BYTES) throw new DmCryptoError("This key could not be decrypted.", "decrypt-failed");
+  if (!key || key.length !== SCREEN_KEY_BYTES)
+    throw new DmCryptoError("This key could not be decrypted.", "decrypt-failed");
   return key;
 }
 

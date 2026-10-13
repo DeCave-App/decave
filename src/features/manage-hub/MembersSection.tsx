@@ -85,6 +85,8 @@ function MemberActions({
   );
 }
 
+const MEMBER_ROWS_PAGE = 200;
+
 export function MembersSection(props: MembersSectionProps) {
   const {
     members,
@@ -105,6 +107,8 @@ export function MembersSection(props: MembersSectionProps) {
   } = props;
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  // Large Hubs: render rows in pages so the table stays responsive.
+  const [shownRows, setShownRows] = useState(MEMBER_ROWS_PAGE);
   const [friendQuery, setFriendQuery] = useState("");
   const baseId = useId();
   const roleById = new Map(roles.map((role) => [role.id, role]));
@@ -183,7 +187,7 @@ export function MembersSection(props: MembersSectionProps) {
                 </tr>
               )}
               {!loading &&
-                filtered.map((member) => {
+                filtered.slice(0, shownRows).map((member) => {
                   const isSelf = member.userId === currentUserId;
                   const canManageMember =
                     !isSelf &&
@@ -280,6 +284,15 @@ export function MembersSection(props: MembersSectionProps) {
         </div>
         <div className="dch-table-foot">
           {filtered.length} of {members.length} member{members.length === 1 ? "" : "s"}
+          {filtered.length > shownRows && (
+            <button
+              type="button"
+              className="dcx-btn dcx-btn-ghost"
+              onClick={() => setShownRows((n) => n + MEMBER_ROWS_PAGE)}
+            >
+              Show {Math.min(MEMBER_ROWS_PAGE, filtered.length - shownRows)} more
+            </button>
+          )}
         </div>
       </section>
 

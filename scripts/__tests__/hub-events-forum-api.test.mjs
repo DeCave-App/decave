@@ -760,7 +760,7 @@ test("B2: timed-out members cannot join voice or share media", async () => {
   await room.webSocketMessage(socket, JSON.stringify({ type: "VOICE_JOIN", channelId: 11 }));
   assert.equal(socket.attachment.voiceChannelId, null);
   assert.equal(socket.sent.at(-1).code, "TIMED_OUT");
-  socket.attachment = { ...socket.attachment, voiceChannelId: 11 };
+  room["attach"](socket, { ...socket.attachment, voiceChannelId: 11 });
   await room.webSocketMessage(socket, JSON.stringify({ type: "VOICE_SCREEN_STATE", screenSharing: true }));
   assert.equal(socket.attachment.screenSharing, false);
   assert.equal(socket.attachment.voiceChannelId, null);

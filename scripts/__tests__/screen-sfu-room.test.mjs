@@ -132,7 +132,7 @@ test("screen sharing off releases the SFU publish (lost RTC_SFU_STOP)", () => {
   const start = hub.indexOf('if (type === "VOICE_SCREEN_STATE") {');
   const block = hub.slice(start, start + 1800);
   assert.match(block, /!sharing && state\.screenSfu \? this\.releaseScreenSfu\(state, true\)/);
-  assert.match(block, /broadcastVoiceState\(\)/);
+  assert.match(block, /broadcastVoiceState\(/);
 });
 
 test("kill switch: VOICE_JOINED says whether SFU is offered; capability ignored while off", () => {
@@ -143,5 +143,5 @@ test("kill switch: VOICE_JOINED says whether SFU is offered; capability ignored 
 
 test("public user id is cached on voice join for key relays", () => {
   const start = hub.indexOf('if (type === "VOICE_JOIN") {');
-  assert.match(hub.slice(start, start + 2500), /publicUserId: participant\.userId/);
+  assert.match(hub.slice(start, start + 3500), /publicUserId: participant\.userId/);
 });

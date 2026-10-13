@@ -55,21 +55,31 @@ test("pushTrack", async () => {
 
 test("pullTrack", async () => {
   const { calls, client } = fake(() => ({
-    body: { requiresImmediateRenegotiation: true, tracks: [{ trackName: "t", mid: "3" }], sessionDescription: { type: "offer", sdp: "X" } },
+    body: {
+      requiresImmediateRenegotiation: true,
+      tracks: [{ trackName: "t", mid: "3" }],
+      sessionDescription: { type: "offer", sdp: "X" },
+    },
   }));
   const r = await client.pullTrack("s2", { sessionId: "s1", trackName: "t" }, "f");
   assert.deepEqual(r, { offer: { type: "offer", sdp: "X" }, mid: "3", requiresImmediateRenegotiation: true });
   assert.equal(calls[0].url, `${BASE}/sessions/s2/tracks/new`);
   assert.deepEqual(calls[0].body, {
-    tracks: [{
-      location: "remote", sessionId: "s1", trackName: "t",
-      simulcast: { preferredRid: "f", priorityOrdering: "asciibetical", ridNotAvailable: "asciibetical" },
-    }],
+    tracks: [
+      {
+        location: "remote",
+        sessionId: "s1",
+        trackName: "t",
+        simulcast: { preferredRid: "f", priorityOrdering: "asciibetical", ridNotAvailable: "asciibetical" },
+      },
+    ],
   });
 });
 
 test("pullTrack without offer yields null", async () => {
-  const { client } = fake(() => ({ body: { requiresImmediateRenegotiation: false, tracks: [{ trackName: "t", mid: "3" }] } }));
+  const { client } = fake(() => ({
+    body: { requiresImmediateRenegotiation: false, tracks: [{ trackName: "t", mid: "3" }] },
+  }));
   const r = await client.pullTrack("s2", { sessionId: "s1", trackName: "t" }, "p");
   assert.equal(r.offer, null);
 });
@@ -93,7 +103,9 @@ test("setLayer, renegotiate, closeTracks", async () => {
 });
 
 test("per-track errorCode throws RealtimeSfuError without token", async () => {
-  const { client } = fake(() => ({ body: { tracks: [{ trackName: "t", errorCode: "boom", errorDescription: "bad" }] } }));
+  const { client } = fake(() => ({
+    body: { tracks: [{ trackName: "t", errorCode: "boom", errorDescription: "bad" }] },
+  }));
   await assert.rejects(
     () => client.pushTrack("s1", { type: "offer", sdp: "O" }, "0", "t"),
     (e) => e instanceof RealtimeSfuError && e.code === "boom" && !e.message.includes(TOKEN),
@@ -102,9 +114,15 @@ test("per-track errorCode throws RealtimeSfuError without token", async () => {
 
 test("top-level error and non-2xx throw", async () => {
   const a = fake(() => ({ body: { errorCode: "nope", errorDescription: "x" } }));
-  await assert.rejects(() => a.client.newSession(), (e) => e instanceof RealtimeSfuError && e.code === "nope");
+  await assert.rejects(
+    () => a.client.newSession(),
+    (e) => e instanceof RealtimeSfuError && e.code === "nope",
+  );
   const b = fake(() => ({ status: 500, body: { detail: TOKEN } }));
-  await assert.rejects(() => b.client.newSession(), (e) => e instanceof RealtimeSfuError && !e.message.includes(TOKEN));
+  await assert.rejects(
+    () => b.client.newSession(),
+    (e) => e instanceof RealtimeSfuError && !e.message.includes(TOKEN),
+  );
 });
 
 test("a hung Cloudflare request times out as RealtimeSfuError timeout", async () => {

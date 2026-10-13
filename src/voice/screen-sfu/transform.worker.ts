@@ -52,5 +52,8 @@ scope.onrtctransform = (event) => {
       }
     },
   });
-  event.transformer.readable.pipeThrough(stream).pipeTo(event.transformer.writable).catch(() => {});
+  event.transformer.readable
+    .pipeThrough(stream)
+    .pipeTo(event.transformer.writable)
+    .catch(() => {});
 };

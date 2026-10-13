@@ -1300,7 +1300,13 @@ export class DmE2eeSession {
     const keys = this.requireKeys();
     const others = [...new Set(recipientUserIds)].filter((id) => id !== accountId);
     const found = await Promise.all(
-      others.map(async (id) => ({ id, key: await this.peerKeys(id).then((peer) => peer.current, () => null) })),
+      others.map(async (id) => ({
+        id,
+        key: await this.peerKeys(id).then(
+          (peer) => peer.current,
+          () => null,
+        ),
+      })),
     );
     this.assertOwns(accountId, generation);
     const sealed = found.filter((entry): entry is { id: string; key: DmPublicKey } => !!entry.key);

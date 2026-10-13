@@ -28,7 +28,10 @@ function sfuError(code: string): SfuError {
 export function createSfuSignaller(sendSocket: (p: unknown) => boolean): SfuSignaller {
   let seq = 0;
   const prefix = Math.random().toString(36).slice(2, 10);
-  const pending = new Map<string, { resolve(v: unknown): void; reject(e: Error): void; timer: ReturnType<typeof setTimeout> }>();
+  const pending = new Map<
+    string,
+    { resolve(v: unknown): void; reject(e: Error): void; timer: ReturnType<typeof setTimeout> }
+  >();
   return {
     request<T>(type: string, body: object, timeoutMs = SFU_REQUEST_TIMEOUT_MS): Promise<T> {
       const requestId = `${prefix}-${++seq}`;
@@ -135,7 +138,12 @@ function preferVp8(transceiver: RTCRtpTransceiver): ScreenCodec | null {
 
 export async function publishScreen(
   track: MediaStreamTrack,
-  opts: { signaller: SfuSignaller; iceServers: RTCIceServer[]; codec: ScreenCodec; fullEncoding: RTCRtpEncodingParameters },
+  opts: {
+    signaller: SfuSignaller;
+    iceServers: RTCIceServer[];
+    codec: ScreenCodec;
+    fullEncoding: RTCRtpEncodingParameters;
+  },
 ): Promise<SfuPublisher> {
   const pc = createRelayPc(opts.iceServers);
   const keys = new Map<number, Uint8Array>();
@@ -160,7 +168,10 @@ export async function publishScreen(
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     const mid = transceiver.mid;
-    const res = await opts.signaller.request<{ answer: Sdp; sessionId?: string }>("RTC_SFU_PUBLISH", { offer: sdpOf(pc.localDescription), mid });
+    const res = await opts.signaller.request<{ answer: Sdp; sessionId?: string }>("RTC_SFU_PUBLISH", {
+      offer: sdpOf(pc.localDescription),
+      mid,
+    });
     await pc.setRemoteDescription(res.answer);
     const actual = negotiatedCodec(sender, codec);
     if (actual !== codec) {
@@ -247,10 +258,11 @@ export function createSfuViewer(opts: { signaller: SfuSignaller; iceServers: RTC
   return {
     pull(sharerConnectionId, rid) {
       return serial(async () => {
-        const res = await opts.signaller.request<{ offer: Sdp | null; mid: string; requiresImmediateRenegotiation?: boolean }>(
-          "RTC_SFU_PULL",
-          { sharerConnectionId, rid },
-        );
+        const res = await opts.signaller.request<{
+          offer: Sdp | null;
+          mid: string;
+          requiresImmediateRenegotiation?: boolean;
+        }>("RTC_SFU_PULL", { sharerConnectionId, rid });
         const prev = pulls.get(sharerConnectionId);
         const keys = prev?.keys ?? new Map<number, Uint8Array>();
         if (prev) disposePull(prev);
