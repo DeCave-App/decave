@@ -236,12 +236,11 @@ export function FriendsSidebar({
                         });
                       }}
                     >
-                      <UserAvatar username={member.username} avatarUrl={member.avatarUrl} />
+                      <FriendAvatar username={member.username} avatarUrl={member.avatarUrl} status="online" />
                       <span>
                         <strong>{member.username}</strong>
                         <small>{member.activityText || member.statusText || t("common.presence.online")}</small>
                       </span>
-                      <i className="online" />
                     </button>
                   ))}
                 </section>
@@ -275,16 +274,15 @@ export function FriendsSidebar({
                             })
                           }
                         >
-                          <UserAvatar username={member.username} avatarUrl={member.avatarUrl} />
+                          <FriendAvatar username={member.username} avatarUrl={member.avatarUrl} status="offline" />
                           <span>
                             <strong>{member.username}</strong>
                             <small>
-                              {t("common.friendsSidebar.offlineRole", {
-                                role: member.role ? hubRoleName(member.role) : null,
-                              })}
+                              {member.role
+                                ? t("common.friendsSidebar.offlineRole", { role: hubRoleName(member.role) })
+                                : t("common.presence.offline")}
                             </small>
                           </span>
-                          <i className="offline" />
                         </button>
                       );
                     })}
@@ -295,5 +293,32 @@ export function FriendsSidebar({
           );
         })()}
     </aside>
+  );
+}
+
+// Avatar with the presence dot on its corner. Letter fallbacks get a stable
+// per-user tint so they read as avatars instead of a bare floating letter.
+function FriendAvatar({
+  username,
+  avatarUrl,
+  status,
+}: {
+  username: string;
+  avatarUrl?: string | null;
+  status: "online" | "offline";
+}) {
+  let hash = 0;
+  for (const ch of username) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  const hue = Math.abs(hash) % 360;
+  return (
+    <div className="dc-friend-avatar">
+      <UserAvatar
+        username={username}
+        avatarUrl={avatarUrl}
+        className="dc-friend-avatar-img"
+        style={{ background: `hsl(${hue} 45% 30%)`, color: `hsl(${hue} 80% 85%)` }}
+      />
+      <i className={status} />
+    </div>
   );
 }

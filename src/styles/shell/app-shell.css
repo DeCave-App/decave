@@ -1224,3 +1224,38 @@
 .app[data-skin][data-workspace="hub"] > main.dc-primary-workspace .chat-message-header span {
   color: var(--gc-muted) !important;
 }
+
+/* Friends sidebar rows: presence dot sits on the avatar corner (no separate
+   column), every avatar is round, rows are tighter. */
+.members.dc-global-friends-sidebar .dc-active-now-row {
+  grid-template-columns: 32px minmax(0, 1fr) !important;
+  padding: 7px 12px !important;
+}
+.members.dc-global-friends-sidebar .dc-active-now-row > .dc-friend-avatar {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+.members.dc-global-friends-sidebar .dc-friend-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+}
+.members.dc-global-friends-sidebar .dc-friend-avatar > i {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 11px !important;
+  height: 11px !important;
+  border-radius: 50%;
+  border: 2px solid var(--gc-bg-1, var(--ds-surface, #0b0d12));
+  box-shadow: none !important;
+}
+.members.dc-global-friends-sidebar .dc-friend-avatar > i.online {
+  background: var(--ds-success);
+}
+.members.dc-global-friends-sidebar .dc-friend-avatar > i.offline {
+  background: color-mix(in srgb, var(--ds-text) 45%, transparent);
+}

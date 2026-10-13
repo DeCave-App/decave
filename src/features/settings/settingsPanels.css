@@ -725,3 +725,7 @@
   stroke-width: 2;
   stroke-linecap: round;
 }
+.dc-settings-page .dcs-card .dcs-badge .hdx-link-svg {
+  width: 20px;
+  height: 20px;
+}

@@ -11,6 +11,7 @@ import { SettingsSection, ToggleRow } from "../SettingsControls";
 import { useSettingField, useStateField } from "../useSettingField";
 import { useSettingsT } from "../useSettingsT";
 import { apiErrorOr, type ApiErrorBody } from "../../../i18n/apiError";
+import { BrandLogo } from "../../home/brandIcons";
 
 export type ConnectionProvider = "steam" | "twitch" | "faceit";
 
@@ -194,7 +195,7 @@ function ConnectionRow({ connection, props, onChanged, onConnectStarted }: RowPr
     <div className="dcs-card" data-settings-anchor={provider}>
       <div className="dcs-card-row">
         <span className="dcs-badge" aria-hidden="true">
-          {tk(`settings.connections.providers.${provider}.name`).charAt(0)}
+          <BrandLogo id={provider} />
         </span>
         <div className="dcs-card-copy">
           <strong>{tk(`settings.connections.providers.${provider}.name`)}</strong>

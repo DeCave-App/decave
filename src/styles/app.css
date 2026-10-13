@@ -819,6 +819,16 @@ select {
    SCROLLBARS
 ========================================================= */
 
+/* App-wide: thin bars that stay invisible until the scroll area is hovered. :where() keeps specificity at zero so components that hide
+   their bar (scrollbar-width: none) still win. */
+:where(*) {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+:where(*):hover {
+  scrollbar-color: color-mix(in srgb, currentColor 28%, transparent) transparent;
+}
+
 .messages::-webkit-scrollbar,
 .channel-section::-webkit-scrollbar,
 .members::-webkit-scrollbar,

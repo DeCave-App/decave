@@ -1241,3 +1241,18 @@
 .hdx-cta.live .hdx-cta-icon {
   color: var(--dcx-ok);
 }
+
+/* Icon chips: readable on every skin (some skins use a grey accent, which made
+   the faint accent tint disappear) and styled like the dashboard's buttons. */
+.hdx-stat-icon,
+.hdx-room-icon,
+.hdx-hub-icon,
+.hdx-empty-icon,
+.hdx-widget-icon {
+  background: color-mix(in srgb, var(--dcx-accent) 18%, var(--dcx-surface-2));
+  border: 1px solid var(--dcx-border-strong);
+  color: color-mix(in srgb, var(--dcx-accent) 55%, var(--dcx-text));
+}
+.hdx-stat.hot .hdx-stat-icon {
+  background: color-mix(in srgb, var(--dcx-accent) 34%, var(--dcx-surface-2));
+}

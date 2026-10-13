@@ -4907,8 +4907,6 @@ body .message-reaction-picker.message-reaction-picker-portal {
   padding: 0 0 58px !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(126, 145, 181, 0.42) transparent;
 }
 
 .members.dc-global-friends-sidebar::-webkit-scrollbar {

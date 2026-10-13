@@ -9,6 +9,8 @@ import {
   siGithub,
   siWikipedia,
   siCrunchyroll,
+  siTwitch,
+  siFaceit,
 } from "simple-icons";
 
 type BrandIcon = { path: string; hex: string };
@@ -23,6 +25,8 @@ const BRAND_ICONS: Record<string, BrandIcon> = {
   github: siGithub,
   wikipedia: siWikipedia,
   crunchyroll: siCrunchyroll,
+  twitch: siTwitch,
+  faceit: siFaceit,
 };
 
 // Brands whose official color is black render white so they stay visible on dark skins.
