@@ -27,8 +27,10 @@ import {
   RTCView,
   mediaDevices,
 } from "react-native-webrtc";
+import { t } from "i18next";
 import { apiJson } from "@/src/lib/api";
 import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "@/src/lib/rtc-relay";
+import { realtimeMessage } from "@/src/lib/server-text";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
@@ -77,7 +79,7 @@ function provisionalPeer(userId: string, username: string): VoiceParticipant {
   return {
     connectionId: "",
     userId,
-    username: username || "Friend",
+    username: username || t("dm.call.friend"),
     avatarUrl: null,
     channelId: 0,
     role: null,
@@ -212,10 +214,10 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     const mic = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
       {
-        title: "DeCave microphone access",
-        message: "DeCave needs your microphone for direct calls.",
-        buttonPositive: "Allow",
-        buttonNegative: "Not now",
+        title: t("dm.mobile.call.micPermissionTitle"),
+        message: t("dm.mobile.call.micPermissionMessage"),
+        buttonPositive: t("common.mobile.allow"),
+        buttonNegative: t("common.mobile.notNow"),
       },
     );
     if (!isCurrent()) return false;
@@ -225,10 +227,10 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       const camera = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
         {
-          title: "DeCave camera access",
-          message: "DeCave needs your camera for video calls.",
-          buttonPositive: "Allow",
-          buttonNegative: "Not now",
+          title: t("dm.mobile.call.cameraPermissionTitle"),
+          message: t("dm.mobile.call.cameraPermissionMessage"),
+          buttonPositive: t("common.mobile.allow"),
+          buttonNegative: t("common.mobile.notNow"),
         },
       );
       if (!isCurrent()) return false;
@@ -256,7 +258,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     }
     if (!isCurrent()) return null;
     if (!permitted) {
-      setError(withVideo ? "Microphone and camera permission are required." : "Microphone permission is required.");
+      setError(withVideo ? t("dm.mobile.call.cameraMicPermission") : t("dm.call.micPermission"));
       return null;
     }
 
@@ -283,7 +285,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     } catch (cause) {
       if (!isCurrent()) return null;
       console.warn("Could not open direct-call media.", cause);
-      setError("DeCave could not open your microphone or camera.");
+      setError(t("dm.mobile.call.mediaFailed"));
       return null;
     }
   };
@@ -308,7 +310,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     if (!isCurrent()) return false;
     if (!hasRelayIceServer(iceServers)) {
       iceServersRef.current = [];
-      throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+      throw new Error(t("voice.mobile.relayUnavailable", { defaultValue: RELAY_UNAVAILABLE_MESSAGE }));
     }
     iceServersRef.current = iceServers;
     return true;
@@ -339,7 +341,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
   const ensurePeer = (participant: VoiceParticipant): RTCPeerConnection => {
     if (pcRef.current) return pcRef.current;
     if (!hasRelayIceServer(iceServersRef.current)) {
-      throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+      throw new Error(t("voice.mobile.relayUnavailable", { defaultValue: RELAY_UNAVAILABLE_MESSAGE }));
     }
     // Relay-only: peers never exchange host/srflx candidates, so neither side
     // learns the other's IP address.
@@ -370,7 +372,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
         setCallPhase("connected");
         setError("");
       } else if (pc.connectionState === "failed") {
-        failCall(new Error("The direct call connection failed."), "The direct call connection failed.");
+        failCall(new Error(t("dm.call.connectionFailed")), t("dm.call.connectionFailed"));
       }
     };
 
@@ -411,12 +413,12 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     if (!isCurrent()) return;
     if (verdict === "rejected") {
       throw new Error(
-        "This call couldn't be verified as end-to-end encrypted, so it wasn't connected. Both of you need an up-to-date DeCave that can read encrypted messages.",
+        t("dm.call.verificationFailed"),
       );
     }
     const media = await ensureLocalMedia(videoRef.current, operationGeneration, operationIdentity);
     if (!isCurrent()) return;
-    if (!media) throw new Error("Microphone permission is required.");
+    if (!media) throw new Error(t("dm.call.micPermission"));
     const pc = ensurePeer(participant);
     await pc.setRemoteDescription(new RTCSessionDescription(description as any));
     if (!isCurrent()) return;
@@ -428,7 +430,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       await pc.setLocalDescription(answer);
       if (!isCurrent()) return;
       if (!sendDescription(participant.connectionId, pc.localDescription)) {
-        throw new Error("Realtime disconnected while answering the call.");
+        throw new Error(t("dm.mobile.call.realtimeAnswering"));
       }
     }
   };
@@ -446,7 +448,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     await pc.setLocalDescription(offer);
     if (!isCurrent()) return false;
     if (!sendDescription(participant.connectionId, pc.localDescription)) {
-      throw new Error("Realtime disconnected while starting the call.");
+      throw new Error(t("dm.mobile.call.realtimeStarting"));
     }
     return true;
   };
@@ -464,15 +466,15 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
   const startCall = async (
     targetUserId: string,
     withVideo: boolean,
-    username = "Friend",
+    username = t("dm.call.friend"),
   ): Promise<boolean> => {
     if (!targetUserId || phaseRef.current !== "idle" || callOperationPendingRef.current) return false;
     if (connectionState !== "connected") {
-      setError("DeCave realtime is still connecting.");
+      setError(t("dm.mobile.call.realtimeConnecting"));
       return false;
     }
     if (!token || !user?.id) {
-      setError("Sign in again before starting a call.");
+      setError(t("dm.mobile.call.signInStart"));
       return false;
     }
 
@@ -497,12 +499,12 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       setCallPhase("ringing");
       if (!isCurrent()) return false;
       if (!send({ type: "DM_CALL_START", targetUserId, video: withVideo })) {
-        throw new Error("Realtime disconnected before the call could start.");
+        throw new Error(t("dm.mobile.call.realtimeBeforeStart"));
       }
       return true;
     } catch (cause) {
       if (!isCurrent()) return false;
-      setError(errorMessage(cause, "The call could not start."));
+      setError(errorMessage(cause, t("dm.call.startFailed")));
       resetLocal(true, true);
       return false;
     } finally {
@@ -515,7 +517,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
   const acceptCall = async () => {
     if (phaseRef.current !== "incoming" || callOperationPendingRef.current) return;
     if (!token || !user?.id) {
-      setError("Sign in again before accepting a call.");
+      setError(t("dm.mobile.call.signInAccept"));
       return;
     }
     const operationGeneration = ++callOperationGenerationRef.current;
@@ -537,11 +539,11 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       setCallPhase("connecting");
       if (!isCurrent()) return;
       if (!send({ type: "DM_CALL_ACCEPT" })) {
-        throw new Error("Realtime disconnected before the call could be accepted.");
+        throw new Error(t("dm.mobile.call.realtimeBeforeAccept"));
       }
     } catch (cause) {
       if (!isCurrent()) return;
-      failCall(cause, "The call could not be accepted.");
+      failCall(cause, t("dm.call.acceptFailed"));
     } finally {
       if (operationGeneration === callOperationGenerationRef.current) {
         callOperationPendingRef.current = false;
@@ -594,12 +596,12 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       permitted = await requestMediaPermissions(true, isCurrent);
     } catch (cause) {
       if (!isCurrent()) return;
-      setError(errorMessage(cause, "Camera permission could not be requested."));
+      setError(errorMessage(cause, t("dm.mobile.call.cameraRequestFailed")));
       return;
     }
     if (!isCurrent()) return;
     if (!permitted) {
-      setError("Camera permission is required to switch to video.");
+      setError(t("dm.call.cameraPermission"));
       return;
     }
 
@@ -608,7 +610,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       const participant = peerRef.current;
       const pc = pcRef.current;
       const local = localStreamRef.current;
-      if (!participant || !pc || !local) throw new Error("The call is not connected yet.");
+      if (!participant || !pc || !local) throw new Error(t("dm.mobile.call.notConnected"));
       cameraStream = await mediaDevices.getUserMedia({
         audio: false,
         video: { facingMode: "user", width: 1280, height: 720, frameRate: 30 } as any,
@@ -619,7 +621,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
         return;
       }
       const track = cameraStream.getVideoTracks()[0];
-      if (!track) throw new Error("No camera track is available.");
+      if (!track) throw new Error(t("dm.mobile.call.noCameraTrack"));
       local.addTrack(track);
       pc.addTrack(track, local);
       const refreshed = new MediaStream(local.getTracks());
@@ -634,7 +636,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       for (const track of cameraStream?.getTracks() ?? []) {
         try { track.stop(); } catch {}
       }
-      if (isCurrent()) setError(errorMessage(cause, "DeCave could not open your camera."));
+      if (isCurrent()) setError(errorMessage(cause, t("dm.mobile.call.cameraOpenFailed")));
     }
   };
 
@@ -659,7 +661,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     if (!type) return;
 
     if (type === "ACCESS_REVOKED" && phaseRef.current !== "idle") {
-      setError("Your access changed, so this call was ended.");
+      setError(t("dm.mobile.call.accessChanged"));
       resetLocal(true);
       return;
     }
@@ -699,11 +701,11 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       void (async () => {
         const media = await ensureLocalMedia(withVideo, operationGeneration, operationIdentity);
         if (!isCurrent()) return;
-        if (!media) throw new Error("Microphone permission is required.");
+        if (!media) throw new Error(t("dm.call.micPermission"));
         ensurePeer(acceptedPeer);
         if (outgoingRef.current) await createOffer(acceptedPeer, operationGeneration, operationIdentity);
       })().catch((cause) => {
-        if (isCurrent()) failCall(cause, "Call negotiation failed.");
+        if (isCurrent()) failCall(cause, t("dm.mobile.call.negotiationFailed"));
       });
       return;
     }
@@ -716,7 +718,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       const operationIdentity = sessionIdentityRef.current;
       void handleDescription(from, description, event.auth).catch((cause) => {
         if (isCurrentCallOperation(operationGeneration, operationIdentity)) {
-          failCall(cause, "Call negotiation failed.");
+          failCall(cause, t("dm.mobile.call.negotiationFailed"));
         }
       });
       return;
@@ -737,7 +739,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
 
     if (type === "DM_CALL_ERROR") {
       if (event.peer && typeof event.peer === "object") setCallPeer(event.peer as VoiceParticipant);
-      setError(typeof event.message === "string" ? event.message : "Direct call failed.");
+      setError(realtimeMessage(event, t("dm.call.failed")));
       resetLocal(true, true);
       return;
     }
@@ -762,7 +764,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (connectionState !== "offline" || phaseRef.current === "idle") return;
-    setError("The call ended because realtime went offline.");
+    setError(t("dm.mobile.call.realtimeOffline"));
     resetLocal(true);
   }, [connectionState]);
 
@@ -801,21 +803,21 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     [phase, video, peer, error, connectionState, token],
   );
 
-  const peerName = peer?.username || "Friend";
+  const peerName = peer?.username || t("dm.call.friend");
   const visible = phase !== "idle" || !!error;
   const live = phase === "connected" || phase === "connecting";
 
   return (
     <DirectCallContext.Provider value={value}>
       {children}
-      {minimized && visible && <Pressable accessibilityRole="button" style={styles.minimized} onPress={() => setMinimized(false)}><View style={styles.minimizedIcon}><Ionicons name={video ? "videocam" : "call"} size={20} color="#fff" /></View><View style={{ flex: 1 }}><Text style={styles.minimizedName} numberOfLines={1}>{peerName}</Text><Text style={styles.minimizedStatus}>{live ? formatDuration(durationSeconds) : phase === "incoming" ? "Incoming call" : phase === "ringing" ? "Ringing…" : error || "Call"} · Tap to resume</Text></View><View style={styles.liveDot} /></Pressable>}
+      {minimized && visible && <Pressable accessibilityRole="button" style={styles.minimized} onPress={() => setMinimized(false)}><View style={styles.minimizedIcon}><Ionicons name={video ? "videocam" : "call"} size={20} color="#fff" /></View><View style={{ flex: 1 }}><Text style={styles.minimizedName} numberOfLines={1}>{peerName}</Text><Text style={styles.minimizedStatus}>{t("dm.mobile.call.tapToResume", { status: live ? formatDuration(durationSeconds) : phase === "incoming" ? t("dm.call.incoming") : phase === "ringing" ? t("dm.call.ringing") : error || t("dm.mobile.call.call") })}</Text></View><View style={styles.liveDot} /></Pressable>}
       <Modal visible={visible && !minimized} transparent animationType="fade" onRequestClose={() => setMinimized(true)}>
         <Pressable style={styles.overlay} onPress={() => setMinimized(true)}>
           <Pressable style={styles.card} onPress={() => {}}>
-            {live && <Pressable accessibilityRole="button" style={styles.minimizeButton} onPress={() => setMinimized(true)} accessibilityLabel="Minimize call"><Ionicons name="remove" size={22} color={colors.muted} /></Pressable>}
+            {live && <Pressable accessibilityRole="button" style={styles.minimizeButton} onPress={() => setMinimized(true)} accessibilityLabel={t("dm.call.minimize")}><Ionicons name="remove" size={22} color={colors.muted} /></Pressable>}
             <View style={styles.kickerRow}>
               <Ionicons name={video ? "videocam" : "call"} size={15} color={colors.cyan} />
-              <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{video ? "VIDEO CALL" : "VOICE CALL"}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{video ? t("dm.mobile.call.kickerVideo") : t("dm.mobile.call.kickerVoice")}</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
               <Text style={styles.name}>{peerName}</Text>
@@ -823,14 +825,14 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
             </View>
             <Text style={styles.status}>
               {phase === "incoming"
-                ? "Incoming call"
+                ? t("dm.call.incoming")
                 : phase === "ringing"
-                  ? "Ringing…"
+                  ? t("dm.call.ringing")
                   : phase === "connecting"
-                    ? `Connecting… · ${formatDuration(durationSeconds)}`
+                    ? t("dm.call.connecting", { duration: formatDuration(durationSeconds) })
                     : phase === "connected"
-                      ? `Connected · ${formatDuration(durationSeconds)}`
-                      : error || "Call ended"}
+                      ? t("dm.mobile.call.connected", { duration: formatDuration(durationSeconds) })
+                      : error || t("dm.call.ended")}
             </Text>
 
             {video && phase !== "incoming" && (
@@ -844,7 +846,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
                 ) : (
                   <View style={styles.videoPlaceholder}>
                     <Ionicons name="videocam-outline" size={34} color={colors.muted} />
-                    <Text style={styles.videoPlaceholderText}>Waiting for video…</Text>
+                    <Text style={styles.videoPlaceholderText}>{t("dm.mobile.call.waitingVideo")}</Text>
                   </View>
                 )}
                 {localStream && localStream.getVideoTracks().length > 0 && (
@@ -862,36 +864,36 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
 
             {phase === "incoming" ? (
               <View style={styles.actions}>
-                <Pressable accessibilityRole="button" accessibilityLabel="Decline call" style={[styles.roundButton, styles.decline]} onPress={declineCall}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t("dm.call.decline")} style={[styles.roundButton, styles.decline]} onPress={declineCall}>
                   <Ionicons name="call" size={23} color="#fff" style={{ transform: [{ rotate: "135deg" }] }} />
                 </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel="Accept call" style={[styles.roundButton, styles.accept]} onPress={() => void acceptCall()}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t("dm.call.accept")} style={[styles.roundButton, styles.accept]} onPress={() => void acceptCall()}>
                   <Ionicons name={video ? "videocam" : "call"} size={23} color="#fff" />
                 </Pressable>
               </View>
             ) : phase === "connected" || phase === "connecting" ? (
               <View style={styles.actions}>
-                <Pressable accessibilityRole="button" accessibilityLabel={muted ? "Unmute" : "Mute"} style={[styles.roundButton, muted && styles.activeControl]} onPress={toggleMute}>
+                <Pressable accessibilityRole="button" accessibilityLabel={muted ? t("dm.call.unmute") : t("dm.call.mute")} style={[styles.roundButton, muted && styles.activeControl]} onPress={toggleMute}>
                   <Ionicons name={muted ? "mic-off" : "mic"} size={22} color={colors.text} />
                 </Pressable>
-                <View style={{ position: "relative" }}><Pressable accessibilityRole="button" style={styles.roundButton} onPress={() => setVolumeOpen((value) => !value)} accessibilityLabel="Adjust call volume"><Ionicons name={volume === 0 ? "volume-mute" : "volume-high"} size={22} color={colors.text} /></Pressable>{volumeOpen && <View style={styles.volumePopup}><Pressable accessibilityRole="button" style={styles.volumeButton} onPress={() => changeVolume(volume - 10)}><Text style={styles.volumeButtonText}>−</Text></Pressable><Text style={styles.volumeValue}>{volume}%</Text><Pressable accessibilityRole="button" style={styles.volumeButton} onPress={() => changeVolume(volume + 10)}><Text style={styles.volumeButtonText}>+</Text></Pressable></View>}</View>
+                <View style={{ position: "relative" }}><Pressable accessibilityRole="button" style={styles.roundButton} onPress={() => setVolumeOpen((value) => !value)} accessibilityLabel={t("dm.call.volume")}><Ionicons name={volume === 0 ? "volume-mute" : "volume-high"} size={22} color={colors.text} /></Pressable>{volumeOpen && <View style={styles.volumePopup}><Pressable accessibilityRole="button" style={styles.volumeButton} onPress={() => changeVolume(volume - 10)}><Text style={styles.volumeButtonText}>−</Text></Pressable><Text style={styles.volumeValue}>{volume}%</Text><Pressable accessibilityRole="button" style={styles.volumeButton} onPress={() => changeVolume(volume + 10)}><Text style={styles.volumeButtonText}>+</Text></Pressable></View>}</View>
                 {phase === "connected" && !video && (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Switch to video" style={styles.roundButton} onPress={() => void upgradeToVideo()}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("dm.mobile.call.switchToVideo")} style={styles.roundButton} onPress={() => void upgradeToVideo()}>
                     <Ionicons name="videocam" size={22} color={colors.text} />
                   </Pressable>
                 )}
                 {video && (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Toggle camera" style={[styles.roundButton, !cameraEnabled && styles.activeControl]} onPress={() => void toggleOrStartCamera()}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("dm.mobile.call.toggleCamera")} style={[styles.roundButton, !cameraEnabled && styles.activeControl]} onPress={() => void toggleOrStartCamera()}>
                     <Ionicons name={localStreamRef.current?.getVideoTracks().length && cameraEnabled ? "videocam" : "videocam-off"} size={22} color={colors.text} />
                   </Pressable>
                 )}
-                <Pressable accessibilityRole="button" accessibilityLabel="End call" style={[styles.roundButton, styles.decline]} onPress={endCall}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t("dm.call.end")} style={[styles.roundButton, styles.decline]} onPress={endCall}>
                   <Ionicons name="call" size={23} color="#fff" style={{ transform: [{ rotate: "135deg" }] }} />
                 </Pressable>
               </View>
             ) : (
               <Pressable accessibilityRole="button" style={styles.cancelButton} onPress={endCall}>
-                <Text style={styles.cancelText}>{error ? "Close" : "Cancel call"}</Text>
+                <Text style={styles.cancelText}>{error ? t("dm.call.close") : t("dm.call.cancel")}</Text>
               </Pressable>
             )}
           </Pressable>

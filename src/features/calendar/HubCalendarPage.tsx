@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import {
   addDays,
   formatCountdown,
@@ -15,7 +16,8 @@ import {
 import "../shared/shared.css";
 import "./calendar.css";
 import { Icon } from "../../components/Icon";
-import { localeForLanguage, preferredTimeOptions } from "../../app/locale";
+import { preferredTimeOptions } from "../../app/locale";
+import { formatDateParts, weekdayName } from "../shared/dateParts";
 import { canBeginWeekSelection, weekSelectionRange } from "./weekSelection";
 
 export type CalendarView = "month" | "week" | "agenda";
@@ -35,7 +37,8 @@ export type HubCalendarPageProps = {
 
 const HOUR_PX = 44;
 const SLOT_MIN = 30;
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+/** Monday-first weekday indexes (0 = Sunday). */
+const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0];
 const VIEW_KEY = "decave_hub_calendar_view";
 
 function readView(): CalendarView {
@@ -73,13 +76,14 @@ function defaultStartFor(day: Date): number {
 }
 
 const timeLabel = (ms: number) =>
-  new Date(ms).toLocaleTimeString(localeForLanguage(), {
+  formatDateParts(ms, {
     hour: "numeric",
     minute: "2-digit",
     ...preferredTimeOptions(),
   });
 
 export function HubCalendarPage(props: HubCalendarPageProps) {
+  const { t } = useTranslation(["events"]);
   const { items, canCreate } = props;
   const titleId = useId();
   const [view, setView] = useState<CalendarView>(readView);
@@ -149,10 +153,10 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
 
   const label =
     view === "month"
-      ? anchor.toLocaleDateString(localeForLanguage(), { month: "long", year: "numeric" })
+      ? formatDateParts(anchor, { month: "long", year: "numeric" })
       : view === "week"
-        ? `${range.from.toLocaleDateString(localeForLanguage(), { month: "short", day: "numeric" })} – ${addDays(range.to, -1).toLocaleDateString(localeForLanguage(), { month: "short", day: "numeric", year: "numeric" })}`
-        : `From ${range.from.toLocaleDateString(localeForLanguage(), { month: "long", day: "numeric" })}`;
+        ? `${formatDateParts(range.from, { month: "short", day: "numeric" })} – ${formatDateParts(addDays(range.to, -1), { month: "short", day: "numeric", year: "numeric" })}`
+        : t("events.calendar.from", { date: formatDateParts(range.from, { month: "long", day: "numeric" }) });
 
   const visible = items.filter((item) => item.start < range.to.getTime() && itemEnd(item) > range.from.getTime());
   const itemsOnDay = (day: Date) => {
@@ -226,18 +230,18 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
         <header className="hcx-head">
           <div className="hcx-title">
             <p className="hcx-kicker">{props.hubName}</p>
-            <h1 id={titleId}>Hub Calendar</h1>
+            <h1 id={titleId}>{t("events.calendar.title")}</h1>
           </div>
           <div className="hcx-toolbar">
-            <div className="hcx-nav" role="group" aria-label="Navigate">
+            <div className="hcx-nav" role="group" aria-label={t("events.calendar.navigate")}>
               <button type="button" className="dcx-btn" onClick={() => setAnchor(startOfDay(new Date()))}>
-                Today
+                {t("events.calendar.today")}
               </button>
               <button
                 type="button"
                 className="dcx-btn hcx-icon"
                 onClick={() => move(-1)}
-                aria-label={`Previous ${view === "agenda" ? "period" : view}`}
+                aria-label={t(`events.calendar.previous.${view}`)}
               >
                 <Icon name="chevron-left" size="sm" />
               </button>
@@ -245,7 +249,7 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                 type="button"
                 className="dcx-btn hcx-icon"
                 onClick={() => move(1)}
-                aria-label={`Next ${view === "agenda" ? "period" : view}`}
+                aria-label={t(`events.calendar.next.${view}`)}
               >
                 <Icon name="chevron-right" size="sm" />
               </button>
@@ -253,7 +257,7 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                 {label}
               </strong>
             </div>
-            <div className="hcx-views" role="tablist" aria-label="Calendar view">
+            <div className="hcx-views" role="tablist" aria-label={t("events.calendar.view")}>
               {(["month", "week", "agenda"] as CalendarView[]).map((value) => (
                 <button
                   key={value}
@@ -263,7 +267,7 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                   className={view === value ? "active" : ""}
                   onClick={() => setView(value)}
                 >
-                  {value[0].toUpperCase() + value.slice(1)}
+                  {t(`events.calendar.views.${value}`)}
                 </button>
               ))}
             </div>
@@ -272,8 +276,8 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
               className="dcx-btn hcx-icon"
               onClick={props.onRefresh}
               disabled={props.busy}
-              aria-label="Refresh events"
-              title="Refresh events"
+              aria-label={t("events.calendar.refresh")}
+              title={t("events.calendar.refresh")}
             >
               {props.busy ? "…" : "↻"}
             </button>
@@ -283,10 +287,15 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                 className="dcx-btn dcx-btn-primary"
                 onClick={() => props.onCreate(defaultStartFor(anchor), defaultStartFor(anchor) + 60 * 60_000)}
               >
-                ＋ New event
+                {t("events.calendar.newEvent")}
               </button>
             )}
-            <button type="button" className="dcx-btn hcx-icon" onClick={props.onClose} aria-label="Close Hub Calendar">
+            <button
+              type="button"
+              className="dcx-btn hcx-icon"
+              onClick={props.onClose}
+              aria-label={t("events.calendar.close")}
+            >
               <Icon name="close" size="sm" />
             </button>
           </div>
@@ -303,7 +312,7 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
               <div className="hcx-month">
                 <div className="hcx-weekdays" aria-hidden="true">
                   {WEEKDAYS.map((d) => (
-                    <span key={d}>{d}</span>
+                    <span key={d}>{weekdayName(d, "short")}</span>
                   ))}
                 </div>
                 <div className="hcx-month-grid" role="grid" aria-label={label}>
@@ -315,7 +324,7 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                         const outside = day.getMonth() !== anchor.getMonth();
                         const today = sameDay(day, new Date(now));
                         const past = addDays(day, 1).getTime() <= now;
-                        const dayLabel = day.toLocaleDateString(localeForLanguage(), {
+                        const dayLabel = formatDateParts(day, {
                           weekday: "long",
                           month: "long",
                           day: "numeric",
@@ -325,14 +334,14 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                             key={dow}
                             role="gridcell"
                             className={`hcx-day${outside ? " outside" : ""}${today ? " today" : ""}${past ? " past" : ""}`}
-                            aria-label={`${dayLabel}, ${dayItems.length} event${dayItems.length === 1 ? "" : "s"}`}
+                            aria-label={t("events.calendar.dayLabel", { day: dayLabel, count: dayItems.length })}
                           >
                             {canCreate && !past ? (
                               <button
                                 type="button"
                                 className="hcx-day-add"
                                 onClick={() => props.onCreate(defaultStartFor(day), defaultStartFor(day) + 60 * 60_000)}
-                                aria-label={`Create event on ${dayLabel}`}
+                                aria-label={t("events.calendar.createOn", { day: dayLabel })}
                               >
                                 <span className="hcx-day-num">{day.getDate()}</span>
                                 <span className="hcx-plus" aria-hidden="true">
@@ -353,7 +362,7 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                                     setView("agenda");
                                   }}
                                 >
-                                  +{dayItems.length - 3} more
+                                  {t("events.calendar.more", { count: dayItems.length - 3 })}
                                 </button>
                               )}
                             </div>
@@ -374,7 +383,7 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                     const day = addDays(range.from, i);
                     return (
                       <span key={i} className={sameDay(day, new Date(now)) ? "today" : ""}>
-                        <small>{WEEKDAYS[i]}</small>
+                        <small>{weekdayName(WEEKDAYS[i], "short")}</small>
                         <strong>{day.getDate()}</strong>
                       </span>
                     );
@@ -387,7 +396,7 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                         <span key={h} style={{ top: h * HOUR_PX }}>
                           {h === 0
                             ? ""
-                            : new Date(2000, 0, 1, h).toLocaleTimeString(localeForLanguage(), {
+                            : formatDateParts(new Date(2000, 0, 1, h), {
                                 hour: "numeric",
                                 ...preferredTimeOptions(),
                               })}
@@ -422,7 +431,10 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                                   className="hcx-slot"
                                   style={{ top: h * HOUR_PX, height: HOUR_PX }}
                                   tabIndex={0}
-                                  aria-label={`Create event ${day.toLocaleDateString(localeForLanguage(), { weekday: "long" })} at ${timeLabel(slotStart)}`}
+                                  aria-label={t("events.calendar.createAt", {
+                                    day: formatDateParts(day, { weekday: "long" }),
+                                    time: timeLabel(slotStart),
+                                  })}
                                   onClick={(e) => {
                                     if (e.detail === 0 && slotStart >= Date.now())
                                       props.onCreate(slotStart, slotStart + 60 * 60_000);
@@ -487,18 +499,14 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                   if (!days.length)
                     return (
                       <div className="hcx-empty">
-                        <strong>No events in this period</strong>
-                        <small>
-                          {canCreate
-                            ? "Create one to get your community together."
-                            : "Check back later or ask a Hub admin to schedule something."}
-                        </small>
+                        <strong>{t("events.calendar.emptyTitle")}</strong>
+                        <small>{canCreate ? t("events.calendar.emptyCreate") : t("events.calendar.emptyAsk")}</small>
                       </div>
                     );
                   return days.map(({ day, items: dayItems }) => (
                     <section key={day.toISOString()} className="hcx-agenda-day">
                       <h2 className={sameDay(day, new Date(now)) ? "today" : ""}>
-                        {day.toLocaleDateString(localeForLanguage(), {
+                        {formatDateParts(day, {
                           weekday: "long",
                           month: "long",
                           day: "numeric",
@@ -520,10 +528,10 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                             <strong>{item.title}</strong>
                             <small>
                               {itemKindLabel(item)}
-                              {item.event ? ` · ${item.event.rsvpCounts.going} going` : ""}
+                              {item.event ? t("events.calendar.going", { count: item.event.rsvpCounts.going }) : ""}
                             </small>
                           </span>
-                          {isLive(item, now) && <span className="hcx-live">Live now</span>}
+                          {isLive(item, now) && <span className="hcx-live">{t("events.status.live")}</span>}
                         </button>
                       ))}
                     </section>
@@ -533,19 +541,15 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
             )}
           </main>
 
-          <aside className="hcx-rail" aria-label="Upcoming events">
-            <h2>Upcoming</h2>
+          <aside className="hcx-rail" aria-label={t("events.calendar.upcomingLabel")}>
+            <h2>{t("events.calendar.upcoming")}</h2>
             {upcoming.length === 0 && (
               <div className="hcx-rail-empty">
                 <span className="hcx-rail-empty-icon" aria-hidden="true">
                   📅
                 </span>
-                <strong>Nothing on the horizon</strong>
-                <small>
-                  {canCreate
-                    ? "Schedule a raid night, tournament or hangout and it will show up here."
-                    : "When this Hub schedules events, they'll show up here."}
-                </small>
+                <strong>{t("events.calendar.railEmpty")}</strong>
+                <small>{canCreate ? t("events.calendar.railCreate") : t("events.calendar.railWait")}</small>
                 {canCreate && (
                   <button
                     type="button"
@@ -554,7 +558,7 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                       props.onCreate(defaultStartFor(new Date()), defaultStartFor(new Date()) + 60 * 60_000)
                     }
                   >
-                    ＋ Plan an event
+                    {t("events.calendar.plan")}
                   </button>
                 )}
               </div>
@@ -571,20 +575,18 @@ export function HubCalendarPage(props: HubCalendarPageProps) {
                       onClick={() => props.onOpenItem(item)}
                     >
                       <span className="hcx-rail-date">
-                        <strong>
-                          {new Date(item.start).toLocaleDateString(localeForLanguage(), { day: "2-digit" })}
-                        </strong>
-                        <small>
-                          {new Date(item.start)
-                            .toLocaleDateString(localeForLanguage(), { month: "short" })
-                            .toUpperCase()}
-                        </small>
+                        <strong>{formatDateParts(item.start, { day: "2-digit" })}</strong>
+                        <small>{formatDateParts(item.start, { month: "short" }).toUpperCase()}</small>
                       </span>
                       <span className="hcx-rail-copy">
                         <strong>{item.title}</strong>
                         <small>
-                          {live ? <span className="hcx-live">Live now</span> : formatCountdown(item.start, now)} ·{" "}
-                          {timeLabel(item.start)}
+                          {live ? (
+                            <span className="hcx-live">{t("events.status.live")}</span>
+                          ) : (
+                            formatCountdown(item.start, now)
+                          )}{" "}
+                          · {timeLabel(item.start)}
                         </small>
                       </span>
                     </button>

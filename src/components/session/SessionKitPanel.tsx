@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   prepareSessionKitLaunch,
   type SessionKit,
@@ -6,7 +7,14 @@ import {
   type SessionKitLaunchPlan,
   type SessionKitReferenceCatalog,
 } from "../../../shared/session-kit.ts";
+import { i18next } from "../../i18n/index.ts";
 import "./session.css";
+
+/** A kit-launch line (chat.session.kitLaunch.*) in the UI language, else its English. */
+function kitText(key: string, params: Record<string, string | number> | undefined, english: string): string {
+  if (!i18next.exists(key, params)) return english;
+  return (i18next.t as unknown as (key: string, params?: Record<string, unknown>) => string)(key, params);
+}
 
 export type SessionKitPanelProps = {
   kits: readonly SessionKit[];
@@ -30,6 +38,7 @@ export function SessionKitPanel({
   onSaveCurrent,
   storageError,
 }: SessionKitPanelProps) {
+  const { t } = useTranslation(["chat"]);
   const [pending, setPending] = useState<SessionKitLaunchPlan | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -41,11 +50,11 @@ export function SessionKitPanel({
     try {
       const result = onSaveCurrent(name, draftIntent);
       if (result && !result.ok) {
-        setError(result.error ?? "The Session Kit could not be saved on this device.");
+        setError(result.error ?? t("chat.session.kitPanel.saveFailed"));
         return;
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The Session Kit could not be saved on this device.");
+      setError(cause instanceof Error ? cause.message : t("chat.session.kitPanel.saveFailed"));
       return;
     }
     setError("");
@@ -56,14 +65,14 @@ export function SessionKitPanel({
     <section className="dc-session-panel" aria-labelledby="session-kits-title">
       <div className="dc-session-panel-head">
         <div>
-          <span className="dc-session-kicker">LOCAL SESSION KITS</span>
-          <h2 id="session-kits-title">Start with your context</h2>
+          <span className="dc-session-kicker">{t("chat.session.kitPanel.kicker")}</span>
+          <h2 id="session-kits-title">{t("chat.session.kitPanel.title")}</h2>
         </div>
         <div className="dc-session-actions">
-          <span className="dc-session-note">{kits.length} saved on this device</span>
+          <span className="dc-session-note">{t("chat.session.kitPanel.savedCount", { count: kits.length })}</span>
           {onSaveCurrent && (
             <button type="button" onClick={() => setSaveOpen((value) => !value)}>
-              {saveOpen ? "Cancel" : "Save current"}
+              {saveOpen ? t("chat.session.cancel") : t("chat.session.kitPanel.saveCurrent")}
             </button>
           )}
         </div>
@@ -72,32 +81,29 @@ export function SessionKitPanel({
         <div className="dc-session-form" style={{ marginTop: 14 }}>
           <div className="dc-session-form-grid">
             <label>
-              Kit name
+              {t("chat.session.kitPanel.kitName")}
               <input
                 value={draftName}
                 maxLength={64}
                 autoFocus
-                placeholder="Friday night co-op"
+                placeholder={t("chat.session.kitPanel.kitNamePlaceholder")}
                 onChange={(event) => setDraftName(event.target.value)}
               />
             </label>
             <label>
-              Intent
+              {t("chat.session.kitPanel.intent")}
               <select value={draftIntent} onChange={(event) => setDraftIntent(event.target.value as SessionKitIntent)}>
-                <option value="play">Play</option>
-                <option value="watch">Watch</option>
-                <option value="chat">Chat</option>
-                <option value="plan">Plan</option>
+                <option value="play">{t("chat.session.kitPanel.intentPlay")}</option>
+                <option value="watch">{t("chat.session.kitPanel.intentWatch")}</option>
+                <option value="chat">{t("chat.session.kitPanel.intentChat")}</option>
+                <option value="plan">{t("chat.session.kitPanel.intentPlan")}</option>
               </select>
             </label>
           </div>
-          <p className="dc-session-note">
-            Saves this Hub, room, voice device choices, notification preset, and game context on this device. Microphone
-            and camera stay off until you choose them.
-          </p>
+          <p className="dc-session-note">{t("chat.session.kitPanel.saveNote")}</p>
           <div className="dc-session-actions">
             <button type="button" className="dc-session-primary" disabled={!draftName.trim()} onClick={saveCurrent}>
-              Save kit
+              {t("chat.session.kitPanel.saveKit")}
             </button>
           </div>
         </div>
@@ -108,17 +114,25 @@ export function SessionKitPanel({
         </p>
       )}
       {kits.length === 0 ? (
-        <p>No kits saved yet. Save your current Hub, room, and voice preferences to create one.</p>
+        <p>{t("chat.session.kitPanel.empty")}</p>
       ) : (
         <div className="dc-session-panel-list">
           {kits.map((kit) => (
             <article className="dc-session-card" key={kit.id}>
               <div className="dc-session-card-head">
                 <div>
-                  <span className="dc-session-kicker">{kit.intent.toUpperCase()}</span>
+                  <span className="dc-session-kicker">
+                    {kit.intent === "watch"
+                      ? t("chat.session.kitPanel.kickerWatch")
+                      : kit.intent === "chat"
+                        ? t("chat.session.kitPanel.kickerChat")
+                        : kit.intent === "plan"
+                          ? t("chat.session.kitPanel.kickerPlan")
+                          : t("chat.session.kitPanel.kickerPlay")}
+                  </span>
                   <h3>{kit.name}</h3>
                 </div>
-                <span className="dc-session-note">{kit.game.name || "No game"}</span>
+                <span className="dc-session-note">{kit.game.name || t("chat.session.kitPanel.noGame")}</span>
               </div>
               <p>
                 {kit.scope.hubId}
@@ -130,7 +144,7 @@ export function SessionKitPanel({
                   className="dc-session-primary"
                   onClick={() => setPending(prepareSessionKitLaunch(kit, references))}
                 >
-                  Review launch
+                  {t("chat.session.kitPanel.reviewLaunch")}
                 </button>
                 {onDelete && (
                   <button
@@ -139,19 +153,14 @@ export function SessionKitPanel({
                     onClick={() => {
                       try {
                         const result = onDelete(kit);
-                        if (result && !result.ok)
-                          setError(result.error ?? "The Session Kit could not be removed from this device.");
+                        if (result && !result.ok) setError(result.error ?? t("chat.session.kitPanel.removeFailed"));
                         else setError("");
                       } catch (cause) {
-                        setError(
-                          cause instanceof Error
-                            ? cause.message
-                            : "The Session Kit could not be removed from this device.",
-                        );
+                        setError(cause instanceof Error ? cause.message : t("chat.session.kitPanel.removeFailed"));
                       }
                     }}
                   >
-                    Remove
+                    {t("chat.session.kitPanel.remove")}
                   </button>
                 )}
               </div>
@@ -173,34 +182,25 @@ export function SessionKitPanel({
             aria-modal="true"
             aria-labelledby="session-kit-launch-title"
           >
-            <span className="dc-session-kicker">REVIEW BEFORE STARTING</span>
+            <span className="dc-session-kicker">{t("chat.session.kitPanel.reviewKicker")}</span>
             <h2 id="session-kit-launch-title">{pending.kitName}</h2>
-            <p>
-              {pending.canLaunch
-                ? "Available parts will be restored for this session."
-                : "This Hub is unavailable, so the kit cannot open its context."}
-            </p>
+            <p>{pending.canLaunch ? t("chat.session.kitPanel.canLaunch") : t("chat.session.kitPanel.cannotLaunch")}</p>
             <ul className="dc-session-summary">
-              {pending.summary.map((line) => (
-                <li key={line}>{line}</li>
+              {pending.summaryText.map((line, index) => (
+                <li key={line.key}>{kitText(line.key, line.params, pending.summary[index])}</li>
               ))}
             </ul>
-            {pending.inviteActionRequired && (
-              <p className="dc-session-note">
-                Invite candidates are ready for your review. Starting this session will not send invitations or
-                messages.
-              </p>
-            )}
+            {pending.inviteActionRequired && <p className="dc-session-note">{t("chat.session.kitPanel.inviteNote")}</p>}
             {pending.issues.length > 0 && (
-              <ul className="dc-session-issues" aria-label="Skipped unavailable kit references">
+              <ul className="dc-session-issues" aria-label={t("chat.session.kitPanel.skippedLabel")}>
                 {pending.issues.map((item) => (
-                  <li key={`${item.code}:${item.reference}`}>{item.message}</li>
+                  <li key={`${item.code}:${item.reference}`}>{kitText(item.key, undefined, item.message)}</li>
                 ))}
               </ul>
             )}
             <div className="dc-session-actions">
               <button type="button" onClick={() => setPending(null)}>
-                Cancel
+                {t("chat.session.cancel")}
               </button>
               <button
                 type="button"
@@ -211,7 +211,7 @@ export function SessionKitPanel({
                   setPending(null);
                 }}
               >
-                Start session
+                {t("chat.session.kitPanel.start")}
               </button>
             </div>
           </section>

@@ -1,0 +1,50 @@
+{
+  "rules": {
+    "communityRules": {
+      "title": "DeCave-communityregels",
+      "body": "Deze regels gelden overal op DeCave: Hubs, DM's, groepschats, spraak en Find a Squad.\n\n1. **Wees respectvol.** Geen intimidatie, pesten, bedreigingen of gerichte beledigingen.\n2. **Geen haatzaaiende taal.** Niets wat mensen aanvalt op basis van ras, etniciteit, religie, gender, seksuele geaardheid, beperking of nationaliteit.\n3. **Houd het netjes in openbare ruimtes.** Geen seksuele, bloederige of schokkende content in Hubs die daar niet voor gekozen hebben. Nooit iets waarbij minderjarigen betrokken zijn.\n4. **Bescherm privacy.** Deel geen persoonlijke gegevens van anderen (echte naam, adres, foto's, accounts) zonder hun toestemming.\n5. **Geen valsspelen, oplichting of exploits.** Geen verkoop van cheats, accounthandel, phishinglinks, nep-giveaways en je niet voordoen als DeCave-medewerker.\n6. **Geen spam.** Geen massa-DM's, herhaalde berichten, ongevraagde reclame of zelfpromotie buiten ruimtes waar dat mag.\n7. **Volg de eigen regels van elke Hub.** Hub-eigenaren kunnen strengere regels toevoegen voor hun community.\n8. **Respecteer de wet** en de [Servicevoorwaarden](https://de-cave.com/terms).\n\n**Handhaving:** afhankelijk van de ernst kan het overtreden van deze regels leiden tot een waarschuwing, tijdelijke beperkingen, verwijdering uit een Hub of een permanente verbanning van DeCave.\n\n**Een probleem rapporteren:** klik met de rechtermuisknop op een bericht of profiel en kies **Rapporteren**. Rapporten zijn privé en de persoon krijgt nooit te horen wie hem heeft gerapporteerd."
+    }
+  },
+  "faq": {
+    "private": {
+      "title": "Is deze Hub privé? Kunnen anderen mij hier zien?",
+      "body": "Ja, hij is privé. Iedereen wordt automatisch lid van DeCave Official, maar leden kunnen elkaar niet zien: de ledenlijst, ledenaantallen en onlinestatus zijn verborgen, en alleen het DeCave-team kan posten. Niemand kan zien dat jij hier bent."
+    },
+    "profile": {
+      "title": "Hoe stel ik mijn profiel in?",
+      "body": "Klik op je avatar linksonder → **Profiel**. Je kunt een foto, banner, bio en de games die je speelt toevoegen."
+    },
+    "friends": {
+      "title": "Hoe voeg ik vrienden toe?",
+      "body": "Open **Vrienden**, kies **Vriend toevoegen** en zoek op gebruikersnaam. Zodra ze accepteren, kun je chatten, bellen en ze uitnodigen voor Hubs."
+    },
+    "findSquad": {
+      "title": "Wat is Find a Squad?",
+      "body": "Kies een game en wat je zoekt, en DeCave koppelt je aan spelers die hetzelfde zoeken. Bij een match krijg je een Squad-kanaal om samen te chatten en te praten."
+    },
+    "hubs": {
+      "title": "Hoe word ik lid van een Hub of maak ik er een?",
+      "body": "Gebruik de knop **+** in de bovenbalk. Je kunt openbare Hubs bekijken, lid worden via een uitnodigingslink of je eigen Hub maken vanuit een sjabloon (inclusief de Streamer-indeling)."
+    },
+    "voiceRooms": {
+      "title": "Hoe werken spraakkanalen?",
+      "body": "Klik in een Hub op een spraakkanaal om deel te nemen. Via de spraakbediening kun je jezelf dempen, onhoorbaar maken, je scherm delen en je invoerapparaat wijzigen. Push to Talk is beschikbaar in de desktop-app."
+    },
+    "desktopApp": {
+      "title": "Moet ik de desktop-app gebruiken?",
+      "body": "Het is optioneel, maar je krijgt er gamedetectie, desktopmeldingen, globale Push to Talk en automatische updates bij. Download hem voor Windows of Mac op [de-cave.com](https://de-cave.com)."
+    },
+    "report": {
+      "title": "Hoe rapporteer ik iemand?",
+      "body": "Klik met de rechtermuisknop op hun bericht of profiel en kies **Rapporteren**. Rapporten zijn privé."
+    },
+    "whatsNew": {
+      "title": "Waar zie ik wat er nieuw is?",
+      "body": "Lees **#announcements** voor nieuws en **#patch-notes** voor elke update."
+    },
+    "deleteAccount": {
+      "title": "Hoe verwijder ik mijn account of mijn gegevens?",
+      "body": "Ga naar **Instellingen → Account en apparaten**. In het [Privacybeleid](https://de-cave.com/privacy) lees je wat er wordt opgeslagen en hoe het wordt verwijderd."
+    }
+  }
+}

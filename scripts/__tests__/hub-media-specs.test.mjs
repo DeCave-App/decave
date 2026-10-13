@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readImageDimensions, validateHubMediaDimensions } from "../../shared/hub-media-specs.ts";
+import {
+  hubMediaDimensionProblem,
+  hubMediaHint,
+  readImageDimensions,
+  validateHubMediaDimensions,
+} from "../../shared/hub-media-specs.ts";
 
 const png = (w, h) => {
   const b = new Uint8Array(24);
@@ -71,4 +76,38 @@ test("header image accepts any wide image from 4:3 to 4:1, at least 900 px wide"
   assert.match(validateHubMediaDimensions("header", 600, 1800), /between 4:3 and 4:1/);
   assert.match(validateHubMediaDimensions("header", 3000, 500), /between 4:3 and 4:1/);
   assert.match(validateHubMediaDimensions("header", 800, 400), /too small/);
+});
+
+test("messages are catalog keys whose English matches the text shown before translation", () => {
+  assert.equal(hubMediaHint("banner"), "Recommended: 600×1800 px, portrait (minimum 400×1200)");
+  assert.equal(
+    hubMediaHint("header"),
+    "Recommended: 1500×500 px; any wide image from 4:3 to 4:1 works (at least 900 px wide)",
+  );
+  assert.equal(hubMediaHint("chat-background"), "Recommended: 1920×1080 px, landscape (minimum 1280×720)");
+  assert.equal(
+    validateHubMediaDimensions("banner", 1200, 400),
+    "Banner is 1200×400 px. It must be 600×1800 px portrait (aspect 1:3, ±5%).",
+  );
+  assert.equal(
+    validateHubMediaDimensions("chat-background", 800, 450),
+    "Chat background is 800×450 px, which is too small. Use 1920×1080 px landscape (at least 1280×720).",
+  );
+  assert.equal(
+    validateHubMediaDimensions("header", NaN, NaN),
+    "Header image image size could not be read. Use a PNG, JPG, WebP or GIF of 1500×500 px.",
+  );
+  assert.equal(
+    validateHubMediaDimensions("header", 3000, 500),
+    "Header image is 3000×500 px. Use a wide image between 4:3 and 4:1, such as 1500×500 px.",
+  );
+  assert.equal(
+    validateHubMediaDimensions("header", 800, 400),
+    "Header image is 800×400 px, which is too small. Use at least 900 px wide.",
+  );
+  assert.deepEqual(hubMediaDimensionProblem("banner", 300, 900), {
+    code: "hubMedia.dimensions.banner.tooSmall",
+    params: { width: 600, height: 1800, minWidth: 400, minHeight: 1200, actualWidth: 300, actualHeight: 900 },
+    error: "Banner is 300×900 px, which is too small. Use 600×1800 px portrait (at least 400×1200).",
+  });
 });

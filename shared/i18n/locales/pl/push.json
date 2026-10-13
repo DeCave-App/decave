@@ -1,0 +1,54 @@
+{
+  "hidden": {
+    "hubMessage": "Nowa wiadomość w Hub",
+    "directMessage": "Masz nową wiadomość"
+  },
+  "sender": {
+    "hubMessage": "Nowa wiadomość od {{sender}}",
+    "directMessage": "{{sender}} pisze do ciebie",
+    "inRoom": "{{sender}} w: {{where}}",
+    "someone": "Ktoś",
+    "unknownDirect": "Nowa wiadomość"
+  },
+  "preview": {
+    "gif": "Wysłano GIF",
+    "attachment": "Wysłano załącznik",
+    "encrypted": "Wysłano ci zaszyfrowaną wiadomość"
+  },
+  "mobile": {
+    "hiddenMention": "Masz nową wzmiankę w DeCave.",
+    "hiddenMessage": "Masz nową wiadomość.",
+    "groupChat": "Czat grupowy",
+    "hubMessage": "Wiadomość w Hub",
+    "sentMessage": "Nowa wiadomość od {{sender}}.",
+    "mentionedIn": "Oznaczono cię w: {{place}}.",
+    "mentioned": "Oznaczono cię.",
+    "sentPrivate": "Wysłano ci prywatną wiadomość.",
+    "withSender": "{{sender}}: {{text}}",
+    "unknownUser": "Użytkownik DeCave",
+    "hubRoom": "Pokój w Hub",
+    "encryptedMessage": "🔒 Zaszyfrowana wiadomość",
+    "channels": {
+      "messages": {
+        "name": "Wiadomości",
+        "description": "Prywatne wiadomości, czaty grupowe i powiadomienia z Hubs"
+      },
+      "silent": {
+        "name": "Wiadomości (ciche)",
+        "description": "Ciche powiadomienia o wiadomościach DeCave"
+      }
+    },
+    "primer": {
+      "title": "Bądź na bieżąco",
+      "message": "Dostawaj powiadomienia o prywatnych wiadomościach, wzmiankach, zaproszeniach do znajomych i o tym, że Squad na ciebie czeka. Możesz to dostosować w Ustawieniach.",
+      "allow": "Włącz"
+    },
+    "squad": {
+      "title": "Squad dostępny",
+      "body_one": "{{count}}/4 graczy gotowych do gry w {{game}}.",
+      "body_few": "{{count}}/4 graczy gotowych do gry w {{game}}.",
+      "body_many": "{{count}}/4 graczy gotowych do gry w {{game}}.",
+      "body_other": "{{count}}/4 graczy gotowych do gry w {{game}}."
+    }
+  }
+}

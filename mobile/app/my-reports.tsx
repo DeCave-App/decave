@@ -7,12 +7,15 @@ import { apiJson } from "@/src/lib/api";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
 import type { SafetyReport } from "@/src/types";
+import { useTranslation } from "react-i18next";
+import { dateLocale } from "@/src/lib/date-locale";
 
 function statusLabel(value: SafetyReport["status"]): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export default function MyReportsScreen() {
+  const { t } = useTranslation(["safety", "common"]);
   const { token } = useSession();
   const [reports, setReports] = useState<SafetyReport[]>([]);
   const [busy, setBusy] = useState(true);
@@ -26,7 +29,7 @@ export default function MyReportsScreen() {
       const data = await apiJson<{ reports?: SafetyReport[] }>("/api/safety/reports", {}, token);
       setReports(data.reports ?? []);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not load your reports.");
+      setNotice(error instanceof Error ? error.message : t("safety.myReports.loadFailed"));
     } finally {
       setBusy(false);
     }
@@ -37,13 +40,13 @@ export default function MyReportsScreen() {
   return (
     <Screen>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} hitSlop={8}><Ionicons name="chevron-back" size={23} color={colors.cyan} /></Pressable>
-        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>PRIVATE TO YOU</Text><Text style={styles.title}>My Reports</Text></View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Refresh" onPress={() => void load()} disabled={busy} hitSlop={8}><Ionicons name="refresh" size={19} color={colors.cyan} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} onPress={() => router.back()} hitSlop={8}><Ionicons name="chevron-back" size={23} color={colors.cyan} /></Pressable>
+        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("safety.myReports.kicker")}</Text><Text style={styles.title}>{t("safety.myReports.title")}</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.refresh")} onPress={() => void load()} disabled={busy} hitSlop={8}><Ionicons name="refresh" size={19} color={colors.cyan} /></Pressable>
       </View>
-      <View style={styles.intro}><Ionicons name="shield-checkmark-outline" size={22} color={colors.cyan} /><Text style={styles.introText}>Track reports you have submitted. Review details remain private.</Text></View>
+      <View style={styles.intro}><Ionicons name="shield-checkmark-outline" size={22} color={colors.cyan} /><Text style={styles.introText}>{t("safety.myReports.intro")}</Text></View>
       {!!notice && <Text style={styles.notice}>{notice}</Text>}
-      {busy && reports.length === 0 ? <ActivityIndicator color={colors.cyan} style={{ marginTop: 30 }} /> : <FlatList data={reports} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} ListEmptyComponent={<Text style={styles.empty}>You have not submitted any reports.</Text>} renderItem={({ item }) => <View style={styles.row}><View style={{ flex: 1 }}><Text style={styles.case}>{item.caseNumber || `Report ${item.id.slice(0, 8)}`}</Text><Text style={styles.detail}>{item.subjectUsername || item.targetType} · {new Date(item.createdAt).toLocaleDateString()}</Text></View><View style={styles.status}><Text style={styles.statusText}>{statusLabel(item.status)}</Text><Text style={styles.urgency}>{item.urgency}</Text></View></View>} />}
+      {busy && reports.length === 0 ? <ActivityIndicator color={colors.cyan} style={{ marginTop: 30 }} /> : <FlatList data={reports} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} ListEmptyComponent={<Text style={styles.empty}>{t("safety.myReports.empty")}</Text>} renderItem={({ item }) => <View style={styles.row}><View style={{ flex: 1 }}><Text style={styles.case}>{item.caseNumber || t("safety.mobile.myReports.reportValue", { value: item.id.slice(0, 8) })}</Text><Text style={styles.detail}>{item.subjectUsername || item.targetType} · {new Date(item.createdAt).toLocaleDateString(dateLocale())}</Text></View><View style={styles.status}><Text style={styles.statusText}>{statusLabel(item.status)}</Text><Text style={styles.urgency}>{item.urgency}</Text></View></View>} />}
     </Screen>
   );
 }

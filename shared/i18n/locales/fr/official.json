@@ -1,0 +1,50 @@
+{
+  "rules": {
+    "communityRules": {
+      "title": "Règles de la communauté DeCave",
+      "body": "Ces règles s'appliquent partout sur DeCave : Hubs, MP, discussions de groupe, vocal et Trouver un Squad.\n\n1. **Sois respectueux.** Pas de harcèlement, d'intimidation, de menaces ni d'insultes ciblées.\n2. **Pas de discours haineux.** Rien qui attaque des personnes en raison de leur race, origine ethnique, religion, genre, orientation sexuelle, handicap ou nationalité.\n3. **Reste correct dans les espaces publics.** Pas de contenu sexuel, gore ou choquant dans les Hubs qui ne l'ont pas autorisé. Jamais rien impliquant des mineurs.\n4. **Protège la vie privée.** Ne partage pas les informations personnelles de quelqu'un (vrai nom, adresse, photos, comptes) sans son consentement.\n5. **Pas de triche, d'arnaques ni d'exploitation de bugs.** Pas de vente de cheats, d'échange de comptes, de liens de phishing, de faux concours ni d'usurpation de l'identité de l'équipe DeCave.\n6. **Pas de spam.** Pas de MP en masse, de messages répétés, de publicité non sollicitée ni d'autopromo en dehors des espaces qui l'autorisent.\n7. **Respecte les règles de chaque Hub.** Les propriétaires de Hub peuvent ajouter des règles plus strictes pour leur communauté.\n8. **Respecte la loi** et les [Conditions d'utilisation](https://de-cave.com/terms).\n\n**Sanctions :** selon la gravité, enfreindre ces règles peut entraîner un avertissement, des restrictions temporaires, une expulsion d'un Hub ou un bannissement définitif de DeCave.\n\n**Signaler un problème :** fais un clic droit sur un message ou un profil et choisis **Signaler**. Les signalements sont privés et la personne ne sait jamais qui l'a signalée."
+    }
+  },
+  "faq": {
+    "private": {
+      "title": "Ce Hub est-il privé ? Les autres peuvent-ils me voir ici ?",
+      "body": "Oui, il est privé. Tout le monde rejoint DeCave Official automatiquement, mais les membres ne peuvent pas se voir : la liste des membres, le nombre de membres et le statut en ligne sont masqués, et seule l'équipe DeCave peut publier. Personne ne peut savoir que tu es là."
+    },
+    "profile": {
+      "title": "Comment configurer mon profil ?",
+      "body": "Clique sur ton avatar en bas à gauche → **Profil**. Tu peux ajouter une photo, une bannière, une bio et les jeux auxquels tu joues."
+    },
+    "friends": {
+      "title": "Comment ajouter des amis ?",
+      "body": "Ouvre **Amis**, choisis **Ajouter un ami** et cherche par nom d'utilisateur. Une fois ta demande acceptée, tu peux discuter, appeler et inviter cette personne dans des Hubs."
+    },
+    "findSquad": {
+      "title": "C'est quoi, Trouver un Squad ?",
+      "body": "Choisis un jeu et ce que tu cherches, et DeCave te met en relation avec des joueurs qui cherchent la même chose. Quand ça matche, tu obtiens un salon de Squad pour discuter et parler en vocal ensemble."
+    },
+    "hubs": {
+      "title": "Comment rejoindre ou créer un Hub ?",
+      "body": "Utilise le bouton **+** dans la barre du haut. Tu peux parcourir les Hubs publics, en rejoindre un avec un lien d'invitation ou créer le tien à partir d'un modèle (y compris la disposition Streamer)."
+    },
+    "voiceRooms": {
+      "title": "Comment fonctionnent les salons vocaux ?",
+      "body": "Clique sur un salon vocal dans n'importe quel Hub pour le rejoindre. Depuis les commandes vocales, tu peux couper ton micro, te mettre en sourdine, partager ton écran et changer de périphérique d'entrée. Le mode Appuyer pour parler est disponible dans l'appli de bureau."
+    },
+    "desktopApp": {
+      "title": "Dois-je utiliser l'appli de bureau ?",
+      "body": "C'est facultatif, mais elle ajoute la détection des jeux, les notifications de bureau, le mode Appuyer pour parler global et les mises à jour automatiques. Télécharge-la pour Windows ou Mac sur [de-cave.com](https://de-cave.com)."
+    },
+    "report": {
+      "title": "Comment signaler quelqu'un ?",
+      "body": "Fais un clic droit sur son message ou son profil et choisis **Signaler**. Les signalements sont privés."
+    },
+    "whatsNew": {
+      "title": "Où voir les nouveautés ?",
+      "body": "Lis **#announcements** pour les actus et **#patch-notes** pour chaque mise à jour."
+    },
+    "deleteAccount": {
+      "title": "Comment supprimer mon compte ou mes données ?",
+      "body": "Va dans **Paramètres → Compte**. Consulte la [Politique de confidentialité](https://de-cave.com/privacy) pour savoir ce qui est stocké et comment c'est supprimé."
+    }
+  }
+}

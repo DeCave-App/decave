@@ -150,7 +150,6 @@ export function useEscapeKey(deps: EscapeKeyDeps): void {
     focusedVideo,
     setFocusedVideo,
     closeSettings,
-    settingsWindow,
     hubPanels,
     composer,
     forumRoomUi,
@@ -176,7 +175,6 @@ export function useEscapeKey(deps: EscapeKeyDeps): void {
     showHubCalendarPanel,
     setShowHubCalendarPanel,
   } = hubPanels;
-  const { settingsDirty, settingsCloseConfirm, setSettingsCloseConfirm } = settingsWindow;
 
   useEffect(() => {
     const onEscape = (event: globalThis.KeyboardEvent) => {
@@ -185,7 +183,6 @@ export function useEscapeKey(deps: EscapeKeyDeps): void {
       if (document.querySelector('[data-hub-events-dialog="open"]')) return;
 
       const popupOpen =
-        settingsCloseConfirm ||
         showCommandPalette ||
         showInbox ||
         showLogoutConfirm ||
@@ -226,10 +223,6 @@ export function useEscapeKey(deps: EscapeKeyDeps): void {
       event.preventDefault();
       event.stopPropagation();
 
-      if (settingsCloseConfirm) {
-        setSettingsCloseConfirm(false);
-        return;
-      }
       if (showCommandPalette) {
         setShowCommandPalette(false);
         return;
@@ -391,7 +384,6 @@ export function useEscapeKey(deps: EscapeKeyDeps): void {
     window.addEventListener("keydown", onEscape, true);
     return () => window.removeEventListener("keydown", onEscape, true);
   }, [
-    settingsCloseConfirm,
     showCommandPalette,
     showInbox,
     showLogoutConfirm,
@@ -431,6 +423,5 @@ export function useEscapeKey(deps: EscapeKeyDeps): void {
     showForumEmojiPicker,
     cameraSettingsOpen,
     screenShareSettingsOpen,
-    settingsDirty,
   ]);
 }

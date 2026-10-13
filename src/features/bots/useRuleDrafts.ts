@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { validateRule, type BotRuleError } from "../../../shared/bots/schema.ts";
 import type { BotRule } from "../../../shared/bots/types.ts";
+import { i18next } from "../../i18n/index.ts";
 import { BotApiError, type BotsApi, type BuilderBot, type BuilderRule, type PublishError } from "./api";
 import { ruleContextFor, sameRule, type BotHub } from "./model.ts";
+import { translateRuleErrors } from "./ruleErrors.ts";
 
 export const AUTOSAVE_MS = 800;
 
@@ -30,7 +32,7 @@ const nextKey = () => `local-${++localKeys}`;
 
 function check(draft: BotRule, hub: BotHub, ruleIds: string[]): BotRuleError[] {
   const result = validateRule(draft, ruleContextFor(hub, ruleIds));
-  return result.ok ? [] : result.errors;
+  return result.ok ? [] : translateRuleErrors(result.errors);
 }
 
 export function useRuleDrafts(api: BotsApi, bot: BuilderBot, hub: BotHub, onSaved: () => void) {
@@ -128,7 +130,11 @@ export function useRuleDrafts(api: BotsApi, bot: BuilderBot, hub: BotHub, onSave
       patch(key, {
         status: errors.length ? "invalid" : "failed",
         errors,
-        message: errors.length ? undefined : error instanceof Error ? error.message : "Could not save.",
+        message: errors.length
+          ? undefined
+          : error instanceof Error
+            ? error.message
+            : i18next.t("bots.settings.saveFailed"),
       });
       return id;
     }

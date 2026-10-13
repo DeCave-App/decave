@@ -23,8 +23,10 @@ import { useDirectCall } from "@/src/providers/DirectCallProvider";
 import { SkeletonRows } from "@/src/components/Skeleton";
 import { colors } from "@/src/theme";
 import type { AccountUser, SocialState } from "@/src/types";
+import { useTranslation } from "react-i18next";
 
 export default function FriendsScreen() {
+  const { t } = useTranslation(["social", "common"]);
   const { token, user } = useSession();
   const [filter, setFilter] = useState<"online" | "all" | "pending">("online");
   const [copied, setCopied] = useState(false);
@@ -36,6 +38,8 @@ export default function FriendsScreen() {
   });
   const [friendId, setFriendId] = useState("");
   const [notice, setNotice] = useState("");
+  // The "is blocked" notice links to Privacy & Safety; remembered by text so any later notice hides the link.
+  const [blockedNotice, setBlockedNotice] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [menuFriend, setMenuFriend] = useState<AccountUser | null>(null);
   const [reportTarget, setReportTarget] = useState<MobileReportTarget | null>(null);
@@ -47,7 +51,7 @@ export default function FriendsScreen() {
     try {
       setSocial(await apiJson<SocialState>("/api/social", {}, token));
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not load friends.");
+      setNotice(error instanceof Error ? error.message : t("social.mobile.friends.couldNotLoadFriends"));
     } finally {
       setLoaded(true);
     }
@@ -101,7 +105,7 @@ export default function FriendsScreen() {
       setNotice(
         error instanceof Error
           ? error.message
-          : "Friend action failed.",
+          : t("social.mobile.friends.friendActionFailed"),
       );
     }
   };
@@ -120,13 +124,13 @@ export default function FriendsScreen() {
       );
 
       setFriendId("");
-      setNotice("Friend request sent.");
+      setNotice(t("social.mobile.friends.friendRequestSent"));
       await load();
     } catch (error) {
       setNotice(
         error instanceof Error
           ? error.message
-          : "Could not send request.",
+          : t("social.mobile.friends.couldNotSendRequest"),
       );
     }
   };
@@ -147,12 +151,12 @@ export default function FriendsScreen() {
 
   const confirmRemove = (friend: AccountUser) => {
     Alert.alert(
-      "Remove friend?",
-      `Remove ${friend.username} from your friends?`,
+      t("social.mobile.friends.removeFriend"),
+      t("social.mobile.friends.removeUsernameFromYourFriends", { username: friend.username }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.actions.cancel"), style: "cancel" },
         {
-          text: "Remove",
+          text: t("common.actions.remove"),
           style: "destructive",
           onPress: () => void action(friend, "remove"),
         },
@@ -162,22 +166,24 @@ export default function FriendsScreen() {
 
   const confirmBlock = (friend: AccountUser) => {
     Alert.alert(
-      `Block ${friend.username}?`,
-      "They won't be able to message or call you. You can unblock them later in Settings › Privacy & Safety.",
+      t("social.mobile.friends.blockUsername", { username: friend.username }),
+      t("social.mobile.friends.theyWonTBeAble"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.actions.cancel"), style: "cancel" },
         {
-          text: "Block",
+          text: t("common.actions.block"),
           style: "destructive",
           onPress: () => void (async () => {
             if (!token) return;
             setNotice("");
             try {
               await apiJson(`/api/safety/blocks/${encodeURIComponent(friend.id)}`, { method: "PUT" }, token);
-              setNotice(`${friend.username} is blocked.`);
+              const blocked = t("social.mobile.friends.usernameIsBlocked", { username: friend.username });
+              setNotice(blocked);
+              setBlockedNotice(blocked);
               await load();
             } catch (error) {
-              setNotice(error instanceof Error ? error.message : "Could not block this user.");
+              setNotice(error instanceof Error ? error.message : t("social.mobile.friends.couldNotBlockThisUser"));
             }
           })(),
         },
@@ -208,10 +214,10 @@ export default function FriendsScreen() {
       >
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>SOCIAL</Text>
-            <Text style={styles.title}>Friends</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("social.mobile.friends.social")}</Text>
+            <Text style={styles.title}>{t("common.bottomBar.friends")}</Text>
             <Text style={styles.subtitle}>
-              See who's around and jump straight into a conversation.
+              {t("social.mobile.friends.seeWhoSAroundAnd")}
             </Text>
           </View>
 
@@ -220,30 +226,30 @@ export default function FriendsScreen() {
             <Text style={styles.onlineSummaryValue}>
               {onlineFriends.length}
             </Text>
-            <Text style={styles.onlineSummaryLabel}>online</Text>
+            <Text style={styles.onlineSummaryLabel}>{t("social.mobile.friends.online")}</Text>
           </View>
         </View>
 
         <View style={styles.addCard}>
           {!!user && (
             <View style={styles.idBlock}>
-              <Text style={styles.panelLabel}>YOUR DECAVE ID</Text>
+              <Text style={styles.panelLabel}>{t("social.mobile.friends.yourDecaveId")}</Text>
               <View style={styles.idRow}>
                 <Text style={styles.idText} selectable numberOfLines={1}>{user.id}</Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={copied ? "DeCave ID copied" : "Copy your DeCave ID"}
+                  accessibilityLabel={copied ? t("social.mobile.friends.decaveIdCopied") : t("social.mobile.friends.copyYourDecaveId")}
                   style={styles.copyButton}
                   onPress={copyId}
                 >
                   <Ionicons name={copied ? "checkmark" : "copy-outline"} size={14} color={copied ? colors.green : colors.cyan} />
-                  <Text style={[styles.copyText, copied && { color: colors.green }]}>{copied ? "Copied" : "Copy"}</Text>
+                  <Text style={[styles.copyText, copied && { color: colors.green }]}>{copied ? t("common.status.copied") : t("common.actions.copy")}</Text>
                 </Pressable>
               </View>
             </View>
           )}
 
-          <Text style={[styles.panelLabel, { marginTop: 14 }]}>ADD A FRIEND</Text>
+          <Text style={[styles.panelLabel, { marginTop: 14 }]}>{t("social.mobile.friends.addAFriend")}</Text>
           <View style={styles.addInputRow}>
             <View style={styles.inputWrap}>
               <Ionicons
@@ -254,7 +260,7 @@ export default function FriendsScreen() {
               <TextInput
                 value={friendId}
                 onChangeText={setFriendId}
-                placeholder="Their DeCave ID"
+                placeholder={t("social.mobile.friends.theirDecaveId")}
                 placeholderTextColor={colors.faint}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -263,7 +269,7 @@ export default function FriendsScreen() {
                 onSubmitEditing={() => void request()}
               />
               {!!friendId && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Clear"
+                <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.clear")}
                   onPress={() => setFriendId("")}
                   hitSlop={8}
                 >
@@ -285,26 +291,26 @@ export default function FriendsScreen() {
             onPress={() => void request()}
           >
             <Ionicons name="person-add-outline" size={16} color="#fff" />
-            <Text style={styles.sendRequestText}>Send request</Text>
+            <Text style={styles.sendRequestText}>{t("common.friends.sendRequest")}</Text>
           </Pressable>
 
           {!!notice && (
             <View
               style={[
                 styles.notice,
-                notice === "Friend request sent." &&
+                notice === t("social.mobile.friends.friendRequestSent") &&
                   styles.noticeSuccess,
               ]}
             >
               <Ionicons
                 name={
-                  notice === "Friend request sent."
+                  notice === t("social.mobile.friends.friendRequestSent")
                     ? "checkmark-circle-outline"
                     : "alert-circle-outline"
                 }
                 size={16}
                 color={
-                  notice === "Friend request sent."
+                  notice === t("social.mobile.friends.friendRequestSent")
                     ? colors.green
                     : colors.yellow
                 }
@@ -312,15 +318,15 @@ export default function FriendsScreen() {
               <Text
                 style={[
                   styles.noticeText,
-                  notice === "Friend request sent." &&
+                  notice === t("social.mobile.friends.friendRequestSent") &&
                     styles.noticeTextSuccess,
                 ]}
               >
                 {notice}
               </Text>
-              {notice.endsWith(" is blocked.") && (
+              {notice === blockedNotice && (
                 <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push("/privacy" as any)}>
-                  <Text style={styles.noticeLink}>Manage</Text>
+                  <Text style={styles.noticeLink}>{t("social.mobile.friends.manage")}</Text>
                 </Pressable>
               )}
             </View>
@@ -328,7 +334,7 @@ export default function FriendsScreen() {
 
           {social.incoming.length > 0 && (
             <View style={styles.incomingBlock}>
-              <Text style={styles.panelLabel}>INCOMING REQUESTS · {social.incoming.length}</Text>
+              <Text style={styles.panelLabel}>{t("social.mobile.friends.incomingRequestsCount", { count: social.incoming.length })}</Text>
               {social.incoming.map((friend) => (
                 <View key={friend.id} style={styles.requestRow}>
                   <Avatar
@@ -341,19 +347,19 @@ export default function FriendsScreen() {
                     <Text style={styles.personName} numberOfLines={1}>
                       {friend.username}
                     </Text>
-                    <Text style={styles.personStatus}>Wants to be friends</Text>
+                    <Text style={styles.personStatus}>{t("common.friends.wantsToBeFriends")}</Text>
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Accept ${friend.username}`}
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("social.mobile.friends.acceptUsername", { username: friend.username })}
                     style={styles.acceptButton}
                     onPress={() => void action(friend, "accept")}
                   >
-                    <Text style={styles.acceptText}>Accept</Text>
+                    <Text style={styles.acceptText}>{t("common.actions.accept")}</Text>
                   </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Ignore ${friend.username}`}
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("social.mobile.friends.ignoreUsername", { username: friend.username })}
                     style={styles.rejectButton}
                     onPress={() => void action(friend, "reject")}
                   >
-                    <Text style={styles.rejectText}>Ignore</Text>
+                    <Text style={styles.rejectText}>{t("common.friends.ignore")}</Text>
                   </Pressable>
                 </View>
               ))}
@@ -363,9 +369,9 @@ export default function FriendsScreen() {
 
         <View style={styles.chips} accessibilityRole="tablist">
           {([
-            ["online", `Online · ${onlineFriends.length}`],
-            ["all", `All · ${social.friends.length}`],
-            ["pending", `Pending · ${social.incoming.length + social.outgoing.length}`],
+            ["online", t("social.mobile.friends.tabOnline", { count: onlineFriends.length })],
+            ["all", t("social.mobile.friends.tabAll", { count: social.friends.length })],
+            ["pending", t("social.mobile.friends.tabPending", { count: social.incoming.length + social.outgoing.length })],
           ] as const).map(([key, label]) => {
             const active = filter === key;
             return (
@@ -386,8 +392,8 @@ export default function FriendsScreen() {
           social.incoming.length + social.outgoing.length === 0 ? (
             <MiniEmpty
               icon="paper-plane-outline"
-              title="No pending requests"
-              detail="Requests you send or receive show up here."
+              title={t("common.friends.noPending")}
+              detail={t("common.friends.noPendingHint")}
             />
           ) : (
             <View style={styles.list}>
@@ -396,13 +402,13 @@ export default function FriendsScreen() {
                   <Avatar username={friend.username} avatarUrl={friend.avatarUrl} online={friend.online} size={42} />
                   <View style={styles.personCopy}>
                     <Text style={styles.personName} numberOfLines={1}>{friend.username}</Text>
-                    <Text style={styles.personStatus}>Incoming request</Text>
+                    <Text style={styles.personStatus}>{t("social.mobile.friends.incomingRequest")}</Text>
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Accept ${friend.username}`} style={styles.acceptButton} onPress={() => void action(friend, "accept")}>
-                    <Text style={styles.acceptText}>Accept</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("social.mobile.friends.acceptUsername", { username: friend.username })} style={styles.acceptButton} onPress={() => void action(friend, "accept")}>
+                    <Text style={styles.acceptText}>{t("common.actions.accept")}</Text>
                   </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Ignore ${friend.username}`} style={styles.rejectButton} onPress={() => void action(friend, "reject")}>
-                    <Text style={styles.rejectText}>Ignore</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("social.mobile.friends.ignoreUsername", { username: friend.username })} style={styles.rejectButton} onPress={() => void action(friend, "reject")}>
+                    <Text style={styles.rejectText}>{t("common.friends.ignore")}</Text>
                   </Pressable>
                 </View>
               ))}
@@ -418,7 +424,7 @@ export default function FriendsScreen() {
                     <Text style={styles.personName} numberOfLines={1}>
                       {friend.username}
                     </Text>
-                    <Text style={styles.personStatus}>Sent · waiting for reply</Text>
+                    <Text style={styles.personStatus}>{t("social.mobile.friends.sentWaitingForReply")}</Text>
                   </View>
                   <Pressable accessibilityRole="button"
                     style={styles.cancelRequestButton}
@@ -426,7 +432,7 @@ export default function FriendsScreen() {
                     hitSlop={4}
                   >
                     <Ionicons name="close" size={15} color={colors.red} />
-                    <Text style={styles.cancelRequestText}>Cancel</Text>
+                    <Text style={styles.cancelRequestText}>{t("common.actions.cancel")}</Text>
                   </Pressable>
                 </View>
               ))}
@@ -437,14 +443,14 @@ export default function FriendsScreen() {
         ) : social.friends.length === 0 ? (
           <MiniEmpty
             icon="people-outline"
-            title="No friends yet"
-            detail="Share your DeCave ID or add someone above — or find teammates with Squad Finder."
+            title={t("common.friends.emptyTitle")}
+            detail={t("social.mobile.friends.shareYourDecaveIdOr")}
           />
         ) : shownFriends.length === 0 ? (
           <MiniEmpty
             icon="moon-outline"
-            title="Your crew is quiet"
-            detail="Online friends will appear here."
+            title={t("social.mobile.friends.yourCrewIsQuiet")}
+            detail={t("social.mobile.friends.onlineFriendsWillAppearHere")}
           />
         ) : (
           <View style={styles.grid}>
@@ -469,20 +475,20 @@ export default function FriendsScreen() {
                 <Avatar username={menuFriend.username} avatarUrl={menuFriend.avatarUrl} online={menuFriend.online} size={44} />
                 <View style={styles.personCopy}>
                   <Text style={styles.personName} numberOfLines={1}>{menuFriend.username}</Text>
-                  <Text style={styles.personStatus} numberOfLines={1}>{menuFriend.online ? "Online" : "Offline"}</Text>
+                  <Text style={styles.personStatus} numberOfLines={1}>{menuFriend.online ? t("common.presence.online") : t("common.presence.offline")}</Text>
                 </View>
               </View>
             )}
-            <MenuAction icon="chatbubble-outline" label="Send message" onPress={fromMenu(openDm)} />
-            <MenuAction icon="call-outline" label="Voice call" onPress={fromMenu((friend) => void startCall(friend.id, false, friend.username))} />
-            <MenuAction icon="videocam-outline" label="Video call" onPress={fromMenu((friend) => void startCall(friend.id, true, friend.username))} />
+            <MenuAction icon="chatbubble-outline" label={t("social.mobile.friends.sendMessage")} onPress={fromMenu(openDm)} />
+            <MenuAction icon="call-outline" label={t("social.mobile.friends.voiceCall")} onPress={fromMenu((friend) => void startCall(friend.id, false, friend.username))} />
+            <MenuAction icon="videocam-outline" label={t("social.mobile.friends.videoCall")} onPress={fromMenu((friend) => void startCall(friend.id, true, friend.username))} />
             <MenuAction
               icon="flag-outline"
-              label="Report"
+              label={t("common.actions.report")}
               onPress={fromMenu((friend) => setReportTarget({ targetType: "user", targetId: friend.id, subjectUserId: friend.id, subjectUsername: friend.username, contextType: "friends", contextLabel: "Friends" }))}
             />
-            <MenuAction icon="ban-outline" label="Block" danger onPress={fromMenu(confirmBlock)} />
-            <MenuAction icon="person-remove-outline" label="Remove friend" danger onPress={fromMenu(confirmRemove)} />
+            <MenuAction icon="ban-outline" label={t("common.actions.block")} danger onPress={fromMenu(confirmBlock)} />
+            <MenuAction icon="person-remove-outline" label={t("social.mobile.friends.removeFriend2")} danger onPress={fromMenu(confirmRemove)} />
           </Pressable>
         </Pressable>
       </Modal>
@@ -530,13 +536,14 @@ function FriendCard({
   onOpen: () => void;
   onMenu: () => void;
 }) {
-  const detail = friend.activityText || friend.statusText || (friend.online ? "Online" : "Offline");
+  const { t } = useTranslation(["social", "common"]);
+  const detail = friend.activityText || friend.statusText || (friend.online ? t("common.presence.online") : t("common.presence.offline"));
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${friend.username}, ${detail}`}
-      accessibilityHint="Long press for more options."
-      accessibilityActions={[{ name: "longpress", label: "More options" }]}
+      accessibilityHint={t("social.mobile.friends.longPressForMoreOptions")}
+      accessibilityActions={[{ name: "longpress", label: t("social.mobile.friends.moreOptions") }]}
       onAccessibilityAction={(event) => {
         if (event.nativeEvent.actionName === "longpress") onMenu();
       }}
@@ -550,7 +557,7 @@ function FriendCard({
         onPress={onMenu}
         hitSlop={6}
         accessibilityRole="button"
-        accessibilityLabel={`More options for ${friend.username}`}
+        accessibilityLabel={t("social.mobile.friends.moreOptionsForUsername", { username: friend.username })}
       >
         <Ionicons name="ellipsis-horizontal" size={15} color={colors.faint} />
       </Pressable>
@@ -566,12 +573,12 @@ function FriendCard({
       </Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Message ${friend.username}`}
+        accessibilityLabel={t("social.mobile.friends.messageUsername", { username: friend.username })}
         style={styles.cardMessage}
         onPress={onOpen}
       >
         <Ionicons name="chatbubble-outline" size={14} color={colors.cyan} />
-        <Text style={styles.cardMessageText}>Message</Text>
+        <Text style={styles.cardMessageText}>{t("social.mobile.friends.message")}</Text>
       </Pressable>
     </Pressable>
   );

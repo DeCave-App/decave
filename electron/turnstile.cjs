@@ -4,6 +4,7 @@
 const { normalizeTurnstileAction, isTrustedTurnstileUrl, APP_URL } = require("./security-boundary.cjs");
 const { session, BrowserWindow, ipcMain } = require("electron");
 const { resolveAppIconPath } = require("./app-icon.cjs");
+const { tMain } = require("./i18n.cjs");
 const path = require("node:path");
 
 const TURNSTILE_RESULT_CHANNEL = "decave:turnstile:result";
@@ -79,7 +80,7 @@ ipcMain.on(TURNSTILE_RESULT_CHANNEL, (event, rawMessage) => {
   if (message?.type === "turnstile-success") {
     const token = typeof message.token === "string" ? message.token : "";
     if (!token || token.length > 2048 || /[\u0000-\u001f\u007f]/.test(token)) {
-      settleTurnstile("", new Error("Security verification returned an invalid token."));
+      settleTurnstile("", new Error(tMain("desktop.turnstile.invalidToken")));
       return;
     }
     settleTurnstile(token);
@@ -95,10 +96,10 @@ ipcMain.on(TURNSTILE_RESULT_CHANNEL, (event, rawMessage) => {
 
 async function showTurnstileChallenge(parentWindow, requestedAction) {
   const action = normalizeTurnstileAction(requestedAction);
-  if (!action) throw new Error("Unsupported security-verification action.");
+  if (!action) throw new Error(tMain("desktop.turnstile.unsupportedAction"));
 
   if (pendingTurnstile) {
-    settleTurnstile("", new Error("Security verification was replaced by a new request."));
+    settleTurnstile("", new Error(tMain("desktop.turnstile.replaced")));
   }
 
   const isolatedSession = session.fromPartition(TURNSTILE_SESSION_PARTITION);
@@ -120,7 +121,7 @@ async function showTurnstileChallenge(parentWindow, requestedAction) {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: "#070b16",
-    title: "DeCave security verification",
+    title: tMain("desktop.turnstile.windowTitle"),
     icon: resolveAppIconPath(),
     skipTaskbar: true,
     webPreferences: {
@@ -172,7 +173,7 @@ async function showTurnstileChallenge(parentWindow, requestedAction) {
       resolve,
       reject,
       timeout: setTimeout(() => {
-        settleTurnstile("", new Error("Security verification timed out."));
+        settleTurnstile("", new Error(tMain("desktop.turnstile.timedOut")));
       }, 120_000),
     };
   });
@@ -181,7 +182,7 @@ async function showTurnstileChallenge(parentWindow, requestedAction) {
   try {
     await challengeWindow.loadURL(`${APP_URL}/mobile/turnstile?action=${encodeURIComponent(action)}`);
   } catch {
-    settleTurnstile("", new Error("Security verification could not be loaded."));
+    settleTurnstile("", new Error(tMain("desktop.turnstile.loadFailed")));
   }
 
   return result;

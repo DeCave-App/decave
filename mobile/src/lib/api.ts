@@ -1,4 +1,6 @@
 import Constants from "expo-constants";
+import i18next from "i18next";
+import { apiErrorText, type ApiErrorBody } from "./api-error";
 
 const configured =
   process.env.EXPO_PUBLIC_DECAVE_API ||
@@ -31,15 +33,17 @@ export async function apiFetch(
   });
 }
 
+export { apiErrorText, type ApiErrorBody } from "./api-error";
+
 export async function apiJson<T>(
   path: string,
   init: RequestInit = {},
   token?: string | null,
 ): Promise<T> {
   const response = await apiFetch(path, init, token);
-  const data = (await response.json().catch(() => ({}))) as T & { error?: string };
+  const data = (await response.json().catch(() => ({}))) as T & ApiErrorBody;
   if (!response.ok) {
-    throw new Error(data.error || `Request failed (${response.status})`);
+    throw new Error(apiErrorText(data, i18next.t("errors.mobile.requestFailed", { status: response.status })));
   }
   return data;
 }

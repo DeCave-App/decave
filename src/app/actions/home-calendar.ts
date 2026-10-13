@@ -6,6 +6,7 @@ import type { Channel, Server, ChatMessage, HubCalendarEvent } from "../types";
 import { HTTP_URL } from "../env";
 import { authorizedFetch } from "../http";
 import { trimLegacyCalendarEvents, homeCalendarEventForMessage } from "../calendar";
+import { i18next } from "../../i18n/index.ts";
 import type { HubEventsStore } from "../../features/events";
 
 export type HomeCalendarActionsDeps = {
@@ -69,7 +70,7 @@ export function createHomeCalendarActions(deps: HomeCalendarActionsDeps) {
           hub,
           channel,
           typeof item.timestamp === "string" ? item.timestamp : new Date().toISOString(),
-          typeof item.username === "string" ? item.username : "Hub member",
+          typeof item.username === "string" ? item.username : i18next.t("hub.actions.calendar.memberFallback"),
         );
         if (event) found.set(event.id, event);
       }
@@ -98,7 +99,7 @@ export function createHomeCalendarActions(deps: HomeCalendarActionsDeps) {
       }
     } catch {
       if (homeCalendarSyncRef.current === syncId)
-        setHomeCalendarNotice("Calendar events could not be synced right now.");
+        setHomeCalendarNotice(i18next.t("chat.actions.home.calendarSyncFailed"));
     } finally {
       if (homeCalendarSyncRef.current === syncId) setHomeCalendarBusy(false);
     }

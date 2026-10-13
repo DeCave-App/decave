@@ -4,6 +4,8 @@
 // "Couldn't send" with Retry and Delete. Messages written while offline wait
 // as "queued" and go out when the connection is back.
 
+import { i18next } from "../../i18n/index.ts";
+
 export type OutboxStatus = "queued" | "sending" | "failed";
 
 export type OutboxItem<A = unknown> = {
@@ -37,7 +39,7 @@ export function failStale<A>(items: readonly OutboxItem<A>[], now: number): Outb
       return {
         ...item,
         status: "failed" as const,
-        error: "No reply from DeCave. Check your connection and try again.",
+        error: i18next.t("chat.outbox.noReply"),
       };
     }
     return item;

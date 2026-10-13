@@ -5,6 +5,8 @@ import { BUILT_IN_COMMANDS } from "../../../shared/bots/builtins.ts";
 import { capabilitiesForRules, type BotCapabilityName } from "../../../shared/bots/capabilities.ts";
 import type { BotRuleContext, BotRuleError } from "../../../shared/bots/schema.ts";
 import type { BotAction, BotCondition, BotRule, BotTrigger } from "../../../shared/bots/types.ts";
+import { i18next } from "../../i18n/index.ts";
+import { weekdayName } from "../shared/dateParts";
 
 /** Hub names by id, for turning ids into readable text. */
 export type BotNames = {
@@ -15,7 +17,7 @@ export type BotNames = {
   rules: Record<string, string>;
 };
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const t = i18next.t;
 const TEXT_PREVIEW = 20;
 
 /** Cuts long message text at a word boundary so the sentence stays one line. */
@@ -31,156 +33,196 @@ function preview(text: string): string {
   return `"${out || clean.slice(0, TEXT_PREVIEW)} …"`;
 }
 
-/** How a room, role or rule that no longer exists is named in sentences and pickers. */
-export const deletedLabel = (what: string) => `deleted ${what} (pick another)`;
+/** What a picker points at: a text room, voice room, role or rule. */
+export type BotRefKind = "room" | "voiceRoom" | "role" | "rule";
 
-function named(map: Record<string, string>, id: string | undefined, prefix: string, what: string): string {
-  if (!id) return `(pick a ${what})`;
+/** How a room, role or rule that no longer exists is named in sentences and pickers. */
+export const deletedLabel = (what: BotRefKind) => i18next.t(`bots.rule.deleted.${what}`);
+
+function named(map: Record<string, string>, id: string | undefined, prefix: string, what: BotRefKind): string {
+  if (!id) return i18next.t(`bots.rule.pick.${what}`);
   const name = map[id];
   return name === undefined ? `${prefix}${deletedLabel(what)}` : `${prefix}${name}`;
 }
 
 export function formatMinutes(minutes: number): string {
-  if (minutes % 1440 === 0) return `${minutes / 1440} day${minutes === 1440 ? "" : "s"}`;
-  if (minutes % 60 === 0) return `${minutes / 60} hour${minutes === 60 ? "" : "s"}`;
-  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  if (minutes % 1440 === 0) return t("bots.rule.duration.days", { count: minutes / 1440 });
+  if (minutes % 60 === 0) return t("bots.rule.duration.hours", { count: minutes / 60 });
+  return t("bots.rule.duration.minutes", { count: minutes });
 }
 
-export function scheduleText(t: Extract<BotTrigger, { type: "schedule" }>): string {
-  if (t.every !== undefined) return `every ${formatMinutes(t.every)}`;
-  if (t.daily) return `every day at ${t.daily}`;
-  if (t.weekly) return `every ${DAY_NAMES[t.weekly.day] ?? "?"} at ${t.weekly.time}`;
-  if (t.cron) return `on cron "${t.cron}"`;
-  return "on a schedule";
+export function scheduleText(s: Extract<BotTrigger, { type: "schedule" }>): string {
+  if (s.every !== undefined) return t("bots.rule.schedule.every", { duration: formatMinutes(s.every) });
+  if (s.daily) return t("bots.rule.schedule.daily", { time: s.daily });
+  if (s.weekly) return t("bots.rule.schedule.weekly", { day: weekdayName(s.weekly.day, "short"), time: s.weekly.time });
+  if (s.cron) return t("bots.rule.schedule.cron", { cron: s.cron });
+  return t("bots.rule.schedule.any");
 }
 
-export function triggerText(t: BotTrigger, n: BotNames): string {
-  switch (t.type) {
+export function triggerText(tr: BotTrigger, n: BotNames): string {
+  switch (tr.type) {
     case "command":
-      return `someone uses /${t.name || "…"}`;
-    case "message": {
-      const how = { contains: "contains", startsWith: "starts with", exact: "is exactly", regex: "matches" }[t.mode];
-      return `a message ${how} "${t.pattern}"`;
-    }
+      return t("bots.rule.trigger.command", { name: tr.name || "…" });
+    case "message":
+      return t(`bots.rule.trigger.message.${tr.mode}`, { pattern: tr.pattern });
     case "memberJoin":
-      return "someone joins the Hub";
+      return t("bots.rule.trigger.memberJoin");
     case "memberLeave":
-      return "someone leaves the Hub";
+      return t("bots.rule.trigger.memberLeave");
     case "roleAdded":
-      return `someone gets ${named(n.roles, t.roleId, "@", "role")}`;
+      return t("bots.rule.trigger.roleAdded", { role: named(n.roles, tr.roleId, "@", "role") });
     case "roleRemoved":
-      return `someone loses ${named(n.roles, t.roleId, "@", "role")}`;
+      return t("bots.rule.trigger.roleRemoved", { role: named(n.roles, tr.roleId, "@", "role") });
     case "reactionAdded":
-      return `someone reacts with ${t.emoji}`;
+      return t("bots.rule.trigger.reactionAdded", { emoji: tr.emoji });
     case "reactionRemoved":
-      return `someone removes a ${t.emoji} reaction`;
+      return t("bots.rule.trigger.reactionRemoved", { emoji: tr.emoji });
     case "component":
-      return `someone uses button "${t.customId}"`;
+      return t("bots.rule.trigger.component", { id: tr.customId });
     case "formSubmit":
-      return `someone submits form "${t.formId}"`;
+      return t("bots.rule.trigger.formSubmit", { id: tr.formId });
     case "voiceJoin":
-      return `someone joins ${t.roomId ? named(n.voice, t.roomId, "", "voice room") : "any voice room"}`;
+      return t("bots.rule.trigger.voiceJoin", {
+        room: tr.roomId ? named(n.voice, tr.roomId, "", "voiceRoom") : t("bots.rule.anyVoiceRoom"),
+      });
     case "voiceLeave":
-      return `someone leaves ${t.roomId ? named(n.voice, t.roomId, "", "voice room") : "any voice room"}`;
+      return t("bots.rule.trigger.voiceLeave", {
+        room: tr.roomId ? named(n.voice, tr.roomId, "", "voiceRoom") : t("bots.rule.anyVoiceRoom"),
+      });
     case "schedule":
-      return scheduleText(t);
+      return scheduleText(tr);
     case "hubEventStart":
-      return "a Hub event starts";
+      return t("bots.rule.trigger.hubEventStart");
     case "streamLive":
-      return "the stream goes live on Twitch";
+      return t("bots.rule.trigger.streamLive");
     case "streamOffline":
-      return "the stream ends on Twitch";
+      return t("bots.rule.trigger.streamOffline");
   }
 }
 
 export function conditionText(c: BotCondition, n: BotNames): string {
   switch (c.type) {
     case "hasRole":
-      return `they have ${named(n.roles, c.roleId, "@", "role")}`;
+      return t("bots.rule.condition.hasRole", { role: named(n.roles, c.roleId, "@", "role") });
     case "lacksRole":
-      return `they don't have ${named(n.roles, c.roleId, "@", "role")}`;
+      return t("bots.rule.condition.lacksRole", { role: named(n.roles, c.roleId, "@", "role") });
     case "channelIs":
-      return `it's in ${named(n.channels, c.channelId, "#", "room")}`;
+      return t("bots.rule.condition.channelIs", { room: named(n.channels, c.channelId, "#", "room") });
     case "channelIsNot":
-      return `it's not in ${named(n.channels, c.channelId, "#", "room")}`;
+      return t("bots.rule.condition.channelIsNot", { room: named(n.channels, c.channelId, "#", "room") });
     case "accountAge":
-      return `their account is ${c.minDays}+ days old`;
+      return t("bots.rule.condition.accountAge", { count: c.minDays });
     case "memberAge":
-      return `they joined ${c.minDays}+ days ago`;
+      return t("bots.rule.condition.memberAge", { count: c.minDays });
     case "variable":
       return `${c.scope} ${c.name || "…"} ${c.op} ${c.value}`;
     case "chance":
-      return `${c.percent}% chance`;
+      return t("bots.rule.condition.chance", { percent: c.percent });
     case "timeOfDay":
-      return `it's between ${c.from} and ${c.to}`;
+      return t("bots.rule.condition.timeOfDay", { from: c.from, to: c.to });
     case "weekday":
-      return `it's ${c.days.map((d) => DAY_NAMES[d] ?? "?").join(", ") || "no day"}`;
+      return c.days.length
+        ? t("bots.rule.condition.weekday", { days: c.days.map((d) => weekdayName(d, "short")).join(", ") })
+        : t("bots.rule.condition.noDay");
   }
 }
 
-const forDuration = (minutes: number | undefined) => (minutes ? ` for ${formatMinutes(minutes)}` : "");
+function roleAction(
+  key: "addRole" | "removeRole" | "toggleRole",
+  a: { roleId: string; durationMinutes?: number },
+  n: BotNames,
+) {
+  const role = named(n.roles, a.roleId, "@", "role");
+  return a.durationMinutes
+    ? t(`bots.rule.action.${key}For`, { role, duration: formatMinutes(a.durationMinutes) })
+    : t(`bots.rule.action.${key}`, { role });
+}
 
 export function actionText(a: BotAction, n: BotNames): string {
   switch (a.type) {
     case "sendMessage":
-      return `send ${preview(a.text)} in ${a.channel === "trigger" ? "the same channel" : named(n.channels, a.channel, "#", "room")}`;
+      return t("bots.rule.action.sendMessage", {
+        text: preview(a.text),
+        room: a.channel === "trigger" ? t("bots.rule.sameChannel") : named(n.channels, a.channel, "#", "room"),
+      });
     case "reply":
-      return `reply ${preview(a.text)}`;
+      return t("bots.rule.action.reply", { text: preview(a.text) });
     case "editMessage":
-      return `edit the message to ${preview(a.text)}`;
+      return t("bots.rule.action.editMessage", { text: preview(a.text) });
     case "pin":
-      return "pin the message";
+      return t("bots.rule.action.pin");
     case "unpin":
-      return "unpin the message";
+      return t("bots.rule.action.unpin");
     case "deleteTrigger":
-      return "delete the message";
+      return t("bots.rule.action.deleteTrigger");
     case "react":
-      return `react with ${a.emoji}`;
+      return t("bots.rule.action.react", { emoji: a.emoji });
     case "createThread":
-      return `start thread ${preview(a.name)}`;
+      return t("bots.rule.action.createThread", { name: preview(a.name) });
     case "privateNotice":
-      return `privately tell them ${preview(a.text)}`;
+      return t("bots.rule.action.privateNotice", { text: preview(a.text) });
     case "addRole":
-      return `give ${named(n.roles, a.roleId, "@", "role")}${forDuration(a.durationMinutes)}`;
     case "removeRole":
-      return `remove ${named(n.roles, a.roleId, "@", "role")}${forDuration(a.durationMinutes)}`;
     case "toggleRole":
-      return `toggle ${named(n.roles, a.roleId, "@", "role")}${forDuration(a.durationMinutes)}`;
+      return roleAction(a.type, a, n);
     case "openForm":
-      return `open form ${preview(a.title)}`;
+      return t("bots.rule.action.openForm", { title: preview(a.title) });
     case "startPoll":
-      return `start poll ${preview(a.question)}`;
+      return t("bots.rule.action.startPoll", { question: preview(a.question) });
     case "createEvent":
-      return `create event ${preview(a.title)}`;
+      return t("bots.rule.action.createEvent", { title: preview(a.title) });
     case "setVariable":
-      return `set ${a.name || "…"} to ${a.value ?? '""'}`;
+      return t("bots.rule.action.setVariable", { name: a.name || "…", value: a.value ?? '""' });
     case "addVariable":
-      return `add ${a.value ?? 1} to ${a.name || "…"}`;
+      return t("bots.rule.action.addVariable", { name: a.name || "…", value: a.value ?? 1 });
     case "resetVariable":
-      return `reset ${a.name || "…"}`;
+      return t("bots.rule.action.resetVariable", { name: a.name || "…" });
     case "wait":
-      return `wait ${formatMinutes(a.minutes)}`;
+      return t("bots.rule.action.wait", { duration: formatMinutes(a.minutes) });
     case "stop":
-      return "stop";
+      return t("bots.rule.action.stop");
     case "runRule":
-      return `run ${a.ruleId ? (n.rules[a.ruleId] ?? deletedLabel("rule")) : "(pick a rule)"}`;
+      return t("bots.rule.action.runRule", {
+        rule: a.ruleId ? (n.rules[a.ruleId] ?? deletedLabel("rule")) : t("bots.rule.pick.rule"),
+      });
     case "webhook":
-      return `call ${a.method} ${a.url || "…"}`;
+      return t("bots.rule.action.webhook", { method: a.method, url: a.url || "…" });
   }
+}
+
+/** Joins clauses pairwise with a translated connective ("a and b", "a, then b"). */
+function joinWith(items: string[], key: "bots.rule.join.and" | "bots.rule.join.or" | "bots.rule.join.then"): string {
+  return items.reduce((left, right) => t(key, { left, right }));
 }
 
 /** One-line summary: When … · If … · Do … · Otherwise … */
 export function ruleToSentence(rule: BotRule, names: BotNames): string {
-  const parts = [`When ${triggerText(rule.trigger, names)}`];
-  const all = rule.when?.all ?? [];
-  const any = rule.when?.any ?? [];
-  const ifs = [
-    all.map((c) => conditionText(c, names)).join(" and "),
-    any.length ? any.map((c) => conditionText(c, names)).join(" or ") : "",
-  ].filter(Boolean);
-  if (ifs.length) parts.push(`If ${ifs.join(" and (")}${ifs.length > 1 ? ")" : ""}`);
-  parts.push(`Do ${rule.then.map((a) => actionText(a, names)).join(", then ") || "nothing"}`);
-  if (rule.else?.length) parts.push(`Otherwise ${rule.else.map((a) => actionText(a, names)).join(", then ")}`);
+  const parts = [t("bots.rule.sentence.when", { trigger: triggerText(rule.trigger, names) })];
+  const all = (rule.when?.all ?? []).map((c) => conditionText(c, names));
+  const any = (rule.when?.any ?? []).map((c) => conditionText(c, names));
+  const allText = all.length ? joinWith(all, "bots.rule.join.and") : "";
+  const anyText = any.length ? joinWith(any, "bots.rule.join.or") : "";
+  if (allText && anyText) parts.push(t("bots.rule.sentence.ifBoth", { all: allText, any: anyText }));
+  else if (allText || anyText) parts.push(t("bots.rule.sentence.if", { conditions: allText || anyText }));
+  parts.push(
+    rule.then.length
+      ? t("bots.rule.sentence.do", {
+          actions: joinWith(
+            rule.then.map((a) => actionText(a, names)),
+            "bots.rule.join.then",
+          ),
+        })
+      : t("bots.rule.sentence.doNothing"),
+  );
+  if (rule.else?.length)
+    parts.push(
+      t("bots.rule.sentence.otherwise", {
+        actions: joinWith(
+          rule.else.map((a) => actionText(a, names)),
+          "bots.rule.join.then",
+        ),
+      }),
+    );
   return parts.join(" · ");
 }
 
@@ -259,7 +301,13 @@ const ACTION_DEFAULTS: Partial<Record<BotAction["type"], Record<string, unknown>
   react: { emoji: "👍" },
   wait: { minutes: 5 },
   webhook: { method: "POST" },
-  openForm: { formId: "form", title: "", fields: [{ id: "answer", label: "Answer", style: "short", required: true }] },
+  get openForm() {
+    return {
+      formId: "form",
+      title: "",
+      fields: [{ id: "answer", label: t("bots.rule.defaultFormField"), style: "short", required: true }],
+    };
+  },
 };
 
 export function defaultTrigger<T extends BotTrigger["type"]>(type: T): Extract<BotTrigger, { type: T }> {
@@ -344,7 +392,7 @@ export type HubRef = { id: string; name: string };
 /** The Hub parts a rule can point at. Text rooms match what the server accepts (type "text"). */
 export type BotHub = { textRooms: HubRef[]; voiceRooms: HubRef[]; roles: HubRef[] };
 
-export const ruleLabel = (index: number) => `Rule ${index + 1}`;
+export const ruleLabel = (index: number) => t("bots.rule.label", { number: index + 1 });
 
 export function namesFor(hub: BotHub, ruleIds: string[]): BotNames {
   const byId = (list: HubRef[]) => Object.fromEntries(list.map((item) => [item.id, item.name]));
@@ -370,15 +418,15 @@ export function ruleContextFor(hub: BotHub, ruleIds: string[]): BotRuleContext {
 /** Template variables a rule can use, with a sample value for the live preview. */
 export function variablesFor(trigger: BotTrigger): { name: string; label: string; sample: string }[] {
   const vars = [
-    { name: "user", label: "Member", sample: "Sam" },
-    { name: "channel", label: "Room", sample: "general" },
-    { name: "date", label: "Today's date", sample: new Date().toISOString().slice(0, 10) },
-    { name: "random 1-6", label: "Random number", sample: "4" },
+    { name: "user", label: t("bots.variable.user"), sample: "Sam" },
+    { name: "channel", label: t("bots.variable.channel"), sample: "general" },
+    { name: "date", label: t("bots.variable.date"), sample: new Date().toISOString().slice(0, 10) },
+    { name: "random 1-6", label: t("bots.variable.random"), sample: "4" },
   ];
   if (trigger.type === "message")
     vars.push(
-      { name: "text", label: "Message text", sample: "hello there" },
-      { name: "match.0", label: "Matched part", sample: trigger.pattern || "hello" },
+      { name: "text", label: t("bots.variable.text"), sample: t("bots.variable.textSample") },
+      { name: "match.0", label: t("bots.variable.match"), sample: trigger.pattern || t("bots.variable.matchSample") },
     );
   if (trigger.type === "command")
     for (const option of trigger.options)
@@ -388,14 +436,14 @@ export function variablesFor(trigger: BotTrigger): { name: string; label: string
         sample: option.type === "number" ? "20" : option.name,
       });
   if (trigger.type === "reactionAdded" || trigger.type === "reactionRemoved")
-    vars.push({ name: "emoji", label: "Emoji", sample: trigger.emoji });
-  if (trigger.type === "component") vars.push({ name: "value", label: "Picked value", sample: "option" });
+    vars.push({ name: "emoji", label: t("bots.variable.emoji"), sample: trigger.emoji });
+  if (trigger.type === "component") vars.push({ name: "value", label: t("bots.variable.value"), sample: "option" });
   if (trigger.type === "streamLive" || trigger.type === "streamOffline")
     vars.push(
-      { name: "stream.title", label: "Stream title", sample: "Ranked grind tonight" },
-      { name: "stream.game", label: "Game", sample: "Counter-Strike 2" },
-      { name: "stream.url", label: "Stream link", sample: "https://www.example.com/yourname" },
-      { name: "streamer", label: "Twitch channel", sample: "yourname" },
+      { name: "stream.title", label: t("bots.variable.streamTitle"), sample: t("bots.variable.streamTitleSample") },
+      { name: "stream.game", label: t("bots.variable.streamGame"), sample: "Counter-Strike 2" },
+      { name: "stream.url", label: t("bots.variable.streamUrl"), sample: "https://www.example.com/yourname" },
+      { name: "streamer", label: t("bots.variable.streamer"), sample: "yourname" },
     );
   return vars;
 }
@@ -405,13 +453,74 @@ export function variablesFor(trigger: BotTrigger): { name: string; label: string
 /** What a bot may do; mirrors HUB_BOT_CAPABILITIES in worker/lib/hub-bots.ts. */
 export type BotCapability = BotCapabilityName;
 
-export const CAPABILITY_LABELS: Record<BotCapability, { label: string; description: string }> = {
-  send_messages: { label: "Send messages", description: "Messages, replies, reactions, threads and private notices." },
-  create_polls: { label: "Create polls", description: "The Start poll action." },
-  create_events: { label: "Create events", description: "The Create Hub event action." },
-  manage_roles: { label: "Manage roles", description: "Give, remove and toggle roles." },
-  manage_messages: { label: "Manage messages", description: "Pin, unpin and delete messages." },
-  webhooks: { label: "Call webhooks", description: "Send requests to HTTPS URLs." },
+/** Labels are getters, so they read in the current UI language; phrase fits inside a sentence. */
+export const CAPABILITY_LABELS: Record<BotCapability, { label: string; description: string; phrase: string }> = {
+  send_messages: {
+    get label() {
+      return t("bots.capability.send_messages.label");
+    },
+    get description() {
+      return t("bots.capability.send_messages.description");
+    },
+    get phrase() {
+      return t("bots.capability.send_messages.phrase");
+    },
+  },
+  create_polls: {
+    get label() {
+      return t("bots.capability.create_polls.label");
+    },
+    get description() {
+      return t("bots.capability.create_polls.description");
+    },
+    get phrase() {
+      return t("bots.capability.create_polls.phrase");
+    },
+  },
+  create_events: {
+    get label() {
+      return t("bots.capability.create_events.label");
+    },
+    get description() {
+      return t("bots.capability.create_events.description");
+    },
+    get phrase() {
+      return t("bots.capability.create_events.phrase");
+    },
+  },
+  manage_roles: {
+    get label() {
+      return t("bots.capability.manage_roles.label");
+    },
+    get description() {
+      return t("bots.capability.manage_roles.description");
+    },
+    get phrase() {
+      return t("bots.capability.manage_roles.phrase");
+    },
+  },
+  manage_messages: {
+    get label() {
+      return t("bots.capability.manage_messages.label");
+    },
+    get description() {
+      return t("bots.capability.manage_messages.description");
+    },
+    get phrase() {
+      return t("bots.capability.manage_messages.phrase");
+    },
+  },
+  webhooks: {
+    get label() {
+      return t("bots.capability.webhooks.label");
+    },
+    get description() {
+      return t("bots.capability.webhooks.description");
+    },
+    get phrase() {
+      return t("bots.capability.webhooks.phrase");
+    },
+  },
 };
 
 /** Capabilities the rules use that the bot hasn't been given. */

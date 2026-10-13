@@ -15,8 +15,10 @@ import { TurnstileModal } from "@/src/components/TurnstileModal";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
 import { MINIMUM_SIGNUP_AGE } from "../../../shared/legal-consent";
+import { Trans, useTranslation } from "react-i18next";
 
 export default function RegisterScreen() {
+  const { t } = useTranslation(["auth", "common"]);
   const { register } = useSession();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -34,19 +36,19 @@ export default function RegisterScreen() {
   const begin = () => {
     setOk(false);
     if (!email.trim() || !username.trim() || !password || !confirm || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
-      setNotice("Fill in every field.");
+      setNotice(t("auth.mobile.register.fillInEveryField"));
       return;
     }
     const enteredDate = new Date(`${birthDate}T00:00:00Z`);
     const cutoff = new Date(); cutoff.setUTCFullYear(cutoff.getUTCFullYear() - MINIMUM_SIGNUP_AGE);
-    if (Number.isNaN(enteredDate.getTime()) || enteredDate.toISOString().slice(0, 10) !== birthDate || enteredDate > cutoff) { setNotice(`You must be at least ${MINIMUM_SIGNUP_AGE} to create an account.`); return; }
-    if (password.length < 10) { setNotice("Use a password with at least 10 characters."); return; }
+    if (Number.isNaN(enteredDate.getTime()) || enteredDate.toISOString().slice(0, 10) !== birthDate || enteredDate > cutoff) { setNotice(t("auth.mobile.register.youMustBeAtLeast", { age: MINIMUM_SIGNUP_AGE })); return; }
+    if (password.length < 10) { setNotice(t("auth.mobile.register.useAPasswordWithAt")); return; }
     if (password !== confirm) {
-      setNotice("The passwords do not match.");
+      setNotice(t("auth.mobile.register.thePasswordsDoNotMatch"));
       return;
     }
     if (!acceptedTerms) {
-      setNotice("Confirm that you are 18 or older and agree to the Terms of Service and Privacy Policy.");
+      setNotice(t("auth.mobile.register.confirmThatYouAre18"));
       return;
     }
     setNotice("");
@@ -77,10 +79,10 @@ export default function RegisterScreen() {
             <Text style={styles.brandText}>DeCave</Text>
           </View>
 
-          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>JOIN THE CAVE</Text>
-          <Text style={styles.title}>Create account</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("auth.mobile.register.joinTheCave")}</Text>
+          <Text style={styles.title}>{t("auth.mobile.register.createAccount")}</Text>
           <Text style={styles.subtitle}>
-            Your account works across DeCave web, desktop and mobile.
+            {t("auth.mobile.register.yourAccountWorksAcrossDecave")}
           </Text>
 
           {!!notice && (
@@ -90,7 +92,7 @@ export default function RegisterScreen() {
           <TextInput
             value={email}
             onChangeText={setEmail}
-            placeholder="Email"
+            placeholder={t("common.auth.email")}
             placeholderTextColor={colors.faint}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -99,7 +101,7 @@ export default function RegisterScreen() {
           <TextInput
             value={username}
             onChangeText={setUsername}
-            placeholder="Username"
+            placeholder={t("common.auth.username")}
             placeholderTextColor={colors.faint}
             autoCapitalize="none"
             style={styles.input}
@@ -107,17 +109,17 @@ export default function RegisterScreen() {
           <TextInput
             value={birthDate}
             onChangeText={(value) => setBirthDate(value.replace(/[^0-9-]/g, "").slice(0, 10))}
-            placeholder="Birth date (YYYY-MM-DD)"
+            placeholder={t("auth.mobile.register.birthDateYyyyMmDd")}
             placeholderTextColor={colors.faint}
             keyboardType="numbers-and-punctuation"
             autoCapitalize="none"
             style={styles.input}
           />
-          <Text style={styles.ageHint}>Used only to confirm that DeCave is only for adults aged {MINIMUM_SIGNUP_AGE} or older. We do not store the exact date.</Text>
+          <Text style={styles.ageHint}>{t("auth.mobile.register.usedOnlyToConfirmThat", { age: MINIMUM_SIGNUP_AGE })}</Text>
           <TextInput
             value={password}
             onChangeText={setPassword}
-            placeholder="Password"
+            placeholder={t("common.auth.password")}
             placeholderTextColor={colors.faint}
             secureTextEntry
             style={styles.input}
@@ -125,7 +127,7 @@ export default function RegisterScreen() {
           <TextInput
             value={confirm}
             onChangeText={setConfirm}
-            placeholder="Confirm password"
+            placeholder={t("common.auth.confirmPassword")}
             placeholderTextColor={colors.faint}
             secureTextEntry
             style={styles.input}
@@ -141,15 +143,15 @@ export default function RegisterScreen() {
               {acceptedTerms && <Text style={styles.checkmark}>✓</Text>}
             </View>
             <Text style={styles.consentText}>
-              I am 18 or older and agree to the{" "}
-              <Text style={styles.link} onPress={(event) => { event.stopPropagation(); void Linking.openURL("https://de-cave.com/terms"); }}>
-                Terms of Service
-              </Text>{" "}
-              and{" "}
-              <Text style={styles.link} onPress={(event) => { event.stopPropagation(); void Linking.openURL("https://de-cave.com/privacy"); }}>
-                Privacy Policy
-              </Text>
-              .
+              <Trans
+                t={t}
+                i18nKey="common.auth.consent"
+                values={{ age: MINIMUM_SIGNUP_AGE }}
+                components={[
+                  <Text key="terms" style={styles.link} onPress={(event) => { event.stopPropagation(); void Linking.openURL("https://de-cave.com/terms"); }} />,
+                  <Text key="privacy" style={styles.link} onPress={(event) => { event.stopPropagation(); void Linking.openURL("https://de-cave.com/privacy"); }} />,
+                ]}
+              />
             </Text>
           </Pressable>
 
@@ -164,12 +166,12 @@ export default function RegisterScreen() {
           >
             {working && <ActivityIndicator color="#fff" style={styles.buttonSpinner} />}
             <Text style={styles.buttonText}>
-              {busy ? "Creating…" : turnstileOpen ? "Verifying…" : "Create account"}
+              {busy ? t("auth.mobile.register.creating") : turnstileOpen ? t("common.status.verifying") : t("auth.mobile.register.createAccount")}
             </Text>
           </Pressable>
 
           <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.replace("/login")}>
-            <Text style={styles.secondaryText}>Back to sign in</Text>
+            <Text style={styles.secondaryText}>{t("auth.mobile.register.backToSignIn")}</Text>
           </Pressable>
         </View>
       </ScrollView>

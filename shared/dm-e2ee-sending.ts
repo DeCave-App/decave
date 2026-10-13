@@ -6,7 +6,7 @@
 
 import { toggledReactions, type DmE2eeSession } from "./dm-e2ee-session.ts";
 import type { DmEnvelope } from "./dm-e2ee-format.ts";
-import { dmPreviewText } from "./dm-message-preview.ts";
+import { dmPreviewText, ENGLISH_DM_PREVIEW_LABELS, type DmPreviewLabels } from "./dm-message-preview.ts";
 
 /**
  * The uploads a message's text refers to. An encrypted message lists them next to
@@ -37,7 +37,9 @@ function remember<T>(map: Map<string, T>, key: string, value: T) {
   while (map.size > 50) map.delete(map.keys().next().value as string);
 }
 
-export function createDmE2eeSending(session: DmE2eeSession) {
+/** `previewLabels` words the list previews in the app language (English by default). */
+export function createDmE2eeSending(session: DmE2eeSession, options: { previewLabels?: DmPreviewLabels } = {}) {
+  const labels = options.previewLabels ?? ENGLISH_DM_PREVIEW_LABELS;
   // Socket sends fail asynchronously (DM_ERROR / GROUP_ERROR), after the composer
   // has cleared. When the failure is only a stale key, the peer setting up
   // encryption a moment ago, or a member change, the message is sealed again
@@ -222,12 +224,12 @@ export function createDmE2eeSending(session: DmE2eeSession) {
   /** A group's list preview, decrypted when it is encrypted. */
   async function groupPreview(group: { id: string; latestMessage: string; latestEnvelope?: unknown }): Promise<string> {
     const envelope = group.latestEnvelope as DmEnvelope | null | undefined;
-    if (!envelope) return dmPreviewText(group.latestMessage);
+    if (!envelope) return dmPreviewText(group.latestMessage, labels);
     const opened = await session.openGroup(
       { id: envelope.id ?? "", fromUserId: envelope.from ?? "", text: "", envelope },
       group.id,
     );
-    return opened.e2ee === "encrypted" ? dmPreviewText(opened.text) : "🔒 Encrypted message";
+    return opened.e2ee === "encrypted" ? dmPreviewText(opened.text, labels) : labels.encrypted();
   }
 
   /** Decrypt the latest-message previews of a DM conversation list. */
@@ -257,8 +259,8 @@ export function createDmE2eeSending(session: DmE2eeSession) {
       ...conversation,
       latestMessage:
         !conversation.latestEnvelope || opened[index].e2ee === "encrypted"
-          ? dmPreviewText(opened[index].text)
-          : "🔒 Encrypted message",
+          ? dmPreviewText(opened[index].text, labels)
+          : labels.encrypted(),
     }));
   }
 

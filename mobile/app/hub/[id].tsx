@@ -35,8 +35,12 @@ import { ChannelSection, EmptySection, ChannelRow } from "@/src/components/hub/C
 import { ManageHubSheet } from "@/src/components/hub/ManageHubSheet";
 import { RoomEditorSheet } from "@/src/components/hub/RoomEditorSheet";
 import { ChannelView } from "@/app/channel/[id]";
+import { useTranslation } from "react-i18next";
+import { DEFAULT_HUB_CATEGORY } from "../../../shared/hub-categories";
+import { hubCategoryInput } from "@/src/lib/hub-category";
 
 export default function HubScreen() {
+  const { t } = useTranslation(["hub", "common"]);
   const { width } = useWindowDimensions();
   const split = width >= SPLIT_MIN_WIDTH;
   const [splitRoom, setSplitRoom] = useState<SplitRoom | null>(null);
@@ -69,6 +73,7 @@ export default function HubScreen() {
   const [roomIcon, setRoomIcon] = useState("💬");
   const [roomGuidelines, setRoomGuidelines] = useState("");
   const [roomPostPolicy, setRoomPostPolicy] = useState<ForumPostPolicy>("everyone");
+  const [roomAccent, setRoomAccent] = useState<string | null>(null);
   const [roomPrivate, setRoomPrivate] = useState(false);
   const [roomMemberIds, setRoomMemberIds] = useState<string[]>([]);
   const [roomBusy, setRoomBusy] = useState(false);
@@ -85,7 +90,7 @@ export default function HubScreen() {
       send({ type: "JOIN_SERVER", serverId: hubId });
     } catch (error) {
       setLoadError(
-        error instanceof Error ? error.message : "Could not load this Hub.",
+        error instanceof Error ? error.message : t("hub.mobile.hub.couldNotLoadThisHub"),
       );
     }
   }, [token, hubId, send]);
@@ -130,7 +135,7 @@ export default function HubScreen() {
       setMembers(Array.isArray(values) ? values : []);
     } catch (error) {
       setRoomError(
-        error instanceof Error ? error.message : "Could not load Hub members.",
+        error instanceof Error ? error.message : t("hub.mobile.hub.couldNotLoadHubMembers"),
       );
     } finally {
       setMembersLoading(false);
@@ -146,7 +151,7 @@ export default function HubScreen() {
     if (!token || !hub || !canManageHub || hubSaving) return;
     const name = hubName.trim();
     if (!name) {
-      setHubManageError("Enter a Hub name.");
+      setHubManageError(t("hub.actions.settings.nameMissing"));
       return;
     }
 
@@ -174,7 +179,7 @@ export default function HubScreen() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             description: hubDescription.trim(),
-            category: hubCategory.trim() || "Gaming",
+            category: hubCategoryInput(hubCategory.trim()) || DEFAULT_HUB_CATEGORY,
           }),
         },
         token,
@@ -196,7 +201,7 @@ export default function HubScreen() {
       setManageHubOpen(false);
     } catch (error) {
       setHubManageError(
-        error instanceof Error ? error.message : "Could not update the Hub.",
+        error instanceof Error ? error.message : t("hub.mobile.hub.couldNotUpdateTheHub"),
       );
     } finally {
       setHubSaving(false);
@@ -225,6 +230,7 @@ export default function HubScreen() {
     setRoomIcon(channel.icon ?? "");
     setRoomGuidelines(channel.forumGuidelines ?? "");
     setRoomPostPolicy(channel.forumPostPolicy ?? "everyone");
+    setRoomAccent(channel.accent ?? null);
     setRoomPrivate(Boolean(channel.private));
     setRoomMemberIds([]);
     setRoomError("");
@@ -246,7 +252,7 @@ export default function HubScreen() {
       setRoomError(
         error instanceof Error
           ? error.message
-          : "Could not load room access.",
+          : t("hub.mobile.hub.couldNotLoadRoomAccess"),
       );
     }
   };
@@ -264,7 +270,7 @@ export default function HubScreen() {
     const name = roomName.trim();
 
     if (!name) {
-      setRoomError("Enter a room name.");
+      setRoomError(t("hub.actions.room.nameMissing"));
       return;
     }
 
@@ -280,6 +286,7 @@ export default function HubScreen() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name,
+              accent: roomAccent,
               icon: roomIcon,
               private: roomPrivate,
               memberIds: roomPrivate ? roomMemberIds : [],
@@ -321,7 +328,7 @@ export default function HubScreen() {
       setRoomEditorOpen(false);
     } catch (error) {
       setRoomError(
-        error instanceof Error ? error.message : "Could not save the room.",
+        error instanceof Error ? error.message : t("hub.mobile.hub.couldNotSaveTheRoom"),
       );
     } finally {
       setRoomBusy(false);
@@ -354,7 +361,7 @@ export default function HubScreen() {
       await loadHub();
     } catch (error) {
       setRoomError(
-        error instanceof Error ? error.message : "Could not move the room.",
+        error instanceof Error ? error.message : t("hub.mobile.hub.couldNotMoveTheRoom"),
       );
     } finally {
       setRoomBusy(false);
@@ -370,12 +377,12 @@ export default function HubScreen() {
     if (!token || !editingRoom || roomBusy) return;
 
     Alert.alert(
-      `Delete ${editingRoom.name}?`,
-      "Messages saved in this room may also be removed. This cannot be undone.",
+      t("hub.mobile.hub.deleteName", { name: editingRoom.name }),
+      t("hub.mobile.hub.messagesSavedInThisRoom"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.actions.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common.actions.delete"),
           style: "destructive",
           onPress: () => {
             void (async () => {
@@ -394,7 +401,7 @@ export default function HubScreen() {
                 setRoomError(
                   error instanceof Error
                     ? error.message
-                    : "Could not delete the room.",
+                    : t("hub.mobile.hub.couldNotDeleteTheRoom"),
                 );
               } finally {
                 setRoomBusy(false);
@@ -420,7 +427,7 @@ export default function HubScreen() {
               />
               <Text style={styles.loadError}>{loadError}</Text>
               <Pressable accessibilityRole="button" style={styles.retryButton} onPress={() => void loadHub()}>
-                <Text style={styles.retryButtonText}>Try again</Text>
+                <Text style={styles.retryButtonText}>{t("hub.mobile.hub.tryAgain")}</Text>
               </Pressable>
             </>
           ) : (
@@ -444,7 +451,7 @@ export default function HubScreen() {
           onPress={() => router.back()}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t("hub.mobile.hub.goBack")}
         >
           <Ionicons name="chevron-back" size={23} color={colors.cyan} />
         </Pressable>
@@ -479,8 +486,12 @@ export default function HubScreen() {
             )}
           </View>
           <Text style={styles.meta} numberOfLines={1} maxFontSizeMultiplier={1.3}>
-            {hub.onlineCount ?? 0} online · {hub.memberCount ?? 0} members
-            {hub.myRole ? ` · ${hub.myRole.toUpperCase()}` : ""}
+            {hub.myRole
+              ? t("hub.mobile.hub.withRole", {
+                  summary: t("hub.mobile.hub.onlineMembers", { online: hub.onlineCount ?? 0, count: hub.memberCount ?? 0 }),
+                  role: t(`common.roles.${hub.myRole}`).toUpperCase(),
+                })
+              : t("hub.mobile.hub.onlineMembers", { online: hub.onlineCount ?? 0, count: hub.memberCount ?? 0 })}
           </Text>
         </View>
 
@@ -489,7 +500,7 @@ export default function HubScreen() {
             style={styles.manageButton}
             onPress={openHubManager}
             accessibilityRole="button"
-            accessibilityLabel="Manage Hub"
+            accessibilityLabel={t("hub.sidebar.manage")}
           >
             <Ionicons name="settings-outline" size={19} color={colors.text} />
           </Pressable>
@@ -513,9 +524,9 @@ export default function HubScreen() {
               <Ionicons name="construct-outline" size={18} color={colors.cyan} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.adminStripTitle}>Manage this Hub</Text>
+              <Text style={styles.adminStripTitle}>{t("hub.mobile.hub.manageThisHub")}</Text>
               <Text style={styles.adminStripText}>
-                Edit Hub details, create rooms, and manage existing rooms.
+                {t("hub.mobile.hub.editHubDetailsCreateRooms")}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.muted} />
@@ -523,14 +534,14 @@ export default function HubScreen() {
         )}
 
         <ChannelSection
-          title="TEXT ROOMS"
+          title={t("hub.mobile.hub.textRooms")}
           icon="chatbubble-ellipses-outline"
           count={textChannels.length}
           canManage={canManageHub}
           onAdd={() => void openCreateRoom("text")}
         >
           {textChannels.length === 0 ? (
-            <EmptySection text="No text rooms in this Hub." />
+            <EmptySection text={t("hub.mobile.hub.noTextRoomsInThis")} />
           ) : (
             textChannels.map((channel) => (
               <ChannelRow
@@ -548,14 +559,14 @@ export default function HubScreen() {
 
         {(forumChannels.length > 0 || canManageHub) && (
           <ChannelSection
-            title="FORUMS"
+            title={t("hub.mobile.hub.forums")}
             icon="albums-outline"
             count={forumChannels.length}
             canManage={canManageHub}
             onAdd={() => void openCreateRoom("forum")}
           >
             {forumChannels.length === 0 ? (
-              <EmptySection text="No forums in this Hub." />
+              <EmptySection text={t("hub.mobile.hub.noForumsInThisHub")} />
             ) : (
               forumChannels.map((channel) => (
                 <ChannelRow
@@ -573,14 +584,14 @@ export default function HubScreen() {
         )}
 
         <ChannelSection
-          title="VOICE ROOMS"
+          title={t("hub.mobile.hub.voiceRooms")}
           icon="volume-high-outline"
           count={voiceChannels.length}
           canManage={canManageHub}
           onAdd={() => void openCreateRoom("voice")}
         >
           {voiceChannels.length === 0 ? (
-            <EmptySection text="No voice rooms in this Hub." />
+            <EmptySection text={t("hub.mobile.hub.noVoiceRoomsInThis")} />
           ) : (
             voiceChannels.map((channel) => {
               const connected =
@@ -637,6 +648,8 @@ export default function HubScreen() {
         icon={roomIcon}
         guidelines={roomGuidelines}
         postPolicy={roomPostPolicy}
+        accent={roomAccent}
+        onAccent={setRoomAccent}
         canMoveUp={editingIndex > 0}
         canMoveDown={editingIndex >= 0 && editingIndex < editingGroupSize - 1}
         isPrivate={roomPrivate}
@@ -674,7 +687,7 @@ export default function HubScreen() {
           ) : (
             <View style={styles.splitEmpty}>
               <Ionicons name="chatbubbles-outline" size={34} color={colors.faint} />
-              <Text style={styles.splitEmptyText}>Pick a room to start chatting</Text>
+              <Text style={styles.splitEmptyText}>{t("hub.mobile.hub.pickARoomToStart")}</Text>
             </View>
           )}
         </View>

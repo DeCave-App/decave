@@ -6,7 +6,9 @@
 // literal checks below are the main guard; Cloudflare's fetch also does not
 // reach private networks from a Worker, which backs them up.
 
-export type GuardedFetchResult = { ok: true; status: number; json: unknown } | { ok: false; reason: string };
+import { refusal, type Refusal } from "./reasons";
+
+export type GuardedFetchResult = { ok: true; status: number; json: unknown } | ({ ok: false } & Refusal);
 
 export type GuardedFetchOptions = {
   timeoutMs?: number;
@@ -101,16 +103,21 @@ function privateV6(g: number[]): boolean {
 
 /** Why a URL may not be called, or null when it passes every static check. */
 export function webhookUrlProblem(raw: string): string | null {
+  return webhookUrlRefusal(raw)?.reason ?? null;
+}
+
+/** webhookUrlProblem() with the reason's notice for the run log. */
+export function webhookUrlRefusal(raw: string): Refusal | null {
   let url: URL;
   try {
     url = new URL(raw);
   } catch {
-    return "Webhook URL isn't valid";
+    return refusal("bots.run.server.webhookUrlInvalid");
   }
-  if (url.protocol !== "https:") return "Webhook URL must use https";
-  if (url.username || url.password) return "Webhook URL can't contain a login";
-  if (url.port && url.port !== "443") return "Webhook URL can't use a custom port";
-  const refusedHost = "Webhook host isn't allowed";
+  if (url.protocol !== "https:") return refusal("bots.run.server.webhookHttpsOnly");
+  if (url.username || url.password) return refusal("bots.run.server.webhookNoLogin");
+  if (url.port && url.port !== "443") return refusal("bots.run.server.webhookNoPort");
+  const refusedHost = refusal("bots.run.server.webhookHostRefused");
   let host = url.hostname.toLowerCase();
   if (host.startsWith("[") && host.endsWith("]")) {
     const groups = parseIPv6(host.slice(1, -1));
@@ -160,8 +167,8 @@ export async function guardedFetch(
   fetchImpl: typeof fetch = fetch,
   options: GuardedFetchOptions = {},
 ): Promise<GuardedFetchResult> {
-  const problem = webhookUrlProblem(url);
-  if (problem) return { ok: false, reason: problem };
+  const problem = webhookUrlRefusal(url);
+  if (problem) return { ok: false, ...problem };
   const setTimer = options.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
   const clearTimer = options.clearTimer ?? ((h) => clearTimeout(h as ReturnType<typeof setTimeout>));
   const controller = new AbortController();
@@ -183,10 +190,10 @@ export async function guardedFetch(
     });
     if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
       await response.body?.cancel().catch(() => undefined);
-      return { ok: false, reason: "Webhook redirects aren't followed" };
+      return { ok: false, ...refusal("bots.run.server.webhookRedirect") };
     }
     const bytes = await readCapped(response, options.maxBytes ?? WEBHOOK_MAX_BYTES);
-    if (!bytes) return { ok: false, reason: "Webhook response too large" };
+    if (!bytes) return { ok: false, ...refusal("bots.run.server.webhookTooLarge") };
     let json: unknown = null;
     try {
       json = JSON.parse(new TextDecoder().decode(bytes));
@@ -195,7 +202,7 @@ export async function guardedFetch(
     }
     return { ok: true, status: response.status, json };
   } catch {
-    return { ok: false, reason: timedOut ? "Webhook timed out" : "Webhook request failed" };
+    return { ok: false, ...refusal(timedOut ? "bots.run.server.webhookTimedOut" : "bots.run.server.webhookFailed") };
   } finally {
     clearTimer(handle);
   }

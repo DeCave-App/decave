@@ -3,7 +3,7 @@
 import type { Env } from "./env";
 import { type UserRow, nowIso } from "../db";
 import { requireUser } from "./sessions";
-import { json } from "./http";
+import { apiError } from "./http";
 
 export type PlatformRole = "user" | "admin" | "owner";
 
@@ -24,7 +24,7 @@ export async function requirePlatformOwner(request: Request, env: Env): Promise<
   // Authorization is always resolved from the current D1 user row.
   // Nothing sent by the browser can grant platform privileges.
   if (user.platform_role !== "owner") {
-    return json({ error: "Platform owner access required" }, 403);
+    return apiError("owner.platformOwnerRequired", 403);
   }
 
   return user;

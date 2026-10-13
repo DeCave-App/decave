@@ -1,6 +1,7 @@
 // Small formatting helpers for labels, shortcuts, durations and sizes.
 
 import type { KeyboardEvent } from "react";
+import { i18next } from "../i18n/index.ts";
 
 export function acceleratorFromKeyEvent(event: KeyboardEvent<HTMLInputElement>): string | null {
   const key = event.key;
@@ -44,7 +45,10 @@ export function friendlyAccelerator(accelerator: string): string {
     .replace(/\+/g, " + ");
 }
 
+/** An audit or security event code ("login.mfa_failed") as a label; known codes come from admin.auditEvents. */
 export function readableAuditLabel(value: string): string {
+  const key = `admin.auditEvents.${value.replace(/[^a-zA-Z0-9]+/g, "_")}`;
+  if (i18next.exists(key)) return (i18next.t as unknown as (key: string) => string)(key);
   return value
     .replace(/[._-]+/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
@@ -54,7 +58,7 @@ export function readableAuditLabel(value: string): string {
 }
 
 export function readableDevice(userAgent: string): string {
-  if (!userAgent) return "Device details unavailable";
+  if (!userAgent) return i18next.t("chat.actions.device.unknownDetails");
   const browser = /Edg\//.test(userAgent)
     ? "Edge"
     : /Chrome\//.test(userAgent)
@@ -65,7 +69,7 @@ export function readableDevice(userAgent: string): string {
           ? "Safari"
           : /Electron\//.test(userAgent)
             ? "DeCave Desktop"
-            : "Unknown client";
+            : i18next.t("chat.actions.device.unknownClient");
   const system = /Windows NT/.test(userAgent)
     ? "Windows"
     : /Mac OS X/.test(userAgent)
@@ -76,8 +80,8 @@ export function readableDevice(userAgent: string): string {
           ? "iOS"
           : /Linux/.test(userAgent)
             ? "Linux"
-            : "Unknown OS";
-  return `${browser} on ${system}`;
+            : i18next.t("chat.actions.device.unknownSystem");
+  return i18next.t("chat.actions.device.browserOnSystem", { browser, system });
 }
 
 export function securityEventSeverity(value: string): "high" | "medium" | "info" {

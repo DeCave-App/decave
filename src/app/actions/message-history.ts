@@ -7,6 +7,8 @@ import { HTTP_URL } from "../env";
 import { HISTORY_PAGE_SIZE } from "../constants";
 import { messageBotFields } from "../../../shared/bots/card-view";
 import type { ComposerState } from "../state/composer";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import { dmE2ee } from "../../e2ee/dm-e2ee-client";
 
 export type MessageHistoryActionsDeps = {
@@ -93,7 +95,8 @@ export function createMessageHistoryActions(deps: MessageHistoryActionsDeps) {
         const response = await authorizedFetch(
           `${HTTP_URL}/api/channels/${channelId}/messages?before=${encodeURIComponent(before)}`,
         );
-        if (!response.ok) throw new Error(`Older messages failed to load (${response.status}).`);
+        if (!response.ok)
+          throw new Error(i18next.t("chat.actions.history.loadFailedStatus", { status: response.status }));
         const data: unknown = await response.json();
         if (!Array.isArray(data) || activeChannelRef.current !== channelId) return;
         const page = data.map((item: unknown) => normalizeChannelMessage(item, channelId));
@@ -108,7 +111,7 @@ export function createMessageHistoryActions(deps: MessageHistoryActionsDeps) {
           `${HTTP_URL}/api/dms/${encodeURIComponent(target.id)}?before=${encodeURIComponent(before)}`,
         );
         const data = (await response.json().catch(() => ({}))) as { messages?: DirectMessage[] } & ApiError;
-        if (!response.ok) throw new Error(data.error || "Older messages failed to load.");
+        if (!response.ok) throw new Error(apiErrorMessage(data, "client.history.load"));
         const page = await dmE2ee.openAll(Array.isArray(data.messages) ? data.messages : [], target.id);
         if (activeDmUserRef.current?.id !== target.id) return;
         prependingHistoryRef.current = true;
@@ -122,7 +125,7 @@ export function createMessageHistoryActions(deps: MessageHistoryActionsDeps) {
           `${HTTP_URL}/api/groups/${encodeURIComponent(group.id)}?before=${encodeURIComponent(before)}`,
         );
         const data = (await response.json().catch(() => ({}))) as { messages?: GroupChatMessage[]; error?: string };
-        if (!response.ok) throw new Error(data.error || "Older messages failed to load.");
+        if (!response.ok) throw new Error(apiErrorMessage(data, "client.history.load"));
         const page = await dmE2ee.openGroupAll(Array.isArray(data.messages) ? data.messages : [], group.id);
         if (activeGroupChatRef.current?.id !== group.id) return;
         prependingHistoryRef.current = true;
@@ -132,7 +135,7 @@ export function createMessageHistoryActions(deps: MessageHistoryActionsDeps) {
       restoreScroll();
     } catch (error) {
       console.error("Could not load older messages:", error);
-      setAttachmentError(error instanceof Error ? error.message : "Older messages failed to load.");
+      setAttachmentError(error instanceof Error ? error.message : i18next.t("errors.client.history.load"));
     } finally {
       setOlderHistoryBusy(false);
     }

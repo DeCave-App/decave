@@ -13,8 +13,10 @@ import { router } from "expo-router";
 import { TurnstileModal } from "@/src/components/TurnstileModal";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
 
 export default function ForgotScreen() {
+  const { t } = useTranslation(["auth", "common"]);
   const { forgotPassword } = useSession();
   const [email, setEmail] = useState("");
   const [turnstileOpen, setTurnstileOpen] = useState(false);
@@ -40,10 +42,10 @@ export default function ForgotScreen() {
             <Text style={styles.brandText}>DeCave</Text>
           </View>
 
-          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>ACCOUNT RECOVERY</Text>
-          <Text style={styles.title}>Reset password</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("common.auth.kickerRecovery")}</Text>
+          <Text style={styles.title}>{t("auth.mobile.forgot.resetPassword")}</Text>
           <Text style={styles.subtitle}>
-            We will send a short-lived reset link to your verified email.
+            {t("auth.mobile.forgot.weWillSendAShort")}
           </Text>
 
           {!!notice && <Text style={styles.message}>{notice}</Text>}
@@ -51,7 +53,7 @@ export default function ForgotScreen() {
           <TextInput
             value={email}
             onChangeText={setEmail}
-            placeholder="Verified email"
+            placeholder={t("common.auth.verifiedEmail")}
             placeholderTextColor={colors.faint}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -69,12 +71,12 @@ export default function ForgotScreen() {
           >
             {working && <ActivityIndicator color="#fff" style={styles.buttonSpinner} />}
             <Text style={styles.buttonText}>
-              {busy ? "Sending…" : turnstileOpen ? "Verifying…" : "Send reset email"}
+              {busy ? t("common.status.sending") : turnstileOpen ? t("common.status.verifying") : t("auth.mobile.forgot.sendResetEmail")}
             </Text>
           </Pressable>
 
           <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.replace("/login")}>
-            <Text style={styles.secondaryText}>Back to sign in</Text>
+            <Text style={styles.secondaryText}>{t("auth.mobile.register.backToSignIn")}</Text>
           </Pressable>
         </View>
       </ScrollView>

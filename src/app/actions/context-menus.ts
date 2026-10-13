@@ -16,6 +16,8 @@ import type {
   ResourceContextMenuState,
 } from "../types";
 import { HTTP_URL, HUB_SHARE_ROUTE_PREFIX } from "../env";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import type { HubPanelsState } from "../state/hub-panels";
 
 export type ContextMenuActionsDeps = {
@@ -253,13 +255,13 @@ export function createContextMenuActions(deps: ContextMenuActionsDeps) {
         const response = await authorizedFetch(`${HTTP_URL}/api/channels/${channel.id}/access`);
         const data = (await response.json()) as { private?: boolean; memberIds?: string[]; error?: string };
         if (!response.ok) {
-          setChannelManageError(data.error || "Could not load room access.");
+          setChannelManageError(apiErrorMessage(data, "client.hub.loadRoomAccess"));
           return;
         }
         setManageChannelPrivate(data.private === true);
         setManageChannelMemberIds(Array.isArray(data.memberIds) ? data.memberIds : []);
       } catch {
-        setChannelManageError("Could not load room access.");
+        setChannelManageError(i18next.t("errors.client.hub.loadRoomAccess"));
       }
     })();
   };
@@ -294,7 +296,7 @@ export function createContextMenuActions(deps: ContextMenuActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.code) {
-        setHubShareNotice(data.error || "Could not create a one-time Hub invite link.");
+        setHubShareNotice(apiErrorMessage(data, "client.hub.createInvite"));
         setResourceContextMenu(null);
         setResourceContextMoreOpen(false);
         return;
@@ -302,9 +304,9 @@ export function createContextMenuActions(deps: ContextMenuActionsDeps) {
       const origin = window.location.origin;
       const link = `${origin}${HUB_SHARE_ROUTE_PREFIX}${encodeURIComponent(data.code)}`;
       await copyResourceText(link);
-      setHubShareNotice(`One-time invite copied for ${server.name}.`);
+      setHubShareNotice(i18next.t("hub.actions.share.inviteCopied", { name: server.name }));
     } catch {
-      setHubShareNotice("Could not create a one-time Hub invite link.");
+      setHubShareNotice(i18next.t("errors.client.hub.createInvite"));
       setResourceContextMenu(null);
       setResourceContextMoreOpen(false);
     }

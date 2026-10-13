@@ -1,22 +1,25 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import { hubCategoryText } from "../../i18n/hubCategory";
+import type { TFunction } from "i18next";
 import { Icon } from "../../components/Icon";
 import {
   DEFAULT_DISCOVER_FILTERS,
-  DISCOVER_SIZE_LABELS,
-  DISCOVER_SORT_LABELS,
+  DISCOVER_SIZES,
+  DISCOVER_SORTS,
   categoryCounts,
   filterHubs,
-  friendsLine,
+  friendsSummary,
   hasActiveFilters,
   previewRoomSummary,
   type DiscoverFilters,
   type DiscoverHub,
-  type DiscoverSize,
-  type DiscoverSort,
   type HubPreview,
 } from "./discoverModel";
 import "./discover.css";
-import { localeForLanguage, preferredTimeOptions } from "../../app/locale";
+import { preferredTimeOptions } from "../../app/locale";
+import { formatNumber } from "../../i18n/format";
+import { intlLocale } from "../hub-home/intlLocale";
 
 export type DiscoverPageProps = {
   hubs: DiscoverHub[];
@@ -34,9 +37,6 @@ export type DiscoverPageProps = {
   /** Turns a stored media path into a loadable URL. */
   mediaUrl: (path: string) => string;
 };
-
-const SORTS: DiscoverSort[] = ["active", "friends", "largest", "new"];
-const SIZES: DiscoverSize[] = ["any", "small", "medium", "large"];
 
 function n(value: number | null | undefined): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -61,7 +61,7 @@ function HubIcon({
 function formatEvent(startsAt: number): string {
   const date = new Date(startsAt);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(localeForLanguage(), {
+  return new Intl.DateTimeFormat(intlLocale(), {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -71,7 +71,18 @@ function formatEvent(startsAt: number): string {
   }).format(date);
 }
 
+/** "Mara and Jun are here", "Mara, Jun and 3 more are here", "2 friends here". */
+function friendsText(hub: DiscoverHub, t: TFunction<["discover"]>): string {
+  const summary = friendsSummary(hub);
+  if (!summary) return "";
+  if (summary.kind === "count") return t("discover.friends.count", { count: summary.count });
+  if (summary.kind === "one") return t("discover.friends.one", { name: summary.name });
+  if (summary.kind === "two") return t("discover.friends.two", { first: summary.first, second: summary.second });
+  return t("discover.friends.more", { names: summary.names.join(", "), count: summary.rest });
+}
+
 export function DiscoverPage(props: DiscoverPageProps) {
+  const { t } = useTranslation(["discover"]);
   const [filters, setFilters] = useState<DiscoverFilters>(DEFAULT_DISCOVER_FILTERS);
   const [previewId, setPreviewId] = useState<number | null>(null);
   const [preview, setPreview] = useState<HubPreview | null>(null);
@@ -112,7 +123,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted)
-          setPreviewError(error instanceof Error ? error.message : "Could not load this Hub.");
+          setPreviewError(error instanceof Error ? error.message : t("discover.preview.loadFailed"));
       });
     return () => controller.abort();
   }, [previewId]);
@@ -149,7 +160,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
           props.onOpen(hub.id);
         }}
       >
-        Open
+        {t("discover.open")}
       </button>
     ) : (
       <button
@@ -161,7 +172,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
           void join(hub.id);
         }}
       >
-        {joiningId === hub.id ? "Joining…" : "Join"}
+        {joiningId === hub.id ? t("discover.joining") : t("discover.join")}
       </button>
     );
 
@@ -169,15 +180,18 @@ export function DiscoverPage(props: DiscoverPageProps) {
   const sheetHub: DiscoverHub | null = preview ?? previewHub;
 
   return (
-    <section className="dc-workspace-page dc-discover-page dsc-page" aria-label="Discover Hubs">
+    <section className="dc-workspace-page dc-discover-page dsc-page" aria-label={t("discover.pageLabel")}>
       <div className="dc-discover-shell dsc-shell">
         <header className="dsc-head">
           <div className="dsc-head-copy">
-            <span className="ds-kicker">Discover</span>
-            <h2>Find a Hub worth joining</h2>
+            <span className="ds-kicker">{t("discover.kicker")}</span>
+            <h2>{t("discover.title")}</h2>
             <p>
-              {props.hubs.length} public Hubs · {totals.online.toLocaleString()} people online
-              {totals.voice ? ` · ${totals.voice} in voice` : ""}
+              {t("discover.stats", {
+                count: props.hubs.length,
+                online: formatNumber(totals.online),
+              })}
+              {totals.voice ? t("discover.statsVoice", { count: totals.voice }) : ""}
             </p>
           </div>
           <div className="dsc-head-tools">
@@ -186,8 +200,8 @@ export function DiscoverPage(props: DiscoverPageProps) {
               <input
                 className="ds-input"
                 type="search"
-                placeholder="Search by Hub, category or tag"
-                aria-label="Search public Hubs"
+                placeholder={t("discover.searchPlaceholder")}
+                aria-label={t("discover.searchLabel")}
                 value={props.query}
                 onChange={(event) => props.onQueryChange(event.target.value)}
                 autoFocus
@@ -201,12 +215,12 @@ export function DiscoverPage(props: DiscoverPageProps) {
                 onKeyDown={(event) => {
                   if (event.key === "Enter") props.onJoinInvite();
                 }}
-                placeholder="Have an invite code?"
-                aria-label="Invite code"
+                placeholder={t("discover.invitePlaceholder")}
+                aria-label={t("discover.inviteLabel")}
               />
               <button type="button" className="ds-btn" onClick={props.onJoinInvite}>
                 <Icon name="link" />
-                Use invite
+                {t("discover.useInvite")}
               </button>
             </div>
             <button
@@ -214,8 +228,8 @@ export function DiscoverPage(props: DiscoverPageProps) {
               className="ds-btn ds-btn-ghost ds-icon-btn"
               onClick={props.onRefresh}
               disabled={props.loading}
-              aria-label="Refresh"
-              title="Refresh"
+              aria-label={t("discover.refresh")}
+              title={t("discover.refresh")}
             >
               <Icon name="refresh" />
             </button>
@@ -223,11 +237,11 @@ export function DiscoverPage(props: DiscoverPageProps) {
         </header>
 
         <div className="dsc-body">
-          <aside className="dsc-filters" aria-label="Filters">
+          <aside className="dsc-filters" aria-label={t("discover.filters.label")}>
             <div className="dsc-filter-group">
-              <h3>Show me</h3>
+              <h3>{t("discover.filters.showMe")}</h3>
               <label className={`dsc-toggle${!anyFriends ? " is-disabled" : ""}`}>
-                <span>Friends inside</span>
+                <span>{t("discover.filters.friendsInside")}</span>
                 <input
                   type="checkbox"
                   checked={filters.friendsOnly}
@@ -237,7 +251,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
                 <i aria-hidden="true" />
               </label>
               <label className="dsc-toggle">
-                <span>Active right now</span>
+                <span>{t("discover.filters.activeNow")}</span>
                 <input
                   type="checkbox"
                   checked={filters.activeOnly}
@@ -246,8 +260,8 @@ export function DiscoverPage(props: DiscoverPageProps) {
                 <i aria-hidden="true" />
               </label>
             </div>
-            <div className="dsc-filter-group" role="radiogroup" aria-label="Category">
-              <h3>Category</h3>
+            <div className="dsc-filter-group" role="radiogroup" aria-label={t("discover.filters.category")}>
+              <h3>{t("discover.filters.category")}</h3>
               <button
                 type="button"
                 role="radio"
@@ -255,7 +269,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
                 className={`dsc-option${filters.category === "all" ? " is-on" : ""}`}
                 onClick={() => set("category", "all")}
               >
-                <span>All</span>
+                <span>{t("discover.filters.all")}</span>
                 <small>{props.hubs.length}</small>
               </button>
               {categories.map((category) => (
@@ -267,14 +281,14 @@ export function DiscoverPage(props: DiscoverPageProps) {
                   className={`dsc-option${filters.category === category.name ? " is-on" : ""}`}
                   onClick={() => set("category", category.name)}
                 >
-                  <span>{category.name}</span>
+                  <span>{hubCategoryText(category.name)}</span>
                   <small>{category.count}</small>
                 </button>
               ))}
             </div>
-            <div className="dsc-filter-group" role="radiogroup" aria-label="Size">
-              <h3>Size</h3>
-              {SIZES.map((size) => (
+            <div className="dsc-filter-group" role="radiogroup" aria-label={t("discover.filters.size")}>
+              <h3>{t("discover.filters.size")}</h3>
+              {DISCOVER_SIZES.map((size) => (
                 <button
                   key={size}
                   type="button"
@@ -283,14 +297,14 @@ export function DiscoverPage(props: DiscoverPageProps) {
                   className={`dsc-option${filters.size === size ? " is-on" : ""}`}
                   onClick={() => set("size", size)}
                 >
-                  <span>{DISCOVER_SIZE_LABELS[size]}</span>
+                  <span>{t(`discover.size.${size}`)}</span>
                 </button>
               ))}
             </div>
             {hasActiveFilters(effectiveFilters) && (
               <button type="button" className="ds-btn ds-btn-ghost ds-btn-sm dsc-clear" onClick={clearFilters}>
                 <Icon name="close" size="sm" />
-                Clear filters
+                {t("discover.filters.clear")}
               </button>
             )}
           </aside>
@@ -299,11 +313,11 @@ export function DiscoverPage(props: DiscoverPageProps) {
             <div className="dsc-results-head">
               <h3>
                 {visible.length === props.hubs.length
-                  ? "All public Hubs"
-                  : `${visible.length} of ${props.hubs.length} Hubs`}
+                  ? t("discover.results.all")
+                  : t("discover.results.some", { shown: visible.length, count: props.hubs.length })}
               </h3>
-              <div className="dsc-sort" role="tablist" aria-label="Sort Hubs">
-                {SORTS.map((sort) => (
+              <div className="dsc-sort" role="tablist" aria-label={t("discover.sortLabel")}>
+                {DISCOVER_SORTS.map((sort) => (
                   <button
                     key={sort}
                     type="button"
@@ -312,7 +326,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
                     className={filters.sort === sort ? "is-on" : ""}
                     onClick={() => set("sort", sort)}
                   >
-                    {DISCOVER_SORT_LABELS[sort]}
+                    {t(`discover.sort.${sort}`)}
                   </button>
                 ))}
               </div>
@@ -325,13 +339,13 @@ export function DiscoverPage(props: DiscoverPageProps) {
             )}
             {props.loading && props.hubs.length === 0 && (
               <div className="ds-empty">
-                <p>Loading public Hubs…</p>
+                <p>{t("discover.loading")}</p>
               </div>
             )}
 
             <div className="dsc-grid">
               {visible.map((hub) => {
-                const friends = friendsLine(hub);
+                const friends = friendsText(hub, t);
                 const voice = n(hub.voiceCount);
                 return (
                   <article
@@ -343,27 +357,27 @@ export function DiscoverPage(props: DiscoverPageProps) {
                       type="button"
                       className="dsc-card-hit"
                       onClick={() => setPreviewId(hub.id)}
-                      aria-label={`Preview ${hub.name}`}
+                      aria-label={t("discover.card.previewLabel", { name: hub.name })}
                     />
                     <div className="dsc-banner">
                       {hub.bannerUrl ? <img src={props.mediaUrl(hub.bannerUrl)} alt="" /> : <span />}
                       {voice > 0 && (
                         <span className="dsc-live">
                           <i aria-hidden="true" />
-                          {voice} in voice
+                          {t("discover.inVoice", { count: voice })}
                         </span>
                       )}
-                      {hub.joined && <span className="dsc-joined">Joined</span>}
+                      {hub.joined && <span className="dsc-joined">{t("discover.card.joined")}</span>}
                     </div>
                     <div className="dsc-card-body">
                       <div className="dsc-card-top">
                         <HubIcon hub={hub} mediaUrl={props.mediaUrl} className="dsc-icon" />
                         <div>
                           <strong>{hub.name}</strong>
-                          <small>{hub.category || "Community"}</small>
+                          <small>{hub.category ? hubCategoryText(hub.category) : t("discover.defaultCategory")}</small>
                         </div>
                       </div>
-                      <p>{hub.description || "No description yet."}</p>
+                      <p>{hub.description || t("discover.noDescription")}</p>
                       {friends ? (
                         <div className="dsc-signal friends">
                           <Icon name="users" size="sm" />
@@ -379,12 +393,18 @@ export function DiscoverPage(props: DiscoverPageProps) {
                       <div className="dsc-card-foot">
                         <span>
                           {hub.membershipPrivate ? (
-                            "Membership private"
+                            t("discover.card.membershipPrivate")
                           ) : (
-                            <>
-                              <b>{n(hub.onlineCount).toLocaleString()}</b> online ·{" "}
-                              {n(hub.memberCount).toLocaleString()} members
-                            </>
+                            <Trans
+                              t={t}
+                              i18nKey="discover.card.counts"
+                              count={n(hub.memberCount)}
+                              values={{
+                                online: formatNumber(n(hub.onlineCount)),
+                                members: formatNumber(n(hub.memberCount)),
+                              }}
+                              components={{ b: <b /> }}
+                            />
                           )}
                         </span>
                         <span className="dsc-card-actions">
@@ -393,7 +413,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
                             className="ds-btn ds-btn-ghost ds-btn-sm"
                             onClick={() => setPreviewId(hub.id)}
                           >
-                            Preview
+                            {t("discover.card.preview")}
                           </button>
                           {actionButton(hub, "sm")}
                         </span>
@@ -409,15 +429,11 @@ export function DiscoverPage(props: DiscoverPageProps) {
                 <span className="ds-empty-icon">
                   <Icon name="compass" />
                 </span>
-                <h3>{props.hubs.length ? "No Hubs match these filters" : "Public Hub discovery is quiet"}</h3>
-                <p>
-                  {props.hubs.length
-                    ? "Try another search or clear the filters."
-                    : "You can join with an invite code, or create a public Hub and it will show up here."}
-                </p>
+                <h3>{props.hubs.length ? t("discover.empty.noMatch") : t("discover.empty.quiet")}</h3>
+                <p>{props.hubs.length ? t("discover.empty.noMatchHint") : t("discover.empty.quietHint")}</p>
                 {props.hubs.length > 0 && (
                   <button type="button" className="ds-btn" onClick={clearFilters}>
-                    Clear filters
+                    {t("discover.filters.clear")}
                   </button>
                 )}
               </div>
@@ -433,7 +449,9 @@ export function DiscoverPage(props: DiscoverPageProps) {
             className="dsc-sheet"
             role="dialog"
             aria-modal="true"
-            aria-label={sheetHub ? `${sheetHub.name} preview` : "Hub preview"}
+            aria-label={
+              sheetHub ? t("discover.preview.label", { name: sheetHub.name }) : t("discover.preview.fallbackLabel")
+            }
             tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
@@ -446,7 +464,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
                 type="button"
                 className="ds-btn ds-btn-ghost ds-icon-btn dsc-sheet-close"
                 onClick={() => setPreviewId(null)}
-                aria-label="Close preview"
+                aria-label={t("discover.preview.close")}
               >
                 <Icon name="close" />
               </button>
@@ -457,69 +475,78 @@ export function DiscoverPage(props: DiscoverPageProps) {
                   <HubIcon hub={sheetHub} mediaUrl={props.mediaUrl} className="dsc-sheet-icon" />
                   <div>
                     <strong>{sheetHub.name}</strong>
-                    <small>{sheetHub.category || "Community"} · Public</small>
+                    <small>
+                      {t("discover.preview.categoryPublic", {
+                        category: sheetHub.category
+                          ? hubCategoryText(sheetHub.category)
+                          : t("discover.defaultCategory"),
+                      })}
+                    </small>
                   </div>
                 </div>
-                <p className="dsc-sheet-desc">{sheetHub.description || "No description yet."}</p>
+                <p className="dsc-sheet-desc">{sheetHub.description || t("discover.noDescription")}</p>
 
                 <section>
-                  <h4>Right now</h4>
+                  <h4>{t("discover.preview.rightNow")}</h4>
                   <ul className="dsc-facts">
                     {!sheetHub.membershipPrivate && (
                       <li>
                         <Icon name="users" size="sm" />
-                        {n(sheetHub.onlineCount).toLocaleString()} online · {n(sheetHub.memberCount).toLocaleString()}{" "}
-                        members
+                        {t("discover.preview.counts", {
+                          count: n(sheetHub.memberCount),
+                          online: formatNumber(n(sheetHub.onlineCount)),
+                          members: formatNumber(n(sheetHub.memberCount)),
+                        })}
                       </li>
                     )}
                     {n(sheetHub.voiceCount) > 0 && (
                       <li className="live">
                         <Icon name="mic" size="sm" />
-                        {n(sheetHub.voiceCount)} in voice
+                        {t("discover.inVoice", { count: n(sheetHub.voiceCount) })}
                       </li>
                     )}
-                    {friendsLine(sheetHub) && (
+                    {friendsText(sheetHub, t) && (
                       <li>
                         <Icon name="star" size="sm" />
-                        {friendsLine(sheetHub)}
+                        {friendsText(sheetHub, t)}
                       </li>
                     )}
                     {preview?.nextEvent && (
                       <li>
                         <Icon name="calendar" size="sm" />
                         {preview.nextEvent.title} · {formatEvent(preview.nextEvent.startsAt)} ·{" "}
-                        {preview.nextEvent.going} going
+                        {t("discover.preview.going", { count: preview.nextEvent.going })}
                       </li>
                     )}
                   </ul>
                 </section>
 
                 <section>
-                  <h4>Inside</h4>
+                  <h4>{t("discover.preview.inside")}</h4>
                   {previewError ? (
                     <p className="dsc-muted" role="alert">
                       {previewError}
                     </p>
                   ) : !preview || !summary ? (
-                    <p className="dsc-muted">Loading rooms…</p>
+                    <p className="dsc-muted">{t("discover.preview.loadingRooms")}</p>
                   ) : (
                     <>
                       <ul className="dsc-facts">
                         <li>
                           <Icon name="hash" size="sm" />
-                          {summary.text} chat room{summary.text === 1 ? "" : "s"}
+                          {t("discover.preview.chatRooms", { count: summary.text })}
                         </li>
                         {summary.forum > 0 && (
                           <li>
                             <Icon name="forum" size="sm" />
-                            {summary.forum} forum{summary.forum === 1 ? "" : "s"} · {summary.threads} thread
-                            {summary.threads === 1 ? "" : "s"}
+                            {t("discover.preview.forums", { count: summary.forum })} ·{" "}
+                            {t("discover.preview.threads", { count: summary.threads })}
                           </li>
                         )}
                         {summary.voice > 0 && (
                           <li>
                             <Icon name="volume" size="sm" />
-                            {summary.voice} voice room{summary.voice === 1 ? "" : "s"}
+                            {t("discover.preview.voiceRooms", { count: summary.voice })}
                           </li>
                         )}
                       </ul>
@@ -537,7 +564,9 @@ export function DiscoverPage(props: DiscoverPageProps) {
                           </span>
                         ))}
                         {preview.rooms.length > 18 && (
-                          <span className="dsc-room more">+{preview.rooms.length - 18} more</span>
+                          <span className="dsc-room more">
+                            {t("discover.preview.moreRooms", { count: preview.rooms.length - 18 })}
+                          </span>
                         )}
                       </div>
                     </>
@@ -546,14 +575,16 @@ export function DiscoverPage(props: DiscoverPageProps) {
 
                 {preview && preview.rules.length > 0 && (
                   <section>
-                    <h4>Rules</h4>
+                    <h4>{t("discover.preview.rules")}</h4>
                     <ol className="dsc-rules">
                       {preview.rules.slice(0, 8).map((rule, index) => (
                         <li key={`${index}-${rule}`}>{rule}</li>
                       ))}
                     </ol>
                     {preview.rules.length > 8 && (
-                      <p className="dsc-muted">+{preview.rules.length - 8} more after you join</p>
+                      <p className="dsc-muted">
+                        {t("discover.preview.moreRules", { count: preview.rules.length - 8 })}
+                      </p>
                     )}
                   </section>
                 )}
@@ -569,7 +600,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
                 <div className="dsc-sheet-actions">
                   {sheetHub.joined ? (
                     <button type="button" className="ds-btn ds-btn-primary" onClick={() => props.onOpen(sheetHub.id)}>
-                      Open Hub
+                      {t("discover.preview.openHub")}
                     </button>
                   ) : (
                     <button
@@ -578,7 +609,7 @@ export function DiscoverPage(props: DiscoverPageProps) {
                       disabled={joiningId === sheetHub.id}
                       onClick={() => void join(sheetHub.id)}
                     >
-                      {joiningId === sheetHub.id ? "Joining…" : "Join Hub"}
+                      {joiningId === sheetHub.id ? t("discover.joining") : t("discover.preview.joinHub")}
                     </button>
                   )}
                 </div>

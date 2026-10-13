@@ -1,0 +1,120 @@
+{
+  "category": {
+    "HARASSMENT_BULLYING": "Harassment or bullying",
+    "HATE_SPEECH": "Hate speech",
+    "SEXUAL_INAPPROPRIATE": "Sexual or inappropriate content",
+    "SUSPECTED_GROOMING": "Suspected grooming",
+    "CHILD_SAFETY": "Child safety concern",
+    "THREATS_VIOLENCE": "Threats or violence",
+    "SPAM_SCAM": "Spam or scam",
+    "IMPERSONATION": "Impersonation",
+    "UNDERAGE_USER": "Underage user",
+    "INAPPROPRIATE_MEDIA": "Inappropriate media",
+    "SELF_HARM": "Self-harm concern",
+    "OTHER": "Other"
+  },
+  "urgency": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "spam_invalid": "Spam or invalid"
+  },
+  "report": {
+    "title": {
+      "content": "Report content",
+      "user": "Report {{name}}",
+      "thisUser": "Report this user",
+      "item": "Report {{label}}",
+      "thisContent": "Report this content"
+    },
+    "failed": "The report could not be submitted.",
+    "submitted": "Report submitted. Thank you for helping keep DeCave safe.",
+    "submittedNoEvidence": "Report submitted, but the reported message could not be attached, so the safety team can't read it. You can close this.",
+    "connectFailed": "Could not connect to DeCave.",
+    "kicker": "Trust & safety",
+    "private": "Your report is private. The person being reported will not be shown your identity.",
+    "category": "What happened?",
+    "urgency": "Urgency",
+    "details": "Details <optional>(optional)</optional>",
+    "detailsPlaceholder": "Tell us what we should know",
+    "evidence": "Selected evidence",
+    "evidenceEncrypted": "It will be encrypted on this device before upload.",
+    "blockAfter": "Block this user after submitting",
+    "cancel": "Cancel",
+    "submitting": "Submitting…",
+    "submit": "Submit report"
+  },
+  "myReports": {
+    "loadFailed": "Could not load your reports.",
+    "connectFailed": "Could not connect to DeCave.",
+    "kicker": "PRIVATE TO YOU",
+    "title": "My Reports",
+    "intro": "Track reports you have submitted. Review details remain private.",
+    "loading": "Loading…",
+    "refresh": "Refresh",
+    "empty": "You have not submitted any reports.",
+    "rowMeta": "{{target}} · {{date}}",
+    "report": "Report",
+    "close": "Close",
+    "noDetails": "No additional details were provided.",
+    "statusLine": "Status: {{status}} · submitted {{date}}",
+    "status": {
+      "submitted": "Submitted",
+      "under_review": "Under Review",
+      "awaiting_information": "Awaiting Information",
+      "action_taken": "Action Taken",
+      "no_violation": "No Violation",
+      "escalated": "Escalated",
+      "appealed": "Appealed",
+      "closed": "Closed"
+    },
+    "urgency": {
+      "critical": "critical",
+      "high": "high",
+      "medium": "medium",
+      "low": "low",
+      "spam_invalid": "spam_invalid"
+    },
+    "target": {
+      "user": "user",
+      "message": "message",
+      "content": "content",
+      "attachment": "attachment",
+      "profile": "profile",
+      "voice_participant": "voice_participant"
+    }
+  },
+  "qrLogin": {
+    "creating": "Creating a secure login code…",
+    "createFailed": "Could not create QR login.",
+    "instructions": "Open DeCave Mobile → Settings → Devices → Scan QR login.",
+    "updating": "Updating secure login code…",
+    "expired": "QR login expired.",
+    "codeAlt": "DeCave QR login code",
+    "preparing": "Preparing…",
+    "scan": "Scan with the DeCave app"
+  },
+  "mobile": {
+    "myReports": {
+      "reportValue": "Report {{value}}"
+    },
+    "category": {
+      "HARASSMENT_BULLYING": "Harassment",
+      "SEXUAL_INAPPROPRIATE": "Sexual content",
+      "SUSPECTED_GROOMING": "Grooming",
+      "CHILD_SAFETY": "Child safety",
+      "THREATS_VIOLENCE": "Threats",
+      "SELF_HARM": "Self-harm"
+    },
+    "report": {
+      "submittedNoEvidenceShort": "Report submitted, but the reported message could not be attached.",
+      "failed": "Could not submit the report.",
+      "kicker": "TRUST & SAFETY",
+      "private": "Your report is private. The person being reported will not see your identity.",
+      "detailsPlaceholder": "Tell us what we should know (optional)",
+      "evidenceNote": "The reported message is attached, encrypted so only DeCave's safety team can read it.",
+      "contextNote": "Your report and its context are sent to DeCave's safety team."
+    }
+  }
+}

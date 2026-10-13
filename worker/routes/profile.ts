@@ -3,7 +3,7 @@
 
 import { requireUser } from "../lib/sessions";
 import { ensureActivityRow, type SteamLinkRow, activitySource } from "../lib/activity";
-import { json, bodyJson, idFromPath } from "../lib/http";
+import { apiError, json, bodyJson, idFromPath } from "../lib/http";
 import {
   nowIso,
   type UserRow,
@@ -15,6 +15,7 @@ import {
   presenceOnline,
 } from "../db";
 import { broadcastProfileUpdate, connectedUserIds } from "../lib/realtime";
+import { profileConnections } from "../lib/account-preferences";
 import type { ApiContext } from "./context";
 
 export async function handleActivityStatusRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
@@ -52,7 +53,7 @@ export async function handleActivityStatusRoutes({ request, env, p, method }: Ap
     const activity = await ensureActivityRow(env, user);
     const automaticText = typeof body.text === "string" ? body.text.trim().slice(0, 80) : "";
     const source = automaticText ? activitySource(body.source) : "";
-    if (automaticText && !source) return json({ error: "Invalid activity source." }, 400);
+    if (automaticText && !source) return apiError("profile.activitySourceInvalid", 400);
     const appId = automaticText && typeof body.appId === "string" ? body.appId.trim().slice(0, 100) : "";
     const startedAt =
       automaticText && typeof body.startedAt === "string" && !Number.isNaN(Date.parse(body.startedAt))
@@ -71,7 +72,7 @@ export async function handleActivityStatusRoutes({ request, env, p, method }: Ap
     const effectiveText = automaticText;
     await env.DB.prepare("UPDATE decave_users SET activity_text=? WHERE id=?").bind(effectiveText, user.id).run();
     const updated = await env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(user.id).first<UserRow>();
-    if (!updated) return json({ error: "User not found." }, 404);
+    if (!updated) return apiError("profile.userNotFound", 404);
     await broadcastProfileUpdate(env, updated);
     return json({
       user: privateUser(updated),
@@ -101,14 +102,14 @@ export async function handleProfileRoutes({ request, env, p, method }: ApiContex
         : null;
 
     if (!status) {
-      return json({ error: "Invalid status." }, 400);
+      return apiError("profile.statusInvalid", 400);
     }
 
     await env.DB.prepare("UPDATE decave_users SET status=? WHERE id=?").bind(status, user.id).run();
 
     const updated = await env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(user.id).first<UserRow>();
 
-    if (!updated) return json({ error: "User not found." }, 404);
+    if (!updated) return apiError("profile.userNotFound", 404);
 
     await broadcastProfileUpdate(env, updated);
 
@@ -159,9 +160,9 @@ export async function handleProfileRoutes({ request, env, p, method }: ApiContex
     if (viewer instanceof Response) return viewer;
     const reference = decodeURIComponent(publicProfileGet[1]);
     const row = await userByReference(env.DB, reference);
-    if (!row || row.deleted_at) return json({ error: "User not found" }, 404);
+    if (!row || row.deleted_at) return apiError("profile.notFound", 404);
     if (!(await usersSharePublicContext(env.DB, viewer.id, row.id))) {
-      return json({ error: "No shared context with this account." }, 403);
+      return apiError("profile.noSharedContext", 403);
     }
     const online = presenceOnline(row, (await connectedUserIds(env)).has(row.id));
     const relation =
@@ -179,6 +180,8 @@ export async function handleProfileRoutes({ request, env, p, method }: ApiContex
         ...(relation === "other" ? {} : { createdAt: row.created_at }),
         lastOnlineAt: presence?.last_seen_at ?? null,
         online,
+        // Linked accounts the owner chose to show (Settings → Connections).
+        connections: await profileConnections(env, row.id),
       },
       200,
       { "Cache-Control": "no-store, private" },
@@ -229,14 +232,13 @@ export async function handleProfileRoutes({ request, env, p, method }: ApiContex
         .run();
     } else {
       const declaredLength = Number(request.headers.get("content-length") ?? 0);
-      if (declaredLength > 5 * 1024 * 1024) return json({ error: "Banner image request is too large." }, 413);
+      if (declaredLength > 5 * 1024 * 1024) return apiError("profile.bannerRequestTooLarge", 413);
       const body = await bodyJson(request);
       const dataUrl = typeof body.imageDataUrl === "string" ? body.imageDataUrl : "";
       const match = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
-      if (!match) return json({ error: "Upload a PNG, JPEG or WebP image." }, 400);
+      if (!match) return apiError("profile.imageType", 400);
       const bytes = Uint8Array.from(atob(match[2]), (char) => char.charCodeAt(0));
-      if (!bytes.length || bytes.length > 3 * 1024 * 1024)
-        return json({ error: "Banner images must be 3 MB or smaller." }, 400);
+      if (!bytes.length || bytes.length > 3 * 1024 * 1024) return apiError("profile.bannerTooLarge", 400);
       const ext = match[1] === "image/png" ? "png" : match[1] === "image/webp" ? "webp" : "jpg";
       // Opaque key: the media route refuses profile-banners/ so the account
       // UUID in the path never reaches clients; delivery goes through
@@ -265,14 +267,13 @@ export async function handleProfileRoutes({ request, env, p, method }: ApiContex
         .run();
     } else {
       const declaredLength = Number(request.headers.get("content-length") ?? 0);
-      if (declaredLength > 3 * 1024 * 1024) return json({ error: "Profile image request is too large." }, 413);
+      if (declaredLength > 3 * 1024 * 1024) return apiError("profile.avatarRequestTooLarge", 413);
       const body = await bodyJson(request);
       const dataUrl = typeof body.imageDataUrl === "string" ? body.imageDataUrl : "";
       const match = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
-      if (!match) return json({ error: "Upload a PNG, JPEG or WebP image." }, 400);
+      if (!match) return apiError("profile.imageType", 400);
       const bytes = Uint8Array.from(atob(match[2]), (char) => char.charCodeAt(0));
-      if (!bytes.length || bytes.length > 2 * 1024 * 1024)
-        return json({ error: "Profile images must be 2 MB or smaller." }, 400);
+      if (!bytes.length || bytes.length > 2 * 1024 * 1024) return apiError("profile.avatarTooLarge", 400);
       const ext = match[1] === "image/png" ? "png" : match[1] === "image/webp" ? "webp" : "jpg";
       const key = `avatars/${user.id}/${crypto.randomUUID()}.${ext}`;
       if (user.avatar_key) await env.MEDIA.delete(user.avatar_key);

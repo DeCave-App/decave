@@ -1,5 +1,6 @@
 // Platform owner dashboard > Overview.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import type { AdminDashboardSummary } from "../../types";
 
@@ -36,6 +37,7 @@ export function AdminOverviewTab({
   ownerPrivilegedReauth,
   loadAdminDashboard,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <>
       <div
@@ -48,15 +50,15 @@ export function AdminOverviewTab({
         }}
       >
         <div>
-          <div className="social-kicker">USAGE DASHBOARD</div>
+          <div className="social-kicker">{t("common.admin.overview.kicker")}</div>
           <strong style={{ display: "block", marginTop: "4px", fontSize: "16px" }}>
-            {adminDashboardSummary?.activityDate || "Selected range"}
+            {adminDashboardSummary?.activityDate || t("common.admin.overview.selectedRange")}
           </strong>
         </div>
         <small style={{ color: "var(--ds-muted)", textAlign: "right", lineHeight: 1.45 }}>
-          People are counted once per metric.
+          {t("common.admin.overview.countedOnce")}
           <br />
-          Repeat sign-ins do not increase today&apos;s total.
+          {t("common.admin.overview.repeatSignIns")}
         </small>
       </div>
       <div
@@ -73,7 +75,7 @@ export function AdminOverviewTab({
         }}
       >
         <label style={{ display: "grid", gap: 4, fontSize: 10, color: "var(--ds-muted)" }}>
-          From
+          {t("common.admin.overview.from")}
           <input
             type="date"
             value={adminUsageFrom}
@@ -82,7 +84,7 @@ export function AdminOverviewTab({
           />
         </label>
         <label style={{ display: "grid", gap: 4, fontSize: 10, color: "var(--ds-muted)" }}>
-          To
+          {t("common.admin.overview.to")}
           <input
             type="date"
             value={adminUsageTo}
@@ -92,7 +94,7 @@ export function AdminOverviewTab({
           />
         </label>
         <select
-          aria-label="Usage range preset"
+          aria-label={t("common.admin.overview.preset")}
           defaultValue="custom"
           onChange={(event) => {
             const days = Number(event.target.value);
@@ -104,10 +106,10 @@ export function AdminOverviewTab({
             setAdminUsageFrom(from.toISOString().slice(0, 10));
           }}
         >
-          <option value="custom">Custom range</option>
-          <option value="7">Last 7 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
+          <option value="custom">{t("common.admin.overview.custom")}</option>
+          <option value="7">{t("common.admin.range.week")}</option>
+          <option value="30">{t("common.admin.range.month")}</option>
+          <option value="90">{t("common.admin.range.quarter")}</option>
         </select>
         <button
           type="button"
@@ -115,7 +117,7 @@ export function AdminOverviewTab({
           disabled={adminDashboardBusy || !adminUsageFrom || !adminUsageTo}
           onClick={() => void loadAdminDashboard()}
         >
-          Apply range
+          {t("common.admin.overview.apply")}
         </button>
       </div>
       <div
@@ -127,44 +129,44 @@ export function AdminOverviewTab({
       >
         {[
           {
-            label: "Signed in",
+            label: t("common.admin.overview.metrics.signedIn"),
             value: adminDashboardSummary?.signedInToday ?? 0,
-            detail: "Unique accounts in range",
+            detail: t("common.admin.overview.metrics.signedInDetail"),
             color: "#6fe4ff",
             icon: "↗",
           },
           {
-            label: "Online now",
+            label: t("common.admin.overview.metrics.onlineNow"),
             value: adminDashboardSummary?.onlineUsers ?? 0,
-            detail: "Connected users",
+            detail: t("common.admin.overview.metrics.onlineNowDetail"),
             color: "#61e7a3",
             icon: "●",
           },
           {
-            label: "Sharing screen",
+            label: t("common.admin.overview.metrics.sharing"),
             value: adminDashboardSummary?.screenSharingUsers ?? 0,
-            detail: "Live now",
+            detail: t("common.admin.overview.metrics.sharingDetail"),
             color: "#a88bff",
             icon: "▣",
           },
           {
-            label: "On voice",
+            label: t("common.admin.overview.metrics.voice"),
             value: adminDashboardSummary?.voiceUsers ?? 0,
-            detail: "Rooms & calls",
+            detail: t("common.admin.overview.metrics.voiceDetail"),
             color: "#ffbf69",
             icon: "◉",
           },
           {
-            label: "Returning users",
+            label: t("common.admin.overview.metrics.returning"),
             value: adminDashboardSummary?.returningUsers ?? 0,
-            detail: "Signed in before range",
+            detail: t("common.admin.overview.metrics.returningDetail"),
             color: "#ff83b5",
             icon: "↻",
           },
           {
-            label: "Find My Squad",
+            label: t("common.admin.overview.metrics.squad"),
             value: adminDashboardSummary?.squadFinderUsers ?? 0,
-            detail: "Active searches",
+            detail: t("common.admin.overview.metrics.squadDetail"),
             color: "#8fa8ff",
             icon: "⌕",
           },
@@ -205,7 +207,7 @@ export function AdminOverviewTab({
       </div>
 
       <div className="social-kicker" style={{ marginTop: "20px", marginBottom: "10px" }}>
-        PLATFORM TOTALS
+        {t("common.admin.overview.totals")}
       </div>
       <div
         style={{
@@ -215,18 +217,21 @@ export function AdminOverviewTab({
         }}
       >
         {[
-          ["Accounts", adminDashboardSummary?.accounts ?? 0],
-          ["Verified", adminDashboardSummary?.verifiedAccounts ?? 0],
-          ["Owners", adminDashboardSummary?.platformOwners ?? 0],
-          ["Owners + MFA", adminDashboardSummary?.ownersWithMfa ?? 0],
-          ["Platform Admins", adminDashboardSummary?.platformAdmins ?? 0],
-          ["Hubs", adminDashboardSummary?.hubs ?? 0],
-          ["Public Hubs", adminDashboardSummary?.publicHubs ?? 0],
-          ["Active Sessions", adminDashboardSummary?.activeSessions ?? 0],
-          ["Security / 24h", adminDashboardSummary?.securityEvents24h ?? 0],
-          ["Owner Audit / 24h", adminDashboardSummary?.platformAuditEvents24h ?? 0],
-          ["Suspended", adminDashboardSummary?.suspendedAccounts ?? 0],
-          ["Deletion Scheduled", adminDashboardSummary?.deletionScheduledAccounts ?? 0],
+          [t("common.admin.overview.totalsLabels.accounts"), adminDashboardSummary?.accounts ?? 0],
+          [t("common.admin.overview.totalsLabels.verified"), adminDashboardSummary?.verifiedAccounts ?? 0],
+          [t("common.admin.overview.totalsLabels.owners"), adminDashboardSummary?.platformOwners ?? 0],
+          [t("common.admin.overview.totalsLabels.ownersMfa"), adminDashboardSummary?.ownersWithMfa ?? 0],
+          [t("common.admin.overview.totalsLabels.platformAdmins"), adminDashboardSummary?.platformAdmins ?? 0],
+          [t("common.admin.overview.totalsLabels.hubs"), adminDashboardSummary?.hubs ?? 0],
+          [t("common.admin.overview.totalsLabels.publicHubs"), adminDashboardSummary?.publicHubs ?? 0],
+          [t("common.admin.overview.totalsLabels.activeSessions"), adminDashboardSummary?.activeSessions ?? 0],
+          [t("common.admin.overview.totalsLabels.security24h"), adminDashboardSummary?.securityEvents24h ?? 0],
+          [t("common.admin.overview.totalsLabels.audit24h"), adminDashboardSummary?.platformAuditEvents24h ?? 0],
+          [t("common.admin.overview.totalsLabels.suspended"), adminDashboardSummary?.suspendedAccounts ?? 0],
+          [
+            t("common.admin.overview.totalsLabels.deletionScheduled"),
+            adminDashboardSummary?.deletionScheduledAccounts ?? 0,
+          ],
         ].map(([label, value]) => (
           <div
             key={String(label)}
@@ -254,24 +259,21 @@ export function AdminOverviewTab({
           background: "var(--ds-sink)",
         }}
       >
-        <strong>Privileged action unlock</strong>
-        <p style={{ color: "var(--ds-muted)", fontSize: "12px" }}>
-          Session revocation and other high-impact owner actions require your current password plus MFA. The unlock
-          lasts 10 minutes in memory only.
-        </p>
+        <strong>{t("common.admin.overview.unlockTitle")}</strong>
+        <p style={{ color: "var(--ds-muted)", fontSize: "12px" }}>{t("common.admin.overview.unlockBody")}</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "8px" }}>
           <input
             type="password"
             value={ownerReauthPassword}
             onChange={(event) => setOwnerReauthPassword(event.target.value)}
-            placeholder="Current password"
+            placeholder={t("common.account.currentPassword")}
             autoComplete="current-password"
           />
           <input
             type="text"
             value={ownerReauthCode}
             onChange={(event) => setOwnerReauthCode(event.target.value.toUpperCase().replace(/\s/g, "").slice(0, 19))}
-            placeholder="Authenticator or recovery code"
+            placeholder={t("common.account.mfaCodeLabel")}
             autoComplete="one-time-code"
           />
           <button
@@ -280,7 +282,7 @@ export function AdminOverviewTab({
             onClick={() => void ownerPrivilegedReauth()}
             disabled={ownerManagementBusy || !ownerReauthPassword || !ownerReauthCode.trim()}
           >
-            Unlock
+            {t("common.admin.overview.unlock")}
           </button>
         </div>
         {ownerReauthNotice && (

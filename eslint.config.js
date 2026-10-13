@@ -3,12 +3,30 @@
 import js from "@eslint/js";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
+import i18next from "eslint-plugin-i18next";
 import tseslint from "typescript-eslint";
+import glossary from "./shared/i18n/glossary.json" with { type: "json" };
+
+// Folders whose user-facing text must come from t(). Entries are folders
+// ("src/foo/**") or file globs ending in .ts/.tsx; the whole web app and desktop
+// shell are covered.
+const I18N_LINT_DIRS = ["src/**", "electron/**"];
+
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// Text made only of kept-English terms (glossary.json), numbers and symbols needs no translation.
+const keptEnglishOnly = new RegExp(
+  `^(?:${[...glossary.keepEnglish]
+    .sort((left, right) => right.length - left.length)
+    .map(escapeRegExp)
+    .join("|")}|[\\s\\p{N}\\p{P}\\p{S}])+$`,
+  "u",
+);
 
 export default tseslint.config(
   {
     ignores: [
       ".tmp/**",
+      ".claude/**",
       "decave/**",
       "dist/**",
       ".wrangler/**",
@@ -31,6 +49,10 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // Other sessions' worktrees under .claude/ carry their own tsconfig; pin the root.
+    languageOptions: { parserOptions: { tsconfigRootDir: import.meta.dirname } },
+  },
   {
     rules: {
       // Empty catch blocks are used on purpose for best-effort browser APIs.
@@ -83,4 +105,43 @@ export default tseslint.config(
     languageOptions: { sourceType: "commonjs" },
     rules: { "@typescript-eslint/no-require-imports": "off" },
   },
+  ...(I18N_LINT_DIRS.length
+    ? [
+        {
+          // "Nothing left in English": JSX text, text attributes, and strings shown
+          // through alert/confirm/prompt or toasts must be translated.
+          // Entries are folders ("src/foo/**") or file globs ending in .ts/.tsx.
+          files: I18N_LINT_DIRS.map((dir) =>
+            /\.tsx?$/.test(dir) ? dir : `${dir.replace(/\/\*\*$/, "")}/**/*.{ts,tsx,cjs}`,
+          ),
+          plugins: { i18next },
+          rules: {
+            "i18next/no-literal-string": [
+              "error",
+              {
+                mode: "jsx-only",
+                "jsx-components": { exclude: ["Trans"] },
+                "jsx-attributes": { include: ["aria-label", "title", "placeholder", "alt", "label"] },
+                callees: { include: ["alert", "confirm", "prompt", "showToast", "toast"] },
+                words: { exclude: ["[0-9!-/:-@[-`{-~]+", keptEnglishOnly, /^\p{Emoji}+$/u] },
+                message: "Translate this text with t()",
+              },
+            ],
+            "no-restricted-syntax": [
+              "error",
+              {
+                selector:
+                  "CallExpression[callee.name=/^(alert|confirm|prompt|showToast|toast)$/] > :matches(Literal[value=/[A-Za-z]/], TemplateLiteral)",
+                message: "Translate this text with t()",
+              },
+              {
+                selector:
+                  "CallExpression[callee.property.name=/^(alert|confirm|prompt|showToast|toast)$/] > :matches(Literal[value=/[A-Za-z]/], TemplateLiteral)",
+                message: "Translate this text with t()",
+              },
+            ],
+          },
+        },
+      ]
+    : []),
 );

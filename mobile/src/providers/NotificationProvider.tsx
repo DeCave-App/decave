@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { t } from "i18next";
 import { Platform } from "react-native";
 import { router, usePathname } from "expo-router";
 import * as Notifications from "expo-notifications";
@@ -62,43 +63,43 @@ function privacyText(
       title: "DeCave",
       body:
         kind === "mention"
-          ? "You were mentioned in DeCave."
-          : "You received a new message.",
+          ? t("push.mobile.hiddenMention")
+          : t("push.mobile.hiddenMessage"),
     };
   }
 
   if (preview === "sender") {
     if (kind === "group") {
       return {
-        title: context || "Group chat",
-        body: `${sender} sent a message.`,
+        title: context || t("push.mobile.groupChat"),
+        body: t("push.mobile.sentMessage", { sender }),
       };
     }
     if (kind === "hub") {
       return {
-        title: context || "Hub message",
-        body: `${sender} sent a message.`,
+        title: context || t("push.mobile.hubMessage"),
+        body: t("push.mobile.sentMessage", { sender }),
       };
     }
     if (kind === "mention") {
       return {
         title: sender,
-        body: context ? `Mentioned you in ${context}.` : "Mentioned you.",
+        body: context ? t("push.mobile.mentionedIn", { place: context }) : t("push.mobile.mentioned"),
       };
     }
-    return { title: sender, body: "Sent you a private message." };
+    return { title: sender, body: t("push.mobile.sentPrivate") };
   }
 
   if (kind === "group") {
     return {
-      title: context || "Group chat",
-      body: `${sender}: ${text.slice(0, 140)}`,
+      title: context || t("push.mobile.groupChat"),
+      body: t("push.mobile.withSender", { sender, text: text.slice(0, 140) }),
     };
   }
   if (kind === "hub") {
     return {
-      title: context || "Hub message",
-      body: `${sender}: ${text.slice(0, 140)}`,
+      title: context || t("push.mobile.hubMessage"),
+      body: t("push.mobile.withSender", { sender, text: text.slice(0, 140) }),
     };
   }
   if (kind === "mention") {
@@ -107,8 +108,8 @@ function privacyText(
       body: text
         ? text.slice(0, 140)
         : context
-          ? `Mentioned you in ${context}.`
-          : "Mentioned you.",
+          ? t("push.mobile.mentionedIn", { place: context })
+          : t("push.mobile.mentioned"),
     };
   }
   return { title: sender, body: text.slice(0, 140) };
@@ -152,8 +153,8 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     // normal notification behavior and the user can still customize it
     // from the system notification settings.
     await Notifications.setNotificationChannelAsync("messages-v2", {
-      name: "Messages",
-      description: "Direct messages, group chats and Hub message alerts",
+      name: t("push.mobile.channels.messages.name"),
+      description: t("push.mobile.channels.messages.description"),
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 180, 120, 180],
       lightColor: "#7c5cff",
@@ -163,8 +164,8 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     // Android notification-channel sound cannot be changed after creation,
     // so keep a separate silent channel for DeCave's Sound toggle.
     await Notifications.setNotificationChannelAsync("messages-silent-v2", {
-      name: "Messages (silent)",
-      description: "Silent DeCave message alerts",
+      name: t("push.mobile.channels.silent.name"),
+      description: t("push.mobile.channels.silent.description"),
       importance: Notifications.AndroidImportance.HIGH,
       sound: null,
       vibrationPattern: [0, 180, 120, 180],
@@ -228,9 +229,9 @@ export function NotificationProvider({ children }: PropsWithChildren) {
       const declinedAt = Number(await SecureStore.getItemAsync(PRIMER_DECLINED_KEY).catch(() => null));
       if (declinedAt && Date.now() - declinedAt < PRIMER_RETRY_MS) return;
       const go = await primePermission(
-        "Stay in the loop",
-        "Get notified about DMs, mentions, friend requests and when a squad is ready for you. You can fine-tune this in Settings.",
-        "Turn on",
+        t("push.mobile.primer.title"),
+        t("push.mobile.primer.message"),
+        t("push.mobile.primer.allow"),
       );
       if (go) await requestPermission();
       else void SecureStore.setItemAsync(PRIMER_DECLINED_KEY, String(Date.now())).catch(() => undefined);
@@ -284,7 +285,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
         if(key===lastSquadMatchRef.current)return;
         lastSquadMatchRef.current=key;
         if(permissionState!=="granted"||pathnameRef.current==="/squad-finder")return;
-        await Notifications.scheduleNotificationAsync({content:{title:"Squad available",body:`${match.memberCount}/4 players are ready for ${match.game}.`,sound:Platform.OS==="ios"&&settingsRef.current.sound?"default":undefined,data:{route:"/squad-finder"}},trigger:Platform.OS==="android"?{channelId:settingsRef.current.sound?"messages-v2":"messages-silent-v2"}:null});
+        await Notifications.scheduleNotificationAsync({content:{title:t("push.mobile.squad.title"),body:t("push.mobile.squad.body",{count:match.memberCount,game:match.game}),sound:Platform.OS==="ios"&&settingsRef.current.sound?"default":undefined,data:{route:"/squad-finder"}},trigger:Platform.OS==="android"?{channelId:settingsRef.current.sound?"messages-v2":"messages-silent-v2"}:null});
       }catch{}
     };
     // Poll fast only while a search is running; otherwise just notice new searches (e.g. from desktop).
@@ -381,11 +382,11 @@ export function NotificationProvider({ children }: PropsWithChildren) {
         lastEvent.sender && typeof lastEvent.sender === "object"
           ? (lastEvent.sender as Record<string, unknown>)
           : null;
-      const senderName = stringValue(sender?.username) || "DeCave user";
+      const senderName = stringValue(sender?.username) || t("push.mobile.unknownUser");
       // Encrypted messages are decrypted on the phone; one this phone can't read yet says so.
       void dmE2ee.open(message as unknown as DirectMessage).then((opened) => {
         if (!identityIsCurrent()) return;
-        const text = opened.e2ee === "locked" || opened.e2ee === "failed" ? "🔒 Encrypted message" : opened.text;
+        const text = opened.e2ee === "locked" || opened.e2ee === "failed" ? t("push.mobile.encryptedMessage") : opened.text;
         const preview = privacyText(settingsRef.current.notificationPreview, senderName, text, "dm");
         void notify(preview.title, preview.body, route);
       }).catch(() => undefined);
@@ -406,13 +407,13 @@ export function NotificationProvider({ children }: PropsWithChildren) {
       }
       const route = `/group/${encodeURIComponent(groupId)}`;
       if (pathnameRef.current === route) return;
-      const senderName = stringValue(message.username) || "DeCave user";
+      const senderName = stringValue(message.username) || t("push.mobile.unknownUser");
       const preview = privacyText(
         settingsRef.current.notificationPreview,
         senderName,
         stringValue(message.text),
         "group",
-        "Group chat",
+        t("push.mobile.groupChat"),
       );
       void notify(preview.title, preview.body, route);
       return;
@@ -427,8 +428,8 @@ export function NotificationProvider({ children }: PropsWithChildren) {
       if (pathnameRef.current === route) return;
 
       const mentioned = lastEvent.mentioned === true;
-      const senderName = stringValue(lastEvent.username) || "DeCave user";
-      const channelName = stringValue(lastEvent.channelName) || "Hub room";
+      const senderName = stringValue(lastEvent.username) || t("push.mobile.unknownUser");
+      const channelName = stringValue(lastEvent.channelName) || t("push.mobile.hubRoom");
       const text = stringValue(lastEvent.text);
 
       if (mentioned) {

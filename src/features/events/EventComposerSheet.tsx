@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Trans, useTranslation } from "react-i18next";
 import {
   HUB_EVENT_LIMITS,
   isValidTimeZone,
@@ -43,22 +44,25 @@ export type EventComposerSheetProps = {
 type Errors = Partial<Record<string, string>>;
 
 const DURATIONS = [
-  { label: "30 minutes", ms: 30 * 60_000 },
-  { label: "1 hour", ms: 60 * 60_000 },
-  { label: "1.5 hours", ms: 90 * 60_000 },
-  { label: "2 hours", ms: 2 * 60 * 60_000 },
-  { label: "3 hours", ms: 3 * 60 * 60_000 },
-  { label: "4 hours", ms: 4 * 60 * 60_000 },
-  { label: "All evening (6 h)", ms: 6 * 60 * 60_000 },
-];
-const REMINDERS: Array<{ label: string; value: number | null }> = [
-  { label: "No reminder", value: null },
-  { label: "At start", value: 0 },
-  { label: "10 minutes before", value: 10 },
-  { label: "30 minutes before", value: 30 },
-  { label: "1 hour before", value: 60 },
-  { label: "1 day before", value: 1440 },
-];
+  { id: "m30", ms: 30 * 60_000 },
+  { id: "h1", ms: 60 * 60_000 },
+  { id: "h1_5", ms: 90 * 60_000 },
+  { id: "h2", ms: 2 * 60 * 60_000 },
+  { id: "h3", ms: 3 * 60 * 60_000 },
+  { id: "h4", ms: 4 * 60 * 60_000 },
+  { id: "evening", ms: 6 * 60 * 60_000 },
+] as const;
+const REMINDERS = [
+  { id: "none", value: null },
+  { id: "atStart", value: 0 },
+  { id: "m10", value: 10 },
+  { id: "m30", value: 30 },
+  { id: "h1", value: 60 },
+  { id: "d1", value: 1440 },
+] as const;
+
+/** A URL shape, the same in every language. */
+const COVER_URL_EXAMPLE = "https://…";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 function epochToZonedInput(ms: number, tz: string): string {
@@ -122,6 +126,7 @@ const STEP1_FIELDS = new Set([
 ]);
 
 export function EventComposerSheet(props: EventComposerSheetProps) {
+  const { t } = useTranslation(["events"]);
   const { seed, rooms } = props;
   const editing = seed.editing ?? null;
   const titleId = useId();
@@ -211,37 +216,38 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
   const validateStep1 = (): Errors => {
     const next: Errors = {};
     const cleanTitle = title.trim();
-    if (!cleanTitle) next.title = "Give your event a title.";
+    if (!cleanTitle) next.title = t("events.composer.errors.titleMissing");
     else if (cleanTitle.length > HUB_EVENT_LIMITS.titleMax)
-      next.title = `Keep the title under ${HUB_EVENT_LIMITS.titleMax} characters.`;
+      next.title = t("events.composer.errors.titleLong", { max: HUB_EVENT_LIMITS.titleMax });
     if (description.length > HUB_EVENT_LIMITS.descriptionMax)
-      next.description = `Description is limited to ${HUB_EVENT_LIMITS.descriptionMax} characters.`;
-    if (coverUrl.trim() && !validCover(coverUrl.trim())) next.coverUrl = "Use an https:// image link.";
-    if (!isValidTimeZone(timezone)) next.timezone = "Choose a valid time zone.";
-    if (!Number.isFinite(startsAt)) next.startsAt = "Choose a start date and time.";
+      next.description = t("events.composer.errors.descriptionLong", { max: HUB_EVENT_LIMITS.descriptionMax });
+    if (coverUrl.trim() && !validCover(coverUrl.trim())) next.coverUrl = t("events.composer.errors.cover");
+    if (!isValidTimeZone(timezone)) next.timezone = t("events.composer.errors.timezone");
+    if (!Number.isFinite(startsAt)) next.startsAt = t("events.composer.errors.startMissing");
     else if (startChanged && startsAt < Date.now() - HUB_EVENT_LIMITS.pastToleranceMs)
-      next.startsAt = "The start time is in the past.";
+      next.startsAt = t("events.composer.errors.startPast");
     if (endsAt !== null) {
-      if (!Number.isFinite(endsAt)) next.endsAt = "Choose an end time.";
-      else if (Number.isFinite(startsAt) && endsAt <= startsAt) next.endsAt = "The event must end after it starts.";
+      if (!Number.isFinite(endsAt)) next.endsAt = t("events.composer.errors.endMissing");
+      else if (Number.isFinite(startsAt) && endsAt <= startsAt)
+        next.endsAt = t("events.composer.errors.endBeforeStart");
       else if (Number.isFinite(startsAt) && endsAt - startsAt > HUB_EVENT_LIMITS.maxDurationMs)
-        next.endsAt = "Events can last at most 14 days.";
+        next.endsAt = t("events.composer.errors.tooLong");
     }
     return next;
   };
   const validateStep2 = (): Errors => {
     const next: Errors = {};
-    if (audience === "roles" && roleIds.length === 0) next.audienceIds = "Pick at least one role.";
-    if (audience === "members" && memberIds.length === 0) next.audienceIds = "Pick at least one member.";
+    if (audience === "roles" && roleIds.length === 0) next.audienceIds = t("events.composer.errors.noRoles");
+    if (audience === "members" && memberIds.length === 0) next.audienceIds = t("events.composer.errors.noMembers");
     if ((audience === "roles" ? roleIds : memberIds).length > HUB_EVENT_LIMITS.audienceIdsMax)
-      next.audienceIds = `At most ${HUB_EVENT_LIMITS.audienceIdsMax} entries.`;
+      next.audienceIds = t("events.composer.errors.tooManyEntries", { max: HUB_EVENT_LIMITS.audienceIdsMax });
     if (capacity.trim()) {
       const n = Number(capacity);
       if (!Number.isInteger(n) || n < 1 || n > HUB_EVENT_LIMITS.capacityMax)
-        next.capacity = `Capacity must be a whole number from 1 to ${HUB_EVENT_LIMITS.capacityMax}.`;
+        next.capacity = t("events.composer.errors.capacity", { max: HUB_EVENT_LIMITS.capacityMax });
     }
     if (gameTag.trim().length > HUB_EVENT_LIMITS.gameTagMax)
-      next.gameTag = `Game tag is limited to ${HUB_EVENT_LIMITS.gameTagMax} characters.`;
+      next.gameTag = t("events.composer.errors.gameTagLong", { max: HUB_EVENT_LIMITS.gameTagMax });
     return next;
   };
 
@@ -285,7 +291,7 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
         : await createHubEvent(props.api, props.hubId, body);
       props.onSaved(saved, !editing);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not save this event.";
+      const message = error instanceof Error ? error.message : t("events.composer.saveFailed");
       if (error instanceof HubEventApiError && error.field) {
         setErrors({ [error.field]: message });
         setStep(STEP1_FIELDS.has(error.field) ? 1 : 2);
@@ -335,21 +341,27 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
         <header className="evx-sheet-head">
           <div>
             <p className="evx-kicker">{props.hubName}</p>
-            <h2 id={titleId}>{editing ? "Edit event" : "Create event"}</h2>
+            <h2 id={titleId}>{editing ? t("events.composer.editTitle") : t("events.composer.createTitle")}</h2>
           </div>
-          <ol className="evx-steps" aria-label="Steps">
+          <ol className="evx-steps" aria-label={t("events.composer.steps")}>
             <li className={step === 1 ? "active" : "done"} aria-current={step === 1 ? "step" : undefined}>
               <button type="button" onClick={() => setStep(1)}>
-                1 · Basics
+                {t("events.composer.stepBasics")}
               </button>
             </li>
             <li className={step === 2 ? "active" : ""} aria-current={step === 2 ? "step" : undefined}>
               <button type="button" onClick={goNext}>
-                2 · Audience
+                {t("events.composer.stepAudience")}
               </button>
             </li>
           </ol>
-          <button type="button" className="evx-icon-btn" onClick={props.onClose} aria-label="Close" disabled={busy}>
+          <button
+            type="button"
+            className="evx-icon-btn"
+            onClick={props.onClose}
+            aria-label={t("events.composer.close")}
+            disabled={busy}
+          >
             <Icon name="close" size="sm" />
           </button>
         </header>
@@ -359,13 +371,13 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
             {step === 1 ? (
               <>
                 <label className="evx-field">
-                  <span>Title</span>
+                  <span>{t("events.composer.title")}</span>
                   <input
                     data-autofocus
                     value={title}
                     maxLength={HUB_EVENT_LIMITS.titleMax}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Friday ranked session"
+                    placeholder={t("events.composer.titlePlaceholder")}
                     aria-invalid={Boolean(errors.title)}
                     aria-describedby={describedBy("title")}
                   />
@@ -373,14 +385,14 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                 </label>
                 <label className="evx-field">
                   <span>
-                    Cover image URL <em>optional</em>
+                    <Trans t={t} i18nKey="events.composer.cover" components={{ em: <em /> }} />
                   </span>
                   <input
                     type="url"
                     inputMode="url"
                     value={coverUrl}
                     onChange={(e) => setCoverUrl(e.target.value)}
-                    placeholder="https://…"
+                    placeholder={COVER_URL_EXAMPLE}
                     aria-invalid={Boolean(errors.coverUrl)}
                     aria-describedby={describedBy("coverUrl")}
                   />
@@ -388,7 +400,7 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                 </label>
                 <div className="evx-grid-2">
                   <label className="evx-field">
-                    <span>Starts</span>
+                    <span>{t("events.composer.starts")}</span>
                     <input
                       type="datetime-local"
                       value={startInput}
@@ -400,7 +412,7 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                     {fieldError("startsAt")}
                   </label>
                   <label className="evx-field">
-                    <span>Time zone</span>
+                    <span>{t("events.composer.timezone")}</span>
                     <select
                       value={timezone}
                       onChange={(e) => changeTimezone(e.target.value)}
@@ -417,20 +429,20 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                 </div>
                 <div className="evx-grid-2">
                   <label className="evx-field">
-                    <span>Ends</span>
+                    <span>{t("events.composer.ends")}</span>
                     <select value={endMode} onChange={(e) => setEndMode(e.target.value as typeof endMode)}>
-                      <option value="duration">After a duration</option>
-                      <option value="end">At a specific time</option>
-                      <option value="none">No end time</option>
+                      <option value="duration">{t("events.composer.endDuration")}</option>
+                      <option value="end">{t("events.composer.endTime")}</option>
+                      <option value="none">{t("events.composer.endNone")}</option>
                     </select>
                   </label>
                   {endMode === "duration" && (
                     <label className="evx-field">
-                      <span>Duration</span>
+                      <span>{t("events.composer.duration")}</span>
                       <select value={durationMs} onChange={(e) => setDurationMs(Number(e.target.value))}>
                         {DURATIONS.map((d) => (
                           <option key={d.ms} value={d.ms}>
-                            {d.label}
+                            {t(`events.composer.durations.${d.id}`)}
                           </option>
                         ))}
                       </select>
@@ -438,7 +450,7 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                   )}
                   {endMode === "end" && (
                     <label className="evx-field">
-                      <span>End time</span>
+                      <span>{t("events.composer.endTimeLabel")}</span>
                       <input
                         type="datetime-local"
                         value={endInput}
@@ -453,23 +465,23 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                 {fieldError("endsAt")}
                 <div className="evx-grid-2">
                   <label className="evx-field">
-                    <span>Repeats</span>
+                    <span>{t("events.composer.repeats")}</span>
                     <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as HubEventRecurrence)}>
-                      <option value="none">Does not repeat</option>
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
+                      <option value="none">{t("events.composer.recurrence.none")}</option>
+                      <option value="daily">{t("events.composer.recurrence.daily")}</option>
+                      <option value="weekly">{t("events.composer.recurrence.weekly")}</option>
+                      <option value="monthly">{t("events.composer.recurrence.monthly")}</option>
                     </select>
                     {fieldError("recurrence")}
                   </label>
                   <label className="evx-field">
-                    <span>Voice room</span>
+                    <span>{t("events.composer.voiceRoom")}</span>
                     <select
                       value={voiceChannelId ?? ""}
                       onChange={(e) => setVoiceChannelId(e.target.value ? Number(e.target.value) : null)}
                       aria-invalid={Boolean(errors.voiceChannelId)}
                     >
-                      <option value="">No voice room</option>
+                      <option value="">{t("events.composer.noVoiceRoom")}</option>
                       {voiceRooms.map((room) => (
                         <option key={room.id} value={room.id}>
                           {room.name}
@@ -480,13 +492,13 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                   </label>
                 </div>
                 <label className="evx-field">
-                  <span>Announce in text room</span>
+                  <span>{t("events.composer.announce")}</span>
                   <select
                     value={channelId ?? ""}
                     onChange={(e) => setChannelId(e.target.value ? Number(e.target.value) : null)}
                     aria-invalid={Boolean(errors.channelId)}
                   >
-                    <option value="">Don’t post in chat</option>
+                    <option value="">{t("events.composer.noAnnounce")}</option>
                     {textRooms.map((room) => (
                       <option key={room.id} value={room.id}>
                         #{room.name}
@@ -497,14 +509,14 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                 </label>
                 <label className="evx-field">
                   <span>
-                    Description <em>optional</em>
+                    <Trans t={t} i18nKey="events.composer.description" components={{ em: <em /> }} />
                   </span>
                   <textarea
                     rows={4}
                     value={description}
                     maxLength={HUB_EVENT_LIMITS.descriptionMax}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="What are we doing? Add any useful details."
+                    placeholder={t("events.composer.descriptionPlaceholder")}
                     aria-invalid={Boolean(errors.description)}
                   />
                   <small className="evx-counter">
@@ -516,15 +528,9 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
             ) : (
               <>
                 <fieldset className="evx-field">
-                  <legend>Who can see and join</legend>
-                  <div className="evx-segment" role="radiogroup" aria-label="Audience">
-                    {(
-                      [
-                        ["all", "Everyone"],
-                        ["roles", "Roles"],
-                        ["members", "Members"],
-                      ] as Array<[HubEventAudience, string]>
-                    ).map(([value, label]) => (
+                  <legend>{t("events.composer.audience")}</legend>
+                  <div className="evx-segment" role="radiogroup" aria-label={t("events.composer.audienceLabel")}>
+                    {(["all", "roles", "members"] as HubEventAudience[]).map((value) => (
                       <button
                         key={value}
                         type="button"
@@ -533,15 +539,13 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                         className={audience === value ? "active" : ""}
                         onClick={() => setAudience(value)}
                       >
-                        {label}
+                        {t(`events.composer.audiences.${value}`)}
                       </button>
                     ))}
                   </div>
                   {audience === "roles" && (
                     <div className="evx-pick-list">
-                      {props.roles.length === 0 && (
-                        <small className="evx-note">This Hub has no custom roles yet.</small>
-                      )}
+                      {props.roles.length === 0 && <small className="evx-note">{t("events.composer.noRoles")}</small>}
                       {props.roles.map((role) => (
                         <label key={role.id} className="evx-pick">
                           <input
@@ -566,8 +570,8 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                         className="evx-search"
                         value={memberSearch}
                         onChange={(e) => setMemberSearch(e.target.value)}
-                        placeholder="Search Hub members…"
-                        aria-label="Search Hub members"
+                        placeholder={t("events.composer.searchPlaceholder")}
+                        aria-label={t("events.composer.search")}
                       />
                       <div className="evx-pick-list">
                         {filteredMembers.map((member) => (
@@ -581,9 +585,11 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                             <span>{member.username}</span>
                           </label>
                         ))}
-                        {filteredMembers.length === 0 && <small className="evx-note">No members match.</small>}
+                        {filteredMembers.length === 0 && (
+                          <small className="evx-note">{t("events.composer.noMatch")}</small>
+                        )}
                       </div>
-                      <small className="evx-note">{memberIds.length} selected</small>
+                      <small className="evx-note">{t("events.composer.selected", { count: memberIds.length })}</small>
                     </>
                   )}
                   {fieldError("audienceIds")}
@@ -591,14 +597,14 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                 </fieldset>
                 <div className="evx-grid-2">
                   <label className="evx-field">
-                    <span>Reminder</span>
+                    <span>{t("events.composer.reminder")}</span>
                     <select
                       value={reminder ?? ""}
                       onChange={(e) => setReminder(e.target.value === "" ? null : Number(e.target.value))}
                     >
                       {REMINDERS.map((r) => (
-                        <option key={r.label} value={r.value ?? ""}>
-                          {r.label}
+                        <option key={r.id} value={r.value ?? ""}>
+                          {t(`events.composer.reminders.${r.id}`)}
                         </option>
                       ))}
                     </select>
@@ -606,7 +612,7 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                   </label>
                   <label className="evx-field">
                     <span>
-                      Capacity <em>optional</em>
+                      <Trans t={t} i18nKey="events.composer.capacity" components={{ em: <em /> }} />
                     </span>
                     <input
                       type="number"
@@ -615,7 +621,7 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                       inputMode="numeric"
                       value={capacity}
                       onChange={(e) => setCapacity(e.target.value)}
-                      placeholder="Unlimited"
+                      placeholder={t("events.composer.unlimited")}
                       aria-invalid={Boolean(errors.capacity)}
                       aria-describedby={describedBy("capacity")}
                     />
@@ -624,13 +630,13 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                 </div>
                 <label className="evx-field">
                   <span>
-                    Game tag <em>optional</em>
+                    <Trans t={t} i18nKey="events.composer.gameTag" components={{ em: <em /> }} />
                   </span>
                   <input
                     value={gameTag}
                     maxLength={HUB_EVENT_LIMITS.gameTagMax}
                     onChange={(e) => setGameTag(e.target.value)}
-                    placeholder="Valorant, Minecraft…"
+                    placeholder={t("events.composer.gameTagPlaceholder")}
                     aria-invalid={Boolean(errors.gameTag)}
                   />
                   {fieldError("gameTag")}
@@ -639,8 +645,8 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
             )}
           </div>
 
-          <aside className="evx-preview" aria-label="Preview">
-            <p className="evx-kicker">Preview</p>
+          <aside className="evx-preview" aria-label={t("events.composer.preview")}>
+            <p className="evx-kicker">{t("events.composer.preview")}</p>
             <div className="evx-preview-card">
               <div className={`evx-preview-cover${coverUrl.trim() && validCover(coverUrl.trim()) ? " has-image" : ""}`}>
                 {coverUrl.trim() && validCover(coverUrl.trim()) && (
@@ -648,23 +654,27 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
                 )}
               </div>
               <div className="evx-preview-copy">
-                <strong>{title.trim() || "Untitled event"}</strong>
+                <strong>{title.trim() || t("events.composer.untitled")}</strong>
                 <small>
                   {Number.isFinite(startsAt)
                     ? formatTimeRange(startsAt, endsAt !== null && Number.isFinite(endsAt) ? endsAt : null)
-                    : "Pick a time"}
+                    : t("events.composer.pickTime")}
                 </small>
                 <div className="evx-chip-row">
-                  {recurrence !== "none" && <span className="evx-chip">Repeats {recurrence}</span>}
-                  {previewRoom && <span className="evx-chip">Voice · {previewRoom.name}</span>}
+                  {recurrence !== "none" && (
+                    <span className="evx-chip">{t(`events.composer.repeatsChip.${recurrence}`)}</span>
+                  )}
+                  {previewRoom && (
+                    <span className="evx-chip">{t("events.composer.voiceChip", { name: previewRoom.name })}</span>
+                  )}
                   {gameTag.trim() && <span className="evx-chip">{gameTag.trim()}</span>}
-                  {capacity.trim() && <span className="evx-chip">{capacity} spots</span>}
+                  {capacity.trim() && <span className="evx-chip">{t("events.composer.spots", { capacity })}</span>}
                   <span className="evx-chip">
                     {audience === "all"
-                      ? "Everyone"
+                      ? t("events.composer.audiences.all")
                       : audience === "roles"
-                        ? `${roleIds.length} role(s)`
-                        : `${memberIds.length} member(s)`}
+                        ? t("events.composer.roleCount", { count: roleIds.length })
+                        : t("events.composer.memberCount", { count: memberIds.length })}
                   </span>
                 </div>
                 {description.trim() && (
@@ -686,20 +696,24 @@ export function EventComposerSheet(props: EventComposerSheetProps) {
         <footer className="evx-sheet-foot">
           {step === 2 ? (
             <button type="button" className="dcx-btn" onClick={() => setStep(1)} disabled={busy}>
-              Back
+              {t("events.composer.back")}
             </button>
           ) : (
             <button type="button" className="dcx-btn" onClick={props.onClose} disabled={busy}>
-              Cancel
+              {t("events.composer.cancel")}
             </button>
           )}
           {step === 1 ? (
             <button type="button" className="dcx-btn dcx-btn-primary" onClick={goNext}>
-              Next: audience
+              {t("events.composer.next")}
             </button>
           ) : (
             <button type="button" className="dcx-btn dcx-btn-primary" onClick={() => void submit()} disabled={busy}>
-              {busy ? "Saving…" : editing ? "Save changes" : "Create event"}
+              {busy
+                ? t("events.composer.saving")
+                : editing
+                  ? t("events.composer.save")
+                  : t("events.composer.createTitle")}
             </button>
           )}
         </footer>

@@ -29,8 +29,11 @@ import {
   type BotRunStatus,
   type PublishedRule,
 } from "./store";
+import { refusal, withAction } from "./reasons";
 import { matchesTrigger } from "./triggers";
 import { unsafeRegexReason } from "../../shared/bots/schema";
+import type { BotRunNotice } from "../../shared/bots/run-notice.ts";
+import type { ServerNoticeCode, ServerNoticeParams } from "../../shared/i18n/server-notices.ts";
 
 export type { ActionContext, ActionHandler, BotEvent, BotInteractionResponse, DryRunStep } from "./actions/registry";
 
@@ -52,26 +55,41 @@ async function hubRules(env: Env, hubId: number): Promise<HubRules> {
   return entry;
 }
 
-function describeAction(action: BotAction, vars: Record<string, string | number>, dryRun = false): string {
+type StepDescription = { description: string; descriptionNotice?: BotRunNotice };
+
+/** A coded run-log text: the English plus the notice the bot builder translates. */
+function coded(code: ServerNoticeCode, params?: ServerNoticeParams): { detail: string; notice: BotRunNotice } {
+  const { reason, notice } = refusal(code, params);
+  return { detail: reason, notice };
+}
+
+/** A step's text. DeCave-written wording also comes as a notice; action types and user text stay as written. */
+function describeAction(action: BotAction, vars: Record<string, string | number>, dryRun = false): StepDescription {
+  const described = (code: ServerNoticeCode, params: ServerNoticeParams): StepDescription => {
+    const { detail, notice } = coded(code, params);
+    return { description: detail, descriptionNotice: notice };
+  };
   const text = "text" in action && typeof action.text === "string" ? action.text : null;
-  if (text !== null) return `${action.type}: ${renderTemplate(text, vars, () => 0)}`;
+  if (text !== null) return { description: `${action.type}: ${renderTemplate(text, vars, () => 0)}` };
   if (action.type === "webhook") {
-    if (!dryRun) return `webhook: ${action.method} ${action.url}`;
+    if (!dryRun) return { description: `webhook: ${action.method} ${action.url}` };
     try {
       const u = new URL(renderTemplate(action.url, vars, () => 0));
-      return `Would call ${action.method} https://${u.host}${u.pathname}`;
+      return described("bots.run.server.wouldCall", { method: action.method, url: `https://${u.host}${u.pathname}` });
     } catch {
-      return `webhook: ${action.method} ${action.url}`;
+      return { description: `webhook: ${action.method} ${action.url}` };
     }
   }
   if (action.type === "wait")
-    return dryRun ? `Would wait ${action.minutes} minutes` : `wait: ${action.minutes} minutes`;
-  if ("roleId" in action) return `${action.type}: role ${action.roleId}`;
-  if ("name" in action && typeof action.name === "string") return `${action.type}: ${action.name}`;
-  return action.type;
+    return dryRun
+      ? described("bots.run.server.wouldWait", { count: action.minutes })
+      : { description: `wait: ${action.minutes} minutes` };
+  if ("roleId" in action) return described("bots.run.server.roleStep", { action: action.type, role: action.roleId });
+  if ("name" in action && typeof action.name === "string") return { description: `${action.type}: ${action.name}` };
+  return { description: action.type };
 }
 
-export type RuleOutcome = { status: BotRunStatus; detail: string };
+export type RuleOutcome = { status: BotRunStatus; detail: string; notice?: BotRunNotice };
 
 async function runActions(ctx: ActionContext, actions: BotAction[]): Promise<RuleOutcome> {
   const capabilities = storedHubBotCapabilities(ctx.bot.capabilities);
@@ -80,29 +98,40 @@ async function runActions(ctx: ActionContext, actions: BotAction[]): Promise<Rul
     ctx.actionIndex = index;
     ctx.remaining = list.slice(index + 1);
     const handler = getAction(action.type);
-    const description = describeAction(action, ctx.vars, ctx.dryRun);
-    const fail = (reason: string, limited = false): RuleOutcome => {
-      ctx.steps.push({ ruleId: ctx.ruleId, action: action.type, description, ok: false, reason });
-      return { status: limited ? "limited" : "error", detail: `${action.type}: ${reason}` };
+    const described = describeAction(action, ctx.vars, ctx.dryRun);
+    const step = { ruleId: ctx.ruleId, action: action.type, ...described };
+    const fail = (reason: string, limited = false, notice?: BotRunNotice): RuleOutcome => {
+      ctx.steps.push({ ...step, ok: false, reason, ...(notice ? { reasonNotice: notice } : {}) });
+      const actionNotice = withAction(notice, action.type);
+      return {
+        status: limited ? "limited" : "error",
+        detail: `${action.type}: ${reason}`,
+        ...(actionNotice ? { notice: actionNotice } : {}),
+      };
     };
-    if (!handler) return fail(`Unknown action ${action.type}`);
+    const failCoded = (code: ServerNoticeCode, params?: ServerNoticeParams) => {
+      const { reason, notice } = refusal(code, params);
+      return fail(reason, false, notice);
+    };
+    if (!handler) return failCoded("bots.run.server.unknownAction", { action: action.type });
     if (handler.capability && !capabilities.includes(handler.capability))
-      return fail(`Bot isn't allowed to ${handler.capability}`);
+      return failCoded("bots.run.server.capabilityMissing", { capability: handler.capability });
     let result;
     try {
       result = await handler.run(ctx, action);
     } catch (error) {
-      return fail(error instanceof Error ? error.message : "Action failed");
+      // An unexpected error's own message is internal and stays as written.
+      return error instanceof Error ? fail(error.message) : failCoded("bots.run.server.actionFailed");
     }
     if ("stop" in result) {
-      ctx.steps.push({ ruleId: ctx.ruleId, action: action.type, description, ok: true });
+      ctx.steps.push({ ...step, ok: true });
       break;
     }
-    if (!result.ok) return fail(result.reason, result.limited === true);
-    ctx.steps.push({ ruleId: ctx.ruleId, action: action.type, description, ok: true });
+    if (!result.ok) return fail(result.reason, result.limited === true, result.notice);
+    ctx.steps.push({ ...step, ok: true });
     if (result.vars) Object.assign(ctx.vars, result.vars);
   }
-  return { status: "ok", detail: `Ran ${actions.length ? "actions" : "nothing"}` };
+  return { status: "ok", ...coded(actions.length ? "bots.run.server.ranActions" : "bots.run.server.ranNothing") };
 }
 
 /**
@@ -159,15 +188,26 @@ async function runRule(
   interaction?: BotInteractionResponse,
 ): Promise<void> {
   const rule: BotRule = entry.rule;
-  const record = async (status: BotRunStatus, detail: string) => {
+  const record = async (status: BotRunStatus, detail: string, notice?: BotRunNotice) => {
     if (!dryRun)
-      await logRun(env.DB, { botId: entry.botId, ruleId: entry.ruleId, trigger: rule.trigger.type, status, detail });
+      await logRun(env.DB, {
+        botId: entry.botId,
+        ruleId: entry.ruleId,
+        trigger: rule.trigger.type,
+        status,
+        detail,
+        notice,
+      });
+  };
+  const recordCoded = (status: BotRunStatus, code: ServerNoticeCode) => {
+    const { detail, notice } = coded(code);
+    return record(status, detail, notice);
   };
 
   if (rule.trigger.type === "schedule" && event.data.ruleId !== entry.ruleId) return;
   // Re-checked here so a pattern stored before the safe-subset rule never runs.
   if (rule.trigger.type === "message" && rule.trigger.mode === "regex" && unsafeRegexReason(rule.trigger.pattern))
-    return event.kind === "message" ? record("skipped", "Pattern not allowed") : undefined;
+    return event.kind === "message" ? recordCoded("skipped", "bots.run.server.patternNotAllowed") : undefined;
   const matched = matchesTrigger(rule.trigger, event);
   if (!matched.match) return;
   // Bot-authored events are ignored silently unless the rule opts in.
@@ -188,7 +228,7 @@ async function runRule(
     if (!inScope) return;
   }
 
-  if (event.chainDepth >= BOT_LIMITS.maxChainDepth) return record("limited", "Bot chain too deep");
+  if (event.chainDepth >= BOT_LIMITS.maxChainDepth) return recordCoded("limited", "bots.run.server.chainTooDeep");
 
   const cooldownKeys: [string, number][] = [];
   if (rule.cooldown.perUser > 0 && event.actorId)
@@ -197,15 +237,15 @@ async function runRule(
     cooldownKeys.push([`${entry.ruleId}:c:${event.roomId}`, rule.cooldown.perChannel]);
 
   if (!dryRun) {
-    if (onCooldown(cooldownKeys.map(([key]) => key))) return record("skipped", "Cooling down");
-    if (!takeBudget(event.hubId, "runs")) return record("limited", "Hub run limit reached for this minute");
+    if (onCooldown(cooldownKeys.map(([key]) => key))) return recordCoded("skipped", "bots.run.server.coolingDown");
+    if (!takeBudget(event.hubId, "runs")) return recordCoded("limited", "bots.run.server.runLimit");
   }
 
   // Base vars go last so no trigger-provided value can spoof user/channel/hub/text.
   const vars = { ...matched.vars, ...(await baseVars(env, event)) };
   const passes = await evaluateConditions(rule.when, { env, event, vars });
   const actions = passes ? rule.then : (rule.else ?? []);
-  if (!passes && !actions.length) return record("skipped", "Conditions not met");
+  if (!passes && !actions.length) return recordCoded("skipped", "bots.run.server.conditionsNotMet");
   // Only a rule that actually runs (then or else) cools down.
   if (!dryRun) for (const [key, seconds] of cooldownKeys) startCooldown(key, seconds);
 
@@ -221,7 +261,7 @@ async function runRule(
     interaction,
   };
   const outcome = await runActions(ctx, actions);
-  await record(outcome.status, outcome.detail);
+  await record(outcome.status, outcome.detail, outcome.notice);
   // An error may have auto-paused the bot; reload so it stops at once.
   if (outcome.status === "error" && !dryRun) invalidateHubRules(event.hubId);
 }
@@ -264,7 +304,7 @@ export async function dispatchBotEvent(
           ruleId: entry.ruleId,
           trigger: entry.rule.trigger.type,
           status: "error",
-          detail: error instanceof Error ? error.message : "Rule failed",
+          ...(error instanceof Error ? { detail: error.message } : coded("bots.run.server.ruleFailed")),
         }).catch(() => undefined);
         invalidateHubRules(event.hubId);
       }
@@ -280,10 +320,10 @@ export async function dispatchBotEvent(
  */
 async function runLinkedRule(ctx: ActionContext, ruleId: string): Promise<ActionResult> {
   const chainDepth = ctx.event.chainDepth + 1;
-  if (chainDepth >= BOT_LIMITS.maxChainDepth) return { ok: false, reason: "Bot chain too deep" };
+  if (chainDepth >= BOT_LIMITS.maxChainDepth) return { ok: false, ...refusal("bots.run.server.chainTooDeep") };
   const { rules } = await hubRules(ctx.env, ctx.event.hubId);
   const entry = rules.find((candidate) => candidate.botId === ctx.bot.id && candidate.ruleId === ruleId);
-  if (!entry) return { ok: false, reason: "That rule isn't published or is paused" };
+  if (!entry) return { ok: false, ...refusal("bots.run.server.ruleUnavailable") };
   // A linked run is a run: it spends the hub's run budget like any other.
   if (!ctx.dryRun && !takeBudget(ctx.event.hubId, "runs")) {
     await logRun(ctx.env.DB, {
@@ -291,7 +331,7 @@ async function runLinkedRule(ctx: ActionContext, ruleId: string): Promise<Action
       ruleId: entry.ruleId,
       trigger: "runRule",
       status: "limited",
-      detail: "Hub run limit reached for this minute",
+      ...coded("bots.run.server.runLimit"),
     });
     return { stop: true };
   }
@@ -314,8 +354,9 @@ async function runLinkedRule(ctx: ActionContext, ruleId: string): Promise<Action
       trigger: "runRule",
       status: outcome.status,
       detail: outcome.detail,
+      notice: outcome.notice,
     });
-  return outcome.status === "ok" ? { ok: true } : { ok: false, reason: outcome.detail };
+  return outcome.status === "ok" ? { ok: true } : { ok: false, reason: outcome.detail, notice: outcome.notice };
 }
 
 setRuleRunner(runLinkedRule);
@@ -348,8 +389,8 @@ export type ResumedRun = {
 export async function resumeBotRun(env: Env, run: ResumedRun): Promise<ResumedOutcome | null> {
   if (!botsEnabled(env)) return null;
   let started = false;
-  const record = (status: BotRunStatus, detail: string) =>
-    logRun(env.DB, { botId: run.botId, ruleId: run.ruleId, trigger: run.trigger, status, detail });
+  const record = (status: BotRunStatus, detail: string, notice?: BotRunNotice) =>
+    logRun(env.DB, { botId: run.botId, ruleId: run.ruleId, trigger: run.trigger, status, detail, notice });
   try {
     const bot = await getBot(env.DB, run.hubId, run.botId);
     if (!bot || bot.kind !== "builder") return null;
@@ -369,12 +410,14 @@ export async function resumeBotRun(env: Env, run: ResumedRun): Promise<ResumedOu
     }
     // Deterministic: retrying would be refused the same way.
     if (run.event.chainDepth >= BOT_LIMITS.maxChainDepth) {
-      await record("limited", "Bot chain too deep");
-      return { status: "limited", detail: "Bot chain too deep", startedActions: 0, retryable: false };
+      const { detail, notice } = coded("bots.run.server.chainTooDeep");
+      await record("limited", detail, notice);
+      return { status: "limited", detail, notice, startedActions: 0, retryable: false };
     }
     if (!takeBudget(run.hubId, "runs")) {
-      await record("limited", "Hub run limit reached for this minute");
-      return { status: "limited", detail: "Hub run limit reached for this minute", startedActions: 0, retryable: true };
+      const { detail, notice } = coded("bots.run.server.runLimit");
+      await record("limited", detail, notice);
+      return { status: "limited", detail, notice, startedActions: 0, retryable: true };
     }
     const ctx: ActionContext = {
       env,
@@ -388,17 +431,18 @@ export async function resumeBotRun(env: Env, run: ResumedRun): Promise<ResumedOu
     };
     started = true;
     const outcome = await runActions(ctx, run.actions);
-    await record(outcome.status, outcome.detail);
+    await record(outcome.status, outcome.detail, outcome.notice);
     if (outcome.status === "error") invalidateHubRules(run.hubId);
     const startedActions = ctx.steps.filter((step) => step.ok).length;
     // Only a transient budget miss on the very first action can be retried:
     // once an action has run, a retry would repeat it.
     return { ...outcome, startedActions, retryable: outcome.status === "limited" && startedActions === 0 };
   } catch (error) {
-    const detail = error instanceof Error ? error.message : "Run failed";
-    await record("error", detail).catch(() => undefined);
+    const { detail, notice } =
+      error instanceof Error ? { detail: error.message, notice: undefined } : coded("bots.run.server.runFailed");
+    await record("error", detail, notice).catch(() => undefined);
     invalidateHubRules(run.hubId);
     // A throw before any action ran (e.g. D1 unavailable) is transient.
-    return { status: "error", detail, startedActions: 0, retryable: !started };
+    return { status: "error", detail, ...(notice ? { notice } : {}), startedActions: 0, retryable: !started };
   }
 }

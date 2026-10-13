@@ -501,6 +501,15 @@
 .hbx-forum.is-selected .hbx-icon:not(.custom) {
   color: var(--ds-accent-2);
 }
+/* Per-room accent: the tile carries the room's --ds-accent, so selection and
+   unread states pick it up; at rest it shows as a tinted edge and icon. */
+.hbx-tile[data-room-accent],
+.hbx-forum[data-room-accent] {
+  border-color: color-mix(in srgb, var(--ds-accent) 40%, var(--ds-border));
+}
+[data-room-accent] .hbx-icon:not(.custom) {
+  color: var(--ds-accent);
+}
 .hbx-lockwrap {
   display: inline-grid;
   place-items: center;

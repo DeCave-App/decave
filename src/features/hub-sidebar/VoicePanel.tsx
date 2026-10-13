@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { UserAvatar } from "../../app/components/UserAvatar";
 import "./hubSidebar.css";
 
@@ -31,15 +32,32 @@ export type VoicePanelProps = {
 
 /** Compact voice controls shown at the bottom of the Hub sidebar. */
 export function VoicePanel(props: VoicePanelProps) {
+  const { t } = useTranslation(["hub"]);
+  // props.status is the voice engine's internal state text, compared, never shown.
   const connecting = props.status === "Connecting...";
   const qualityLabel = connecting
-    ? "Connecting…"
+    ? t("hub.voicePanel.connecting")
     : props.rttMs === null
-      ? "Voice connected"
-      : `Voice connected · ${props.rttMs} ms`;
+      ? t("hub.voicePanel.connected")
+      : t("hub.voicePanel.connectedPing", { ms: props.rttMs });
+  const muteLabel = props.serverMuted
+    ? t("hub.voicePanel.serverMuted")
+    : props.muted
+      ? t("hub.voicePanel.unmute")
+      : t("hub.voicePanel.mute");
+  const deafenLabel = props.serverDeafened
+    ? t("hub.voicePanel.serverDeafened")
+    : props.deafened
+      ? t("hub.voicePanel.undeafen")
+      : t("hub.voicePanel.deafen");
   return (
-    <div className="hsb-voice-panel" role="region" aria-label="Voice connection">
-      <button type="button" className="hsb-voice-panel-info" onClick={props.onOpenRoom} title="Open voice room">
+    <div className="hsb-voice-panel" role="region" aria-label={t("hub.voicePanel.region")}>
+      <button
+        type="button"
+        className="hsb-voice-panel-info"
+        onClick={props.onOpenRoom}
+        title={t("hub.voicePanel.openRoom")}
+      >
         <span
           className={`hsb-voice-panel-signal ${connecting ? "waiting" : (props.quality ?? "waiting")}`}
           aria-hidden="true"
@@ -58,7 +76,7 @@ export function VoicePanel(props: VoicePanelProps) {
         {props.participants.length > 0 && (
           <span
             className="hsb-voice-panel-people"
-            aria-label={`${props.participants.length} ${props.participants.length === 1 ? "person" : "people"} in voice`}
+            aria-label={t("hub.voicePanel.peopleInVoice", { count: props.participants.length })}
           >
             {props.participants.slice(0, MAX_VOICE_AVATARS).map((participant) => (
               <span
@@ -82,8 +100,8 @@ export function VoicePanel(props: VoicePanelProps) {
           type="button"
           className={props.muted || props.serverMuted ? "active" : ""}
           aria-pressed={props.muted || props.serverMuted}
-          aria-label={props.serverMuted ? "Server muted" : props.muted ? "Unmute" : "Mute"}
-          data-tooltip={props.serverMuted ? "Server muted" : props.muted ? "Unmute" : "Mute"}
+          aria-label={muteLabel}
+          data-tooltip={muteLabel}
           disabled={props.serverMuted}
           onClick={props.onToggleMute}
         >
@@ -105,8 +123,8 @@ export function VoicePanel(props: VoicePanelProps) {
           type="button"
           className={props.deafened || props.serverDeafened ? "active" : ""}
           aria-pressed={props.deafened || props.serverDeafened}
-          aria-label={props.serverDeafened ? "Server deafened" : props.deafened ? "Undeafen" : "Deafen"}
-          data-tooltip={props.serverDeafened ? "Server deafened" : props.deafened ? "Undeafen" : "Deafen"}
+          aria-label={deafenLabel}
+          data-tooltip={deafenLabel}
           disabled={props.serverDeafened}
           onClick={props.onToggleDeafen}
         >
@@ -128,8 +146,8 @@ export function VoicePanel(props: VoicePanelProps) {
           type="button"
           className={props.screenSharing ? "active live" : ""}
           aria-pressed={props.screenSharing}
-          aria-label={props.screenSharing ? "Stop screen sharing" : "Share screen"}
-          data-tooltip={props.screenSharing ? "Stop sharing" : "Share screen"}
+          aria-label={props.screenSharing ? t("hub.voicePanel.stopScreenSharing") : t("hub.voicePanel.shareScreen")}
+          data-tooltip={props.screenSharing ? t("hub.voicePanel.stopSharing") : t("hub.voicePanel.shareScreen")}
           disabled={connecting}
           onClick={props.onToggleScreenShare}
         >
@@ -141,8 +159,8 @@ export function VoicePanel(props: VoicePanelProps) {
         <button
           type="button"
           className="hsb-voice-panel-leave"
-          aria-label="Disconnect from voice"
-          data-tooltip="Disconnect"
+          aria-label={t("hub.voicePanel.disconnectFromVoice")}
+          data-tooltip={t("hub.voicePanel.disconnect")}
           onClick={props.onDisconnect}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">

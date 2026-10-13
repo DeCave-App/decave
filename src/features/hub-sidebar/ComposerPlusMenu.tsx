@@ -1,4 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "../../components/Icon";
 
 export type ComposerPlusAction = {
@@ -16,12 +17,13 @@ export type ComposerPlusAction = {
 export function ComposerPlusMenu({
   actions,
   onClose,
-  label = "Add to message",
+  label,
 }: {
   actions: ComposerPlusAction[];
   onClose: () => void;
   label?: string;
 }) {
+  const { t } = useTranslation(["hub"]);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function ComposerPlusMenu({
       ref={ref}
       className="gc-plus-menu"
       role="menu"
-      aria-label={label}
+      aria-label={label ?? t("hub.composerPlus.label")}
       data-composer-popover="true"
       onKeyDown={onKeyDown}
     >

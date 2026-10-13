@@ -27,6 +27,8 @@ import {
 import type { Admission, Database, Statement, StreamerDependencies } from "./types";
 import { all, one, statement } from "./sql";
 import { handlePugMutation, readLeaderboard, readPug } from "./pugs";
+import { streamerError, streamerErrorBody } from "./errors";
+import { errorFields, type ErrorCode } from "../lib/http";
 
 export const STREAMER_MIGRATION_ID = "0043_streamer_mode";
 
@@ -73,9 +75,9 @@ function reply(value: unknown, status = 200): Response {
 }
 async function body(request: Request): Promise<Record<string, unknown>> {
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
-    throw new StreamerInputError("Use application/json.", 415);
+    throw streamerError("streamer.jsonRequired", 415);
   }
-  if (Number(request.headers.get("content-length")) > MAX_BODY) throw new StreamerInputError("Request too large.", 413);
+  if (Number(request.headers.get("content-length")) > MAX_BODY) throw streamerError("streamer.requestTooLarge", 413);
   const reader = request.body?.getReader();
   if (!reader) return {};
   let length = 0;
@@ -87,7 +89,7 @@ async function body(request: Request): Promise<Record<string, unknown>> {
       length += value.byteLength;
       if (length > MAX_BODY) {
         await reader.cancel();
-        throw new StreamerInputError("Request too large.", 413);
+        throw streamerError("streamer.requestTooLarge", 413);
       }
       chunks.push(value);
     }
@@ -104,14 +106,14 @@ async function body(request: Request): Promise<Record<string, unknown>> {
     return objectBody(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)));
   } catch (error) {
     if (error instanceof StreamerInputError) throw error;
-    throw new StreamerInputError("Malformed JSON.");
+    throw streamerError("streamer.malformedJson");
   }
 }
 function requireCreator(admission: Admission): void {
-  if (!isCreator(admission.role)) throw new StreamerInputError("Creator permission required.", 403);
+  if (!isCreator(admission.role)) throw streamerError("streamer.creatorRequired", 403);
 }
-function changed(count: number | undefined, message = "The state changed. Refresh and try again."): void {
-  if (!count) throw new StreamerInputError(message, 409);
+function changed(count: number | undefined, code: ErrorCode = "streamer.stateChanged"): void {
+  if (!count) throw streamerError(code, 409);
 }
 
 /** Append to the SAME existing CREATE HUB D1 batch when template === 'streamer'. */
@@ -228,7 +230,7 @@ async function readSnapshot(
     "SELECT config_json,version,community_features FROM decave_streamer_hubs WHERE hub_id=?",
     hubId,
   );
-  if (!row) throw new StreamerInputError("Streamer Mode is not enabled for this Hub.", 404);
+  if (!row) throw streamerError("streamer.notEnabledForHub", 404);
   const config = { ...DEFAULT_STREAMER_CONFIG, ...JSON.parse(row.config_json), version: row.version } as StreamerConfig;
   const community = parseCommunityFeatures(row.community_features);
   const session = await activeSession(db, hubId);
@@ -361,17 +363,17 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
   const url = new URL(request.url);
   const match = /^\/api\/servers\/(\d+)\/streamer(?:\/(.*))?$/.exec(url.pathname);
   if (!match) return null;
-  if (!deps.enabled) return reply({ error: "Not found." }, 404);
+  if (!deps.enabled) return reply(errorFields("streamer.notFound"), 404);
   if (
     typeof deps.authenticate !== "function" ||
     typeof deps.guardMutation !== "function" ||
     typeof deps.guardHubAccess !== "function" ||
     typeof deps.authorizeHubImage !== "function"
   ) {
-    return reply({ error: "Streamer integration security hooks are unavailable." }, 503);
+    return reply(errorFields("streamer.hooksUnavailable"), 503);
   }
   try {
-    const hubId = integer(Number(match[1]), "Hub ID", 1, Number.MAX_SAFE_INTEGER);
+    const hubId = integer(Number(match[1]), "hubId", 1, Number.MAX_SAFE_INTEGER);
     const principal = await deps.authenticate(request);
     if (principal instanceof Response) return principal;
     const role = await one<{ role: HubRole }>(
@@ -380,7 +382,8 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
       hubId,
       principal.id,
     );
-    if (!role || !["owner", "admin", "member"].includes(role.role)) return reply({ error: "Hub not found." }, 404);
+    if (!role || !["owner", "admin", "member"].includes(role.role))
+      return reply(errorFields("streamer.hubNotFound"), 404);
     const access = await deps.guardHubAccess(request, hubId, principal.id);
     if (access) return access;
     const admission: Admission = { principal, role: role.role };
@@ -395,7 +398,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
       requireCreator(admission);
       const session = await activeSession(db, hubId);
       if (!session) return reply({ entries: [], nextCursor: null } satisfies QueuePage);
-      const cursor = integer(Number(url.searchParams.get("after") ?? "0"), "Cursor", 0, Number.MAX_SAFE_INTEGER);
+      const cursor = integer(Number(url.searchParams.get("after") ?? "0"), "cursor", 0, Number.MAX_SAFE_INTEGER);
       const entries = await all<QueueEntry & { seq: number }>(
         db,
         `SELECT ${ENTRY_COLUMNS},q.seq,NULL AS position FROM decave_streamer_queue q
@@ -412,11 +415,10 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
       } satisfies QueuePage);
     }
     if (request.method === "GET" && path === "leaderboard") {
-      if (!(await communityFeatures(db, hubId)).leaderboard)
-        throw new StreamerInputError("This Hub has no leaderboard.", 404);
+      if (!(await communityFeatures(db, hubId)).leaderboard) throw streamerError("streamer.noLeaderboard", 404);
       return reply(await readLeaderboard(db, hubId, principal.id, now, deps.faceitAvailable ?? false));
     }
-    if (request.method !== "POST") return reply({ error: "Method not supported." }, 405);
+    if (request.method !== "POST") return reply(errorFields("streamer.methodNotSupported"), 405);
     const guard = await deps.guardMutation(request, hubId, principal.id);
     if (guard) return guard;
     const input = await body(request);
@@ -430,10 +432,10 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
       Math.floor(now / 60_000),
       limit,
     ).run();
-    if (!rate.meta.changes) return reply({ error: "Too many actions. Please wait a minute." }, 429);
+    if (!rate.meta.changes) return reply(errorFields("streamer.tooManyActions"), 429);
 
     if (path === "enable") {
-      if (admission.role !== "owner") throw new StreamerInputError("Only the Hub owner can change its layout.", 403);
+      if (admission.role !== "owner") throw streamerError("streamer.ownerOnlyLayout", 403);
       await db.batch([
         statement(
           db,
@@ -457,10 +459,10 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
       return reply({ ok: true, layout: "streamer" });
     }
     if (!(await one(db, "SELECT 1 FROM decave_streamer_hubs WHERE hub_id=?", hubId)))
-      throw new StreamerInputError("Streamer Mode is not enabled.", 404);
+      throw streamerError("streamer.notEnabled", 404);
 
     if (path.startsWith("pug/") && !(await communityFeatures(db, hubId)).pugs)
-      throw new StreamerInputError("PUGs aren't enabled for this Hub.", 404);
+      throw streamerError("streamer.pugsDisabled", 404);
     const pugResult = await handlePugMutation(path, input, {
       db,
       admission,
@@ -474,7 +476,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
 
     if (path === "settings") {
       requireCreator(admission);
-      const version = integer(input.version, "Version", 1, Number.MAX_SAFE_INTEGER);
+      const version = integer(input.version, "version", 1, Number.MAX_SAFE_INTEGER);
       const config = configInput(input, now);
       // Twitch auto-live and clips are custom per-Hub features; creators can't switch them on themselves.
       if (!(await communityFeatures(db, hubId)).twitch) {
@@ -500,8 +502,9 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
           stamp,
         ),
       );
-      const notice = deps.onSettingsSaved ? await deps.onSettingsSaved(hubId, config) : null;
-      return reply(notice ? { ok: true, notice } : { ok: true });
+      const saved = deps.onSettingsSaved ? await deps.onSettingsSaved(hubId, config) : null;
+      // `notice` stays English for older clients; `noticeI18n` is translated.
+      return reply(saved ? { ok: true, notice: saved.message, noticeI18n: saved.notice } : { ok: true });
     }
     if (path === "session/create") {
       requireCreator(admission);
@@ -530,7 +533,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
           id,
           stamp,
         ),
-        "There is already an active session.",
+        "streamer.sessionAlreadyActive",
       );
       return reply({ ok: true, id }, 201);
     }
@@ -544,10 +547,10 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
         sessionId,
         hubId,
       );
-      if (!session) throw new StreamerInputError("Session is no longer active.", 409);
+      if (!session) throw streamerError("streamer.sessionInactive", 409);
       const action = sessionAction[1];
       if (action === "pause" || action === "resume" || action === "end") {
-        const version = integer(input.version, "Version", 1, Number.MAX_SAFE_INTEGER);
+        const version = integer(input.version, "version", 1, Number.MAX_SAFE_INTEGER);
         const target = action === "pause" ? "paused" : action === "resume" ? "open" : "ended";
         const op = statement(
           db,
@@ -612,7 +615,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
         );
         changed(
           await auditMutation(deps, op, admission, hubId, "queue.call-next", sessionId, stamp),
-          "No available seats or waiting members.",
+          "streamer.noSeats",
         );
       } else if (action === "start-ready") {
         changed(
@@ -632,7 +635,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
             sessionId,
             stamp,
           ),
-          "No accepted ready checks to start.",
+          "streamer.noReadyChecks",
         );
       } else {
         changed(
@@ -651,14 +654,13 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
             sessionId,
             stamp,
           ),
-          "No playing members to finish.",
+          "streamer.noPlayingMembers",
         );
       }
       return reply({ ok: true });
     }
     if (path === "queue/join") {
-      if (isCreator(admission.role))
-        throw new StreamerInputError("Creators manage this session rather than take viewer slots.", 403);
+      if (isCreator(admission.role)) throw streamerError("streamer.creatorsCannotQueue", 403);
       const sessionId = identifier(input.sessionId);
       const id = newId();
       const mutation = statement(
@@ -692,7 +694,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
           principal.id,
         );
         if (existing && ["waiting", "called", "ready", "playing"].includes(existing.status)) return reply({ ok: true });
-        throw new StreamerInputError("The queue is closed, full, or you already had a turn in this session.", 409);
+        throw streamerError("streamer.queueUnavailable", 409);
       }
       return reply({ ok: true }, 201);
     }
@@ -721,10 +723,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
             principal.id,
           );
       const result = await op.run();
-      changed(
-        result.meta.changes,
-        ready ? "Ready check expired or is no longer active." : "You cannot leave this queue state.",
-      );
+      changed(result.meta.changes, ready ? "streamer.readyCheckExpired" : "streamer.cannotLeaveQueue");
       return reply({ ok: true });
     }
     if (path === "queue/skip") {
@@ -752,11 +751,11 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
     }
     if (path === "highlights/add") {
       requireCreator(admission);
-      const title = text(input.title, "Title", 120);
+      const title = text(input.title, "title", 120);
       const link = publicStreamUrl(input.url, true);
       const thumbnail = localMediaPath(input.thumbnailPath ?? "");
       if (thumbnail && !(await deps.authorizeHubImage(request, hubId, principal.id, thumbnail))) {
-        throw new StreamerInputError("This image is not approved for this Hub's Overview.", 403);
+        throw streamerError("streamer.imageNotApproved", 403);
       }
       const id = newId();
       changed(
@@ -781,7 +780,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
           id,
           stamp,
         ),
-        "This Hub already has 24 highlights. Remove one first.",
+        "streamer.highlightsFull",
       );
       return reply({ ok: true, id }, 201);
     }
@@ -802,18 +801,17 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
       return reply({ ok: true });
     }
     if (path.startsWith("giveaways/")) {
-      if (!deps.giveawaysEnabled) throw new StreamerInputError("Giveaways are not enabled on this deployment.", 404);
+      if (!deps.giveawaysEnabled) throw streamerError("streamer.giveawaysDisabled", 404);
       if (path === "giveaways/create") {
         requireCreator(admission);
-        const title = text(input.title, "Title", 120);
-        const rules = text(input.rules, "Rules", 2000);
-        const closesAt = futureDate(input.closesAt, "Closing time", now);
+        const title = text(input.title, "title", 120);
+        const rules = text(input.rules, "rules", 2000);
+        const closesAt = futureDate(input.closesAt, "closingTime", now);
         // Entry rules need the Hub's Twitch subscriber feature (custom per Hub).
         const conditions = (await communityFeatures(db, hubId)).subRoles
           ? {
               subsOnly: input.subsOnly === true,
-              minMemberDays:
-                input.minMemberDays === undefined ? 0 : integer(input.minMemberDays, "Days in the Hub", 0, 365),
+              minMemberDays: input.minMemberDays === undefined ? 0 : integer(input.minMemberDays, "daysInHub", 0, 365),
               subBonus: input.subBonus === true,
             }
           : {};
@@ -840,13 +838,13 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
             id,
             stamp,
           ),
-          "Close or cancel an existing giveaway first.",
+          "streamer.giveawayAlreadyOpen",
         );
         return reply({ ok: true, id }, 201);
       }
       const id = identifier(input.id);
       if (path === "giveaways/enter") {
-        if (isCreator(admission.role)) throw new StreamerInputError("Organizers cannot enter their own giveaway.", 403);
+        if (isCreator(admission.role)) throw streamerError("streamer.organizerCannotEnter", 403);
         const rules = giveawayConditions(
           (
             await one<{ conditions_json: string | null }>(
@@ -858,10 +856,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
           )?.conditions_json,
         );
         if (rules.subsOnly && !(await isSubscriber(db, hubId, principal.id)))
-          throw new StreamerInputError(
-            "This giveaway is for Twitch subscribers. Link your Twitch account on the Overview to enter.",
-            403,
-          );
+          throw streamerError("streamer.giveawayTwitchSubsOnly", 403);
         if (rules.minMemberDays) {
           const member = await one<{ joined_at: string }>(
             db,
@@ -870,10 +865,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
             principal.id,
           );
           if (!member || Date.parse(member.joined_at) > now - rules.minMemberDays * 86_400_000)
-            throw new StreamerInputError(
-              `This giveaway needs ${rules.minMemberDays} ${rules.minMemberDays === 1 ? "day" : "days"} in the Hub before entering.`,
-              403,
-            );
+            throw streamerError("streamer.giveawayMemberDays", 403, { count: rules.minMemberDays });
         }
         const op = statement(
           db,
@@ -903,7 +895,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
             principal.id,
           ))
         ) {
-          throw new StreamerInputError("This giveaway is closed or full.", 409);
+          throw streamerError("streamer.giveawayClosedOrFull", 409);
         }
         return reply({ ok: true });
       }
@@ -936,7 +928,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
         );
         if (giveaway?.status === "drawn") return reply({ ok: true }); // No rerolls on retry.
         if (!giveaway || giveaway.status !== "open" || giveaway.closes_at > stamp)
-          throw new StreamerInputError("Draw after the advertised closing time.", 409);
+          throw streamerError("streamer.drawTooEarly", 409);
         const entrants = await all<{ user_id: string }>(
           db,
           `SELECT e.user_id FROM decave_streamer_giveaway_entries e
@@ -945,7 +937,7 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
           id,
           hubId,
         );
-        if (!entrants.length) throw new StreamerInputError("No eligible entries. Cancel this giveaway instead.", 409);
+        if (!entrants.length) throw streamerError("streamer.noEligibleEntries", 409);
         // Subscriber bonus: subscribers (verified at draw time) hold two tickets.
         const drawRules = giveawayConditions(
           (
@@ -1001,13 +993,13 @@ export async function handleStreamerRequest(request: Request, deps: StreamerDepe
         return reply({ ok: true });
       }
     }
-    return reply({ error: "Streamer action not found." }, 404);
+    return reply(errorFields("streamer.actionNotFound"), 404);
   } catch (error) {
-    if (error instanceof StreamerInputError) return reply({ error: error.message }, error.status);
+    if (error instanceof StreamerInputError) return reply(streamerErrorBody(error), error.status);
     if (error instanceof Error && /UNIQUE constraint failed/.test(error.message))
-      return reply({ error: "Another action already updated this record. Refresh and try again." }, 409);
+      return reply(errorFields("streamer.conflict"), 409);
     // Never expose SQL, tokens, private IDs, or database exceptions to the browser.
-    return reply({ error: "Streamer tools are temporarily unavailable. Please try again." }, 503);
+    return reply(errorFields("streamer.unavailable"), 503);
   }
 }
 

@@ -32,7 +32,7 @@ export function createStreamerApi(hubId: number, transport: StreamerTransport) {
     mutate: (path: string, payload: unknown, signal: AbortSignal) => {
       if (!/^[a-z-]+\/[a-z-]+$/.test(path) && path !== "settings" && path !== "enable")
         throw new Error("Invalid action path.");
-      return transport.request<{ ok: boolean; id?: string; notice?: string }>(`${base}/${path}`, {
+      return transport.request<{ ok: boolean; id?: string; notice?: string; noticeI18n?: unknown }>(`${base}/${path}`, {
         method: "POST",
         signal,
         headers: { "content-type": "application/json" },

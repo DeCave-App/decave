@@ -4,6 +4,7 @@ import type { MutableRefObject } from "react";
 import { quietHoursSilences, type ExtraSettings } from "../../features/settings";
 import { resolveNotificationPreview, type NotificationPreview } from "../../privacy/notification-preview";
 import type { NotificationSettings, PrivacySettings, UiSoundEvent, SoundSettings } from "../types";
+import { i18next } from "../../i18n/index.ts";
 import { QUIET_HOURS_SOUNDS } from "../settings-storage";
 
 export type NotificationActionsDeps = {
@@ -145,13 +146,15 @@ export function createNotificationActions(deps: NotificationActionsDeps) {
     if (mode === "hidden") {
       return {
         title: "DeCave",
-        body: "You have a new notification.",
+        body: i18next.t("chat.actions.notifications.hiddenBody"),
       };
     }
     if (mode === "sender") {
       return {
         title: context || sender,
-        body: context ? `${sender} sent a message.` : `${sender} sent you a message.`,
+        body: context
+          ? i18next.t("chat.actions.notifications.senderSentMessage", { sender })
+          : i18next.t("chat.actions.notifications.senderSentYouMessage", { sender }),
       };
     }
     return {
@@ -177,7 +180,9 @@ export function createNotificationActions(deps: NotificationActionsDeps) {
     if (!notificationSettingsRef.current.desktop || typeof Notification === "undefined") return;
     if (Notification.permission === "granted") {
       const hidden = notificationPreviewMode() === "hidden";
-      new Notification(hidden ? "DeCave" : title, { body: hidden ? "You have a new notification." : body });
+      new Notification(hidden ? "DeCave" : title, {
+        body: hidden ? i18next.t("chat.actions.notifications.hiddenBody") : body,
+      });
     }
   };
 

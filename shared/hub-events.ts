@@ -1,6 +1,8 @@
 // Shared Hub calendar event contract + pure helpers used by the Worker (and
 // available to the client). Keep this file free of Worker/DOM-only APIs.
 
+import type { ErrorCode, ErrorText } from "./i18n/error-code.ts";
+
 export type HubEventRecurrence = "none" | "daily" | "weekly" | "monthly";
 export type HubEventAudience = "all" | "roles" | "members";
 export type HubEventRsvpStatus = "going" | "maybe" | "declined";
@@ -78,7 +80,8 @@ export type HubEventInput = {
   voiceChannelId: number | null;
 };
 
-export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string; field: string };
+/** A failed check names the `field` and an errors-catalog `code` the Worker sends. */
+export type ValidationResult<T> = { ok: true; value: T } | ({ ok: false; field: string } & ErrorText);
 
 function cleanText(value: unknown, max: number): string {
   if (typeof value !== "string") return "";
@@ -128,23 +131,22 @@ export function validateHubEventInput(
   const partial = options.partial === true && options.existing !== undefined;
   const base = options.existing;
   const has = (key: string) => Object.prototype.hasOwnProperty.call(body, key) && body[key] !== undefined;
-  const fail = (field: string, error: string): ValidationResult<HubEventInput> => ({ ok: false, field, error });
+  const fail = (field: string, code: ErrorCode): ValidationResult<HubEventInput> => ({ ok: false, field, code });
 
   let title = base?.title ?? "";
   if (!partial || has("title")) {
     title = cleanText(body.title, HUB_EVENT_LIMITS.titleMax);
-    if (!title) return fail("title", "Title is required.");
-    if (Array.from(title).length > HUB_EVENT_LIMITS.titleMax)
-      return fail("title", "Title must be 100 characters or fewer.");
+    if (!title) return fail("title", "hubEvents.input.titleRequired");
+    if (Array.from(title).length > HUB_EVENT_LIMITS.titleMax) return fail("title", "hubEvents.input.titleTooLong");
   }
 
   let description = base?.description ?? "";
   if (!partial || has("description")) {
     if (body.description !== undefined && body.description !== null && typeof body.description !== "string")
-      return fail("description", "Description must be text.");
+      return fail("description", "hubEvents.input.descriptionNotText");
     description = typeof body.description === "string" ? body.description.normalize("NFC").trim() : "";
     if (description.length > HUB_EVENT_LIMITS.descriptionMax)
-      return fail("description", "Description must be 2000 characters or fewer.");
+      return fail("description", "hubEvents.input.descriptionTooLong");
   }
 
   let coverUrl = base?.coverUrl ?? null;
@@ -155,7 +157,7 @@ export function validateHubEventInput(
       body.coverUrl.length > HUB_EVENT_LIMITS.coverUrlMax ||
       !isAllowedCoverUrl(body.coverUrl.trim())
     )
-      return fail("coverUrl", "Cover must be an uploaded image or an https URL.");
+      return fail("coverUrl", "hubEvents.input.coverInvalid");
     else coverUrl = body.coverUrl.trim();
   }
 
@@ -164,35 +166,35 @@ export function validateHubEventInput(
   if (startsChanged) {
     const n = optionalInt(body.startsAt);
     if (n === undefined || n === null || Number.isNaN(n) || n <= 0)
-      return fail("startsAt", "A valid start time (ms) is required.");
+      return fail("startsAt", "hubEvents.input.startRequired");
     startsAt = n;
     if (startsAt < options.now - HUB_EVENT_LIMITS.pastToleranceMs)
-      return fail("startsAt", "Events cannot start in the past.");
+      return fail("startsAt", "hubEvents.input.startInPast");
   }
 
   let endsAt = base?.endsAt ?? null;
   if (!partial || has("endsAt")) {
     const n = optionalInt(body.endsAt);
     if (n === undefined || n === null) endsAt = null;
-    else if (Number.isNaN(n)) return fail("endsAt", "End time must be a timestamp in ms.");
+    else if (Number.isNaN(n)) return fail("endsAt", "hubEvents.input.endInvalid");
     else endsAt = n;
   }
   if (endsAt !== null) {
-    if (endsAt <= startsAt) return fail("endsAt", "End time must be after the start time.");
-    if (endsAt - startsAt > HUB_EVENT_LIMITS.maxDurationMs) return fail("endsAt", "Events can last at most 14 days.");
+    if (endsAt <= startsAt) return fail("endsAt", "hubEvents.input.endBeforeStart");
+    if (endsAt - startsAt > HUB_EVENT_LIMITS.maxDurationMs) return fail("endsAt", "hubEvents.input.tooLong");
   }
 
   let timezone = base?.timezone ?? "UTC";
   if (!partial || has("timezone")) {
     timezone = typeof body.timezone === "string" && body.timezone.trim() ? body.timezone.trim() : "UTC";
-    if (!isValidTimeZone(timezone)) return fail("timezone", "Unknown time zone.");
+    if (!isValidTimeZone(timezone)) return fail("timezone", "hubEvents.input.timezoneUnknown");
   }
 
   let recurrence = base?.recurrence ?? "none";
   if (!partial || has("recurrence")) {
     const value = body.recurrence ?? "none";
     if (!HUB_EVENT_RECURRENCES.includes(value as HubEventRecurrence))
-      return fail("recurrence", "Recurrence must be none, daily, weekly or monthly.");
+      return fail("recurrence", "hubEvents.input.recurrenceInvalid");
     recurrence = value as HubEventRecurrence;
   }
 
@@ -201,11 +203,11 @@ export function validateHubEventInput(
   if (!partial || has("audience") || has("audienceIds")) {
     const value = has("audience") ? body.audience : (base?.audience ?? "all");
     if (!HUB_EVENT_AUDIENCES.includes(value as HubEventAudience))
-      return fail("audience", "Audience must be all, roles or members.");
+      return fail("audience", "hubEvents.input.audienceInvalid");
     audience = value as HubEventAudience;
     const rawIds = has("audienceIds") ? body.audienceIds : audience === base?.audience ? base?.audienceIds : [];
     if (rawIds !== undefined && rawIds !== null && !Array.isArray(rawIds))
-      return fail("audienceIds", "audienceIds must be an array.");
+      return fail("audienceIds", "hubEvents.input.audienceIdsNotArray");
     const ids = Array.from(
       new Set(
         (Array.isArray(rawIds) ? rawIds : []).filter(
@@ -213,11 +215,9 @@ export function validateHubEventInput(
         ),
       ),
     );
-    if (ids.length > HUB_EVENT_LIMITS.audienceIdsMax)
-      return fail("audienceIds", "Too many audience entries (max 100).");
+    if (ids.length > HUB_EVENT_LIMITS.audienceIdsMax) return fail("audienceIds", "hubEvents.input.audienceIdsTooMany");
     audienceIds = audience === "all" ? [] : ids;
-    if (audience !== "all" && audienceIds.length === 0)
-      return fail("audienceIds", "Choose at least one role or member for this audience.");
+    if (audience !== "all" && audienceIds.length === 0) return fail("audienceIds", "hubEvents.input.audienceEmpty");
   }
 
   let reminderMinutes = base?.reminderMinutes ?? null;
@@ -225,7 +225,7 @@ export function validateHubEventInput(
     const n = optionalInt(body.reminderMinutes);
     if (n === undefined || n === null) reminderMinutes = null;
     else if (Number.isNaN(n) || n < 0 || n > HUB_EVENT_LIMITS.reminderMinutesMax)
-      return fail("reminderMinutes", "Reminder must be between 0 and 40320 minutes.");
+      return fail("reminderMinutes", "hubEvents.input.reminderInvalid");
     else reminderMinutes = n;
   }
 
@@ -234,14 +234,14 @@ export function validateHubEventInput(
     const n = optionalInt(body.capacity);
     if (n === undefined || n === null) capacity = null;
     else if (Number.isNaN(n) || n < 1 || n > HUB_EVENT_LIMITS.capacityMax)
-      return fail("capacity", "Capacity must be between 1 and 10000.");
+      return fail("capacity", "hubEvents.input.capacityInvalid");
     else capacity = n;
   }
 
   let gameTag = base?.gameTag ?? null;
   if (!partial || has("gameTag")) {
     const value = cleanText(body.gameTag, HUB_EVENT_LIMITS.gameTagMax);
-    if (value.length > HUB_EVENT_LIMITS.gameTagMax) return fail("gameTag", "Game tag must be 40 characters or fewer.");
+    if (value.length > HUB_EVENT_LIMITS.gameTagMax) return fail("gameTag", "hubEvents.input.gameTagTooLong");
     gameTag = value || null;
   }
 
@@ -249,14 +249,14 @@ export function validateHubEventInput(
   if (!partial || has("channelId")) {
     const n = optionalInt(body.channelId);
     if (n === undefined || n === null) channelId = null;
-    else if (Number.isNaN(n) || n <= 0) return fail("channelId", "Invalid room.");
+    else if (Number.isNaN(n) || n <= 0) return fail("channelId", "hubEvents.input.roomInvalid");
     else channelId = n;
   }
   let voiceChannelId = base?.voiceChannelId ?? null;
   if (!partial || has("voiceChannelId")) {
     const n = optionalInt(body.voiceChannelId);
     if (n === undefined || n === null) voiceChannelId = null;
-    else if (Number.isNaN(n) || n <= 0) return fail("voiceChannelId", "Invalid voice room.");
+    else if (Number.isNaN(n) || n <= 0) return fail("voiceChannelId", "hubEvents.input.voiceRoomInvalid");
     else voiceChannelId = n;
   }
 

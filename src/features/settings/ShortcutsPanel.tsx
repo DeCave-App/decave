@@ -1,3 +1,5 @@
+import { useSettingsT } from "./useSettingsT";
+
 type Props = {
   /** "Ctrl" on Windows/Linux, "Cmd" on macOS. */
   mod: string;
@@ -19,50 +21,55 @@ function Keys({ value }: { value: string }) {
   );
 }
 
-/** Settings → Keybinds: every shortcut DeCave understands, in one list. */
+/** Settings → Gaming & overlay: every shortcut DeCave understands, in one list. */
 export function ShortcutsPanel({ mod, pushToTalkKey, muteShortcut, deafenShortcut }: Props) {
-  const groups: Array<{ title: string; rows: Array<[string, string]> }> = [
+  const { t } = useSettingsT();
+  const groups: Array<{ id: string; title: string; rows: Array<[string, string]> }> = [
     {
-      title: "Anywhere",
+      id: "anywhere",
+      title: t("settings.shortcuts.anywhere"),
       rows: [
-        [`${mod}+K`, "Search and jump to a Hub, room or person"],
-        [`${mod}+Shift+I`, "Open your inbox"],
-        ["Esc", "Close the open menu, dialog or Settings"],
+        [`${mod}+K`, t("settings.shortcuts.search")],
+        [`${mod}+Shift+I`, t("settings.shortcuts.inbox")],
+        ["Esc", t("settings.shortcuts.escape")],
       ],
     },
     {
-      title: "Voice",
+      id: "voice",
+      title: t("settings.shortcuts.voice"),
       rows: [
-        ...(pushToTalkKey ? [[pushToTalkKey, "Hold to talk (Push to Talk)"] as [string, string]] : []),
-        [muteShortcut, "Mute or unmute your microphone (desktop app, works in games)"],
-        [deafenShortcut, "Deafen or undeafen (desktop app, works in games)"],
+        ...(pushToTalkKey ? [[pushToTalkKey, t("settings.shortcuts.pushToTalk")] as [string, string]] : []),
+        [muteShortcut, t("settings.shortcuts.mute")],
+        [deafenShortcut, t("settings.shortcuts.deafen")],
       ],
     },
     {
-      title: "Hub sidebar (owners and admins)",
+      id: "sidebar",
+      title: t("settings.shortcuts.sidebar"),
       rows: [
-        ["Alt+↑", "Move the focused room up inside its box"],
-        ["Alt+↓", "Move the focused room down inside its box"],
+        ["Alt+↑", t("settings.shortcuts.moveUp")],
+        ["Alt+↓", t("settings.shortcuts.moveDown")],
       ],
     },
     {
-      title: "Writing a forum post",
+      id: "forum",
+      title: t("settings.shortcuts.forum"),
       rows: [
-        [`${mod}+B`, "Bold"],
-        [`${mod}+I`, "Italic"],
-        [`${mod}+K`, "Add a link"],
-        [`${mod}+Enter`, "Publish"],
+        [`${mod}+B`, t("settings.shortcuts.bold")],
+        [`${mod}+I`, t("settings.shortcuts.italic")],
+        [`${mod}+K`, t("settings.shortcuts.link")],
+        [`${mod}+Enter`, t("settings.shortcuts.publish")],
       ],
     },
   ];
   return (
     <div className="dcs-card dcs-shortcuts">
       {groups.map((group) => (
-        <section key={group.title}>
+        <section key={group.id}>
           <h4>{group.title}</h4>
           <dl>
             {group.rows.map(([keys, label]) => (
-              <div key={`${group.title}-${keys}`}>
+              <div key={`${group.id}-${keys}`}>
                 <dt>
                   <Keys value={keys} />
                 </dt>

@@ -1,0 +1,120 @@
+{
+  "category": {
+    "HARASSMENT_BULLYING": "Assédio ou bullying",
+    "HATE_SPEECH": "Discurso de ódio",
+    "SEXUAL_INAPPROPRIATE": "Conteúdo sexual ou impróprio",
+    "SUSPECTED_GROOMING": "Suspeita de aliciamento",
+    "CHILD_SAFETY": "Risco à segurança infantil",
+    "THREATS_VIOLENCE": "Ameaças ou violência",
+    "SPAM_SCAM": "Spam ou golpe",
+    "IMPERSONATION": "Falsificação de identidade",
+    "UNDERAGE_USER": "Usuário menor de idade",
+    "INAPPROPRIATE_MEDIA": "Mídia imprópria",
+    "SELF_HARM": "Risco de automutilação",
+    "OTHER": "Outro"
+  },
+  "urgency": {
+    "critical": "Crítica",
+    "high": "Alta",
+    "medium": "Média",
+    "low": "Baixa",
+    "spam_invalid": "Spam ou inválida"
+  },
+  "report": {
+    "title": {
+      "content": "Denunciar conteúdo",
+      "user": "Denunciar {{name}}",
+      "thisUser": "Denunciar este usuário",
+      "item": "Denunciar {{label}}",
+      "thisContent": "Denunciar este conteúdo"
+    },
+    "failed": "Não foi possível enviar a denúncia.",
+    "submitted": "Denúncia enviada. Obrigado por ajudar a manter o DeCave seguro.",
+    "submittedNoEvidence": "Denúncia enviada, mas não foi possível anexar a mensagem denunciada, então a equipe de segurança não vai conseguir lê-la. Você já pode fechar esta janela.",
+    "connectFailed": "Não foi possível conectar ao DeCave.",
+    "kicker": "Confiança e segurança",
+    "private": "Sua denúncia é privada. Sua identidade não será mostrada à pessoa denunciada.",
+    "category": "O que aconteceu?",
+    "urgency": "Urgência",
+    "details": "Detalhes <optional>(opcional)</optional>",
+    "detailsPlaceholder": "Conte o que precisamos saber",
+    "evidence": "Evidência selecionada",
+    "evidenceEncrypted": "Ela será criptografada neste dispositivo antes do envio.",
+    "blockAfter": "Bloquear este usuário depois de enviar",
+    "cancel": "Cancelar",
+    "submitting": "Enviando…",
+    "submit": "Enviar denúncia"
+  },
+  "myReports": {
+    "loadFailed": "Não foi possível carregar suas denúncias.",
+    "connectFailed": "Não foi possível conectar ao DeCave.",
+    "kicker": "SÓ VOCÊ VÊ",
+    "title": "Minhas denúncias",
+    "intro": "Acompanhe as denúncias que você enviou. Os detalhes da análise continuam privados.",
+    "loading": "Carregando…",
+    "refresh": "Atualizar",
+    "empty": "Você não enviou nenhuma denúncia.",
+    "rowMeta": "{{target}} · {{date}}",
+    "report": "Denúncia",
+    "close": "Fechar",
+    "noDetails": "Nenhum detalhe adicional foi informado.",
+    "statusLine": "Status: {{status}} · enviada em {{date}}",
+    "status": {
+      "submitted": "Enviada",
+      "under_review": "Em análise",
+      "awaiting_information": "Aguardando informações",
+      "action_taken": "Medida tomada",
+      "no_violation": "Sem violação",
+      "escalated": "Encaminhada",
+      "appealed": "Contestada",
+      "closed": "Encerrada"
+    },
+    "urgency": {
+      "critical": "crítica",
+      "high": "alta",
+      "medium": "média",
+      "low": "baixa",
+      "spam_invalid": "spam ou inválida"
+    },
+    "target": {
+      "user": "usuário",
+      "message": "mensagem",
+      "content": "conteúdo",
+      "attachment": "anexo",
+      "profile": "perfil",
+      "voice_participant": "participante de voz"
+    }
+  },
+  "qrLogin": {
+    "creating": "Criando um código de login seguro…",
+    "createFailed": "Não foi possível criar o login por QR.",
+    "instructions": "Abra o DeCave Mobile → Configurações → Dispositivos → Escanear login por QR.",
+    "updating": "Atualizando o código de login seguro…",
+    "expired": "O login por QR expirou.",
+    "codeAlt": "Código QR de login do DeCave",
+    "preparing": "Preparando…",
+    "scan": "Escaneie com o app do DeCave"
+  },
+  "mobile": {
+    "myReports": {
+      "reportValue": "Denúncia {{value}}"
+    },
+    "category": {
+      "HARASSMENT_BULLYING": "Assédio",
+      "SEXUAL_INAPPROPRIATE": "Conteúdo sexual",
+      "SUSPECTED_GROOMING": "Aliciamento",
+      "CHILD_SAFETY": "Segurança infantil",
+      "THREATS_VIOLENCE": "Ameaças",
+      "SELF_HARM": "Automutilação"
+    },
+    "report": {
+      "submittedNoEvidenceShort": "Denúncia enviada, mas não foi possível anexar a mensagem denunciada.",
+      "failed": "Não foi possível enviar a denúncia.",
+      "kicker": "CONFIANÇA E SEGURANÇA",
+      "private": "Sua denúncia é privada. A pessoa denunciada não verá sua identidade.",
+      "detailsPlaceholder": "Conte o que precisamos saber (opcional)",
+      "evidenceNote": "A mensagem denunciada foi anexada com criptografia, e só a equipe de segurança do DeCave consegue lê-la.",
+      "contextNote": "Sua denúncia e o contexto dela são enviados à equipe de segurança do DeCave."
+    }
+  }
+}

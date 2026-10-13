@@ -6,6 +6,7 @@ import type { Env } from "./env";
 import { canAccessRoom } from "./hubs";
 import { messageForClient } from "./messages";
 import { realtimeBroadcast } from "./realtime";
+import type { ServerNotice } from "../../shared/i18n/server-notices.ts";
 
 export const HUB_BOT_CAPABILITIES = [
   "send_messages",
@@ -93,9 +94,13 @@ export function hubBotForClient(row: HubBotRecord) {
 
 export const BOT_MESSAGE_PREFIX = "__DECAVE_BOT__";
 
-/** Plain bot text as stored: wrapped so current clients render it as a bot message. */
-export function botMessageText(bot: { id: string; name: string }, text: string): string {
-  return `${BOT_MESSAGE_PREFIX}${JSON.stringify({ botId: bot.id, name: bot.name, text })}`;
+/**
+ * Plain bot text as stored: wrapped so current clients render it as a bot message.
+ * Text DeCave itself writes for a bot (usage hints, Twitch clips) also carries a
+ * `notice` so clients can show it in the reader's language; `text` stays English.
+ */
+export function botMessageText(bot: { id: string; name: string }, text: string, notice?: ServerNotice): string {
+  return `${BOT_MESSAGE_PREFIX}${JSON.stringify({ botId: bot.id, name: bot.name, text, ...(notice ? { notice } : {}) })}`;
 }
 
 /**

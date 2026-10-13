@@ -1,9 +1,10 @@
 // Search the messages of the current Hub.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { Channel, ChatMessage } from "../types";
-import { formatTimestamp } from "../locale";
+import { formatTimestamp } from "../../i18n/format";
 import type { HubPanelsState } from "../state/hub-panels";
 import type { HubChatActions } from "../actions/hub-chat";
 
@@ -24,20 +25,21 @@ export function MessageSearchDialog({
   currentChannel,
   hubChat,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="modal-overlay" onClick={() => hubPanels.setShowMessageSearch(false)}>
       <div className="modal v19-search" onClick={(event) => event.stopPropagation()}>
         <header className="ds-page-header">
           <div className="ds-page-header-copy">
-            <span className="ds-kicker">Message search</span>
-            <h2>Search #{currentChannel.name}</h2>
+            <span className="ds-kicker">{t("chat.messageSearch.kicker")}</span>
+            <h2>{t("chat.messageSearch.title", { room: currentChannel.name })}</h2>
           </div>
           <div className="ds-page-header-actions">
             <button
               type="button"
               className="ds-btn ds-btn-ghost ds-icon-btn"
-              aria-label="Close"
-              title="Close"
+              aria-label={t("common.actions.close")}
+              title={t("common.actions.close")}
               onClick={() => hubPanels.setShowMessageSearch(false)}
             >
               <Icon name="close" />
@@ -50,18 +52,18 @@ export function MessageSearchDialog({
             <input
               className="ds-input"
               type="search"
-              aria-label="Search messages or usernames"
+              aria-label={t("chat.messageSearch.placeholder")}
               value={messageSearchQuery}
               onChange={(event) => setMessageSearchQuery(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") void hubChat.searchMessages();
               }}
-              placeholder="Search messages or usernames"
+              placeholder={t("chat.messageSearch.placeholder")}
               autoFocus
             />
           </label>
           <button type="button" className="ds-btn ds-btn-primary" onClick={() => void hubChat.searchMessages()}>
-            Search
+            {t("common.actions.search")}
           </button>
         </div>
         <div className="v19-search-results ds-list">

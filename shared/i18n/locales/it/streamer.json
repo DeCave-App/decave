@@ -1,0 +1,511 @@
+{
+  "overview": {
+    "aria": "Panoramica dell'Hub streamer",
+    "title": "Panoramica streamer",
+    "loading": "Caricamento della tua community…",
+    "retry": "Riprova",
+    "eyebrowOfficial": "HUB UFFICIALE",
+    "eyebrowStreamer": "MODALITÀ STREAMER",
+    "headingOfficialOwner": "Dai il benvenuto a ogni nuovo membro di DeCave",
+    "headingOfficialMember": "Inizia da qui",
+    "headingOwner": "La tua community, in un unico posto",
+    "headingMember": "Panoramica di {{hub}}",
+    "previewMember": "Anteprima come membro",
+    "backToCreator": "Torna alla vista creator",
+    "badgeOfficial": "✓ UFFICIALE",
+    "badgeLive": "IN DIRETTA · Stato del creator",
+    "badgeOffline": "OFFLINE",
+    "heroLive": "{{name}} è in diretta",
+    "heroWelcome": "Ti diamo il benvenuto in {{hub}}",
+    "watchStream": "Guarda la diretta ↗",
+    "visitChannel": "Vai al canale ↗",
+    "manageSession": "Gestisci la sessione in diretta",
+    "startSession": "Avvia sessione community",
+    "previewNote": "Anteprima membro: le azioni di partecipazione sono disattivate. I tuoi permessi non sono cambiati."
+  },
+  "errors": {
+    "generic": "Impossibile completare questa azione.",
+    "unavailable": "La modalità streamer di questo Hub non è disponibile.",
+    "twitchUnavailable": "L'accesso con Twitch non è disponibile al momento.",
+    "faceitUnavailable": "L'accesso con FACEIT non è disponibile al momento.",
+    "roomUnavailable": "#{{room}} non è disponibile in questo Hub.",
+    "closingTimeRequired": "Scegli un orario di chiusura."
+  },
+  "notices": {
+    "saved": "Salvato.",
+    "savedWithNotice": "Salvato. {{notice}}",
+    "twitchFinish": "Completa l'accesso con Twitch nel browser. Questa pagina si aggiorna da sola.",
+    "twitchLinked": "Twitch collegato come {{login}}.",
+    "faceitFinish": "Completa l'accesso con FACEIT nel browser. Questo pannello si aggiorna da solo.",
+    "faceitLinked": "FACEIT collegato come {{nickname}}.",
+    "teamsMoving": "Squadre fatte: ti spostiamo nella stanza vocale di {{team}}.",
+    "teamsJoin": "Squadre fatte: sei in {{team}}. Apri il PUG per entrare nella stanza vocale della tua squadra.",
+    "subscriptionChecked": "Abbonamento verificato.",
+    "twitchUnlinked": "Twitch scollegato.",
+    "faceitUnlinked": "FACEIT scollegato."
+  },
+  "panels": {
+    "settings": "Impostazioni stream",
+    "queue": "Sessione community",
+    "highlights": "Scegli gli highlight",
+    "analytics": "Attività della community",
+    "giveaway": "Giveaway della community",
+    "welcome": "Ti diamo il benvenuto in questo Hub",
+    "pug": "PUG della community",
+    "leaderboard": "Classifica",
+    "officialSettings": "Guida di benvenuto",
+    "officialAnalytics": "Nuovi membri",
+    "officialWelcome": "Ti diamo il benvenuto su DeCave",
+    "close": "Chiudi ×"
+  },
+  "tools": {
+    "heading": "Strumenti creator",
+    "streamSettings": "Impostazioni stream",
+    "manageQueue": "Gestisci coda",
+    "createEvent": "Crea evento",
+    "sendAnnouncement": "Invia annuncio",
+    "curateHighlights": "Scegli gli highlight",
+    "runGiveaway": "Organizza giveaway",
+    "moderation": "Moderazione"
+  },
+  "cards": {
+    "queue": {
+      "title": "Coda della community",
+      "ownerDescription": "Ready check, turni equi e rotazione controllata nella sessione.",
+      "manage": "Gestisci coda",
+      "open": "Apri coda",
+      "waiting_one": "{{number}} in attesa",
+      "waiting_many": "{{number}} in attesa",
+      "waiting_other": "{{number}} in attesa"
+    },
+    "events": {
+      "title": "Prossimi eventi",
+      "ownerDescription": "Organizza la prossima serata della community con il calendario del tuo Hub.",
+      "memberDescription": "Partecipa alla prossima serata della community.",
+      "create": "Crea evento",
+      "view": "Vedi eventi",
+      "scheduled_one": "{{count}} in programma",
+      "scheduled_many": "{{count}} in programma",
+      "scheduled_other": "{{count}} in programma"
+    },
+    "activity": {
+      "title": "Attività della community",
+      "description": "Guarda la partecipazione della community nelle ultime sessioni.",
+      "view": "Vedi statistiche"
+    },
+    "manageHub": {
+      "title": "Gestisci Hub",
+      "description": "Modifica impostazioni, ruoli e banner del tuo Hub.",
+      "open": "Apri impostazioni"
+    },
+    "squad": {
+      "title": "Trova uno Squad",
+      "description": "Trova compagni di squadra e gioca con loro su DeCave.",
+      "open": "Trova uno Squad"
+    },
+    "newHere": {
+      "title": "Prima volta qui?",
+      "description": "Leggi la guida di benvenuto e conosci questa community.",
+      "open": "Inizia"
+    },
+    "pug": {
+      "title": "PUG della community",
+      "description": "Squadre casuali, voto della mappa e stanze vocali per squadra. Solo per divertimento.",
+      "join": "Entra nel PUG",
+      "open": "Apri PUG"
+    },
+    "twitch": {
+      "title": "Abbonato Twitch",
+      "linkedDescription": "Gli abbonati ottengono il ruolo Subs e vantaggi nei giveaway. Lo stato viene controllato ogni giorno. Puoi scollegare l'account quando vuoi da qui.",
+      "unlinkedDescription": "Collega il tuo account Twitch: gli abbonati ottengono il ruolo Subs e vantaggi nei giveaway.",
+      "link": "Collega Twitch",
+      "checkAgain": "Controlla di nuovo",
+      "notLinked": "Non collegato",
+      "subscribed": "{{login}} · Abbonato ✓",
+      "notSubscribed": "{{login}} · Non abbonato",
+      "unlink": "Scollega Twitch"
+    },
+    "leaderboard": {
+      "title": "Classifica",
+      "description": "Vittorie mensili nei PUG ed ELO FACEIT collegato. Il primo è il Rifler del mese.",
+      "view": "Vedi classifica"
+    }
+  },
+  "events": {
+    "createButton": "+ Crea evento",
+    "viewAll": "Vedi tutti",
+    "manage": "Gestisci evento",
+    "view": "Vedi evento",
+    "emptyOwner": "Nessun evento in arrivo. Crea la tua prima serata della community.",
+    "emptyMember": "Nessun evento in programma per ora. Ripassa presto."
+  },
+  "highlights": {
+    "heading": "Le ultime dalla community",
+    "curate": "Scegli gli highlight",
+    "watch": "Guarda ↗",
+    "emptyOwner": "Aggiungi clip approvate dalla community. Si aprono solo link diretti di Twitch/YouTube.",
+    "emptyMember": "Gli highlight della community appariranno qui.",
+    "intro": "Pubblica solo clip approvate dalla community. Le miniature devono essere già media DeCave visibili in tutto l'Hub; gli allegati privati non sono ammessi.",
+    "publish": "Pubblica highlight",
+    "titleField": "Titolo",
+    "urlField": "Link diretto Twitch o YouTube",
+    "thumbnailField": "Percorso facoltativo di un'immagine esistente dell'Hub (/api/media/…)",
+    "remove": "Rimuovi"
+  },
+  "join": {
+    "communityQueue": "Entra nella coda della community",
+    "queue": "Entra in coda",
+    "ready": "Ci sono",
+    "leave": "Esci dalla coda",
+    "inGame": "In partita",
+    "completed": "Turno completato"
+  },
+  "queue": {
+    "none": "Non c'è ancora nessuna sessione community aperta.",
+    "paused": "La coda è in pausa. Chi è già dentro mantiene il posto.",
+    "join": "Entra in coda per giocare con il creator.",
+    "waiting": "La tua posizione: {{position}}. Un turno per sessione.",
+    "called": "Tocca a te! Accetta entro le {{time}}.",
+    "ready": "Conferma ricevuta. Aspetta che il creator avvii il tuo gruppo. Entrare in vocale resta una tua scelta.",
+    "playing": "Sei nel gruppo attuale. Buona partita.",
+    "ended": "La tua partecipazione a questa sessione è finita. Torna per la prossima."
+  },
+  "session": {
+    "intro": "Crea una sessione community. I posti per spettatori non includono il creator. Ogni giocatore accetta il proprio ready check; nessuno viene costretto a entrare in vocale.",
+    "open": "Apri sessione community",
+    "titleField": "Titolo della sessione",
+    "defaultTitle": "Partite della community",
+    "gameField": "Gioco",
+    "partySizeField": "Posti per spettatori per gruppo (non il totale dei membri dell'Hub)",
+    "readySecondsField": "Secondi per il ready check",
+    "summary_one": "{{game}} · {{count}} posto spettatore · {{status}}",
+    "summary_many": "{{game}} · {{count}} posti spettatore · {{status}}",
+    "summary_other": "{{game}} · {{count}} posti spettatore · {{status}}",
+    "status": {
+      "open": "APERTA",
+      "paused": "IN PAUSA",
+      "ended": "TERMINATA"
+    },
+    "resume": "Riprendi coda",
+    "pause": "Metti in pausa la coda",
+    "callNext": "Chiama il gruppo successivo",
+    "startReady": "Avvia i giocatori pronti",
+    "finishGroup": "Chiudi il gruppo attuale",
+    "end": "Termina sessione",
+    "endConfirmText": "Vuoi terminare questa sessione? Il gruppo attuale viene completato e le iscrizioni rimaste in coda vengono chiuse.",
+    "endConfirm": "Conferma fine sessione",
+    "keep": "Mantieni sessione",
+    "counts": "{{waiting}} in attesa · {{called}} chiamati · {{ready}} pronti · {{playing}} in gioco",
+    "entryStatus": {
+      "waiting": "in attesa",
+      "called": "chiamato",
+      "ready": "pronto",
+      "playing": "in gioco",
+      "done": "finito",
+      "skipped": "saltato",
+      "left": "uscito"
+    },
+    "until": "Fino alle {{time}}",
+    "skip": "Salta",
+    "empty": "Nessuna iscrizione attiva in coda in questa pagina.",
+    "firstPage": "Prima pagina",
+    "nextPage": "Pagina successiva",
+    "voiceNote": "Nessuno viene spostato in vocale automaticamente. Quando i partecipanti sono pronti, usa le stanze vocali di DeCave con i loro permessi."
+  },
+  "analytics": {
+    "intro": "Dati aggregati reali. L'attività di sette giorni riguarda solo questa funzione, non tutto l'uso di DeCave.",
+    "hubMembers": "Membri dell'Hub",
+    "joined": "Entrati in 7 giorni",
+    "sessions": "Sessioni in 7 giorni",
+    "players": "Partecipanti che hanno accettato o giocato in 7 giorni",
+    "seats": "Posti spettatore completati in 7 giorni"
+  },
+  "welcome": {
+    "sessionRules": "Regole delle sessioni community"
+  },
+  "settings": {
+    "officialIntro": "Mostrato a ogni nuovo membro in Inizia. Gli a capo vengono mantenuti.",
+    "saveWelcomeGuide": "Salva guida di benvenuto",
+    "bannerTagline": "Slogan del banner",
+    "bannerSubtitle": "Sottotitolo del banner",
+    "welcomeGuide": "Guida di benvenuto",
+    "intro": "Queste impostazioni cambiano solo la tua Panoramica su DeCave. Non avviano una trasmissione e non verificano l'identità del creator. Lo stato in diretta scade da solo.",
+    "save": "Salva impostazioni stream",
+    "creatorName": "Nome visualizzato del creator",
+    "communityTagline": "Slogan della community",
+    "streamUrl": "URL del canale o video Twitch o YouTube",
+    "streamTitle": "Titolo dello stream",
+    "game": "Gioco",
+    "language": "Lingua",
+    "liveHours": "Stato in diretta manuale (ore; 0 = offline)",
+    "off": "Disattivato",
+    "autoLiveOn": "Attivo: in base al mio canale Twitch",
+    "autoLiveLabel": "Vai in diretta automaticamente quando inizia il mio stream su Twitch",
+    "autoLiveHint": "Serve un link a un canale Twitch qui sopra. I bot dell'Hub possono annunciarlo con il trigger \"Lo stream va in diretta\".",
+    "clipsOn": "Attivo: pubblica le nuove clip nel forum delle clip",
+    "clipsLabel": "Pubblica le mie nuove clip di Twitch",
+    "clipsHint": "Controllato ogni ora. Le clip finiscono nella stanza forum con \"clip\" nel nome; i membri reagiscono per scegliere la Clip della settimana (il lunedì).",
+    "sessionRules": "Regole della sessione"
+  },
+  "giveaways": {
+    "heading": "Giveaway della community",
+    "entered": "Partecipi",
+    "closed": "Iscrizioni chiuse",
+    "enter": "Partecipa gratis",
+    "closes": "Si chiude il {{date}}",
+    "winner": "Vincitore: {{name}}",
+    "subsOnly": "Solo abbonati Twitch",
+    "minDays_one": "{{count}}+ giorno nell'Hub",
+    "minDays_many": "{{count}}+ giorni nell'Hub",
+    "minDays_other": "{{count}}+ giorni nell'Hub",
+    "subBonus": "Gli abbonati hanno 2 partecipazioni",
+    "disabled": "I giveaway sono disattivati su questa installazione.",
+    "intro": "Solo partecipazione gratuita. Pubblica le regole di partecipazione e di consegna del premio prima di aprire. La piattaforma non incassa pagamenti né consegna premi. L'estrazione è possibile solo dopo la chiusura e non si può ripetere.",
+    "create": "Crea giveaway gratuito",
+    "titleField": "Titolo del giveaway",
+    "rulesField": "Regole di partecipazione, premio e consegna",
+    "closesAtField": "Chiusura (ora locale)",
+    "whoCanEnter": "Chi può partecipare",
+    "no": "No",
+    "subscriberBonus": "Bonus abbonati",
+    "minDaysField": "Giorni minimi nell'Hub (0 = nessuno)",
+    "summary_one": "{{count}} partecipazione · {{status}}",
+    "summary_many": "{{count}} partecipazioni · {{status}}",
+    "summary_other": "{{count}} partecipazioni · {{status}}",
+    "status": {
+      "open": "aperto",
+      "drawn": "estratto",
+      "cancelled": "annullato"
+    },
+    "draw": "Estrai vincitore",
+    "cancel": "Annulla giveaway"
+  },
+  "official": {
+    "postAnnouncement": "Pubblica annuncio",
+    "editWelcomeGuide": "Modifica guida di benvenuto",
+    "readRules": "Leggi le regole",
+    "toolsHeading": "Strumenti dell'Hub ufficiale",
+    "tools": {
+      "postAnnouncement": "Pubblica annuncio",
+      "publishPatchNotes": "Pubblica patch notes",
+      "updateFaq": "Aggiorna FAQ",
+      "editRules": "Modifica regole",
+      "editWelcomeGuide": "Modifica guida di benvenuto"
+    },
+    "growth_one": "{{members}} membri · +{{joined}} questa settimana",
+    "growth_many": "{{members}} membri · +{{joined}} questa settimana",
+    "growth_other": "{{members}} membri · +{{joined}} questa settimana",
+    "cards": {
+      "newMembers": {
+        "title": "Nuovi membri",
+        "description": "Tutti entrano in questo Hub con la registrazione. I membri non si vedono tra loro.",
+        "open": "Vedi la crescita"
+      },
+      "announcements": {
+        "title": "Annunci",
+        "description": "Notizie e aggiornamenti importanti per ogni utente DeCave.",
+        "open": "Apri #announcements"
+      },
+      "patchNotes": {
+        "title": "Patch notes",
+        "description": "Note leggibili per ogni versione su web, Windows e Mac.",
+        "open": "Apri #patch-notes"
+      },
+      "manageHub": {
+        "description": "Banner, icona, stanze e ruoli di DeCave Official."
+      },
+      "newHere": {
+        "description": "Una guida di due minuti su profili, amici, Squad e Hub."
+      },
+      "faq": {
+        "title": "FAQ",
+        "description": "Risposte rapide su account, privacy, vocale e app desktop.",
+        "open": "Apri FAQ"
+      },
+      "roadmap": {
+        "title": "Roadmap",
+        "description": "Cosa è uscito, cosa stiamo costruendo ora e cosa arriva dopo.",
+        "open": "Vedi la roadmap"
+      },
+      "whatsNew": {
+        "title": "Novità",
+        "description": "Annunci e patch notes dal team di DeCave.",
+        "open": "Vedi gli aggiornamenti"
+      },
+      "desktop": {
+        "title": "Scarica l'app desktop",
+        "description": "Rilevamento giochi, notifiche e push-to-talk su Windows e Mac.",
+        "open": "Scarica ↗"
+      }
+    },
+    "privacy": {
+      "heading": "La tua privacy qui",
+      "body": "Questo Hub è privato per tutti. I membri non vedono chi altro c'è e solo il team di DeCave può pubblicare. Segnala qualsiasi cosa violi le regole con un clic destro su un messaggio o un profilo."
+    },
+    "resourcesHeading": "Risorse utili",
+    "alphaLabel": "Alpha. ",
+    "about": {
+      "title": "Informazioni su DeCave",
+      "body": "DeCave è una casa per le persone con cui giochi: Hub con stanze testuali, vocali e forum, amici e DM, Ricerca Squad, eventi e condivisione schermo su web, Windows e Mac. È sviluppato da un piccolo team indipendente e plasmato da chi lo usa.",
+      "alphaNote": "DeCave è in alpha, non è una versione finita. Aspettati qualche imperfezione, aggiornamenti frequenti e ogni tanto il reset di funzioni sperimentali. Il tuo feedback decide cosa sistemiamo dopo.",
+      "facts": {
+        "stageLabel": "Fase",
+        "stageValue": "Alpha",
+        "agesLabel": "Età",
+        "agesValue": "Solo 18+",
+        "platformsLabel": "Piattaforme",
+        "platformsValue": "Web · Windows · Mac",
+        "priceLabel": "Prezzo",
+        "priceValue": "Gratis"
+      }
+    },
+    "announcements": {
+      "adults": {
+        "date": "5 ott 2026",
+        "tag": "Regole",
+        "title": "DeCave ora è per maggiorenni",
+        "body": "Gli account ora sono per persone dai 18 anni in su. Se in passato hai confermato un'età inferiore a 18 anni, ti chiederemo di confermare di nuovo la tua data di nascita."
+      },
+      "release128": {
+        "date": "5 ott 2026",
+        "tag": "Versione",
+        "title": "Versione 0.1.128: un solo dock vocale e stream più chiari",
+        "body": "I controlli vocali ora stanno in un solo posto, il dock nella barra laterale dell'Hub. Silenziare lo stream di qualcuno non silenzia più la sua voce, e iOS ha un interruttore per l'altoparlante e la trasmissione dello schermo."
+      },
+      "welcome": {
+        "date": "Fissato",
+        "tag": "Alpha",
+        "title": "Ti diamo il benvenuto nell'alpha di DeCave",
+        "body": "Grazie di essere qui fin dall'inizio. Leggi #rules, guarda #faq e usa Feedback nella barra a sinistra per dirci cosa non funziona o cosa manca."
+      }
+    },
+    "roadmap": {
+      "shipped": {
+        "state": "Rilasciato",
+        "title": "Una casa per tutta la sessione",
+        "body": "Hub, vocale e condivisione schermo, amici e DM, Ricerca Squad, Scopri, eventi e le app desktop."
+      },
+      "inProgress": {
+        "state": "In corso",
+        "title": "Desktop più rifinito e affidabile",
+        "body": "Firma del codice su Windows, vocale e condivisione schermo più stabili, correzioni di affidabilità e sicurezza."
+      },
+      "next": {
+        "state": "Prossimo",
+        "title": "Mobile aggiornato",
+        "body": "Nuove build Android e iOS allo stesso ritmo del desktop."
+      },
+      "later": {
+        "state": "Più avanti",
+        "title": "Stanze più grandi",
+        "body": "Un media server per stanze vocali e di condivisione schermo più grandi."
+      }
+    },
+    "resources": {
+      "website": {
+        "label": "Sito di DeCave",
+        "detail": "de-cave.com"
+      },
+      "help": {
+        "label": "Centro assistenza",
+        "detail": "Risposte alle domande più comuni"
+      },
+      "roadmap": {
+        "label": "Roadmap",
+        "detail": "Cosa c'è già e cosa arriva"
+      },
+      "guidelines": {
+        "label": "Linee guida della community",
+        "detail": "Come rendiamo gli Hub posti accoglienti"
+      },
+      "privacy": {
+        "label": "Informativa sulla privacy",
+        "detail": "Cosa raccogliamo e perché"
+      },
+      "terms": {
+        "label": "Termini di servizio",
+        "detail": "Le regole per usare DeCave"
+      }
+    }
+  },
+  "pug": {
+    "teamA": "Squadra A",
+    "teamB": "Squadra B",
+    "statusNone": "Nessun PUG in corso",
+    "statusOpen": "{{joined}}/{{capacity}} entrati · {{size}}v{{size}}",
+    "statusLive": "In corso su {{map}}",
+    "statusDone": "Finito {{scoreA}}–{{scoreB}} su {{map}}",
+    "statusCancelled": "Annullato",
+    "aMap": "una mappa",
+    "teamVoice": "stanza vocale della squadra",
+    "you": " (tu)",
+    "nobody": "Ancora nessuno",
+    "memberNone": "Al momento non c'è nessun PUG aperto. Lo streamer ne apre uno quando è ora di giocare.",
+    "needRooms": "Prima aggiungi due stanze vocali a questo Hub, una per squadra.",
+    "createIntro": "Apri un PUG: gli spettatori entrano, votano una mappa e le squadre vengono estratte a caso quando lo avvii.",
+    "open": "Apri PUG",
+    "teamSizeField": "Giocatori per squadra (1–5)",
+    "mapPool": "Mappe disponibili",
+    "voiceAField": "Stanza vocale squadra A",
+    "voiceBField": "Stanza vocale squadra B",
+    "rules": "Squadre casuali, {{size}}v{{size}}. Si gioca la mappa più votata.",
+    "players": "Giocatori ({{joined}}/{{capacity}})",
+    "leave": "Esci dal PUG",
+    "join": "Entra nel PUG",
+    "start": "Avvia: estrai le squadre",
+    "cancel": "Annulla PUG",
+    "mapVote": "Voto della mappa",
+    "voteHint": "Entra nel PUG per votare.",
+    "teamScore": "{{team}} · {{score}}",
+    "joinTeamVoice": "Entra in vocale con {{team}}",
+    "reportScore": "Inserisci il punteggio",
+    "saveResult": "Salva risultato",
+    "teamARounds": "Round squadra A",
+    "teamBRounds": "Round squadra B",
+    "next": "Prossimo PUG"
+  },
+  "leaderboard": {
+    "loading": "Caricamento della classifica…",
+    "champion": "🏆 {{name}}",
+    "upForGrabs": "🏆 Titolo ancora libero",
+    "championLine_one": "Rifler del mese, {{month}}: {{count}} vittoria nei PUG finora.",
+    "championLine_many": "Rifler del mese, {{month}}: {{count}} vittorie nei PUG finora.",
+    "championLine_other": "Rifler del mese, {{month}}: {{count}} vittorie nei PUG finora.",
+    "noChampion": "Vinci un PUG per diventare il Rifler del mese di {{month}}.",
+    "lastMonth_one": "Il mese scorso: {{name}} ({{count}} vittoria).",
+    "lastMonth_many": "Il mese scorso: {{name}} ({{count}} vittorie).",
+    "lastMonth_other": "Il mese scorso: {{name}} ({{count}} vittorie).",
+    "player": "Giocatore",
+    "wins": "Vittorie",
+    "played": "Giocate",
+    "eloWithLevel": "Liv. {{level}} · {{elo}} ELO",
+    "elo": "{{elo}} ELO",
+    "empty": "Ancora nessuna partita questo mese.",
+    "yourAccount": "Il tuo account FACEIT",
+    "linkedWithElo": "Collegato come {{nickname}} · {{elo}} ELO. Il tuo ELO viene aggiornato ogni qualche ora ed è visibile ai membri degli Hub in cui sei.",
+    "linked": "Collegato come {{nickname}}. Il tuo ELO viene aggiornato ogni qualche ora ed è visibile ai membri degli Hub in cui sei.",
+    "unlink": "Scollega FACEIT",
+    "unavailable": "Il collegamento con FACEIT non è ancora disponibile.",
+    "signInIntro": "Accedi con FACEIT per mostrare qui il tuo ELO di CS2. Solo tu puoi collegare il tuo account. I membri degli Hub in cui sei vedono il tuo nickname e il tuo ELO.",
+    "signIn": "Accedi con FACEIT"
+  },
+  "server": {
+    "autoLiveNeedsLink": "Lo stato in diretta automatico richiede un link a un canale Twitch, come https://www.twitch.tv/tuonome.",
+    "autoLiveUnavailable": "Lo stato in diretta automatico da Twitch non è ancora disponibile su questo server.",
+    "autoLiveNoChannel": "Su Twitch non c'è nessun canale chiamato \"{{login}}\". Controlla l'URL dello stream.",
+    "autoLiveUnreachable": "Impossibile contattare Twitch per attivare lo stato in diretta automatico. Salva di nuovo tra un minuto.",
+    "clipPosted": "🎬 {{title}}\nClip creata da {{creator}}\n{{url}}\nReagisci per votare la Clip della settimana.",
+    "clipPostedAnonymous": "🎬 {{title}}\nClip creata da uno spettatore\n{{url}}\nReagisci per votare la Clip della settimana.",
+    "clipOfTheWeek_one": "🏆 Clip della settimana ({{count}} voto): {{title}}\n{{link}}",
+    "clipOfTheWeek_many": "🏆 Clip della settimana ({{count}} voti): {{title}}\n{{link}}",
+    "clipOfTheWeek_other": "🏆 Clip della settimana ({{count}} voti): {{title}}\n{{link}}",
+    "clipPostedUntitled": "🎬 Nuova clip\nClip creata da {{creator}}\n{{url}}\nReagisci per votare la Clip della settimana.",
+    "clipPostedUntitledAnonymous": "🎬 Nuova clip\nClip creata da uno spettatore\n{{url}}\nReagisci per votare la Clip della settimana.",
+    "clipOfTheWeekUntitled_one": "🏆 Clip della settimana ({{count}} voto): Nuova clip\n{{link}}",
+    "clipOfTheWeekUntitled_many": "🏆 Clip della settimana ({{count}} voti): Nuova clip\n{{link}}",
+    "clipOfTheWeekUntitled_other": "🏆 Clip della settimana ({{count}} voti): Nuova clip\n{{link}}",
+    "clipDefaultTitle": "Nuova clip",
+    "clipForumBody": "🎬 Clip creata da {{creator}}\n{{url}}\n\nReagisci per votare la Clip della settimana.",
+    "clipForumBodyAnonymous": "🎬 Clip creata da uno spettatore\n{{url}}\n\nReagisci per votare la Clip della settimana."
+  }
+}

@@ -1,3 +1,4 @@
+import { i18next } from "../i18n/index.ts";
 import {
   MAX_SESSION_KITS,
   SESSION_KIT_VERSION,
@@ -58,12 +59,12 @@ export function createSessionKitRepository(
   let storageError: string | null = null;
   const load = (): SessionKit[] => {
     const result = readLocalJsonResult(storage, key, []);
-    storageError = result.ok ? null : (result.error ?? "Saved Session Kits could not be read.");
+    storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.kits.readFailed"));
     return normalizeSessionKits(result.value ?? [], now());
   };
   const persist = (kits: SessionKit[]): SessionKitWriteResult => {
     const result = writeKits(storage, key, kits);
-    storageError = result.ok ? null : (result.error ?? "Session Kit changes could not be saved.");
+    storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.kits.saveFailed"));
     return { ok: result.ok, kits, ...(result.error ? { error: result.error } : {}) };
   };
   return {
@@ -75,7 +76,7 @@ export function createSessionKitRepository(
       const kit = candidate.id ? normalizeSessionKit(input, timestamp) : createSessionKit(input, timestamp);
       if (!kit) {
         const kits = load();
-        const error = "This Session Kit is invalid and was not saved.";
+        const error = i18next.t("chat.session.kits.invalid");
         storageError = error;
         return { ok: false, kits, error };
       }
@@ -89,7 +90,7 @@ export function createSessionKitRepository(
     },
     clear: () => {
       const result = removeLocalValueResult(storage, key);
-      storageError = result.ok ? null : (result.error ?? "Session Kits could not be cleared.");
+      storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.kits.clearFailed"));
       return result.ok;
     },
     lastError: () => storageError,

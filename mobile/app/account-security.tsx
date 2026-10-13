@@ -4,13 +4,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as FileSystem from "expo-file-system/legacy";
 import { Screen } from "@/src/components/Screen";
-import { apiFetch, apiJson } from "@/src/lib/api";
+import { apiErrorText, apiFetch, apiJson, type ApiErrorBody } from "@/src/lib/api";
 import { loadAccountPreferences, updateAccountPreferences } from "@/src/lib/account-preferences";
 import { useSession } from "@/src/providers/SessionProvider";
 import { accountExportStatus } from "@/src/lib/account-export";
 import { colors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
+import { dateLocale } from "@/src/lib/date-locale";
 
 export default function AccountSecurityScreen() {
+  const { t } = useTranslation(["settings", "common"]);
   const { token, user, invalidate, refreshUser } = useSession();
   const [email, setEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
@@ -50,7 +53,7 @@ export default function AccountSecurityScreen() {
     try {
       setMfa(await apiJson<MfaStatus>("/api/account/mfa", {}, token));
     } catch (cause) {
-      setMfaError(cause instanceof Error ? cause.message : "Could not load two-factor settings.");
+      setMfaError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotLoadTwoFactor"));
     } finally {
       setMfaLoading(false);
     }
@@ -63,7 +66,7 @@ export default function AccountSecurityScreen() {
     let active = true;
     loadAccountPreferences(token)
       .then((prefs) => { if (active) setLoginAlerts(Boolean(prefs.loginAlerts)); })
-      .catch((cause) => { if (active) setAlertsError(cause instanceof Error ? cause.message : "Could not load this setting."); });
+      .catch((cause) => { if (active) setAlertsError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotLoadThisSetting")); });
     return () => { active = false; };
   }, [token]);
 
@@ -78,7 +81,7 @@ export default function AccountSecurityScreen() {
 
   const startMfaSetup = async () => {
     if (!token || mfaBusy) return;
-    if (!mfaPassword) { setMfaError("Enter your current password."); return; }
+    if (!mfaPassword) { setMfaError(t("settings.mobile.accountSecurity.enterYourCurrentPassword")); return; }
     setMfaBusy(true); setMfaError("");
     try {
       const data = await apiJson<{ secret: string; otpauth: string }>("/api/account/mfa/setup", jsonPost({ currentPassword: mfaPassword }), token);
@@ -86,13 +89,13 @@ export default function AccountSecurityScreen() {
       setMfaPassword("");
       setMfaCode("");
       setMfaStep("setup");
-    } catch (cause) { setMfaError(cause instanceof Error ? cause.message : "Could not start setup."); }
+    } catch (cause) { setMfaError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotStartSetup")); }
     finally { setMfaBusy(false); }
   };
 
   const enableMfa = async () => {
     if (!token || mfaBusy) return;
-    if (!/^\d{6}$/.test(mfaCode)) { setMfaError("Enter the 6-digit code from your authenticator app."); return; }
+    if (!/^\d{6}$/.test(mfaCode)) { setMfaError(t("settings.mobile.accountSecurity.enterThe6DigitCode")); return; }
     setMfaBusy(true); setMfaError("");
     try {
       const data = await apiJson<{ enabled: boolean; recoveryCodes?: string[] }>("/api/account/mfa/enable", jsonPost({ code: mfaCode }), token);
@@ -100,30 +103,30 @@ export default function AccountSecurityScreen() {
       setMfaCode("");
       setRecoveryCodes(Array.isArray(data.recoveryCodes) ? data.recoveryCodes : []);
       setMfaStep("codes");
-      setMfaNotice("Two-factor sign-in is on.");
+      setMfaNotice(t("settings.mobile.accountSecurity.twoFactorSignInIs"));
       void loadMfa();
-    } catch (cause) { setMfaError(cause instanceof Error ? cause.message : "That code didn't work. Try again."); }
+    } catch (cause) { setMfaError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.thatCodeDidnTWork")); }
     finally { setMfaBusy(false); }
   };
 
   const disableOrRegenerate = async () => {
     if (!token || mfaBusy || (mfaStep !== "disable" && mfaStep !== "regenerate")) return;
-    if (!mfaPassword || !mfaCode.trim()) { setMfaError("Enter your password and a code from your authenticator app."); return; }
+    if (!mfaPassword || !mfaCode.trim()) { setMfaError(t("settings.mobile.accountSecurity.enterYourPasswordAndA")); return; }
     setMfaBusy(true); setMfaError("");
     try {
       if (mfaStep === "disable") {
         await apiJson("/api/account/mfa/disable", jsonPost({ currentPassword: mfaPassword, code: mfaCode.trim() }), token);
         resetMfaForm();
-        setMfaNotice("Two-factor sign-in is off.");
+        setMfaNotice(t("settings.mobile.accountSecurity.twoFactorSignInIs2"));
       } else {
         const data = await apiJson<{ recoveryCodes?: string[] }>("/api/account/mfa/recovery-codes", jsonPost({ currentPassword: mfaPassword, code: mfaCode.trim() }), token);
         setMfaPassword(""); setMfaCode("");
         setRecoveryCodes(Array.isArray(data.recoveryCodes) ? data.recoveryCodes : []);
         setMfaStep("codes");
-        setMfaNotice("New recovery codes are ready. Your old codes no longer work.");
+        setMfaNotice(t("settings.mobile.accountSecurity.newRecoveryCodesAreReady"));
       }
       void loadMfa();
-    } catch (cause) { setMfaError(cause instanceof Error ? cause.message : "Something went wrong. Try again."); }
+    } catch (cause) { setMfaError(cause instanceof Error ? cause.message : t("settings.twoFactor.errorRetry")); }
     finally { setMfaBusy(false); }
   };
 
@@ -133,12 +136,12 @@ export default function AccountSecurityScreen() {
   };
 
   const shareRecoveryCodes = () => {
-    void Share.share({ title: "DeCave recovery codes", message: `DeCave recovery codes for ${user?.username ?? "your account"}\n\n${recoveryCodes.join("\n")}` }).catch(() => {});
+    void Share.share({ title: t("settings.mobile.accountSecurity.decaveRecoveryCodes"), message: `${t("settings.mobile.accountSecurity.recoveryCodesFor", { name: user?.username ?? t("settings.mobile.accountSecurity.yourAccount") })}\n\n${recoveryCodes.join("\n")}` }).catch(() => {});
   };
 
   const openAuthenticator = () => {
     if (!mfaSetup) return;
-    void Linking.openURL(mfaSetup.otpauth).catch(() => setMfaError("No authenticator app opened. Copy the key and add it by hand."));
+    void Linking.openURL(mfaSetup.otpauth).catch(() => setMfaError(t("settings.mobile.accountSecurity.noAuthenticatorAppOpenedCopy")));
   };
 
   const toggleLoginAlerts = async (value: boolean) => {
@@ -150,7 +153,7 @@ export default function AccountSecurityScreen() {
       setLoginAlerts(Boolean(prefs.loginAlerts));
     } catch (cause) {
       setLoginAlerts(previous);
-      setAlertsError(cause instanceof Error ? cause.message : "Could not save this setting.");
+      setAlertsError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotSaveThisSetting"));
     }
   };
 
@@ -161,15 +164,23 @@ export default function AccountSecurityScreen() {
       const response = await apiFetch("/api/account/export", {}, token);
       const body = await response.text();
       if (!response.ok) {
-        let message = `Download failed (${response.status})`;
-        try { message = (JSON.parse(body) as { error?: string }).error || message; } catch {}
+        let message = t("settings.mobile.accountSecurity.downloadFailed", { status: response.status });
+        try { message = apiErrorText(JSON.parse(body) as ApiErrorBody, message); } catch {}
         throw new Error(message);
       }
       const exportStatus = accountExportStatus(body);
-      if (!exportStatus.complete) throw new Error(exportStatus.error);
+      if (!exportStatus.complete) {
+        throw new Error(
+          exportStatus.errorKey === "settings.accountExport.failed"
+            ? t("settings.accountExport.failed")
+            : exportStatus.errorKey === "settings.accountExport.unfinished"
+              ? t("settings.accountExport.unfinished")
+              : exportStatus.error,
+        );
+      }
       const fileName = `decave-data-${localDateStamp()}.json`;
       if (Platform.OS === "ios") {
-        if (!FileSystem.cacheDirectory) throw new Error("This phone has no space to save the file.");
+        if (!FileSystem.cacheDirectory) throw new Error(t("settings.mobile.accountSecurity.thisPhoneHasNoSpace"));
         const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
         await FileSystem.writeAsStringAsync(fileUri, body);
         await Share.share({ url: fileUri, title: fileName });
@@ -177,7 +188,7 @@ export default function AccountSecurityScreen() {
         await Share.share({ title: fileName, message: body });
       }
     } catch (cause) {
-      setExportError(cause instanceof Error ? cause.message : "Could not download your data.");
+      setExportError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotDownloadYourData"));
     } finally { setExporting(false); }
   };
 
@@ -189,16 +200,16 @@ export default function AccountSecurityScreen() {
   const updateEmail = async () => {
     if (!token || busy) return;
     setError(""); setNotice("");
-    if (!email.trim() || !emailPassword) { setError("Enter the new email and your current password."); return; }
+    if (!email.trim() || !emailPassword) { setError(t("settings.mobile.accountSecurity.enterTheNewEmailAnd")); return; }
     setBusy(true);
     try {
       const code = emailMfaCode.trim();
       await apiJson("/api/auth/add-email", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:email.trim(),password:emailPassword,...(code?{mfaCode:code}:{})}) }, token);
       await refreshUser();
       setEmail(""); setEmailPassword(""); setEmailMfaCode("");
-      setNotice("Verification email sent. Open it to verify your new address.");
+      setNotice(t("settings.mobile.accountSecurity.verificationEmailSentOpenIt"));
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Could not update email.";
+      const message = cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotUpdateEmail");
       // The server asks for a second factor even if the 2FA status has not loaded.
       if (/authenticator|recovery code/i.test(message)) setEmailMfaRequired(true);
       setError(message);
@@ -211,7 +222,7 @@ export default function AccountSecurityScreen() {
     if (!token || busy) return;
     setError(""); setNotice("");
     if (!currentPassword || newPassword.length < 10 || newPassword !== confirmPassword) {
-      setError("Enter your current password, use at least 10 characters, and make the new passwords match.");
+      setError(t("settings.mobile.accountSecurity.enterYourCurrentPasswordUse"));
       return;
     }
     setBusy(true);
@@ -221,70 +232,72 @@ export default function AccountSecurityScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
       }, token);
-      await signOutAfter("Password changed. Sign in again with your new password.");
+      await signOutAfter(t("settings.mobile.accountSecurity.passwordChangedSignIn"));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not change password.");
+      setError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotChangePassword"));
     } finally { setBusy(false); }
   };
 
   const confirmDangerAction = async () => {
-    if (!token || !dangerAction || !dangerPassword || busy) { setError("Enter your current password to continue."); return; }
+    if (!token || !dangerAction || !dangerPassword || busy) { setError(t("settings.mobile.accountSecurity.enterYourCurrentPasswordTo")); return; }
     setBusy(true); setError("");
     try {
       if (dangerAction === "disable") {
         await apiJson("/api/account/disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: dangerPassword }) }, token);
-        await signOutAfter("Your DeCave account was disabled.");
+        await signOutAfter(t("settings.mobile.accountSecurity.accountDisabled"));
       } else {
         const result = await apiJson<{ deleteAfter?: string }>("/api/account/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: dangerPassword, confirmUsername: user?.username ?? "" }) }, token);
-        await signOutAfter(result.deleteAfter ? `Account deletion scheduled for ${new Date(result.deleteAfter).toLocaleDateString()}.` : "Account deletion scheduled.");
+        await signOutAfter(result.deleteAfter ? t("settings.mobile.accountSecurity.deletionScheduledFor", { date: new Date(result.deleteAfter).toLocaleDateString(dateLocale()) }) : t("settings.mobile.accountSecurity.deletionScheduled"));
       }
-    } catch (cause) { setError(cause instanceof Error ? cause.message : `Could not ${dangerAction} account.`); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : (dangerAction === "disable" ? t("settings.mobile.accountSecurity.couldNotDisableAccount") : t("settings.mobile.accountSecurity.couldNotDeleteAccount"))); }
     finally { setBusy(false); }
   };
 
   return (
     <Screen>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable>
-        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>SETTINGS</Text><Text style={styles.title}>Account & Security</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable>
+        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("settings.mobile.accountSecurity.settings")}</Text><Text style={styles.title}>{t("settings.mobile.settings.accountSecurity")}</Text></View>
         <Ionicons name="shield-checkmark-outline" size={22} color={colors.cyan} />
       </View>
       <ScrollView keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.section}>EMAIL ADDRESS</Text>
+        <Text style={styles.section}>{t("settings.mobile.accountSecurity.emailAddress")}</Text>
         <View style={styles.card}>
-          <View style={styles.emailStatus}><Ionicons name={user?.emailVerified?"checkmark-circle":"mail-outline"} size={20} color={user?.emailVerified?colors.green:colors.cyan}/><View style={{flex:1}}><Text style={styles.emailValue}>{user?.email||"No email added"}</Text><Text style={styles.hint}>{user?.email?(user.emailVerified?"Verified email":"Verification required"):"Add an email for recovery and account protection."}</Text></View></View>
+          <View style={styles.emailStatus}><Ionicons name={user?.emailVerified?"checkmark-circle":"mail-outline"} size={20} color={user?.emailVerified?colors.green:colors.cyan}/><View style={{flex:1}}><Text style={styles.emailValue}>{user?.email||t("settings.account.noEmail")}</Text><Text style={styles.hint}>{user?.email?(user.emailVerified?t("common.auth.verifiedEmail"):t("settings.account.verificationRequired")):t("settings.mobile.accountSecurity.addAnEmailForRecovery")}</Text></View></View>
           <View style={styles.divider}/>
-          <Field label={user?.email?"New email address":"Email address"} value={email} onChangeText={setEmail} secure={false} keyboardType="email-address" />
-          <Field label="Current password" value={emailPassword} onChangeText={setEmailPassword} />
-          {(mfa?.enabled || emailMfaRequired) && <View style={{ marginBottom: 10 }}><Text style={styles.label}>Authenticator or recovery code</Text><TextInput value={emailMfaCode} onChangeText={(value) => setEmailMfaCode(value.toUpperCase().replace(/\s/g, "").slice(0, 19))} autoCapitalize="characters" autoCorrect={false} textContentType="oneTimeCode" autoComplete="one-time-code" accessibilityLabel="Authenticator or recovery code" placeholder="6-digit code" placeholderTextColor={colors.faint} style={styles.input} /></View>}
-          <Pressable accessibilityRole="button" style={[styles.primary,busy&&styles.disabled]} disabled={busy||!email.trim()||!emailPassword||((mfa?.enabled||emailMfaRequired)&&!emailMfaCode.trim())} onPress={()=>void updateEmail()}><Text style={styles.primaryText}>{user?.email?"Change / Verify Email":"Add Email"}</Text></Pressable>
+          <Field label={user?.email?t("settings.mobile.accountSecurity.newEmailAddress"):t("settings.mobile.accountSecurity.emailAddress2")} value={email} onChangeText={setEmail} secure={false} keyboardType="email-address" />
+          <Field label={t("settings.twoFactor.currentPassword")} value={emailPassword} onChangeText={setEmailPassword} />
+          {(mfa?.enabled || emailMfaRequired) && <View style={{ marginBottom: 10 }}><Text style={styles.label}>{t("settings.twoFactor.codeLabel")}</Text><TextInput value={emailMfaCode} onChangeText={(value) => setEmailMfaCode(value.toUpperCase().replace(/\s/g, "").slice(0, 19))} autoCapitalize="characters" autoCorrect={false} textContentType="oneTimeCode" autoComplete="one-time-code" accessibilityLabel={t("settings.twoFactor.codeLabel")} placeholder={t("settings.twoFactor.sixDigit")} placeholderTextColor={colors.faint} style={styles.input} /></View>}
+          <Pressable accessibilityRole="button" style={[styles.primary,busy&&styles.disabled]} disabled={busy||!email.trim()||!emailPassword||((mfa?.enabled||emailMfaRequired)&&!emailMfaCode.trim())} onPress={()=>void updateEmail()}><Text style={styles.primaryText}>{user?.email?t("settings.mobile.accountSecurity.changeVerifyEmail"):t("settings.mobile.accountSecurity.addEmail")}</Text></Pressable>
         </View>
 
-        <Text style={styles.section}>CHANGE PASSWORD</Text>
+        <Text style={styles.section}>{t("settings.mobile.accountSecurity.changePassword")}</Text>
         <View style={styles.card}>
-          <Field label="Current password" value={currentPassword} onChangeText={setCurrentPassword} />
-          <Field label="New password" value={newPassword} onChangeText={setNewPassword} />
-          <Field label="Confirm new password" value={confirmPassword} onChangeText={setConfirmPassword} />
-          <Pressable accessibilityRole="button" style={[styles.primary, busy && styles.disabled]} disabled={busy} onPress={() => void changePassword()}><Text style={styles.primaryText}>Change password</Text></Pressable>
-          <Text style={styles.hint}>Changing your password signs out every active DeCave session.</Text>
+          <Field label={t("settings.twoFactor.currentPassword")} value={currentPassword} onChangeText={setCurrentPassword} />
+          <Field label={t("common.account.edit.newPassword")} value={newPassword} onChangeText={setNewPassword} />
+          <Field label={t("common.account.edit.confirmPassword")} value={confirmPassword} onChangeText={setConfirmPassword} />
+          <Pressable accessibilityRole="button" style={[styles.primary, busy && styles.disabled]} disabled={busy} onPress={() => void changePassword()}><Text style={styles.primaryText}>{t("common.account.edit.passwordTitle")}</Text></Pressable>
+          <Text style={styles.hint}>{t("settings.mobile.accountSecurity.changingYourPasswordSignsOut")}</Text>
         </View>
 
-        <Text style={styles.section}>TWO-FACTOR SIGN-IN</Text>
+        <Text style={styles.section}>{t("settings.mobile.accountSecurity.twoFactorSignIn")}</Text>
         <View style={styles.card}>
           {mfaLoading ? <ActivityIndicator color={colors.cyan} style={{ marginVertical: 12 }} /> : (
             <>
               <View style={styles.emailStatus}>
                 <Ionicons name={mfa?.enabled ? "lock-closed" : "lock-open-outline"} size={20} color={mfa?.enabled ? colors.green : colors.cyan} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.emailValue}>{mfa?.enabled ? "Two-factor sign-in is on" : "Two-factor sign-in is off"}</Text>
+                  <Text style={styles.emailValue}>{mfa?.enabled ? t("settings.mobile.accountSecurity.twoFactorSignInIs3") : t("settings.checkup.items.twoFactor.title")}</Text>
                   <Text style={styles.hint}>{mfa?.enabled
-                    ? `${mfa.enabledAt ? `Turned on ${new Date(mfa.enabledAt).toLocaleDateString()}. ` : ""}${mfa.recoveryCodesRemaining} recovery code${mfa.recoveryCodesRemaining === 1 ? "" : "s"} left.`
-                    : "Ask for a code from an authenticator app each time you sign in."}</Text>
+                    ? mfa.enabledAt
+                      ? t("settings.mobile.accountSecurity.turnedOn", { date: new Date(mfa.enabledAt).toLocaleDateString(dateLocale()), codes: t("settings.mobile.accountSecurity.recoveryCodesLeft", { count: mfa.recoveryCodesRemaining }) })
+                      : t("settings.mobile.accountSecurity.recoveryCodesLeft", { count: mfa.recoveryCodesRemaining })
+                    : t("settings.mobile.accountSecurity.askForACodeFrom")}</Text>
                 </View>
               </View>
 
               {mfa?.enabled && mfa.recoveryCodesRemaining <= 2 && mfaStep !== "codes" && (
-                <View style={styles.warn}><Ionicons name="warning-outline" size={16} color={colors.yellow} /><Text style={styles.warnText}>You're running out of recovery codes. Make new ones so you don't get locked out.</Text></View>
+                <View style={styles.warn}><Ionicons name="warning-outline" size={16} color={colors.yellow} /><Text style={styles.warnText}>{t("settings.mobile.accountSecurity.youReRunningOutOf")}</Text></View>
               )}
 
               {mfaStep === "idle" && (
@@ -292,11 +305,11 @@ export default function AccountSecurityScreen() {
                   <View style={styles.divider} />
                   {mfa?.enabled ? (
                     <View style={styles.buttonRow}>
-                      <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={() => resetMfaForm("regenerate")}><Text style={styles.secondaryText}>New recovery codes</Text></Pressable>
-                      <Pressable accessibilityRole="button" style={[styles.secondaryDanger, { flex: 1 }]} onPress={() => resetMfaForm("disable")}><Text style={styles.secondaryDangerText}>Turn off</Text></Pressable>
+                      <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={() => resetMfaForm("regenerate")}><Text style={styles.secondaryText}>{t("settings.twoFactor.newCodes")}</Text></Pressable>
+                      <Pressable accessibilityRole="button" style={[styles.secondaryDanger, { flex: 1 }]} onPress={() => resetMfaForm("disable")}><Text style={styles.secondaryDangerText}>{t("settings.twoFactor.turnOff")}</Text></Pressable>
                     </View>
                   ) : (
-                    <Pressable accessibilityRole="button" style={styles.primary} onPress={() => resetMfaForm("password")}><Text style={styles.primaryText}>Turn on two-factor</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={styles.primary} onPress={() => resetMfaForm("password")}><Text style={styles.primaryText}>{t("settings.twoFactor.turnOnTwoFactor")}</Text></Pressable>
                   )}
                 </>
               )}
@@ -304,11 +317,11 @@ export default function AccountSecurityScreen() {
               {mfaStep === "password" && (
                 <>
                   <View style={styles.divider} />
-                  <Text style={styles.stepText}>First, confirm it's you.</Text>
-                  <Field label="Current password" value={mfaPassword} onChangeText={setMfaPassword} />
+                  <Text style={styles.stepText}>{t("settings.mobile.accountSecurity.firstConfirmItSYou")}</Text>
+                  <Field label={t("settings.twoFactor.currentPassword")} value={mfaPassword} onChangeText={setMfaPassword} />
                   <View style={styles.buttonRow}>
-                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => resetMfaForm()} disabled={mfaBusy}><Text style={styles.secondaryText}>Cancel</Text></Pressable>
-                    <Pressable accessibilityRole="button" style={[styles.primary, { flex: 1, marginTop: 0 }, (mfaBusy || !mfaPassword) && styles.disabled]} disabled={mfaBusy || !mfaPassword} onPress={() => void startMfaSetup()}><Text style={styles.primaryText}>{mfaBusy ? "Checking…" : "Continue"}</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => resetMfaForm()} disabled={mfaBusy}><Text style={styles.secondaryText}>{t("common.actions.cancel")}</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={[styles.primary, { flex: 1, marginTop: 0 }, (mfaBusy || !mfaPassword) && styles.disabled]} disabled={mfaBusy || !mfaPassword} onPress={() => void startMfaSetup()}><Text style={styles.primaryText}>{mfaBusy ? t("common.status.checking") : t("common.actions.continue")}</Text></Pressable>
                   </View>
                 </>
               )}
@@ -316,19 +329,19 @@ export default function AccountSecurityScreen() {
               {mfaStep === "setup" && mfaSetup && (
                 <>
                   <View style={styles.divider} />
-                  <Text style={styles.stepText}>1. Add DeCave to your authenticator app. Tap the button below, or copy this key into the app.</Text>
+                  <Text style={styles.stepText}>{t("settings.mobile.accountSecurity.n1AddDecaveToYour")}</Text>
                   <View style={styles.secretBox}>
                     <Text style={styles.secret} selectable>{groupSecret(mfaSetup.secret)}</Text>
                   </View>
                   <View style={styles.buttonRow}>
-                    <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={() => copyText(mfaSetup.secret.replace(/\s/g, ""), "Key copied.")}><Ionicons name="copy-outline" size={15} color={colors.cyan} /><Text style={styles.secondaryText}>Copy key</Text></Pressable>
-                    <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={openAuthenticator}><Ionicons name="open-outline" size={15} color={colors.cyan} /><Text style={styles.secondaryText}>Open in authenticator app</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={() => copyText(mfaSetup.secret.replace(/\s/g, ""), t("settings.mobile.accountSecurity.keyCopied"))}><Ionicons name="copy-outline" size={15} color={colors.cyan} /><Text style={styles.secondaryText}>{t("settings.mobile.accountSecurity.copyKey")}</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={openAuthenticator}><Ionicons name="open-outline" size={15} color={colors.cyan} /><Text style={styles.secondaryText}>{t("settings.mobile.accountSecurity.openInAuthenticatorApp")}</Text></Pressable>
                   </View>
-                  <Text style={[styles.stepText, { marginTop: 12 }]}>2. Enter the 6-digit code the app shows.</Text>
+                  <Text style={[styles.stepText, { marginTop: 12 }]}>{t("settings.mobile.accountSecurity.n2EnterThe6Digit")}</Text>
                   <TextInput value={mfaCode} onChangeText={(value) => setMfaCode(value.replace(/\D/g, "").slice(0, 6))} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" placeholder="123456" placeholderTextColor={colors.faint} style={[styles.input, styles.codeInput]} maxLength={6} />
                   <View style={[styles.buttonRow, { marginTop: 10 }]}>
-                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => resetMfaForm()} disabled={mfaBusy}><Text style={styles.secondaryText}>Cancel</Text></Pressable>
-                    <Pressable accessibilityRole="button" style={[styles.primary, { flex: 1, marginTop: 0 }, (mfaBusy || mfaCode.length !== 6) && styles.disabled]} disabled={mfaBusy || mfaCode.length !== 6} onPress={() => void enableMfa()}><Text style={styles.primaryText}>{mfaBusy ? "Checking…" : "Turn on"}</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => resetMfaForm()} disabled={mfaBusy}><Text style={styles.secondaryText}>{t("common.actions.cancel")}</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={[styles.primary, { flex: 1, marginTop: 0 }, (mfaBusy || mfaCode.length !== 6) && styles.disabled]} disabled={mfaBusy || mfaCode.length !== 6} onPress={() => void enableMfa()}><Text style={styles.primaryText}>{mfaBusy ? t("common.status.checking") : t("settings.twoFactor.turnOn")}</Text></Pressable>
                   </View>
                 </>
               )}
@@ -336,16 +349,16 @@ export default function AccountSecurityScreen() {
               {(mfaStep === "disable" || mfaStep === "regenerate") && (
                 <>
                   <View style={styles.divider} />
-                  <Text style={styles.stepText}>{mfaStep === "disable" ? "To turn off two-factor, enter your password and a code from your authenticator app." : "To make new recovery codes, enter your password and a code from your authenticator app. Your old codes will stop working."}</Text>
-                  <Field label="Current password" value={mfaPassword} onChangeText={setMfaPassword} />
+                  <Text style={styles.stepText}>{mfaStep === "disable" ? t("settings.mobile.accountSecurity.toTurnOffTwoFactor") : t("settings.mobile.accountSecurity.toMakeNewRecoveryCodes")}</Text>
+                  <Field label={t("settings.twoFactor.currentPassword")} value={mfaPassword} onChangeText={setMfaPassword} />
                   <View style={{ marginBottom: 10 }}>
-                    <Text style={styles.label}>Authenticator code</Text>
-                    <TextInput value={mfaCode} onChangeText={(value) => setMfaCode(value.toUpperCase().replace(/\s/g, "").slice(0, 19))} autoCapitalize="characters" autoCorrect={false} textContentType="oneTimeCode" autoComplete="one-time-code" placeholder="6-digit code" placeholderTextColor={colors.faint} style={styles.input} />
+                    <Text style={styles.label}>{t("settings.mobile.accountSecurity.authenticatorCode")}</Text>
+                    <TextInput value={mfaCode} onChangeText={(value) => setMfaCode(value.toUpperCase().replace(/\s/g, "").slice(0, 19))} autoCapitalize="characters" autoCorrect={false} textContentType="oneTimeCode" autoComplete="one-time-code" placeholder={t("settings.twoFactor.sixDigit")} placeholderTextColor={colors.faint} style={styles.input} />
                   </View>
                   <View style={styles.buttonRow}>
-                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => resetMfaForm()} disabled={mfaBusy}><Text style={styles.secondaryText}>Cancel</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => resetMfaForm()} disabled={mfaBusy}><Text style={styles.secondaryText}>{t("common.actions.cancel")}</Text></Pressable>
                     <Pressable accessibilityRole="button" style={[mfaStep === "disable" ? styles.confirmDanger : styles.primary, { flex: 1, marginTop: 0 }, (mfaBusy || !mfaPassword || !mfaCode) && styles.disabled]} disabled={mfaBusy || !mfaPassword || !mfaCode} onPress={() => void disableOrRegenerate()}>
-                      <Text style={mfaStep === "disable" ? styles.confirmDangerText : styles.primaryText}>{mfaBusy ? "Checking…" : mfaStep === "disable" ? "Turn off" : "Make new codes"}</Text>
+                      <Text style={mfaStep === "disable" ? styles.confirmDangerText : styles.primaryText}>{mfaBusy ? t("common.status.checking") : mfaStep === "disable" ? t("settings.twoFactor.turnOff") : t("settings.twoFactor.makeNewCodes")}</Text>
                     </Pressable>
                   </View>
                 </>
@@ -354,15 +367,15 @@ export default function AccountSecurityScreen() {
               {mfaStep === "codes" && (
                 <>
                   <View style={styles.divider} />
-                  <Text style={styles.stepText}>Save these recovery codes somewhere safe. Each one works once if you lose your phone. You won't see them again.</Text>
+                  <Text style={styles.stepText}>{t("settings.mobile.accountSecurity.saveTheseRecoveryCodesSomewhere")}</Text>
                   <View style={styles.codesGrid}>
                     {recoveryCodes.map((code) => <Text key={code} style={styles.recoveryCode} selectable>{code}</Text>)}
                   </View>
                   <View style={styles.buttonRow}>
-                    <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={() => copyText(recoveryCodes.join("\n"), "Recovery codes copied.")}><Ionicons name="copy-outline" size={15} color={colors.cyan} /><Text style={styles.secondaryText}>Copy</Text></Pressable>
-                    <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={shareRecoveryCodes}><Ionicons name="share-outline" size={15} color={colors.cyan} /><Text style={styles.secondaryText}>Share</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={() => copyText(recoveryCodes.join("\n"), t("settings.mobile.accountSecurity.recoveryCodesCopied"))}><Ionicons name="copy-outline" size={15} color={colors.cyan} /><Text style={styles.secondaryText}>{t("common.actions.copy")}</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={[styles.secondary, { flex: 1 }]} onPress={shareRecoveryCodes}><Ionicons name="share-outline" size={15} color={colors.cyan} /><Text style={styles.secondaryText}>{t("common.actions.share")}</Text></Pressable>
                   </View>
-                  <Pressable accessibilityRole="button" style={[styles.primary, { marginTop: 10 }]} onPress={() => { setRecoveryCodes([]); resetMfaForm(); }}><Text style={styles.primaryText}>I saved them</Text></Pressable>
+                  <Pressable accessibilityRole="button" style={[styles.primary, { marginTop: 10 }]} onPress={() => { setRecoveryCodes([]); resetMfaForm(); }}><Text style={styles.primaryText}>{t("settings.twoFactor.savedThem")}</Text></Pressable>
                 </>
               )}
 
@@ -372,40 +385,40 @@ export default function AccountSecurityScreen() {
           )}
         </View>
 
-        <Text style={styles.section}>SIGN-IN ALERTS</Text>
+        <Text style={styles.section}>{t("settings.mobile.accountSecurity.signInAlerts")}</Text>
         <View style={styles.card}>
           <View style={styles.toggleRow}>
             <Ionicons name="mail-unread-outline" size={19} color={colors.cyan} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.emailValue}>Email me about new sign-ins</Text>
-              <Text style={styles.hint}>When a new device, app or country signs in, we email you with a 'This wasn't me' button.</Text>
+              <Text style={styles.emailValue}>{t("settings.account.loginAlerts")}</Text>
+              <Text style={styles.hint}>{t("settings.mobile.accountSecurity.whenANewDeviceApp")}</Text>
             </View>
             {loginAlerts === null && !alertsError ? <ActivityIndicator color={colors.cyan} /> : (
-              <Switch value={Boolean(loginAlerts)} disabled={loginAlerts === null} onValueChange={(value) => void toggleLoginAlerts(value)} trackColor={{ false: "#263148", true: colors.violet }} thumbColor="#EEF4FF" accessibilityLabel="Email me about new sign-ins" />
+              <Switch value={Boolean(loginAlerts)} disabled={loginAlerts === null} onValueChange={(value) => void toggleLoginAlerts(value)} trackColor={{ false: "#263148", true: colors.violet }} thumbColor="#EEF4FF" accessibilityLabel={t("settings.account.loginAlerts")} />
             )}
           </View>
-          {!user?.email && <Text style={styles.hint}>Add an email address above to get these alerts.</Text>}
+          {!user?.email && <Text style={styles.hint}>{t("settings.mobile.accountSecurity.addAnEmailAddressAbove")}</Text>}
           {!!alertsError && <Text style={[styles.error, { marginTop: 6 }]}>{alertsError}</Text>}
         </View>
 
-        <Text style={styles.section}>YOUR DATA</Text>
+        <Text style={styles.section}>{t("settings.mobile.accountSecurity.yourData")}</Text>
         <View style={styles.card}>
           <Pressable accessibilityRole="button" style={styles.dangerRow} onPress={() => void downloadData()} disabled={exporting}>
             {exporting ? <ActivityIndicator color={colors.cyan} /> : <Ionicons name="download-outline" size={19} color={colors.cyan} />}
             <View style={{ flex: 1 }}>
-              <Text style={styles.emailValue}>{exporting ? "Preparing your file…" : "Download my data"}</Text>
-              <Text style={styles.hint}>Get a copy of your account, profile and messages as a file.</Text>
+              <Text style={styles.emailValue}>{exporting ? t("settings.mobile.accountSecurity.preparingYourFile") : t("settings.yourData.title")}</Text>
+              <Text style={styles.hint}>{t("settings.mobile.accountSecurity.getACopyOfYour")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.muted} />
           </Pressable>
           {!!exportError && <Text style={[styles.error, { marginTop: 6 }]}>{exportError}</Text>}
         </View>
 
-        <Text style={styles.section}>ACCOUNT STATE</Text>
+        <Text style={styles.section}>{t("settings.mobile.accountSecurity.accountState")}</Text>
         <View style={styles.card}>
-          <Pressable accessibilityRole="button" style={styles.dangerRow} onPress={()=>{setDangerPassword("");setDangerAction("disable");}}><Ionicons name="pause-circle-outline" size={19} color={colors.red} /><View style={{ flex: 1 }}><Text style={styles.dangerTitle}>Disable Account</Text><Text style={styles.hint}>Ends active sessions. Your next successful login reactivates the account.</Text></View></Pressable>
+          <Pressable accessibilityRole="button" style={styles.dangerRow} onPress={()=>{setDangerPassword("");setDangerAction("disable");}}><Ionicons name="pause-circle-outline" size={19} color={colors.red} /><View style={{ flex: 1 }}><Text style={styles.dangerTitle}>{t("settings.mobile.accountSecurity.disableAccount")}</Text><Text style={styles.hint}>{t("settings.mobile.accountSecurity.endsActiveSessionsYourNext")}</Text></View></Pressable>
           <View style={styles.divider} />
-          <Pressable accessibilityRole="button" style={styles.dangerRow} onPress={()=>{setDangerPassword("");setDangerAction("delete");}}><Ionicons name="trash-outline" size={19} color={colors.red} /><View style={{ flex: 1 }}><Text style={styles.dangerTitle}>Delete Account</Text><Text style={styles.hint}>Schedules deletion after 30 days. Log in before then to cancel.</Text></View></Pressable>
+          <Pressable accessibilityRole="button" style={styles.dangerRow} onPress={()=>{setDangerPassword("");setDangerAction("delete");}}><Ionicons name="trash-outline" size={19} color={colors.red} /><View style={{ flex: 1 }}><Text style={styles.dangerTitle}>{t("settings.mobile.accountSecurity.deleteAccount")}</Text><Text style={styles.hint}>{t("settings.mobile.accountSecurity.schedulesDeletionAfter30Days")}</Text></View></Pressable>
         </View>
 
         {!!notice && <Text style={styles.notice}>{notice}</Text>}
@@ -414,10 +427,10 @@ export default function AccountSecurityScreen() {
       <Modal visible={dangerAction!==null} transparent animationType="fade" onRequestClose={()=>setDangerAction(null)}>
         <Pressable style={styles.overlay} onPress={()=>setDangerAction(null)}><Pressable accessibilityRole="button" style={styles.confirmCard} onPress={()=>{}}>
           <Ionicons name={dangerAction==="delete"?"warning-outline":"pause-circle-outline"} size={26} color={colors.red}/>
-          <Text style={styles.confirmTitle}>{dangerAction==="delete"?"Delete account":"Disable account"}</Text>
-          <Text style={styles.confirmText}>{dangerAction==="delete"?"Your account will be scheduled for deletion in 30 days. Sign in before then to cancel.":"Your account and active sessions will be disabled. Signing in again reactivates it."}</Text>
-          <Field label="Current password" value={dangerPassword} onChangeText={setDangerPassword} />
-          <View style={styles.confirmActions}><Pressable accessibilityRole="button" style={styles.cancel} onPress={()=>setDangerAction(null)}><Text style={styles.cancelText}>Cancel</Text></Pressable><Pressable accessibilityRole="button" style={[styles.confirmDanger,(!dangerPassword||busy)&&styles.disabled]} disabled={!dangerPassword||busy} onPress={()=>void confirmDangerAction()}><Text style={styles.confirmDangerText}>{dangerAction==="delete"?"Delete":"Disable"}</Text></Pressable></View>
+          <Text style={styles.confirmTitle}>{dangerAction==="delete"?t("settings.account.delete"):t("settings.account.disable")}</Text>
+          <Text style={styles.confirmText}>{dangerAction==="delete"?t("settings.mobile.accountSecurity.yourAccountWillBeScheduled"):t("settings.mobile.accountSecurity.yourAccountAndActiveSessions")}</Text>
+          <Field label={t("settings.twoFactor.currentPassword")} value={dangerPassword} onChangeText={setDangerPassword} />
+          <View style={styles.confirmActions}><Pressable accessibilityRole="button" style={styles.cancel} onPress={()=>setDangerAction(null)}><Text style={styles.cancelText}>{t("common.actions.cancel")}</Text></Pressable><Pressable accessibilityRole="button" style={[styles.confirmDanger,(!dangerPassword||busy)&&styles.disabled]} disabled={!dangerPassword||busy} onPress={()=>void confirmDangerAction()}><Text style={styles.confirmDangerText}>{dangerAction==="delete"?t("common.actions.delete"):t("common.actions.disable")}</Text></Pressable></View>
         </Pressable></Pressable>
       </Modal>
     </Screen>

@@ -1,0 +1,102 @@
+{
+  "sort": {
+    "active": "Nu actief",
+    "friends": "Vrienden",
+    "largest": "Grootste",
+    "new": "Nieuw"
+  },
+  "size": {
+    "any": "Elke grootte",
+    "small": "Onder 50",
+    "medium": "50 tot 500",
+    "large": "500+"
+  },
+  "friends": {
+    "count_one": "{{count}} vriend hier",
+    "count_other": "{{count}} vrienden hier",
+    "one": "{{name}} is hier",
+    "two": "{{first}} en {{second}} zijn hier",
+    "more_one": "{{names}} en nog {{count}} ander zijn hier",
+    "more_other": "{{names}} en nog {{count}} anderen zijn hier"
+  },
+  "open": "Openen",
+  "joining": "Lid worden…",
+  "join": "Lid worden",
+  "pageLabel": "Hubs ontdekken",
+  "kicker": "Ontdekken",
+  "title": "Vind een Hub die bij je past",
+  "stats_one": "{{count}} openbare Hub · {{online}} mensen online",
+  "stats_other": "{{count}} openbare Hubs · {{online}} mensen online",
+  "statsVoice_one": " · {{count}} in spraak",
+  "statsVoice_other": " · {{count}} in spraak",
+  "searchPlaceholder": "Zoek op Hub, categorie of tag",
+  "searchLabel": "Openbare Hubs zoeken",
+  "invitePlaceholder": "Heb je een uitnodigingscode?",
+  "inviteLabel": "Uitnodigingscode",
+  "useInvite": "Code gebruiken",
+  "refresh": "Vernieuwen",
+  "filters": {
+    "label": "Filters",
+    "showMe": "Laat zien",
+    "friendsInside": "Met vrienden",
+    "activeNow": "Nu actief",
+    "category": "Categorie",
+    "all": "Alle",
+    "size": "Grootte",
+    "clear": "Filters wissen"
+  },
+  "results": {
+    "all": "Alle openbare Hubs",
+    "some_one": "{{shown}} van {{count}} Hub",
+    "some_other": "{{shown}} van {{count}} Hubs"
+  },
+  "sortLabel": "Hubs sorteren",
+  "loading": "Openbare Hubs laden…",
+  "inVoice_one": "{{count}} in spraak",
+  "inVoice_other": "{{count}} in spraak",
+  "defaultCategory": "Community",
+  "noDescription": "Nog geen beschrijving.",
+  "card": {
+    "previewLabel": "Voorbeeld van {{name}}",
+    "joined": "Lid",
+    "membershipPrivate": "Lidmaatschap privé",
+    "counts_one": "<b>{{online}}</b> online · {{members}} leden",
+    "counts_other": "<b>{{online}}</b> online · {{members}} leden",
+    "preview": "Voorbeeld"
+  },
+  "empty": {
+    "noMatch": "Geen Hubs die aan deze filters voldoen",
+    "quiet": "Het is stil bij de openbare Hubs",
+    "noMatchHint": "Probeer een andere zoekopdracht of wis de filters.",
+    "quietHint": "Je kunt lid worden met een uitnodigingscode, of een openbare Hub maken die dan hier verschijnt."
+  },
+  "preview": {
+    "loadFailed": "Kan deze Hub niet laden.",
+    "label": "Voorbeeld van {{name}}",
+    "fallbackLabel": "Hub-voorbeeld",
+    "close": "Voorbeeld sluiten",
+    "categoryPublic": "{{category}} · Openbaar",
+    "rightNow": "Op dit moment",
+    "counts_one": "{{online}} online · {{members}} leden",
+    "counts_other": "{{online}} online · {{members}} leden",
+    "going_one": "{{count}} gaat",
+    "going_other": "{{count}} gaan",
+    "inside": "Binnen",
+    "loadingRooms": "Kanalen laden…",
+    "chatRooms_one": "{{count}} tekstkanaal",
+    "chatRooms_other": "{{count}} tekstkanalen",
+    "forums_one": "{{count}} forum",
+    "forums_other": "{{count}} forums",
+    "threads_one": "{{count}} thread",
+    "threads_other": "{{count}} threads",
+    "voiceRooms_one": "{{count}} spraakkanaal",
+    "voiceRooms_other": "{{count}} spraakkanalen",
+    "moreRooms_one": "+{{count}} meer",
+    "moreRooms_other": "+{{count}} meer",
+    "rules": "Regels",
+    "moreRules_one": "+{{count}} meer zodra je lid bent",
+    "moreRules_other": "+{{count}} meer zodra je lid bent",
+    "openHub": "Hub openen",
+    "joinHub": "Lid worden"
+  }
+}

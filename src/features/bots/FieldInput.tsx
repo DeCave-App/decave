@@ -1,9 +1,12 @@
 // One field of a trigger, condition or action, rendered from its catalogue
 // descriptor. Lists (command options, form fields, cards) live in ListFields.
 import { useId, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { BotFieldDescriptor } from "../../../shared/bots/catalogue.ts";
 import { CardEditor, FormFieldsEditor, OptionsEditor } from "./ListFields";
-import { deletedLabel, type HubRef } from "./model.ts";
+import { fieldHint, fieldLabel, type CatalogueKind } from "./catalogueText";
+import { deletedLabel, type BotRefKind, type HubRef } from "./model.ts";
+import { weekdayName } from "../shared/dateParts";
 import { TemplatePreview, VariablePicker, type BotVariable } from "./VariablePicker";
 
 export type FieldEnv = {
@@ -16,18 +19,19 @@ export type FieldEnv = {
 
 type Props = {
   field: BotFieldDescriptor;
+  /** The trigger, condition or action the field belongs to (for its translated label). */
+  part: { kind: CatalogueKind; type: string };
   value: unknown;
   onChange: (value: unknown) => void;
   env: FieldEnv;
   error?: string;
 };
 
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const UNITS = [
-  { label: "minutes", size: 1 },
-  { label: "hours", size: 60 },
-  { label: "days", size: 1440 },
-];
+  { unit: "minutes", size: 1 },
+  { unit: "hours", size: 60 },
+  { unit: "days", size: 1440 },
+] as const;
 
 function TemplateInput({
   value,
@@ -76,6 +80,7 @@ function DurationInput({
   id: string;
   optional: boolean;
 }) {
+  const { t } = useTranslation(["bots"]);
   const unit = value && value % 1440 === 0 ? UNITS[2] : value && value % 60 === 0 ? UNITS[1] : UNITS[0];
   return (
     <span className="bb-inline">
@@ -84,7 +89,7 @@ function DurationInput({
         className="dcx-input bb-num"
         type="number"
         min={optional ? 0 : 1}
-        placeholder={optional ? "Keep" : undefined}
+        placeholder={optional ? t("bots.field.keep") : undefined}
         value={value === undefined ? "" : value / unit.size}
         onChange={(e) => {
           if (e.target.value === "" && optional) return onChange(undefined);
@@ -93,13 +98,13 @@ function DurationInput({
       />
       <select
         className="dcx-input bb-unit"
-        aria-label="Unit"
+        aria-label={t("bots.field.unit")}
         value={unit.size}
         onChange={(e) => onChange(value === undefined ? undefined : (value / unit.size) * Number(e.target.value))}
       >
         {UNITS.map((u) => (
           <option key={u.size} value={u.size}>
-            {u.label}
+            {t(`bots.field.units.${u.unit}`)}
           </option>
         ))}
       </select>
@@ -124,7 +129,7 @@ function RefSelect({
   prefix: string;
   empty: string;
   extra?: { value: string; label: string }[];
-  what: string;
+  what: BotRefKind;
 }) {
   const known = value === "" || items.some((i) => i.id === value) || extra?.some((e) => e.value === value);
   return (
@@ -152,6 +157,7 @@ function RefSelect({
 }
 
 function Control({ field, value, onChange, env, id }: Omit<Props, "error"> & { id: string }) {
+  const { t } = useTranslation(["bots"]);
   const str = typeof value === "string" ? value : value === undefined || value === null ? "" : String(value);
   switch (field.kind) {
     case "number":
@@ -180,8 +186,8 @@ function Control({ field, value, onChange, env, id }: Omit<Props, "error"> & { i
           items={env.textRooms}
           what="room"
           prefix="#"
-          empty="Pick a room"
-          extra={field.key === "channel" ? [{ value: "trigger", label: "The same room" }] : undefined}
+          empty={t("bots.field.pickRoom")}
+          extra={field.key === "channel" ? [{ value: "trigger", label: t("bots.field.sameRoom") }] : undefined}
         />
       );
     case "voiceRoom":
@@ -191,9 +197,9 @@ function Control({ field, value, onChange, env, id }: Omit<Props, "error"> & { i
           value={str}
           onChange={(v) => onChange(v || undefined)}
           items={env.voiceRooms}
-          what="voice room"
+          what="voiceRoom"
           prefix=""
-          empty={field.required ? "Pick a voice room" : "Any voice room"}
+          empty={field.required ? t("bots.field.pickVoiceRoom") : t("bots.field.anyVoiceRoom")}
         />
       );
     case "role":
@@ -205,7 +211,7 @@ function Control({ field, value, onChange, env, id }: Omit<Props, "error"> & { i
           items={env.roles}
           what="role"
           prefix="@"
-          empty="Pick a role"
+          empty={t("bots.field.pickRole")}
         />
       );
     case "rule":
@@ -217,7 +223,7 @@ function Control({ field, value, onChange, env, id }: Omit<Props, "error"> & { i
           items={env.rules}
           what="rule"
           prefix=""
-          empty="Pick a rule"
+          empty={t("bots.field.pickRule")}
         />
       );
     case "emoji":
@@ -252,7 +258,7 @@ function Control({ field, value, onChange, env, id }: Omit<Props, "error"> & { i
                     )
                   }
                 >
-                  {field.key === "days" ? DAY_LABELS[Number(c)] : String(c)}
+                  {field.key === "days" ? weekdayName(Number(c), "short") : String(c)}
                 </button>
               );
             })}
@@ -303,7 +309,7 @@ function Control({ field, value, onChange, env, id }: Omit<Props, "error"> & { i
                 <button
                   type="button"
                   className="dcx-btn dcx-btn-sm dcx-btn-ghost"
-                  aria-label="Remove choice"
+                  aria-label={t("bots.field.removeChoice")}
                   disabled={list.length <= 2}
                   onClick={() => onChange(list.filter((_, j) => j !== i))}
                 >
@@ -317,7 +323,7 @@ function Control({ field, value, onChange, env, id }: Omit<Props, "error"> & { i
               disabled={list.length >= 10}
               onClick={() => onChange([...list, ""])}
             >
-              Add choice
+              {t("bots.field.addChoice")}
             </button>
           </span>
         );
@@ -351,14 +357,15 @@ function Control({ field, value, onChange, env, id }: Omit<Props, "error"> & { i
 }
 
 export function FieldInput(props: Props) {
+  const { t } = useTranslation(["bots"]);
   const id = useId();
-  const { field, error } = props;
+  const { field, error, part } = props;
   const wide = ["template", "options", "form", "card"].includes(field.kind);
   return (
     <div className={`bb-field${wide ? " wide" : ""}${error ? " invalid" : ""}`}>
       <label className="bb-field-label" htmlFor={id}>
-        {field.label}
-        {!field.required && <span className="bb-optional"> (optional)</span>}
+        {fieldLabel(part.kind, part.type, field)}
+        {!field.required && <span className="bb-optional">{t("bots.field.optional")}</span>}
       </label>
       <Control {...props} id={id} />
       {error ? (
@@ -366,7 +373,7 @@ export function FieldInput(props: Props) {
           {error}
         </small>
       ) : field.hint && !["options", "form", "card"].includes(field.kind) ? (
-        <small className="bb-hint">{field.hint.replace(/ Stored as.*$/, "")}</small>
+        <small className="bb-hint">{fieldHint(part.kind, part.type, field)}</small>
       ) : null}
     </div>
   );

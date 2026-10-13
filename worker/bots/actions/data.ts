@@ -5,17 +5,18 @@
 import { renderTemplate } from "../../../shared/bots/render";
 import { BOT_LIMITS, type BotVariableScope } from "../../../shared/bots/types";
 import { limitsNow } from "../limits";
+import { refusal, type Refusal } from "../reasons";
 import { deleteVariable, getVariable, putTimer, setVariable } from "../store";
 import { armRoomTimers } from "../timer-arm";
 import { guardPublisher, refused, timerHostRoom } from "./guard";
 import { registerAction, type ActionContext, type ActionResult } from "./registry";
 
-type Target = { owner: string | null } | { reason: string };
+type Target = { owner: string | null } | Refusal;
 
 async function target(ctx: ActionContext, scope: BotVariableScope): Promise<Target> {
   const publisher = await guardPublisher(ctx);
   if (refused(publisher)) return publisher;
-  if (scope === "user" && !ctx.event.actorId) return { reason: "This trigger has no member" };
+  if (scope === "user" && !ctx.event.actorId) return refusal("bots.run.server.noMember");
   return { owner: scope === "user" ? ctx.event.actorId : null };
 }
 
@@ -29,7 +30,7 @@ registerAction("setVariable", {
   async run(ctx, action): Promise<ActionResult> {
     if (action.type !== "setVariable") return { ok: true };
     const t = await target(ctx, action.scope);
-    if ("reason" in t) return { ok: false, reason: t.reason };
+    if ("reason" in t) return { ok: false, reason: t.reason, notice: t.notice };
     if (ctx.dryRun) return { ok: true };
     const stored = await setVariable(
       ctx.env.DB,
@@ -39,7 +40,7 @@ registerAction("setVariable", {
       t.owner,
       value(ctx, action.value),
     );
-    return stored ? { ok: true } : { ok: false, reason: "Variable limit reached" };
+    return stored ? { ok: true } : { ok: false, ...refusal("bots.run.server.variableLimit") };
   },
 });
 
@@ -48,14 +49,14 @@ registerAction("addVariable", {
   async run(ctx, action): Promise<ActionResult> {
     if (action.type !== "addVariable") return { ok: true };
     const t = await target(ctx, action.scope);
-    if ("reason" in t) return { ok: false, reason: t.reason };
+    if ("reason" in t) return { ok: false, reason: t.reason, notice: t.notice };
     const amount = Number(action.value === undefined ? 1 : value(ctx, action.value));
-    if (!Number.isFinite(amount)) return { ok: false, reason: "Value isn't a number" };
+    if (!Number.isFinite(amount)) return { ok: false, ...refusal("bots.run.server.notANumber") };
     if (ctx.dryRun) return { ok: true };
     const current = Number((await getVariable(ctx.env.DB, ctx.event.hubId, action.name, action.scope, t.owner)) ?? 0);
     const next = (Number.isFinite(current) ? current : 0) + amount;
     const stored = await setVariable(ctx.env.DB, ctx.event.hubId, action.name, action.scope, t.owner, next);
-    return stored ? { ok: true } : { ok: false, reason: "Variable limit reached" };
+    return stored ? { ok: true } : { ok: false, ...refusal("bots.run.server.variableLimit") };
   },
 });
 
@@ -64,7 +65,7 @@ registerAction("resetVariable", {
   async run(ctx, action): Promise<ActionResult> {
     if (action.type !== "resetVariable") return { ok: true };
     const t = await target(ctx, action.scope);
-    if ("reason" in t) return { ok: false, reason: t.reason };
+    if ("reason" in t) return { ok: false, reason: t.reason, notice: t.notice };
     if (!ctx.dryRun) await deleteVariable(ctx.env.DB, ctx.event.hubId, action.name, action.scope, t.owner);
     return { ok: true };
   },
@@ -80,7 +81,7 @@ registerAction("wait", {
     const rest = ctx.remaining ?? [];
     if (!rest.length) return { stop: true };
     const hostRoomId = await timerHostRoom(ctx);
-    if (hostRoomId === null) return { ok: false, reason: "Waiting needs a text channel in this hub" };
+    if (hostRoomId === null) return { ok: false, ...refusal("bots.run.server.waitNeedsChannel") };
     const minutes = Math.min(Math.max(Math.trunc(action.minutes), 1), BOT_LIMITS.maxWaitMinutes);
     await putTimer(ctx.env.DB, {
       key: `wait:${crypto.randomUUID()}:${ctx.actionIndex ?? 0}`,

@@ -1,4 +1,5 @@
 # Generated, vendored, or owned by another toolchain.
+.claude
 dist
 release
 build

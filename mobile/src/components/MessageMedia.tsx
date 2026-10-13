@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { fetch as expoFetch } from "expo/fetch";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_BASE } from "@/src/lib/api";
 import { loadAuthenticatedAttachmentImage } from "@/src/lib/legacy-attachment-download";
@@ -32,6 +33,7 @@ export function MessageImage({
   decrypt?: ((bytes: Uint8Array) => Uint8Array) | null;
   mimeType?: string;
 }) {
+  const { t } = useTranslation(["common", "chat", "hub"]);
   const [open, setOpen] = useState(false);
   const [ratio, setRatio] = useState(4 / 3);
   const [loadedImage, setLoadedImage] = useState<LoadedImage | null>(null);
@@ -89,7 +91,7 @@ export function MessageImage({
 
   return (
     <>
-      <Pressable accessibilityRole="imagebutton" accessibilityLabel={title || "Image"} onPress={() => setOpen(true)}>
+      <Pressable accessibilityRole="imagebutton" accessibilityLabel={title || t("hub.pins.kinds.image")} onPress={() => setOpen(true)}>
         <Image
           source={source}
           onLoad={(event) => {
@@ -113,12 +115,12 @@ export function MessageImage({
             <Image source={source} style={{ width, height: height * 0.8 }} resizeMode="contain" />
           </ScrollView>
           <View style={[styles.bar, { top: insets.top + 8 }]}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} style={styles.barButton} onPress={() => setOpen(false)}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")} hitSlop={10} style={styles.barButton} onPress={() => setOpen(false)}>
               <Ionicons name="close" size={22} color="#FFFFFF" />
             </Pressable>
             {!!title && <Text style={styles.barTitle} numberOfLines={1}>{title}</Text>}
             {onSave && (
-              <Pressable accessibilityRole="button" accessibilityLabel="Save or share" hitSlop={10} style={styles.barButton} onPress={onSave}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("chat.mobile.media.saveOrShare")} hitSlop={10} style={styles.barButton} onPress={onSave}>
                 <Ionicons name="share-outline" size={21} color="#FFFFFF" />
               </Pressable>
             )}

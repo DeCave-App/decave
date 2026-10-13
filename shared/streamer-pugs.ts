@@ -1,5 +1,5 @@
 /** Shared contracts for Streamer Hub PUGs (random-team community matches) and the community leaderboard. */
-import { StreamerInputError, integer, text } from "./streamer-mode.ts";
+import { integer, streamerInputError, text } from "./streamer-mode.ts";
 
 export type PugStatus = "open" | "live" | "done" | "cancelled";
 export type PugTeam = "a" | "b";
@@ -51,20 +51,20 @@ export type Leaderboard = {
 export const CS2_MAP_POOL = ["Mirage", "Inferno", "Dust II", "Nuke", "Ancient", "Anubis", "Train", "Overpass"] as const;
 
 export function pugCreateInput(body: Record<string, unknown>) {
-  const teamSize = integer(body.teamSize, "Players per team", 1, 5);
+  const teamSize = integer(body.teamSize, "playersPerTeam", 1, 5);
   if (!Array.isArray(body.maps) || body.maps.length < 1 || body.maps.length > 10)
-    throw new StreamerInputError("Pick 1–10 maps.");
-  const maps = [...new Set(body.maps.map((map, i) => text(map, `Map ${i + 1}`, 30)))];
-  const voiceA = integer(body.voiceA, "Team A voice room", 1, Number.MAX_SAFE_INTEGER);
-  const voiceB = integer(body.voiceB, "Team B voice room", 1, Number.MAX_SAFE_INTEGER);
-  if (voiceA === voiceB) throw new StreamerInputError("Pick two different voice rooms for the teams.");
+    throw streamerInputError("streamerInput.pugMapCount");
+  const maps = [...new Set(body.maps.map((map, i) => text(map, "map", 30, true, { n: i + 1 })))];
+  const voiceA = integer(body.voiceA, "teamAVoiceRoom", 1, Number.MAX_SAFE_INTEGER);
+  const voiceB = integer(body.voiceB, "teamBVoiceRoom", 1, Number.MAX_SAFE_INTEGER);
+  if (voiceA === voiceB) throw streamerInputError("streamerInput.pugSameVoice");
   return { teamSize, maps, voiceA, voiceB };
 }
 
 export function pugScoreInput(body: Record<string, unknown>) {
   return {
-    scoreA: integer(body.scoreA, "Team A score", 0, 99),
-    scoreB: integer(body.scoreB, "Team B score", 0, 99),
+    scoreA: integer(body.scoreA, "teamAScore", 0, 99),
+    scoreB: integer(body.scoreB, "teamBScore", 0, 99),
   };
 }
 

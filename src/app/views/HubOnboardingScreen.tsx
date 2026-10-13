@@ -1,5 +1,7 @@
 // First-run screen for accounts with no Hubs yet: create a Hub or join a public one.
 
+import { useTranslation } from "react-i18next";
+import { hubCategoryText } from "../../i18n/hubCategory";
 import type { Dispatch, SetStateAction } from "react";
 import type { HubTemplateId } from "../../../shared/hub-templates";
 import { CreateHubModal } from "../../features/create-hub/CreateHubModal";
@@ -86,12 +88,13 @@ export function HubOnboardingScreen({
   joinPublicServer,
   filteredDiscoverServers,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="username-screen vadrion-auth-screen" data-skin={displaySkin}>
       <div className="username-card vadrion-empty-card" style={{ width: "min(760px, 92vw)", maxWidth: "760px" }}>
         <DeCaveBrand />
-        <h1>Welcome to DeCave</h1>
-        <p>Create a Hub, join a public community, or skip this step and do it later.</p>
+        <h1>{t("hub.onboarding.title")}</h1>
+        <p>{t("hub.onboarding.lead")}</p>
 
         {!showCreateServer && !showServerBrowser && (
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
@@ -105,10 +108,10 @@ export function HubOnboardingScreen({
                 setShowCreateServer(true);
               }}
             >
-              + Create Hub
+              {t("hub.noHubs.create")}
             </button>
             <button type="button" onClick={openServerBrowser}>
-              Discover Public Hubs
+              {t("hub.noHubs.discover")}
             </button>
           </div>
         )}
@@ -125,7 +128,7 @@ export function HubOnboardingScreen({
               setShowHome(true);
             }}
           >
-            Skip for now
+            {t("hub.onboarding.skip")}
           </button>
         )}
 
@@ -159,16 +162,16 @@ export function HubOnboardingScreen({
 
         {showServerBrowser && (
           <div style={{ marginTop: "18px", textAlign: "left" }}>
-            <h2>Discover Public Hubs</h2>
+            <h2>{t("hub.noHubs.discover")}</h2>
             <input
               type="text"
-              placeholder="Search hubs"
+              placeholder={t("hub.onboarding.search")}
               value={discoverSearch}
               onChange={(event) => setDiscoverSearch(event.target.value)}
             />
-            {discoverLoading && <p>Loading public hubs...</p>}
+            {discoverLoading && <p>{t("hub.onboarding.loading")}</p>}
             {discoverError && <p style={errorTextStyle}>{discoverError}</p>}
-            {!discoverLoading && filteredDiscoverServers.length === 0 && <p>No public hubs match your search.</p>}
+            {!discoverLoading && filteredDiscoverServers.length === 0 && <p>{t("hub.onboarding.noResults")}</p>}
             <div style={{ display: "grid", gap: "10px", marginTop: "14px", maxHeight: "360px", overflowY: "auto" }}>
               {filteredDiscoverServers.map((server) => (
                 <div key={server.id} style={discoverServerCardStyle}>
@@ -177,9 +180,20 @@ export function HubOnboardingScreen({
                     <strong>{server.name}</strong>
                     <div style={memberMutedStyle}>
                       {server.membershipPrivate
-                        ? "Membership private"
-                        : `${server.memberCount ?? 0} members · ${server.onlineCount ?? 0} online`}{" "}
-                      · {server.category ?? "Gaming"}
+                        ? t("hub.onboarding.cardPrivate", {
+                            category:
+                              server.category != null
+                                ? hubCategoryText(server.category)
+                                : t("hub.onboarding.defaultCategory"),
+                          })
+                        : t("hub.onboarding.card", {
+                            count: server.memberCount ?? 0,
+                            online: server.onlineCount ?? 0,
+                            category:
+                              server.category != null
+                                ? hubCategoryText(server.category)
+                                : t("hub.onboarding.defaultCategory"),
+                          })}
                     </div>
                     {server.description && <div className="discover-description">{server.description}</div>}
                     {(server.tags ?? []).length > 0 && (
@@ -196,17 +210,17 @@ export function HubOnboardingScreen({
                     disabled={server.joined}
                     onClick={() => void joinPublicServer(server.id)}
                   >
-                    {server.joined ? "Joined" : "Join"}
+                    {server.joined ? t("hub.onboarding.joined") : t("common.actions.join")}
                   </button>
                 </div>
               ))}
             </div>
             <div className="modal-buttons">
               <button type="button" className="modal-secondary" onClick={() => setShowServerBrowser(false)}>
-                Back
+                {t("common.actions.back")}
               </button>
               <button type="button" className="modal-secondary" onClick={() => void loadDiscoverServers()}>
-                Refresh
+                {t("common.actions.refresh")}
               </button>
             </div>
           </div>

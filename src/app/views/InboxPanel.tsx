@@ -1,5 +1,6 @@
 // The Inbox: desktop updates, unread rooms and recent mentions in one panel.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { Channel, Server, SocialUser, DmConversation, DesktopUpdateState } from "../types";
@@ -55,6 +56,7 @@ export function InboxPanel({
   desktopUpdateAvailable,
   inboxTotal,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div
       className="modal-overlay dc-command-overlay"
@@ -65,8 +67,8 @@ export function InboxPanel({
       <section className="dc-inbox-panel" role="dialog" aria-modal="true" aria-labelledby="dc-inbox-title">
         <header className="ds-page-header">
           <div className="ds-page-header-copy">
-            <span className="ds-kicker">Inbox</span>
-            <h2 id="dc-inbox-title">Unread & mentions</h2>
+            <span className="ds-kicker">{t("common.inbox.kicker")}</span>
+            <h2 id="dc-inbox-title">{t("common.inbox.title")}</h2>
           </div>
           <div className="ds-page-header-actions">
             <button
@@ -80,14 +82,14 @@ export function InboxPanel({
               }}
             >
               <Icon name="check" />
-              Mark all read
+              {t("common.inbox.markAllRead")}
             </button>
             <button
               type="button"
               className="ds-btn ds-btn-ghost ds-icon-btn"
               onClick={() => setShowInbox(false)}
-              aria-label="Close"
-              title="Close"
+              aria-label={t("common.actions.close")}
+              title={t("common.actions.close")}
             >
               <Icon name="close" />
             </button>
@@ -100,7 +102,7 @@ export function InboxPanel({
               className="ds-row ds-row-boxed dc-inbox-update-item"
               onClick={() => {
                 setShowInbox(false);
-                settingsWindow.setSettingsTab("system");
+                settingsWindow.setSettingsTab("app");
                 pageNavigation.openSettings();
               }}
             >
@@ -109,16 +111,23 @@ export function InboxPanel({
               </span>
               <span className="ds-row-copy">
                 <strong className="ds-row-title">
-                  Desktop update {desktopUpdateState.status === "downloading" ? "downloading" : "ready"}
+                  {desktopUpdateState.status === "downloading"
+                    ? t("common.inbox.updateDownloading")
+                    : t("common.inbox.updateReady")}
                 </strong>
                 <small className="ds-row-sub">
-                  Installed version {desktopUpdateState.currentVersion} ·{" "}
                   {desktopUpdateState.status === "downloading"
-                    ? `Downloading ${desktopUpdateState.availableVersion}`
-                    : `Version ${desktopUpdateState.availableVersion} is ready. Open Settings to update.`}
+                    ? t("common.inbox.updateDownloadingDetail", {
+                        installed: desktopUpdateState.currentVersion,
+                        version: desktopUpdateState.availableVersion,
+                      })
+                    : t("common.inbox.updateReadyDetail", {
+                        installed: desktopUpdateState.currentVersion,
+                        version: desktopUpdateState.availableVersion,
+                      })}
                 </small>
               </span>
-              <span className="ds-badge">New</span>
+              <span className="ds-badge">{t("common.inbox.new")}</span>
             </button>
           )}
           {inboxDmItems.map((conversation) => (
@@ -137,7 +146,7 @@ export function InboxPanel({
               <span className="ds-row-copy">
                 <strong className="ds-row-title">{conversation.user.username}</strong>
                 <small className="ds-row-sub">
-                  {messageRendering.dmPreviewText(conversation.latestMessage) || "Private message"}
+                  {messageRendering.dmPreviewText(conversation.latestMessage) || t("common.inbox.privateMessage")}
                 </small>
               </span>
               <span className="ds-badge">{dmUnread[conversation.user.id]}</span>
@@ -167,7 +176,9 @@ export function InboxPanel({
               <span className="ds-row-copy">
                 <strong className="ds-row-title">{channel.name}</strong>
                 <small className="ds-row-sub">
-                  {server.name} · {mentions ? `${mentions} mention${mentions === 1 ? "" : "s"}` : `${unread} unread`}
+                  {mentions
+                    ? t("common.inbox.roomMentions", { hub: server.name, count: mentions })
+                    : t("common.inbox.roomUnread", { hub: server.name, count: unread })}
                 </small>
               </span>
               <span className={mentions ? "ds-badge mention" : "ds-badge"}>
@@ -180,8 +191,8 @@ export function InboxPanel({
               <span className="ds-empty-icon">
                 <Icon name="bell" />
               </span>
-              <h3>You’re all caught up</h3>
-              <p>Unread DMs, room messages, and mentions will appear here.</p>
+              <h3>{t("common.inbox.emptyTitle")}</h3>
+              <p>{t("common.inbox.emptyBody")}</p>
             </div>
           )}
         </div>

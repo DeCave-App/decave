@@ -1,0 +1,50 @@
+{
+  "rules": {
+    "communityRules": {
+      "title": "DeCave Community Rules",
+      "body": "These rules apply everywhere on DeCave: hubs, DMs, group chats, voice and Find a Squad.\n\n1. **Be respectful.** No harassment, bullying, threats or targeted insults.\n2. **No hate speech.** Nothing that attacks people based on race, ethnicity, religion, gender, sexual orientation, disability or nationality.\n3. **Keep it safe for work in public spaces.** No sexual, gory or shocking content in hubs that haven't opted into it. Never anything involving minors.\n4. **Protect privacy.** Don't share anyone's personal information (real name, address, photos, accounts) without their consent.\n5. **No cheating, scams or exploits.** No selling cheats, account trading, phishing links, fake giveaways or impersonating DeCave staff.\n6. **No spam.** No mass DMs, repeated messages, unsolicited advertising or self-promotion outside spaces that allow it.\n7. **Follow each hub's own rules.** Hub owners can add stricter rules for their community.\n8. **Respect the law** and the [Terms of Service](https://de-cave.com/terms).\n\n**Enforcement:** depending on severity, breaking these rules can lead to a warning, temporary restrictions, removal from a hub, or a permanent ban from DeCave.\n\n**Report a problem:** right-click a message or profile and choose **Report**. Reports are private and the person is never told who reported them."
+    }
+  },
+  "faq": {
+    "private": {
+      "title": "Is this hub private? Can other people see me here?",
+      "body": "Yes, it's private. Everyone joins DeCave Official automatically, but members can't see each other: the member list, member counts and online status are hidden, and only the DeCave team can post. Nobody can tell you're here."
+    },
+    "profile": {
+      "title": "How do I set up my profile?",
+      "body": "Click your avatar in the bottom-left corner → **Profile**. You can add a picture, banner, bio and the games you play."
+    },
+    "friends": {
+      "title": "How do I add friends?",
+      "body": "Open **Friends**, choose **Add Friend** and search by username. Once they accept, you can chat, call and invite them to hubs."
+    },
+    "findSquad": {
+      "title": "What is Find a Squad?",
+      "body": "Pick a game and what you're looking for, and DeCave matches you with players looking for the same thing. When you match, you get a squad room to chat and voice together."
+    },
+    "hubs": {
+      "title": "How do I join or create a hub?",
+      "body": "Use the **+** button in the top bar. You can browse public hubs, join one with an invite link, or create your own from a template (including the Streamer layout)."
+    },
+    "voiceRooms": {
+      "title": "How do voice rooms work?",
+      "body": "Click a voice room in any hub to join. You can mute, deafen, share your screen and change your input device from the voice controls. Push-to-talk is available in the desktop app."
+    },
+    "desktopApp": {
+      "title": "Should I use the desktop app?",
+      "body": "It's optional, but it adds game detection, desktop notifications, global push-to-talk and auto-updates. Download it for Windows or Mac at [de-cave.com](https://de-cave.com)."
+    },
+    "report": {
+      "title": "How do I report someone?",
+      "body": "Right-click their message or profile and choose **Report**. Reports are private."
+    },
+    "whatsNew": {
+      "title": "Where can I see what's new?",
+      "body": "Read **#announcements** for news and **#patch-notes** for every update."
+    },
+    "deleteAccount": {
+      "title": "How do I delete my account or my data?",
+      "body": "Go to **Settings → Account**. See the [Privacy Policy](https://de-cave.com/privacy) for details on what's stored and how it's removed."
+    }
+  }
+}

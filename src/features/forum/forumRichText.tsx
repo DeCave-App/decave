@@ -4,6 +4,9 @@
 //   **bold**, *italic*, ~~strike~~, `code`, ||spoiler||,
 //   [text](https://…), bare https:// links, ![alt](image url), #room links.
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { i18next } from "../../i18n/index.ts";
+import { useChatPrefs } from "../settings/chatPrefs";
 
 export type ResolveImageUrl = (url: string) => string | null;
 /** Returns an opener for a room in the current Hub, or null when no room has that name. */
@@ -13,13 +16,16 @@ const INLINE =
   /(`[^`\n]+`|\*\*[^*\n]+\*\*|~~[^~\n]+~~|\|\|[^|\n]+\|\||!\[[^\]\n]*\]\([^\s)]+\)|\[[^\]\n]+\]\(https:\/\/[^\s)]+\)|https:\/\/[^\s<]+|(?<![\w&/#])#[A-Za-z0-9][\w-]*|(?<![*\w])\*[^*\n]+\*(?!\*))/g;
 
 function Spoiler({ children }: { children: ReactNode }) {
+  const { t } = useTranslation(["forum"]);
+  // Settings → Chat can show spoilers without a click.
+  const alwaysShown = useChatPrefs().spoilers === "always";
   const [shown, setShown] = useState(false);
   return (
     <span
-      className={`fx-spoiler${shown ? " shown" : ""}`}
+      className={`fx-spoiler${shown || alwaysShown ? " shown" : ""}`}
       role="button"
       tabIndex={0}
-      aria-label={shown ? undefined : "Spoiler, activate to reveal"}
+      aria-label={shown || alwaysShown ? undefined : t("forum.richText.spoiler")}
       onClick={(event) => {
         event.stopPropagation();
         setShown(true);
@@ -54,10 +60,16 @@ function inline(text: string, resolveImage: ResolveImageUrl, keyBase: string, ro
       if (image) {
         const src = resolveImage(image[2]);
         return src ? (
-          <img key={key} className="fx-inline-img" src={src} alt={image[1] || "Image"} loading="lazy" />
+          <img
+            key={key}
+            className="fx-inline-img"
+            src={src}
+            alt={image[1] || i18next.t("forum.richText.image")}
+            loading="lazy"
+          />
         ) : (
           <span key={key} className="fx-muted">
-            [image: {image[1] || "unavailable"}]
+            {i18next.t("forum.richText.imageUnavailable", { alt: image[1] || i18next.t("forum.richText.unavailable") })}
           </span>
         );
       }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/Icon";
 import "./voiceRoom.css";
 
@@ -25,8 +26,13 @@ export type VoiceLobbyProps<P extends LobbyParticipant> = {
 
 /** Pre-join voice stage: shows who is inside and a large circular Join button. */
 export function VoiceLobby<P extends LobbyParticipant>(props: VoiceLobbyProps<P>) {
+  const { t } = useTranslation(["common", "voice"]);
   const count = props.participants.length;
-  const label = props.connecting ? "Connecting…" : props.inOtherRoom ? "Switch here" : "Join";
+  const label = props.connecting
+    ? t("voice.lobby.connecting")
+    : props.inOtherRoom
+      ? t("voice.lobby.switchHere")
+      : t("voice.lobby.join");
 
   const joinControl = (
     <div className="vr-join-wrap">
@@ -37,25 +43,25 @@ export function VoiceLobby<P extends LobbyParticipant>(props: VoiceLobbyProps<P>
         disabled={!props.canJoin || props.connecting}
         aria-label={
           props.connecting
-            ? "Connecting to voice"
+            ? t("voice.lobby.connectingAria")
             : props.inOtherRoom
-              ? `Switch to ${props.roomName}`
-              : `Join ${props.roomName}`
+              ? t("voice.lobby.switchToRoom", { room: props.roomName })
+              : t("voice.lobby.joinRoom", { room: props.roomName })
         }
       >
         <Icon name="mic" size="xl" />
         <span>{label}</span>
       </button>
-      <label className="vr-join-muted" title="Join with your microphone muted">
+      <label className="vr-join-muted" title={t("voice.lobby.joinMutedTitle")}>
         <input
           type="checkbox"
           checked={props.joinMuted}
           onChange={(event) => props.onJoinMutedChange(event.target.checked)}
         />
-        <span>Join muted</span>
+        <span>{t("voice.lobby.joinMuted")}</span>
       </label>
       {!props.canJoin && !props.connecting && (
-        <small className="vr-lobby-hint">Waiting for the realtime connection…</small>
+        <small className="vr-lobby-hint">{t("voice.lobby.waitingForRealtime")}</small>
       )}
       {props.error && (
         <div className="vr-lobby-error" role="alert">
@@ -66,15 +72,18 @@ export function VoiceLobby<P extends LobbyParticipant>(props: VoiceLobbyProps<P>
   );
 
   return (
-    <div className={`vr-lobby${count === 0 ? " empty" : ""}`} aria-label={`${props.roomName} voice room`}>
+    <div
+      className={`vr-lobby${count === 0 ? " empty" : ""}`}
+      aria-label={t("voice.lobby.roomAria", { room: props.roomName })}
+    >
       {count === 0 ? (
         <div className="vr-lobby-empty">
           {joinControl}
-          <p>It's quiet in here. Join and others will see you in the sidebar.</p>
+          <p>{t("voice.lobby.empty")}</p>
         </div>
       ) : (
         <>
-          <ul className="vr-tile-grid" aria-label="Already in this room">
+          <ul className="vr-tile-grid" aria-label={t("voice.lobby.alreadyInRoom")}>
             {props.participants.map((participant) => (
               <li
                 key={participant.connectionId}
@@ -86,7 +95,7 @@ export function VoiceLobby<P extends LobbyParticipant>(props: VoiceLobbyProps<P>
                 {participant.screenSharing && (
                   <b className="vr-tile-live">
                     <Icon name="screen" size="sm" />
-                    LIVE
+                    {t("voice.lobby.live")}
                   </b>
                 )}
               </li>

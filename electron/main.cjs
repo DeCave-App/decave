@@ -23,6 +23,7 @@ const { showTurnstileChallenge } = require("./turnstile.cjs");
 const { resolveAppIconPath } = require("./app-icon.cjs");
 const { OVERLAY_SCALE_DEFAULT, clampOverlayScale, overlayBounds, overlayHtml } = require("./voice-overlay.cjs");
 const { autoUpdater } = require("electron-updater");
+const { isLocale, resolveLocale, tMain, setMainLocale, onMainLocaleChange } = require("./i18n.cjs");
 const { configureWindowsUpdateTrust, readUnsignedWindowsUpdatesOptIn } = require("./windows-update-trust.cjs");
 const {
   APP_ORIGIN,
@@ -82,7 +83,7 @@ let desktopUpdateState = {
   total: null,
   bytesPerSecond: null,
   checkedAt: null,
-  error: null,
+  errorKey: null,
 };
 
 const DESKTOP_SETTINGS_FILE = "desktop-settings.json";
@@ -92,6 +93,8 @@ const DEFAULT_DESKTOP_SETTINGS = Object.freeze({
   voiceOverlayEnabled: true,
   voiceOverlayScale: OVERLAY_SCALE_DEFAULT,
   streamerMode: false,
+  /** The language the renderer last reported (electron/i18n.cjs); null until it does. */
+  locale: null,
   keybinds: {
     toggleMute: "CommandOrControl+Shift+M",
     toggleDeafen: "CommandOrControl+Shift+D",
@@ -103,6 +106,7 @@ let desktopSettings = {
   voiceOverlayEnabled: DEFAULT_DESKTOP_SETTINGS.voiceOverlayEnabled,
   voiceOverlayScale: DEFAULT_DESKTOP_SETTINGS.voiceOverlayScale,
   streamerMode: DEFAULT_DESKTOP_SETTINGS.streamerMode,
+  locale: DEFAULT_DESKTOP_SETTINGS.locale,
   keybinds: { ...DEFAULT_DESKTOP_SETTINGS.keybinds },
 };
 
@@ -131,6 +135,7 @@ function cleanDesktopSettings(value) {
     voiceOverlayEnabled: raw.voiceOverlayEnabled !== false,
     voiceOverlayScale: clampOverlayScale(raw.voiceOverlayScale ?? OVERLAY_SCALE_DEFAULT),
     streamerMode: raw.streamerMode === true,
+    locale: isLocale(raw.locale) ? raw.locale : null,
     keybinds: {
       toggleMute:
         typeof keybinds.toggleMute === "string" && keybinds.toggleMute.length <= 64
@@ -151,7 +156,23 @@ async function loadDesktopSettings() {
     desktopSettings = cleanDesktopSettings(DEFAULT_DESKTOP_SETTINGS);
   }
   streamerModeEnabled = desktopSettings.streamerMode === true;
+  setMainLocale(desktopSettings.locale ?? resolveLocale(systemLanguages()));
 }
+
+function systemLanguages() {
+  try {
+    const preferred = app.getPreferredSystemLanguages();
+    if (Array.isArray(preferred) && preferred.length) return preferred;
+  } catch {}
+  return [app.getLocale()];
+}
+
+// Native text already on screen follows a language change.
+onMainLocaleChange(() => {
+  if (tray && !tray.isDestroyed()) tray.setContextMenu(trayMenu());
+  publishUpdateState({});
+  void renderVoiceOverlay();
+});
 
 async function persistDesktopSettings() {
   try {
@@ -171,8 +192,10 @@ function trustedMainRenderer(event) {
   );
 }
 
+// The update state keeps a catalog key; the renderer gets the text in the current language.
 function publicUpdateState() {
-  return { ...desktopUpdateState };
+  const { errorKey, ...state } = desktopUpdateState;
+  return { ...state, error: errorKey ? tMain(errorKey) : null };
 }
 
 function publishUpdateState(patch) {
@@ -188,13 +211,13 @@ async function checkForDesktopUpdate() {
   if (["checking", "downloading"].includes(desktopUpdateState.status)) {
     return publicUpdateState();
   }
-  publishUpdateState({ status: "checking", checkedAt: new Date().toISOString(), error: null });
+  publishUpdateState({ status: "checking", checkedAt: new Date().toISOString(), errorKey: null });
   try {
     await autoUpdater.checkForUpdates();
   } catch {
     publishUpdateState({
       status: "error",
-      error: "DeCave could not check for updates. Check your connection and try again.",
+      errorKey: "desktop.update.checkFailed",
     });
   }
   return publicUpdateState();
@@ -221,7 +244,7 @@ function startDesktopUpdater() {
     } catch (error) {
       publishUpdateState({
         status: "disabled",
-        error: "Automatic updates are disabled because the installed Windows publisher could not be verified.",
+        errorKey: "desktop.update.publisherUnverified",
       });
       console.error("DeCave Windows updater disabled:", error instanceof Error ? error.message : "verification failed");
       return;
@@ -236,7 +259,7 @@ function startDesktopUpdater() {
   autoUpdater.disableWebInstaller = true;
 
   autoUpdater.on("checking-for-update", () => {
-    publishUpdateState({ status: "checking", checkedAt: new Date().toISOString(), error: null });
+    publishUpdateState({ status: "checking", checkedAt: new Date().toISOString(), errorKey: null });
   });
   autoUpdater.on("update-available", (info) => {
     publishUpdateState({
@@ -246,7 +269,7 @@ function startDesktopUpdater() {
       transferred: 0,
       total: null,
       bytesPerSecond: null,
-      error: null,
+      errorKey: null,
     });
   });
   autoUpdater.on("update-not-available", () => {
@@ -257,7 +280,7 @@ function startDesktopUpdater() {
       transferred: null,
       total: null,
       bytesPerSecond: null,
-      error: null,
+      errorKey: null,
     });
   });
   autoUpdater.on("download-progress", (progress) => {
@@ -267,7 +290,7 @@ function startDesktopUpdater() {
       transferred: Number.isFinite(progress?.transferred) ? progress.transferred : null,
       total: Number.isFinite(progress?.total) ? progress.total : null,
       bytesPerSecond: Number.isFinite(progress?.bytesPerSecond) ? progress.bytesPerSecond : null,
-      error: null,
+      errorKey: null,
     });
   });
   autoUpdater.on("update-downloaded", (info) => {
@@ -275,13 +298,13 @@ function startDesktopUpdater() {
       status: "downloaded",
       availableVersion: typeof info?.version === "string" ? info.version : desktopUpdateState.availableVersion,
       percent: 100,
-      error: null,
+      errorKey: null,
     });
   });
   autoUpdater.on("error", () => {
     publishUpdateState({
       status: "error",
-      error: "DeCave could not complete the update. Please try again later.",
+      errorKey: "desktop.update.installFailed",
     });
   });
 
@@ -316,16 +339,41 @@ function registerVoiceShortcuts(keybinds = desktopSettings.keybinds) {
   const deafen = validAccelerator(keybinds.toggleDeafen)
     ? keybinds.toggleDeafen
     : DEFAULT_DESKTOP_SETTINGS.keybinds.toggleDeafen;
-  if (mute === deafen) throw new Error("Mute and deafen keybinds must be different.");
+  if (mute === deafen) throw new Error(tMain("desktop.keybinds.mustDiffer"));
 
   const registeredMute = globalShortcut.register(mute, () => sendVoiceShortcut("toggleMute"));
   const registeredDeafen = globalShortcut.register(deafen, () => sendVoiceShortcut("toggleDeafen"));
   if (!registeredMute || !registeredDeafen) {
     globalShortcut.unregisterAll();
-    throw new Error("One of those shortcuts is already in use by Windows or another app.");
+    throw new Error(tMain("desktop.keybinds.inUse"));
   }
   desktopSettings.keybinds = { toggleMute: mute, toggleDeafen: deafen };
   return { ...desktopSettings.keybinds };
+}
+
+function trayMenu() {
+  return Menu.buildFromTemplate([
+    {
+      label: tMain("desktop.tray.open"),
+      click: () => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+      },
+    },
+    { type: "separator" },
+    { label: tMain("desktop.tray.toggleMute"), click: () => sendVoiceShortcut("toggleMute") },
+    { label: tMain("desktop.tray.toggleDeafen"), click: () => sendVoiceShortcut("toggleDeafen") },
+    { type: "separator" },
+    {
+      label: tMain("desktop.tray.quit"),
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      },
+    },
+  ]);
 }
 
 function ensureTray() {
@@ -340,30 +388,7 @@ function ensureTray() {
   const icon = nativeImage.createFromPath(resolveAppIconPath());
   tray = new Tray(icon);
   tray.setToolTip("DeCave");
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      {
-        label: "Open DeCave",
-        click: () => {
-          if (!mainWindow || mainWindow.isDestroyed()) return;
-          if (mainWindow.isMinimized()) mainWindow.restore();
-          mainWindow.show();
-          mainWindow.focus();
-        },
-      },
-      { type: "separator" },
-      { label: "Mute / Unmute", click: () => sendVoiceShortcut("toggleMute") },
-      { label: "Deafen / Undeafen", click: () => sendVoiceShortcut("toggleDeafen") },
-      { type: "separator" },
-      {
-        label: "Quit DeCave",
-        click: () => {
-          isQuitting = true;
-          app.quit();
-        },
-      },
-    ]),
-  );
+  tray.setContextMenu(trayMenu());
   tray.on("double-click", () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     mainWindow.show();
@@ -493,9 +518,16 @@ async function renderVoiceOverlay() {
   const safeState = {
     scale: clampOverlayScale(desktopSettings.voiceOverlayScale) / 100,
     roomName: voiceOverlayState.roomName,
+    labels: {
+      voice: tMain("desktop.overlay.voice"),
+      unknown: tMain("desktop.overlay.unknown"),
+      muted: tMain("desktop.overlay.muted"),
+      deafened: tMain("desktop.overlay.deafened"),
+    },
     participants: voiceOverlayState.participants.slice(0, 12).map((participant) => ({
       connectionId: typeof participant.connectionId === "string" ? participant.connectionId : "",
-      username: typeof participant.username === "string" ? participant.username.slice(0, 32) : "Unknown",
+      username:
+        typeof participant.username === "string" ? participant.username.slice(0, 32) : tMain("desktop.overlay.unknown"),
       avatarUrl: safeOverlayAvatarUrl(participant.avatarUrl),
       speaking: participant.speaking === true,
       muted: participant.muted === true,
@@ -1080,7 +1112,7 @@ function createMainWindow() {
           minHeight: 320,
           autoHideMenuBar: true,
           backgroundColor: "#05070d",
-          title: "DeCave Stream",
+          title: tMain("desktop.window.streamTitle"),
           icon: windowIcon,
           webPreferences: {
             nodeIntegration: false,
@@ -1547,6 +1579,20 @@ ipcMain.handle("decave:desktop:set-keybinds", async (event, rawKeybinds) => {
     } catch {}
     throw error;
   }
+});
+
+// The renderer reports the language it shows, so native text matches it.
+ipcMain.handle("decave:desktop:set-locale", async (event, rawLocale) => {
+  if (!trustedMainRenderer(event)) {
+    throw new Error("Untrusted renderer attempted to change the desktop language.");
+  }
+  if (!isLocale(rawLocale)) return false;
+  setMainLocale(rawLocale);
+  if (desktopSettings.locale !== rawLocale) {
+    desktopSettings.locale = rawLocale;
+    await persistDesktopSettings();
+  }
+  return true;
 });
 
 ipcMain.handle("decave:desktop:set-streamer-mode", async (event, enabled) => {

@@ -6,8 +6,11 @@ const appSource = readAppSource();
 
 test("active screen-sharing UI keeps explicit watching and trusted stream pop-outs", () => {
   assert.match(appSource, /\[screen\.connectionId\]: true/);
-  assert.match(appSource, /Start Watching/);
-  assert.match(appSource, /popOutStream\(`\$\{screen\.username\} · Screen Share`, screen\.stream\)/);
+  assert.match(appSource, /t\("hub\.voiceStage\.startWatching"\)/);
+  assert.match(
+    appSource,
+    /popOutStream\(\s*t\("hub\.voiceStage\.userScreenShareTitle", \{ name: screen\.username \}\),\s*screen\.stream,?\s*\)/,
+  );
   const start = appSource.indexOf("const popOutStream =");
   const end = appSource.indexOf("const stopCamera", start);
   const popout = appSource.slice(start, end);

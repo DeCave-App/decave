@@ -17,6 +17,9 @@
 //          optional characters in total
 //   no backreferences, lookarounds, named groups or inline flags
 
+import englishBots from "../i18n/locales/en/bots.json" with { type: "json" };
+import { englishText, type TextParams } from "../i18n/english.ts";
+
 export const BOT_REGEX_MAX_PROGRAM = 2000;
 const MAX_COUNT = 10;
 const MAX_EXTRA = 20;
@@ -75,8 +78,8 @@ class Parser {
     this.ci = ci;
   }
 
-  fail(message: string): never {
-    throw new BotRegexError(message);
+  fail(code: BotRegexErrorCode, params?: TextParams): never {
+    throw new BotRegexError(code, params);
   }
 
   // One single-character atom, or null if none starts at i.
@@ -86,10 +89,10 @@ class Parser {
     if (ch === undefined) return null;
     if (ch === "\\") {
       const next = s[this.i + 1];
-      if (next === undefined) this.fail("A pattern can't end with \\.");
+      if (next === undefined) this.fail("trailingBackslash");
       if (next === "b" || next === "B") return null;
-      if (/[1-9k]/.test(next)) this.fail("Backreferences are not allowed.");
-      if (/[a-zA-Z0-9]/.test(next) && !CLASS_ESCAPES.test(next)) this.fail(`\\${next} is not allowed.`);
+      if (/[1-9k]/.test(next)) this.fail("backreference");
+      if (/[a-zA-Z0-9]/.test(next) && !CLASS_ESCAPES.test(next)) this.fail("escapeNotAllowed", { char: next });
       this.i += 2;
       return fold(escapeTest(next), this.ci);
     }
@@ -108,21 +111,20 @@ class Parser {
     this.i++;
     const negate = s[this.i] === "^";
     if (negate) this.i++;
-    if (s[this.i] === "]") this.fail("Empty [ ] classes are not allowed.");
+    if (s[this.i] === "]") this.fail("emptyClass");
     const parts: CharTest[] = [];
     // A single class member: an escape (test) or a plain char (string).
     const member = (): CharTest | string => {
       const c = s[this.i];
       if (c === "\\") {
         const next = s[this.i + 1];
-        if (next === undefined || (/[a-zA-Z0-9]/.test(next) && !CLASS_ESCAPES.test(next)))
-          this.fail("Only \\d \\w \\s \\D \\W \\S \\n \\t or escaped symbols inside [ ].");
+        if (next === undefined || (/[a-zA-Z0-9]/.test(next) && !CLASS_ESCAPES.test(next))) this.fail("classEscape");
         this.i += 2;
         if (next === "n") return "\n";
         if (next === "t") return "\t";
         return /[dwsDWS]/.test(next) ? escapeTest(next) : next;
       }
-      if (c === "[") this.fail("Use \\[ for a literal [ inside [ ].");
+      if (c === "[") this.fail("classBracket");
       this.i++;
       return c;
     };
@@ -131,12 +133,12 @@ class Parser {
       if (typeof lo === "string" && s[this.i] === "-" && s[this.i + 1] !== undefined && s[this.i + 1] !== "]") {
         this.i++;
         const hi = member();
-        if (typeof hi !== "string") this.fail("A range in [ ] needs a plain character on both sides.");
-        if (hi < lo) this.fail("A range in [ ] is out of order.");
+        if (typeof hi !== "string") this.fail("rangePlain");
+        if (hi < lo) this.fail("rangeOrder");
         parts.push((c) => c >= lo && c <= hi);
       } else parts.push(typeof lo === "string" ? (c) => c === lo : lo);
     }
-    if (s[this.i] !== "]") this.fail("Unclosed [ ].");
+    if (s[this.i] !== "]") this.fail("unclosedClass");
     this.i++;
     const any = fold((c) => parts.some((p) => p(c)), this.ci);
     return negate ? (c) => !any(c) : any;
@@ -168,15 +170,14 @@ class Parser {
       this.i++;
     } else if (ch === "{") {
       const m = /^\{(\d{1,4})(,(\d{0,4}))?\}/.exec(s.slice(this.i));
-      if (!m) this.fail("Use \\{ for a literal {.");
+      if (!m) this.fail("literalBrace");
       min = Number(m[1]);
       max = m[2] === undefined ? min : m[3] === "" ? Infinity : Number(m[3]);
-      if (min > MAX_COUNT || (max !== Infinity && max > MAX_COUNT))
-        this.fail(`Repeat counts above ${MAX_COUNT} aren't allowed.`);
-      if (max < min) this.fail("In {n,m}, m must be at least n.");
+      if (min > MAX_COUNT || (max !== Infinity && max > MAX_COUNT)) this.fail("repeatCount", { max: MAX_COUNT });
+      if (max < min) this.fail("repeatOrder");
       this.i += m[0].length;
     } else return null;
-    if (s[this.i] !== undefined && "?*+{".includes(s[this.i])) this.fail("A repeat can't be repeated or made lazy.");
+    if (s[this.i] !== undefined && "?*+{".includes(s[this.i])) this.fail("repeatRepeat");
     if (max === Infinity) this.unbounded++;
     else this.extra += max - min;
     return { min, max };
@@ -193,11 +194,11 @@ class Parser {
         continue;
       }
       const test = this.atom();
-      if (!test) this.fail(`"${s[this.i]}" is not allowed here.`);
+      if (!test) this.fail("charNotAllowed", { char: s[this.i] });
       const r = this.repeat();
       out.push(r ? { t: "repeat", test, ...r } : { t: "char", test });
     }
-    if (inGroup && s[this.i] === "(") this.fail("Groups can't be nested.");
+    if (inGroup && s[this.i] === "(") this.fail("nestedGroup");
     return out;
   }
 
@@ -206,7 +207,7 @@ class Parser {
     this.i++;
     let index: number | null = null;
     if (s[this.i] === "?") {
-      if (s[this.i + 1] !== ":") this.fail("Lookarounds, named groups and inline flags are not allowed.");
+      if (s[this.i + 1] !== ":") this.fail("groupSyntax");
       this.i += 2;
     } else index = ++this.groups;
     const alts = [this.sequence(true)];
@@ -214,15 +215,14 @@ class Parser {
       this.i++;
       alts.push(this.sequence(true));
     }
-    if (s[this.i] !== ")") this.fail("Unclosed ( ).");
+    if (s[this.i] !== ")") this.fail("unclosedGroup");
     this.i++;
-    if (alts.length === 1 && alts[0].length === 0) this.fail("Empty groups are not allowed.");
+    if (alts.length === 1 && alts[0].length === 0) this.fail("emptyGroup");
     if (alts.length > 1) {
-      if (alts.some((a) => a.length === 0)) this.fail("Choices inside ( | ) can't be empty.");
-      if (alts.some((a) => a.some((n) => n.t === "repeat")))
-        this.fail("Choices inside ( | ) must be plain text without repeats.");
+      if (alts.some((a) => a.length === 0)) this.fail("emptyChoice");
+      if (alts.some((a) => a.some((n) => n.t === "repeat"))) this.fail("choicePlain");
     }
-    if (s[this.i] !== undefined && "?*+{".includes(s[this.i])) this.fail("Groups ( ) can't be repeated.");
+    if (s[this.i] !== undefined && "?*+{".includes(s[this.i])) this.fail("groupRepeat");
     return { t: "group", index, alts };
   }
 
@@ -231,18 +231,31 @@ class Parser {
     const out: Node[] = [];
     while (this.i < s.length) {
       if (s[this.i] === "(") out.push(this.group());
-      else if (s[this.i] === "|") this.fail("Put choices inside ( | ).");
-      else if (s[this.i] === ")") this.fail("Unmatched ).");
+      else if (s[this.i] === "|") this.fail("bareChoice");
+      else if (s[this.i] === ")") this.fail("unmatchedParen");
       else out.push(...this.sequence(false));
     }
-    if (this.unbounded > 1) this.fail("Use at most 1 open-ended repeat (*, + or {n,}).");
-    if (this.extra > MAX_EXTRA)
-      this.fail(`Bounded repeats (?, {n,m}) can add at most ${MAX_EXTRA} characters in total.`);
+    if (this.unbounded > 1) this.fail("unboundedRepeats");
+    if (this.extra > MAX_EXTRA) this.fail("boundedExtra", { max: MAX_EXTRA });
     return out;
   }
 }
 
-class BotRegexError extends Error {}
+/** Keys under bots.validation.regex in the bots catalog. */
+export type BotRegexErrorCode = keyof typeof englishBots.validation.regex;
+
+/** Why a pattern was refused: English `error`, plus `code` (bots.validation.regex.*) and `params` to translate it. */
+export type BotRegexProblem = { error: string; code: `regex.${BotRegexErrorCode}`; params?: TextParams };
+
+class BotRegexError extends Error {
+  readonly code: BotRegexErrorCode;
+  readonly params?: TextParams;
+  constructor(code: BotRegexErrorCode, params?: TextParams) {
+    super(englishText(englishBots.validation.regex, code, params));
+    this.code = code;
+    if (params) this.params = params;
+  }
+}
 
 type Inst =
   | { op: "char"; test: CharTest }
@@ -255,7 +268,7 @@ type Inst =
 function compile(nodes: Node[]): Inst[] {
   const prog: Inst[] = [];
   const emit = (inst: Inst) => {
-    if (prog.length >= BOT_REGEX_MAX_PROGRAM) throw new BotRegexError("Pattern is too complex.");
+    if (prog.length >= BOT_REGEX_MAX_PROGRAM) throw new BotRegexError("tooComplex");
     prog.push(inst);
     return prog.length - 1;
   };
@@ -401,7 +414,7 @@ function run(prog: Inst[], slots: number, text: string): BotRegexMatch | null {
 export function compileBotPattern(
   pattern: string,
   options: { caseInsensitive?: boolean } = {},
-): BotRegexMatcher | { error: string } {
+): BotRegexMatcher | BotRegexProblem {
   try {
     const parser = new Parser(pattern, options.caseInsensitive ?? false);
     const nodes = parser.parse();
@@ -409,7 +422,8 @@ export function compileBotPattern(
     const slots = (parser.groups + 1) * 2;
     return { exec: (text: string) => run(prog, slots, text) };
   } catch (e) {
-    if (e instanceof BotRegexError) return { error: e.message };
+    if (e instanceof BotRegexError)
+      return { error: e.message, code: `regex.${e.code}`, ...(e.params ? { params: e.params } : {}) };
     throw e;
   }
 }

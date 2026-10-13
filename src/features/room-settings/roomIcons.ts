@@ -2,7 +2,10 @@
 // be typed into the field; these are the browsable choices. Each entry has
 // search words so "rules", "clip" or "cs" find the right icon.
 
-export type RoomIconGroup = { id: string; label: string; icons: readonly (readonly [string, string])[] };
+export type RoomIconGroupId =
+  "chat" | "info" | "gaming" | "esports" | "voice" | "creative" | "community" | "food" | "nature" | "symbols";
+/** `label` is the English group name, kept for search; the UI shows hub.roomSettings.iconGroups.<id>. */
+export type RoomIconGroup = { id: RoomIconGroupId; label: string; icons: readonly (readonly [string, string])[] };
 
 export const ROOM_ICON_GROUPS: readonly RoomIconGroup[] = [
   {

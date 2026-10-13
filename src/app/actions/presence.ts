@@ -3,6 +3,8 @@
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import type { PresenceStatus, AccountUser, ServerMemberView, SocialUser } from "../types";
 import { HTTP_URL } from "../env";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import { authorizedFetch } from "../http";
 
 export type PresenceActionsDeps = {
@@ -87,7 +89,7 @@ export function createPresenceActions(deps: PresenceActionsDeps) {
       if (!response.ok || !data.user) {
         profileFields.setProfileStatus(previousStatus);
         setCurrentUser((current) => (current ? { ...current, status: previousStatus } : current));
-        setProfileAvatarError(data.error || "Could not change status.");
+        setProfileAvatarError(apiErrorMessage(data, "client.presence.change"));
         return;
       }
 
@@ -101,7 +103,7 @@ export function createPresenceActions(deps: PresenceActionsDeps) {
     } catch {
       profileFields.setProfileStatus(previousStatus);
       setCurrentUser((current) => (current ? { ...current, status: previousStatus } : current));
-      setProfileAvatarError("Could not change status.");
+      setProfileAvatarError(i18next.t("errors.client.presence.change"));
     }
   };
 

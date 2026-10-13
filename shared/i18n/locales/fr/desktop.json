@@ -1,0 +1,43 @@
+{
+  "tray": {
+    "open": "Ouvrir DeCave",
+    "toggleMute": "Couper / réactiver le micro",
+    "toggleDeafen": "Mettre en sourdine / réactiver le son",
+    "quit": "Quitter DeCave"
+  },
+  "window": {
+    "streamTitle": "Stream DeCave"
+  },
+  "update": {
+    "checkFailed": "DeCave n'a pas pu vérifier les mises à jour. Vérifie ta connexion et réessaie.",
+    "publisherUnverified": "Les mises à jour automatiques sont désactivées, car l'éditeur Windows installé n'a pas pu être vérifié.",
+    "installFailed": "DeCave n'a pas pu terminer la mise à jour. Réessaie plus tard."
+  },
+  "keybinds": {
+    "mustDiffer": "Les raccourcis clavier pour couper le micro et pour la sourdine doivent être différents.",
+    "inUse": "Un de ces raccourcis est déjà utilisé par Windows ou une autre appli."
+  },
+  "picker": {
+    "windowTitle": "Choisis ce que tu partages · DeCave",
+    "title": "Choisis ce que tu partages",
+    "subtitle": "Sélectionne un écran ou une fenêtre d'application à partager sur DeCave.",
+    "cancel": "Annuler",
+    "entireScreen": "Écran entier",
+    "window": "Fenêtre",
+    "noPreview": "Pas d'aperçu"
+  },
+  "turnstile": {
+    "windowTitle": "Vérification de sécurité DeCave",
+    "invalidToken": "La vérification de sécurité a renvoyé un jeton invalide.",
+    "unsupportedAction": "Action de vérification de sécurité non prise en charge.",
+    "replaced": "La vérification de sécurité a été remplacée par une nouvelle demande.",
+    "timedOut": "La vérification de sécurité a expiré.",
+    "loadFailed": "Impossible de charger la vérification de sécurité."
+  },
+  "overlay": {
+    "voice": "Vocal",
+    "unknown": "Inconnu",
+    "muted": "Micro coupé",
+    "deafened": "En sourdine"
+  }
+}

@@ -4,6 +4,10 @@
 // push only to recipients with no open realtime connection, so people who are
 // in the app get the in-app notification instead of a duplicate.
 
+import type { TFunction } from "i18next";
+import { DEFAULT_LOCALE } from "../shared/i18n/languages.ts";
+import { workerT } from "./lib/i18n";
+
 type PushEnv = { DB: D1Database };
 
 export type PushMessage = {
@@ -191,10 +195,10 @@ export async function sendPush(env: PushEnv, userIds: string[], message: PushMes
   }
 }
 
-/** Preview text for a message body, hiding attachment and GIF payloads. */
-export function pushPreview(text: string): string {
-  if (text.startsWith("__DECAVE_GIF__")) return "Sent a GIF";
-  if (text.startsWith("__DECAVE_DM_ATTACHMENT__")) return "Sent an attachment";
+/** Preview text for a message body, hiding attachment and GIF payloads (labels in the recipient's language). */
+export function pushPreview(text: string, t: TFunction = workerT(DEFAULT_LOCALE)): string {
+  if (text.startsWith("__DECAVE_GIF__")) return t("push.preview.gif");
+  if (text.startsWith("__DECAVE_DM_ATTACHMENT__")) return t("push.preview.attachment");
   const clean = text.replace(/\s+/g, " ").trim();
   return clean.length > 140 ? `${clean.slice(0, 137)}…` : clean;
 }

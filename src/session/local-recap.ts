@@ -1,3 +1,4 @@
+import { i18next } from "../i18n/index.ts";
 import {
   accountStorageKey,
   browserLocalStorage,
@@ -268,15 +269,15 @@ export function buildLocalSessionRecap(
         .map(({ followUpId, title, dueAt }) => [followUpId, { followUpId, title, dueAt }]),
     ).values(),
   ];
-  const hubLabel = hubAction?.hubName || hubAction?.hubId || "your session";
-  const noteParts = [`${selected.length} local action${selected.length === 1 ? "" : "s"} recorded in ${hubLabel}.`];
+  const hubLabel = hubAction?.hubName || hubAction?.hubId || i18next.t("chat.session.recap.yourSession");
+  const noteParts = [i18next.t("chat.session.recap.actionsRecorded", { count: selected.length, hub: hubLabel })];
   if (participants.length)
-    noteParts.push(`${participants.length} participant${participants.length === 1 ? "" : "s"} visible.`);
-  if (channels.length) noteParts.push(`${channels.length} room${channels.length === 1 ? "" : "s"} visited.`);
-  if (sharedLinks.length) noteParts.push(`${sharedLinks.length} shared link${sharedLinks.length === 1 ? "" : "s"}.`);
+    noteParts.push(i18next.t("chat.session.recap.participantsVisible", { count: participants.length }));
+  if (channels.length) noteParts.push(i18next.t("chat.session.recap.roomsVisited", { count: channels.length }));
+  if (sharedLinks.length) noteParts.push(i18next.t("chat.session.recap.sharedLinks", { count: sharedLinks.length }));
   if (polls.length || events.length || followUps.length)
     noteParts.push(
-      `${polls.length + events.length + followUps.length} planning item${polls.length + events.length + followUps.length === 1 ? "" : "s"}.`,
+      i18next.t("chat.session.recap.planningItems", { count: polls.length + events.length + followUps.length }),
     );
   return {
     sessionId,
@@ -312,7 +313,7 @@ export function createLocalRecapRepository(
   let storageError: string | null = null;
   const load = () => {
     const result = readLocalJsonResult(storage, key, []);
-    storageError = result.ok ? null : (result.error ?? "Local session recap could not be read.");
+    storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.recap.readFailed"));
     return normalizeLocalRecapActions(result.value ?? [], now());
   };
   return {
@@ -325,18 +326,18 @@ export function createLocalRecapRepository(
       );
       if (!action) {
         const actions = load();
-        const error = "This recap action is invalid and was not recorded.";
+        const error = i18next.t("chat.session.recap.invalidAction");
         storageError = error;
         return { ok: false, actions, error };
       }
       const actions = [...load().filter((current) => current.id !== action.id), action].slice(-MAX_RECAP_ACTIONS);
       const result = writeLocalJsonResult(storage, key, { version: 1, actions });
-      storageError = result.ok ? null : (result.error ?? "Local session recap could not be saved.");
+      storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.recap.saveFailed"));
       return { ok: result.ok, actions, ...(result.error ? { error: result.error } : {}) };
     },
     clear: () => {
       const result = removeLocalValueResult(storage, key);
-      storageError = result.ok ? null : (result.error ?? "Local session recap could not be cleared.");
+      storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.recap.clearFailed"));
       return result.ok;
     },
     lastError: () => storageError,

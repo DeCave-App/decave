@@ -8,6 +8,8 @@ import {
 import type { SupportedSquadFilters } from "../../session/squad-presets.ts";
 import type { SquadSearch, UiSoundEvent } from "../types";
 import { HTTP_URL } from "../env";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import { authorizedFetch } from "../http";
 
 export type SquadSearchActionsDeps = {
@@ -67,8 +69,8 @@ export function createSquadSearchActions(deps: SquadSearchActionsDeps) {
       setSquadMatchPopup(available);
       if (shouldInterruptQuietPresence(quietPresenceRef.current, "recommendation"))
         desktopNotify(
-          "Squad ready",
-          `${available.memberCount}/4 players are available for ${available.game}.`,
+          i18next.t("hub.actions.squad.readyTitle"),
+          i18next.t("hub.actions.squad.readyBody", { count: available.memberCount, game: available.game }),
           "dm",
           "receive",
           "other",
@@ -85,13 +87,13 @@ export function createSquadSearchActions(deps: SquadSearchActionsDeps) {
         error?: string;
       };
       if (!response.ok) {
-        setSquadNotice(data.error || "Could not load squad matches.");
+        setSquadNotice(apiErrorMessage(data, "client.squad.loadMatches"));
         return;
       }
       setSquadCurrent(data.current ?? null);
       applySquadMatches(Array.isArray(data.matches) ? data.matches : []);
     } catch {
-      setSquadNotice("Could not connect to Squad Finder.");
+      setSquadNotice(i18next.t("hub.actions.squad.offline"));
     }
   };
 
@@ -111,7 +113,7 @@ export function createSquadSearchActions(deps: SquadSearchActionsDeps) {
   const suggestSquadGame = async () => {
     const gameName = squadGameSuggestion.trim();
     if (!gameName) {
-      setSquadNotice("Type the missing game name first.");
+      setSquadNotice(i18next.t("hub.actions.squad.gameNameMissing"));
       return;
     }
     setSquadBusy(true);
@@ -124,13 +126,13 @@ export function createSquadSearchActions(deps: SquadSearchActionsDeps) {
       });
       const data = (await response.json()) as { success?: boolean; error?: string };
       if (!response.ok || !data.success) {
-        setSquadNotice(data.error || "Could not submit that game.");
+        setSquadNotice(apiErrorMessage(data, "client.squad.submitGame"));
         return;
       }
       setSquadGameSuggestion("");
-      setSquadNotice("Submitted for review. It will appear after an owner approves it.");
+      setSquadNotice(i18next.t("hub.actions.squad.gameSubmitted"));
     } catch {
-      setSquadNotice("Could not submit the game suggestion.");
+      setSquadNotice(i18next.t("hub.actions.squad.gameSubmitFailed"));
     } finally {
       setSquadBusy(false);
     }
@@ -159,14 +161,16 @@ export function createSquadSearchActions(deps: SquadSearchActionsDeps) {
         error?: string;
       };
       if (!response.ok) {
-        setSquadNotice(data.error || "Could not start the search.");
+        setSquadNotice(apiErrorMessage(data, "client.squad.startSearch"));
         return;
       }
       setSquadCurrent(data.current ?? null);
       applySquadMatches(data.matches ?? []);
-      setSquadNotice(data.matches?.length ? "Compatible squads found." : "Searching for compatible players…");
+      setSquadNotice(
+        data.matches?.length ? i18next.t("hub.actions.squad.matchesFound") : i18next.t("hub.actions.squad.searching"),
+      );
     } catch {
-      setSquadNotice("Could not start Squad Finder.");
+      setSquadNotice(i18next.t("hub.actions.squad.startFailed"));
     } finally {
       setSquadBusy(false);
     }
@@ -180,7 +184,7 @@ export function createSquadSearchActions(deps: SquadSearchActionsDeps) {
       setSquadMatches([]);
       setSquadMatchPopup(null);
       squadNotifiedMatchRef.current = "";
-      setSquadNotice("Search stopped.");
+      setSquadNotice(i18next.t("hub.actions.squad.stopped"));
     } finally {
       setSquadBusy(false);
     }

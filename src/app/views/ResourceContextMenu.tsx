@@ -1,5 +1,6 @@
 // Right-click menu for a Hub or room: open it, copy its share link, mute the Hub or room, or manage it.
 
+import { useTranslation } from "react-i18next";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { Server, ResourceContextMenuState } from "../types";
@@ -33,6 +34,7 @@ export function ResourceContextMenu({
   changeChannel,
   contextMenus,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { openManageServerFor, openManageChannelFor, copyHubShareLink } = contextMenus;
   const target = resourceContextMenu.target;
   const isHub = target.kind === "hub";
@@ -93,7 +95,15 @@ export function ResourceContextMenu({
           minWidth: 0,
         }}
       >
-        <div style={menuMutedStyle}>{isHub ? "HUB" : `${channel?.type ?? ""} ROOM`}</div>
+        <div style={menuMutedStyle}>
+          {isHub
+            ? t("hub.contextMenu.hubKind")
+            : channel?.type === "voice"
+              ? t("hub.contextMenu.voiceRoomKind")
+              : channel?.type === "forum"
+                ? t("hub.contextMenu.forumRoomKind")
+                : t("hub.contextMenu.textRoomKind")}
+        </div>
         <strong
           style={{
             display: "block",
@@ -130,7 +140,7 @@ export function ResourceContextMenu({
           setResourceContextMoreOpen(false);
         }}
       >
-        <span>Open</span>
+        <span>{t("common.actions.open")}</span>
         <span className="ds-text-accent">
           <Icon name="external" size="sm" />
         </span>
@@ -148,7 +158,7 @@ export function ResourceContextMenu({
           }}
           onClick={() => void copyHubShareLink(server)}
         >
-          <span>Copy Share Link</span>
+          <span>{t("hub.contextMenu.copyShareLink")}</span>
           <span className="ds-text-accent">
             <Icon name="link" size="sm" />
           </span>
@@ -171,7 +181,7 @@ export function ResourceContextMenu({
             setResourceContextMoreOpen(false);
           }}
         >
-          <span>{mutedHubIds.includes(server.id) ? "Unmute Hub" : "Mute Hub"}</span>
+          <span>{mutedHubIds.includes(server.id) ? t("hub.contextMenu.unmuteHub") : t("hub.contextMenu.muteHub")}</span>
           <span className="ds-text-muted">
             <Icon name={mutedHubIds.includes(server.id) ? "check" : "bell"} size="sm" />
           </span>
@@ -194,7 +204,7 @@ export function ResourceContextMenu({
             setResourceContextMoreOpen(false);
           }}
         >
-          <span>{isRoomMuted(channel.id) ? "Unmute Room" : "Mute Room"}</span>
+          <span>{isRoomMuted(channel.id) ? t("hub.contextMenu.unmuteRoom") : t("hub.contextMenu.muteRoom")}</span>
           <span className="ds-text-muted">
             <Icon name={isRoomMuted(channel.id) ? "check" : "bell"} size="sm" />
           </span>
@@ -221,7 +231,7 @@ export function ResourceContextMenu({
             }
           }}
         >
-          <span>Edit {isHub ? "Hub" : "Room"}</span>
+          <span>{isHub ? t("hub.contextMenu.editHub") : t("hub.contextMenu.editRoom")}</span>
           <span className="ds-text-accent">
             <Icon name="edit" size="sm" />
           </span>

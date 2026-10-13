@@ -1,4 +1,5 @@
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { t } from "i18next";
 import { apiJson } from "@/src/lib/api";
 import { useSession } from "@/src/providers/SessionProvider";
 
@@ -42,7 +43,7 @@ export function MutedUsersProvider({ children }: PropsWithChildren) {
 
   const toggleMute = useCallback(
     async (userId: string) => {
-      if (!token) throw new Error("Sign in again to change this.");
+      if (!token) throw new Error(t("common.mobile.signInAgain"));
       const muted = mutedRef.current.has(userId);
       await apiJson(`/api/safety/mutes/${encodeURIComponent(userId)}`, { method: muted ? "DELETE" : "PUT" }, token);
       setMutedIds((current) => {

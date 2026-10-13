@@ -1,0 +1,1636 @@
+{
+  "groups": {
+    "you": "You",
+    "session": "In session",
+    "app": "App"
+  },
+  "tabs": {
+    "setup": {
+      "label": "Your setup",
+      "description": "Things worth fixing, each with a one-click fix",
+      "keywords": "checkup check problems fix recommended attention"
+    },
+    "profile": {
+      "label": "Profile & status",
+      "description": "Photo, banner, display name, pronouns, bio and status",
+      "keywords": "avatar photo picture banner header bio about status custom display name nickname pronouns accent color preview quiet presence"
+    },
+    "account": {
+      "label": "Account & devices",
+      "description": "Username, email, password, two-factor sign-in, where you're signed in and your data",
+      "keywords": "username email password two-factor 2fa mfa authenticator totp recovery codes sessions devices signed in last active sign out log out sign-in alerts new device login export download data gdpr delete disable account decave id"
+    },
+    "privacy": {
+      "label": "Privacy & encryption",
+      "description": "Encrypted messages, friend requests, blocked accounts and streaming",
+      "keywords": "encryption encrypted e2ee key recovery code dm direct messages friends only friend requests block blocked unblock typing indicator stream preview streamer mode automatic reports trust safety age"
+    },
+    "connections": {
+      "label": "Connections",
+      "description": "Steam, Twitch and FACEIT accounts linked to DeCave",
+      "keywords": "steam twitch faceit link linked connect account integration show on profile"
+    },
+    "gaming": {
+      "label": "Gaming & overlay",
+      "description": "Your game activity, the in-game overlay and keybinds",
+      "keywords": "game playing rich presence epic detect excluded games who can see visibility overlay keybinds shortcuts hotkeys push to talk mute deafen"
+    },
+    "voice": {
+      "label": "Voice & video",
+      "description": "Microphone, speakers, camera and per-person volume",
+      "keywords": "microphone mic input speaker headset output volume test speakers camera webcam video preview push to talk noise suppression echo gain sensitivity threshold per-person user volume diagnostics"
+    },
+    "notifications": {
+      "label": "Notifications & sounds",
+      "description": "Alerts, message previews, quiet hours, sounds and muted Hubs",
+      "keywords": "desktop alerts mentions dms groups friend requests quiet hours schedule night do not disturb mute muted hubs rooms all messages nothing per hub per room preset permission sound theme message sent received voice join leave"
+    },
+    "chat": {
+      "label": "Chat",
+      "description": "Sending messages, GIFs and emotes, emoji and spoilers",
+      "keywords": "enter send ctrl newline gif emote animated autoplay hover emoji large spoiler spellcheck spelling composer"
+    },
+    "appearance": {
+      "label": "Appearance & accessibility",
+      "description": "Skin, light and dark, text size, motion and readability",
+      "keywords": "theme skin dark light mode system automatic follow text size scale zoom font motion animation reduce compact cozy density contrast high underline links alt text image description accessibility"
+    },
+    "language": {
+      "label": "Language & region",
+      "description": "Language, and how dates and times are written",
+      "keywords": "language translation date time format 12h 24h clock region locale"
+    },
+    "app": {
+      "label": "App & about",
+      "description": "Startup, tray, desktop updates, support and what's new",
+      "keywords": "startup start with windows macos login autostart tray menu bar updates desktop version help bug report contact email about whats new patch notes changelog platform"
+    }
+  },
+  "anchors": {
+    "avatar": {
+      "label": "Profile photo",
+      "keywords": "avatar picture"
+    },
+    "banner": {
+      "label": "Banner"
+    },
+    "displayName": {
+      "label": "Display name",
+      "keywords": "nickname pronouns"
+    },
+    "status": {
+      "label": "Status",
+      "keywords": "online idle do not disturb invisible custom status"
+    },
+    "bio": {
+      "label": "Bio",
+      "keywords": "about me"
+    },
+    "accent": {
+      "label": "Profile accent",
+      "keywords": "color colour"
+    },
+    "quietPresence": {
+      "label": "Quiet Presence",
+      "keywords": "intent interruptions expiry"
+    },
+    "username": {
+      "label": "Username"
+    },
+    "email": {
+      "label": "Email"
+    },
+    "password": {
+      "label": "Password"
+    },
+    "decaveId": {
+      "label": "Your DeCave ID",
+      "keywords": "share friend"
+    },
+    "twoFactor": {
+      "label": "Two-factor sign-in",
+      "keywords": "2fa mfa authenticator totp recovery codes"
+    },
+    "signInAlerts": {
+      "label": "Sign-in alerts"
+    },
+    "sessions": {
+      "label": "Where you're signed in",
+      "keywords": "sessions devices sign out log out"
+    },
+    "yourData": {
+      "label": "Your data",
+      "keywords": "export download gdpr"
+    },
+    "deleteAccount": {
+      "label": "Disable or delete account",
+      "keywords": "remove close"
+    },
+    "encryption": {
+      "label": "Encrypted messages",
+      "keywords": "e2ee key recovery code unlock reset"
+    },
+    "keyDevices": {
+      "label": "Devices with your key"
+    },
+    "friendRequests": {
+      "label": "Friend requests"
+    },
+    "directMessages": {
+      "label": "Direct messages",
+      "keywords": "dm friends only"
+    },
+    "blocked": {
+      "label": "Blocked accounts",
+      "keywords": "block unblock"
+    },
+    "streamPrivacy": {
+      "label": "Stream privacy",
+      "keywords": "stream preview streamer mode capture"
+    },
+    "typing": {
+      "label": "Typing indicators"
+    },
+    "reports": {
+      "label": "Your reports",
+      "keywords": "trust safety age"
+    },
+    "steam": {
+      "label": "Steam"
+    },
+    "twitch": {
+      "label": "Twitch"
+    },
+    "faceit": {
+      "label": "FACEIT"
+    },
+    "activityVisibility": {
+      "label": "Who can see your game"
+    },
+    "automaticActivity": {
+      "label": "Automatic activity",
+      "keywords": "detect games rich presence epic"
+    },
+    "excludedGames": {
+      "label": "Excluded games"
+    },
+    "overlay": {
+      "label": "In-game overlay",
+      "keywords": "overlay size voice avatars"
+    },
+    "keybinds": {
+      "label": "Keybinds",
+      "keywords": "global shortcuts hotkeys mute deafen"
+    },
+    "pushToTalk": {
+      "label": "Push to talk",
+      "keywords": "ptt key hold"
+    },
+    "shortcuts": {
+      "label": "All shortcuts",
+      "keywords": "keyboard hotkeys"
+    },
+    "devices": {
+      "label": "Devices",
+      "keywords": "microphone mic input speaker headset"
+    },
+    "inputMode": {
+      "label": "Input mode",
+      "keywords": "voice activation push to talk"
+    },
+    "inputVolume": {
+      "label": "Input volume"
+    },
+    "noiseSuppression": {
+      "label": "Noise suppression",
+      "keywords": "clearvoice background noise"
+    },
+    "voiceProcessing": {
+      "label": "Voice processing",
+      "keywords": "echo cancellation automatic gain control"
+    },
+    "output": {
+      "label": "Output",
+      "keywords": "output volume test speakers"
+    },
+    "camera": {
+      "label": "Camera",
+      "keywords": "webcam video preview"
+    },
+    "micTest": {
+      "label": "Mic test"
+    },
+    "peopleVolume": {
+      "label": "People you've adjusted",
+      "keywords": "per-person user volume"
+    },
+    "notificationPreset": {
+      "label": "Notification preset"
+    },
+    "desktopNotifications": {
+      "label": "Desktop notifications",
+      "keywords": "alerts mentions dms groups permission"
+    },
+    "messagePreviews": {
+      "label": "Message previews"
+    },
+    "quietHours": {
+      "label": "Quiet hours",
+      "keywords": "schedule night do not disturb"
+    },
+    "soundTheme": {
+      "label": "Sounds",
+      "keywords": "sound theme message sent received voice join leave"
+    },
+    "mutedPlaces": {
+      "label": "Muted Hubs and rooms",
+      "keywords": "mute unmute level"
+    },
+    "sendKey": {
+      "label": "Send messages with",
+      "keywords": "enter ctrl newline"
+    },
+    "animate": {
+      "label": "Animated GIFs and emotes",
+      "keywords": "autoplay hover"
+    },
+    "largeEmoji": {
+      "label": "Large emoji"
+    },
+    "spoilers": {
+      "label": "Spoilers"
+    },
+    "spellcheck": {
+      "label": "Spellcheck",
+      "keywords": "spelling"
+    },
+    "skin": {
+      "label": "Skin",
+      "keywords": "theme"
+    },
+    "themeMode": {
+      "label": "Light & dark",
+      "keywords": "theme dark light mode system automatic"
+    },
+    "textSize": {
+      "label": "Text & interface size",
+      "keywords": "scale zoom font"
+    },
+    "readability": {
+      "label": "Motion & readability",
+      "keywords": "animation reduce compact cozy density contrast underline links alt text image description"
+    },
+    "appLanguage": {
+      "label": "Language"
+    },
+    "dateStyle": {
+      "label": "Date style"
+    },
+    "timeFormat": {
+      "label": "Time format",
+      "keywords": "12h 24h clock"
+    },
+    "startup": {
+      "label": "Start with your computer",
+      "keywords": "startup login autostart"
+    },
+    "tray": {
+      "label": "Minimize to tray",
+      "keywords": "menu bar close"
+    },
+    "updates": {
+      "label": "Desktop app updates",
+      "keywords": "version restart"
+    },
+    "support": {
+      "label": "Help",
+      "keywords": "bug report contact support"
+    },
+    "whatsNew": {
+      "label": "What's new",
+      "keywords": "patch notes changelog"
+    }
+  },
+  "toast": {
+    "saved": "Saved",
+    "undone": "Change undone",
+    "undo": "Undo"
+  },
+  "field": {
+    "couldntSave": "Couldn't save",
+    "retry": "Retry",
+    "on": "ON",
+    "off": "OFF"
+  },
+  "window": {
+    "title": "Settings",
+    "signedInAs": "Signed in as",
+    "closeTitle": "Close settings (Esc)",
+    "close": "Close settings",
+    "sections": "Settings sections",
+    "search": "Search settings",
+    "clearSearch": "Clear settings search",
+    "clear": "Clear",
+    "matchingSettings": "Matching settings",
+    "setupBadge_one": "{{count}} thing to check",
+    "setupBadge_other": "{{count}} things to check",
+    "noMatches": "No settings match “{{query}}”.",
+    "moreInDesktop": "More options in the desktop app",
+    "downloadDesktop": "Get the desktop app"
+  },
+  "profile": {
+    "photoTitle": "Profile",
+    "photoHelp": "PNG, JPEG or WebP · maximum 2 MB",
+    "savingDots": "Saving...",
+    "saving": "Saving…",
+    "changePhoto": "Change photo",
+    "remove": "Remove",
+    "bannerTitle": "Banner & name",
+    "changeBanner": "Change banner",
+    "addBanner": "Add banner",
+    "bannerHelp": "PNG, JPEG or WebP · up to 3 MB · 3:1 looks best",
+    "displayName": "Display name",
+    "displayNameHelp": "Shown on your profile instead of your username. Leave empty to use {{username}}.",
+    "pronouns": "Pronouns",
+    "pronounsPlaceholder": "e.g. she/her, he/him, they/them",
+    "pronounsHelp": "Optional. Shown next to your name on your profile.",
+    "previewCaption": "Preview · how others see your profile",
+    "presenceTitle": "Profile & presence",
+    "status": "Status",
+    "statuses": {
+      "online": "Online",
+      "idle": "Idle",
+      "dnd": "Do not disturb",
+      "invisible": "Invisible"
+    },
+    "customStatus": "Custom status",
+    "customStatusPlaceholder": "Grinding ranked tonight",
+    "bio": "Bio",
+    "accent": "Profile accent",
+    "accentHelp": "Profile accent colors your personal avatar ring and profile highlights. Changes preview immediately and save automatically."
+  },
+  "quietPresence": {
+    "kicker": "Quiet Presence",
+    "title": "Share intent, keep control",
+    "mapping": "Presence uses the existing {{status}} status and {{preset}} notification preset.",
+    "saveError": "Quiet presence could not be saved on this device.",
+    "intent": "Intent",
+    "intentLabel": "Presence intent",
+    "intents": {
+      "available": "Available",
+      "playing": "Playing",
+      "watching": "Watching",
+      "planning": "Planning",
+      "quiet": "Quiet"
+    },
+    "expires": "Expires",
+    "expiryLabel": "Presence expiry",
+    "expiry": {
+      "none": "Until I change it",
+      "hour": "For 1 hour",
+      "fourHours": "For 4 hours",
+      "today": "Until end of day"
+    },
+    "interrupts": "Interrupts",
+    "interrupt": {
+      "urgentMentions": "Urgent mentions",
+      "ordinaryJoins": "Ordinary joins",
+      "soundboardEvents": "Soundboard events",
+      "recommendations": "Recommendations"
+    },
+    "note": "Saved locally by the integration. Squad Finder availability follows this intent; urgent mentions remain separately controlled."
+  },
+  "account": {
+    "detailsTitle": "Account details",
+    "username": "Username",
+    "usernameAgain": "Can be changed again {{date}}",
+    "usernameRule": "Can be changed once every 30 days",
+    "edit": "Edit",
+    "email": "Email",
+    "verified": "Verified",
+    "verificationRequired": "Verification required",
+    "noEmail": "No email added",
+    "hiddenByStreamerMode": "Hidden by Streamer Mode",
+    "notAdded": "Not added",
+    "password": "Password",
+    "passwordHelp": "Changing your password signs out every active session.",
+    "localVerification": "Open local email verification link",
+    "decaveIdTitle": "Your DeCave ID",
+    "decaveIdHelp": "Share this unique ID with someone you trust so they can send you a friend request. Your online/offline presence is visible to them only after you become friends.",
+    "copyDecaveId": "Copy DeCave ID",
+    "twoFactorTitle": "Two-factor sign-in",
+    "loginAlerts": "Email me about new sign-ins",
+    "loginAlertsHelp": "When a new device, app or country signs in to your account, we email {{email}} with a \"This wasn't me\" button.",
+    "yourVerifiedAddress": "your verified address",
+    "loginAlertsNeedEmail": "Add and verify an email address to get sign-in alerts.",
+    "sessionsTitle": "Where you're signed in",
+    "yourDataTitle": "Your data",
+    "dangerTitle": "Disable or delete account",
+    "disable": "Disable account",
+    "delete": "Delete account"
+  },
+  "sessions": {
+    "none": "No active sessions were returned. Refresh to try again.",
+    "unknownDevice": "Unknown device",
+    "thisDevice": "This device",
+    "activeNow": "Active now",
+    "active": "Active {{when}}",
+    "notUsedSince": "Not used since {{date}}",
+    "notRecorded": "Last activity not recorded yet",
+    "signedIn": "Signed in {{signedIn}} · Stays signed in until {{until}}",
+    "signingOut": "Signing out…",
+    "signOut": "Sign out",
+    "refresh": "Refresh",
+    "signOutAll_one": "Sign out all {{count}} devices",
+    "signOutAll_other": "Sign out all {{count}} devices",
+    "help": "Signing out all devices includes this one. Don't recognise a device? Sign it out, then change your password and turn on two-factor sign-in."
+  },
+  "yourData": {
+    "title": "Download my data",
+    "description": "Your profile, settings, friends, Hubs, blocks, sign-ins and the messages you wrote, as a JSON file.",
+    "preparing": "Preparing…",
+    "download": "Download",
+    "downloaded": "Your data was downloaded.",
+    "prepareRetry": "Could not prepare your data. Try again.",
+    "prepareFailed": "Could not prepare your data."
+  },
+  "twoFactor": {
+    "title": "Two-factor sign-in",
+    "checking": "Checking…",
+    "on_one": "On · {{count}} recovery code left",
+    "on_other": "On · {{count}} recovery codes left",
+    "off": "Off · Ask for a code from an authenticator app when you sign in on a new device.",
+    "turnOn": "Turn on",
+    "newCodes": "New recovery codes",
+    "turnOff": "Turn off",
+    "runningOut": "You are running out of recovery codes. Make a new set so you don't get locked out.",
+    "installApp": "Install an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, Authy…), then confirm your password to begin.",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "qrAlt": "QR code for your authenticator app",
+    "scan": "Scan this code with your authenticator app.",
+    "cantScan": "Can't scan? Enter this key instead:",
+    "typeCode": "Type the 6-digit code the app shows.",
+    "sixDigit": "6-digit code",
+    "turnOnTwoFactor": "Turn on two-factor",
+    "saveCodesNow": "Save these recovery codes now.",
+    "saveCodesDetail": "Each one works once if you lose your phone. You won't see them again.",
+    "copied": "Copied",
+    "copy": "Copy",
+    "downloadTxt": "Download .txt",
+    "savedThem": "I saved them",
+    "fileHeader": "DeCave recovery codes\nEach code works once. Keep them somewhere safe.",
+    "disableWarning": "Turning off two-factor makes your account easier to take over. Confirm it's you.",
+    "regenerateWarning": "Your old recovery codes stop working as soon as you make new ones. Confirm it's you.",
+    "turnOffTwoFactor": "Turn off two-factor",
+    "makeNewCodes": "Make new codes",
+    "codeLabel": "Authenticator or recovery code",
+    "currentPassword": "Current password",
+    "error": "Something went wrong.",
+    "errorRetry": "Something went wrong. Try again."
+  },
+  "owner": {
+    "title": "Platform owner",
+    "intro": "MFA is required when an enrolled platform owner signs in. Privileged owner-management actions also require a fresh password + MFA check.",
+    "mfaEnabled": "✓ Owner MFA enabled",
+    "currentPassword": "Current password",
+    "pleaseWait": "Please wait...",
+    "setUpMfa": "Set up owner MFA",
+    "addSecret": "Add this secret to your authenticator app:",
+    "sixDigit": "6-digit authenticator code",
+    "enableMfa": "Enable owner MFA",
+    "unlockTitle": "Unlock privileged owner actions",
+    "codePlaceholder": "Authenticator or recovery code",
+    "unlock": "Unlock for 10 minutes",
+    "replaceMfa": "Replace owner MFA",
+    "replaceHelp": "Replacing MFA requires your current password and authenticator or recovery code. An active owner unlock can provide the factor proof.",
+    "ownersTitle": "Platform owners",
+    "demote": "Demote",
+    "promotePlaceholder": "Promote by DeCave ID, username, or verified email",
+    "promote": "Promote platform owner",
+    "regenerate": "Regenerate my recovery codes",
+    "saveCodes": "Save these recovery codes offline now.",
+    "codesHelp": "Each code works once. Generating a new set invalidates the old set."
+  },
+  "encryption": {
+    "intro": "Direct messages and group chats are end-to-end encrypted once everyone in them uses an up-to-date DeCave: only the people in the conversation can read them, not DeCave. Your devices share one key, which changes every month. Keep your recovery code somewhere safe: without it or another signed-in device, encrypted history can't be recovered.",
+    "statusLabel": "Status:",
+    "status": {
+      "ready": "This device can read and send end-to-end encrypted messages.",
+      "locked": "Locked: approve this device from another one, or enter your recovery code.",
+      "error": "Unavailable: {{error}}",
+      "starting": "Starting…"
+    },
+    "keyId": "Key ID:",
+    "unlock": "Unlock on this device",
+    "newCode": "Create a new recovery code",
+    "newCodeFailed": "Could not create a new recovery code.",
+    "reset": "Reset encryption key",
+    "historyTitle": "Keep old encrypted messages readable",
+    "historyHelp": "Shorter means a stolen device or recovery code can read less of your past. Older encrypted messages become unreadable on all your devices. The other person's devices follow their own setting.",
+    "historyConfirm": "Encrypted messages older than {{when}} will become unreadable on all your devices. This can't be undone. Continue?",
+    "historyFailed": "Could not save the setting.",
+    "history": {
+      "always": "Always",
+      "year": "1 year",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days"
+    }
+  },
+  "privacy": {
+    "encryptionTitle": "Encrypted messages",
+    "safetyTitle": "Trust & safety",
+    "reportsTitle": "Your reports",
+    "reportsHelp": "See the reports you have sent to the DeCave safety team and what happened.",
+    "openReports": "Open my reports",
+    "ageSetting": "Age setting",
+    "age": {
+      "adult": "Adult experience",
+      "teen": "Teen safety mode",
+      "unknown": "Not confirmed"
+    },
+    "friendRequestsTitle": "Friend requests",
+    "friendRequestsLabel": "Who is allowed to send you a friend request",
+    "friendRequestPolicy": {
+      "everyone": "Everyone",
+      "friends_of_friends": "Friends of friends",
+      "none": "None"
+    },
+    "friendRequestsHelp": "This is enforced by DeCave when a request is sent, not only hidden in the interface.",
+    "dmTitle": "Direct messages",
+    "dmOnlyFriends": "Only friends can message you",
+    "dmHelp": "DeCave doesn't deliver private messages or group invites from people who aren't your friends, and never from people you've blocked. Control who can become your friend with Friend requests above.",
+    "blockedTitle": "Blocked accounts",
+    "streamTitle": "Stream privacy",
+    "streamPreviews": "Allow stream previews",
+    "streamPreviewsHelp": "People in the voice room may see a small preview before they click Start Watching.",
+    "streamerMode": "Streamer Mode",
+    "streamerModeHelp": "Mask personal account details and protect DeCave desktop windows from normal capture APIs.",
+    "autoStreamer": "Turn on Streamer Mode while I stream",
+    "autoStreamerHelp": "Switches on by itself while a broadcast app is open, and off again when you close it.",
+    "autoStreamerUpdate": "Update the DeCave desktop app to use this. It needs the newest version.",
+    "autoStreamerLive": "Streamer Mode is on right now because {{apps}} is running.",
+    "captureWeb": "Window capture protection is available in the DeCave desktop app for Windows and macOS. Sensitive values are still masked in this UI.",
+    "presenceTitle": "Presence privacy",
+    "typing": "Send typing indicators",
+    "typingHelp": "When disabled, people in Hub text rooms will not see that you are typing."
+  },
+  "blocked": {
+    "title": "Blocked accounts",
+    "titleCount": "Blocked accounts · {{count}}",
+    "help": "Blocked people can't message you, send friend requests or add you to groups. They aren't told that you blocked them.",
+    "loading": "Loading…",
+    "none": "You haven't blocked anyone.",
+    "find": "Find a blocked account",
+    "blockedOn": "Blocked {{date}}",
+    "unblocking": "Unblocking…",
+    "unblock": "Unblock",
+    "loadFailed": "Could not load your blocked accounts.",
+    "unblockFailed": "Could not unblock {{name}}. Try again."
+  },
+  "connections": {
+    "title": "Linked accounts",
+    "intro": "Accounts you link to DeCave. Each one only does what's described here.",
+    "loading": "Loading…",
+    "loadFailed": "Couldn't load your connections.",
+    "retry": "Retry",
+    "connected": "Connected as {{name}}",
+    "notConnected": "Not connected",
+    "connect": "Connect",
+    "connecting": "Opening…",
+    "disconnect": "Disconnect",
+    "showOnProfile": "Show on my profile",
+    "actionFailed": "That didn't work. Try again.",
+    "finishInBrowser": "Finish signing in in the browser window, then come back here.",
+    "providers": {
+      "steam": {
+        "name": "Steam",
+        "use": "Shows the game you're playing when no game is detected on this computer. Your Steam password is entered only on Steam."
+      },
+      "twitch": {
+        "name": "Twitch",
+        "use": "Gives you subscriber roles in Hubs that reward Twitch subscribers."
+      },
+      "faceit": {
+        "name": "FACEIT",
+        "use": "Shows your FACEIT level and ELO on leaderboards and in Hubs that use FACEIT badges."
+      }
+    },
+    "steamPresence": "Use Steam presence",
+    "steamPresenceHelp": "Use your linked Steam account when no local game is detected",
+    "steamPlaying": "Playing {{game}}",
+    "steamIdle": "No public Steam game activity right now",
+    "checkActivity": "Check activity now"
+  },
+  "gaming": {
+    "visibilityTitle": "Who can see your game",
+    "visibilityLabel": "Who can see the game you're playing",
+    "visibility": {
+      "everyone": {
+        "label": "Everyone",
+        "detail": "Anyone who can see your profile"
+      },
+      "friends": {
+        "label": "Friends",
+        "detail": "Only people on your friends list"
+      },
+      "nobody": {
+        "label": "Nobody",
+        "detail": "Keep it to yourself"
+      }
+    },
+    "visibilityHelp": "DeCave enforces this for everyone else. You always see your own game here.",
+    "automaticTitle": "Automatic activity",
+    "noActivity": "No activity",
+    "detectedSource": "detected",
+    "automaticSource": "Automatic · {{source}}",
+    "automaticFor": "Automatic · {{source}} · Playing for {{elapsed}}",
+    "noAutomatic": "No automatic game activity detected",
+    "live": "LIVE",
+    "publish": "Display automatic activity",
+    "publishHelp": "Publish detected games to your DeCave profile",
+    "detect": "Detect games on this computer",
+    "detectHelp": "Checks running apps on this device and matches your Steam and Epic games. Nothing leaves your computer except the game name.",
+    "detected": "Detected {{store}}: {{game}}",
+    "detectedFor": "Detected {{store}}: {{game}} · Playing for {{elapsed}}",
+    "noneDetected": "No running Steam or Epic game detected right now.",
+    "excluded": "Excluded games",
+    "excludedPlaceholder": "Game One, Game Two",
+    "excludedHelp": "Exact game names, separated by commas. Detection stays local; excluded titles are not published.",
+    "overlayTitle": "In-game overlay",
+    "overlay": "In-game voice overlay",
+    "overlayHelp": "Show compact voice avatars over games and highlight the active speaker.",
+    "overlaySize": "Overlay size",
+    "overlaySizeUpdate": "Update the DeCave desktop app to change the size and get the new compact overlay.",
+    "overlaySizeHelp": "How big the voice tags are over your game. The preview shows roughly how they look.",
+    "overlaySample": "Squad voice · {{count}}",
+    "keybindsTitle": "Keybinds",
+    "keybindsHelp": "These shortcuts work even while a game has focus. Use at least one modifier key such as Ctrl, Alt or Shift.",
+    "keybindsWeb": "Push to talk works while DeCave is focused. Global mute and deafen shortcuts need the DeCave desktop app, because a browser tab can't hear keys while a game has focus.",
+    "keybind": {
+      "toggleMute": {
+        "label": "Toggle mute / unmute",
+        "detail": "Mute or restore your microphone."
+      },
+      "toggleDeafen": {
+        "label": "Toggle deafen / undeafen",
+        "detail": "Mute incoming voice and your microphone together."
+      }
+    },
+    "pressShortcut": "Press shortcut…",
+    "pushToTalk": "Push to talk",
+    "pushToTalkHelp": "Hold this key to transmit.",
+    "pushToTalkOff": "Used when Voice & video is set to push to talk.",
+    "pressKey": "Press a key…",
+    "noKey": "No key set",
+    "keybindHint": "Click a shortcut, then press the new key combination.",
+    "resetDefaults": "Reset defaults",
+    "sameShortcut": "These actions cannot use the same shortcut.",
+    "shortcutsTitle": "All shortcuts"
+  },
+  "shortcuts": {
+    "anywhere": "Anywhere",
+    "search": "Search and jump to a Hub, room or person",
+    "inbox": "Open your inbox",
+    "escape": "Close the open menu, dialog or Settings",
+    "voice": "Voice",
+    "pushToTalk": "Hold to talk (push to talk)",
+    "mute": "Mute or unmute your microphone (desktop app, works in games)",
+    "deafen": "Deafen or undeafen (desktop app, works in games)",
+    "sidebar": "Hub sidebar (owners and admins)",
+    "moveUp": "Move the focused room up inside its box",
+    "moveDown": "Move the focused room down inside its box",
+    "forum": "Writing a forum post",
+    "bold": "Bold",
+    "italic": "Italic",
+    "link": "Add a link",
+    "publish": "Publish"
+  },
+  "voice": {
+    "kicker": "Voice & audio",
+    "headline": "Sound that feels right",
+    "intro": "Choose your devices, tune the microphone and control how DeCave processes your voice.",
+    "db": "{{value}} dB",
+    "mic": {
+      "starting": "Starting microphone…",
+      "unavailable": "Microphone unavailable",
+      "testLive": "Mic test live",
+      "live": "Microphone live",
+      "off": "Microphone off"
+    },
+    "devices": {
+      "title": "Devices",
+      "help": "Where your voice comes from and where sound goes",
+      "input": "Input device",
+      "defaultInput": "Default microphone",
+      "microphoneNumbered": "Microphone {{number}}",
+      "output": "Output device",
+      "defaultOutput": "Default output",
+      "outputNumbered": "Output {{number}}"
+    },
+    "level": {
+      "title": "Input level",
+      "live": "Live microphone level",
+      "afterSuppression": "Your microphone after noise suppression, and the activation threshold",
+      "withThreshold": "Live microphone level and activation threshold",
+      "threshold": "Threshold {{value}} dB",
+      "thresholdTitle": "Activation threshold"
+    },
+    "diagnostics": "Show technical audio readings",
+    "metrics": {
+      "transmit": "Transmit {{value}} dB",
+      "rms": "RMS {{value}}",
+      "activity": "Activity {{value}}%",
+      "post": "Post {{value}} dB",
+      "raw": "Raw {{value}} dB",
+      "floor": "Floor {{value}} dB",
+      "vad": "VAD {{value}}%"
+    },
+    "activation": {
+      "title": "Voice activation",
+      "help": "Adjust the gate while watching your live input level",
+      "auto": {
+        "label": "Automatic",
+        "detail": "DeCave follows your environment"
+      },
+      "manual": {
+        "label": "Manual",
+        "detail": "You set the activation threshold"
+      },
+      "threshold": "Activation threshold",
+      "thresholdHelp": "Move the marker above until background noise stays gated"
+    },
+    "inputVolume": {
+      "title": "Input volume",
+      "help": "Boost or reduce your microphone level"
+    },
+    "mode": {
+      "title": "Input mode",
+      "help": "Choose voice activation or hold a key to talk",
+      "activation": "Voice activation",
+      "activationHelp": "Your microphone opens when you speak",
+      "pushToTalk": "Push to talk",
+      "pushToTalkHelp": "Transmit only while your selected key is held",
+      "key": "Push to talk key: {{key}}.",
+      "noKey": "No push to talk key is set yet.",
+      "changeKey": "Change key"
+    },
+    "noise": {
+      "title": "Noise suppression",
+      "help": "Clean up keyboard, fan and background noise before your voice is sent",
+      "unavailable": "Unavailable",
+      "unsupported": "Not supported by this browser",
+      "modes": {
+        "off": {
+          "label": "Off",
+          "subtitle": "Raw microphone",
+          "description": "No processing"
+        },
+        "strong": {
+          "label": "Standard",
+          "subtitle": "Built-in filter",
+          "description": "Gaming-focused noise suppression that runs on any device"
+        },
+        "ai": {
+          "label": "DeCave ClearVoice",
+          "subtitle": "Noise suppression by DeCave",
+          "description": "Local AI processing for clearer voice in noisy environments"
+        },
+        "deepfilter": {
+          "label": "DeepFilterNet",
+          "subtitle": "Deep noise filtering",
+          "description": "Strongest local AI filtering for keyboards, clicks and loud rooms"
+        }
+      }
+    },
+    "processing": {
+      "title": "Voice processing",
+      "help": "Additional processing applied by your browser",
+      "echo": "Echo cancellation",
+      "echoHelp": "Reduce speaker audio feeding back into your microphone",
+      "gain": "Automatic gain control",
+      "gainHelp": "Keep your voice at a more consistent loudness"
+    },
+    "output": {
+      "title": "Output",
+      "help": "How loud other people are, and a quick check that sound reaches your speakers or headset",
+      "volume": "Output volume",
+      "volumeHelp": "Applies to everyone in voice. Per-person volumes are set on top of this.",
+      "playing": "Playing…",
+      "test": "Test speakers",
+      "testFailed": "Could not play the test sound on this device."
+    },
+    "camera": {
+      "title": "Camera",
+      "help": "Used when you turn your camera on in a voice room",
+      "preview": "Camera preview",
+      "previewOff": "Preview is off",
+      "default": "Default camera",
+      "numbered": "Camera {{number}}",
+      "stop": "Stop preview",
+      "start": "Preview camera",
+      "openFailed": "DeCave couldn't open that camera. Check that no other app is using it and that camera access is allowed."
+    },
+    "people": {
+      "title": "People you've adjusted",
+      "help": "Right-click someone in a voice room to make them louder or quieter",
+      "empty": "Everyone is at the normal volume.",
+      "muted": "Muted for you",
+      "volumeFor": "Volume for {{name}}",
+      "reset": "Reset",
+      "resetAll": "Reset everyone",
+      "unknown": "Someone you heard in voice"
+    },
+    "liveNote": "Voice changes apply right away and are saved on this device.",
+    "micTest": {
+      "title": "Mic test",
+      "help": "Hear how your microphone sounds with your current processing.",
+      "stop": "Stop test",
+      "start": "Test microphone"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "preset": "Notification preset",
+    "presetHelp": "Apply a sensible baseline, then customize individual switches below.",
+    "presets": {
+      "all": "All activity",
+      "mentions": "Mentions only",
+      "quiet": "Quiet"
+    },
+    "desktop": "Desktop notifications",
+    "desktopHelp": "Pop-up alerts while DeCave is in the background",
+    "kinds": {
+      "friendRequests": "Friend requests",
+      "dms": "Private messages",
+      "groups": "Group messages",
+      "mentions": "Mentions"
+    },
+    "permissionDesktop": "{{platform}} permission required",
+    "permissionBrowser": "Browser permission required",
+    "permissionDesktopHelp": "Allow DeCave notifications in {{platform}} settings to get alerts while DeCave is in the background.",
+    "permissionBrowserHelp": "Allow notifications for app.de-cave.com in your browser to get alerts while this tab is in the background.",
+    "requestPermission": "Open permission request",
+    "previewsTitle": "Message previews",
+    "previewsHelp": "Choose how much private message content DeCave exposes in desktop and in-app notifications.",
+    "previews": {
+      "full": {
+        "label": "Full preview",
+        "detail": "Show sender and message text."
+      },
+      "sender": {
+        "label": "Sender only",
+        "detail": "Show who sent it, but hide the message text."
+      },
+      "hidden": {
+        "label": "Hidden",
+        "detail": "Show only a generic DeCave notification."
+      }
+    },
+    "quiet": {
+      "sectionTitle": "Quiet hours",
+      "title": "Quiet hours",
+      "now": "Quiet now. Notifications and alert sounds are paused.",
+      "daily": "Every day from {{start}} to {{end}}.",
+      "help": "Pause notifications and alert sounds at the same time every day.",
+      "from": "From",
+      "until": "Until",
+      "allowMentions": "Still notify me about direct messages and mentions"
+    },
+    "soundsTitle": "Sounds",
+    "theme": "Sound theme",
+    "themeHelp": "Choose how DeCave interface sounds feel. Off disables interface sounds without changing desktop notifications.",
+    "themes": {
+      "off": {
+        "label": "Off",
+        "detail": "Silent interface"
+      },
+      "soft": {
+        "label": "Soft",
+        "detail": "Subtle & clean"
+      },
+      "pulse": {
+        "label": "Pulse",
+        "detail": "Modern & energetic"
+      },
+      "arcade": {
+        "label": "Arcade",
+        "detail": "Retro gaming"
+      }
+    },
+    "events": {
+      "send": {
+        "label": "Message sent",
+        "detail": "When you send a message"
+      },
+      "receive": {
+        "label": "Message received",
+        "detail": "Incoming DMs and room messages"
+      },
+      "voiceJoin": {
+        "label": "Voice joined",
+        "detail": "Someone joins voice"
+      },
+      "voiceLeave": {
+        "label": "Voice left",
+        "detail": "Someone leaves voice"
+      },
+      "friendRequest": {
+        "label": "Friend request",
+        "detail": "New friend request"
+      },
+      "mention": {
+        "label": "Mention",
+        "detail": "When someone mentions you"
+      },
+      "mute": {
+        "label": "Mute",
+        "detail": "Microphone muted"
+      },
+      "unmute": {
+        "label": "Unmute",
+        "detail": "Microphone unmuted"
+      },
+      "deafen": {
+        "label": "Deafen",
+        "detail": "Incoming voice audio disabled"
+      },
+      "undeafen": {
+        "label": "Undeafen",
+        "detail": "Incoming voice audio restored"
+      },
+      "screenShare": {
+        "label": "Screen sharing",
+        "detail": "Start or stop screen sharing"
+      }
+    },
+    "variants": {
+      "default": "Default",
+      "bright": "Bright",
+      "deep": "Deep",
+      "digital": "Digital",
+      "glass": "Glass",
+      "warm": "Warm",
+      "chime": "Chime",
+      "minimal": "Minimal"
+    },
+    "soundFor": "{{event}} sound",
+    "enableSound": "Enable {{event}} sound",
+    "preview": "Preview",
+    "placesTitle": "Muted Hubs and rooms",
+    "mutedTitle": "Muted Hubs and rooms",
+    "mutedCount_one": "Muted Hubs and rooms · {{count}}",
+    "mutedCount_other": "Muted Hubs and rooms · {{count}}",
+    "mutedHelp": "Muted Hubs and rooms don't send notifications or sounds. You can still open them and read. Unread badges always show.",
+    "noneMuted": "Nothing is muted. Right-click a Hub in the top bar, use the bell on Hub Home, or the bell in a room, to mute one.",
+    "mutedUntil": "Muted until {{when}}",
+    "mutedForever": "Muted until you turn it back on",
+    "roomIn": "Muted room in {{hub}}",
+    "unmute": "Unmute",
+    "levelFor": "Notifications for {{name}}",
+    "levelForRoom": "Notifications for #{{name}}",
+    "sameAsHub": "Same as Hub ({{level}})",
+    "levels": {
+      "all": "All messages",
+      "mentions": "Mentions only",
+      "nothing": "Nothing"
+    },
+    "otherHubs_one": "Other Hubs ({{count}})",
+    "otherHubs_other": "Other Hubs ({{count}})",
+    "levelsHelp": "All messages: a notification for every new message. Mentions only: when someone writes @you or @everyone. Nothing: no sounds or pop-ups. Unread badges always show.",
+    "roomsDifferent_one": "{{count}} room set differently",
+    "roomsDifferent_other": "{{count}} rooms set differently",
+    "hideRooms": "Hide rooms",
+    "showRooms_one": "Set rooms differently ({{count}})",
+    "showRooms_other": "Set rooms differently ({{count}})"
+  },
+  "chat": {
+    "sendTitle": "Send messages with",
+    "send": {
+      "enter": {
+        "label": "Enter",
+        "detail": "Shift+Enter starts a new line"
+      },
+      "ctrlEnter": {
+        "label": "Ctrl+Enter",
+        "detail": "Enter starts a new line",
+        "labelMac": "Cmd+Enter",
+        "detailMac": "Enter starts a new line"
+      }
+    },
+    "animateTitle": "Animated GIFs and emotes",
+    "animate": {
+      "always": {
+        "label": "Play automatically",
+        "detail": "GIFs and emotes move as soon as they're on screen"
+      },
+      "hover": {
+        "label": "Play on hover",
+        "detail": "They stay still until you point at them"
+      }
+    },
+    "messagesTitle": "Messages",
+    "largeEmoji": "Large emoji",
+    "largeEmojiHelp": "Show emoji bigger when a message is only one to three emoji",
+    "spellcheck": "Spellcheck",
+    "spellcheckHelp": "Underline misspelled words while you write a message",
+    "spoilersTitle": "Spoilers",
+    "spoilers": {
+      "click": {
+        "label": "Reveal on click",
+        "detail": "Hidden until you click them"
+      },
+      "always": {
+        "label": "Always show",
+        "detail": "Spoilers in forum posts are shown right away"
+      }
+    }
+  },
+  "keyDevices": {
+    "title": "Devices with your key",
+    "help": "These signed-in devices can read your encrypted messages. Your account has one key shared by all of them, so removing a device signs it out and switches your account to a new key it never gets: it can't read new messages.",
+    "loading": "Loading…",
+    "none": "No other devices have your key.",
+    "unknownDevice": "Unknown device",
+    "thisDevice": "This device",
+    "added": "Added {{date}}",
+    "lastUsed": "Last used {{date}}",
+    "lastUsedUnknown": "Last use not recorded yet",
+    "remove": "Remove",
+    "removing": "Removing…",
+    "confirm": "Remove {{device}}? It will be signed out, and your account will switch to a new encryption key that this device never gets.",
+    "removed": "{{device}} was signed out. Your account is switching to a new key.",
+    "failed": "Couldn't update your devices. Try again."
+  },
+  "checkup": {
+    "allSet": "You're all set",
+    "allSetHelp": "Nothing needs your attention right now.",
+    "dismiss": "Dismiss",
+    "dismissed": "Dismissed",
+    "severity": {
+      "high": "Important",
+      "medium": "Recommended",
+      "low": "Nice to have"
+    },
+    "items": {
+      "twoFactor": {
+        "title": "Two-factor sign-in is off",
+        "description": "Ask for a code from an authenticator app when someone signs in on a new device, so a stolen password isn't enough.",
+        "fix": "Turn on two-factor"
+      },
+      "recoveryCode": {
+        "title": "Save your recovery code",
+        "description": "Without your recovery code or another signed-in device, your encrypted messages can't be recovered.",
+        "fix": "Open encrypted messages"
+      },
+      "pttKey": {
+        "title": "Push to talk has no key",
+        "description": "Push to talk is selected, but no key is set, so nobody can hear you.",
+        "fix": "Choose a key"
+      },
+      "notificationsBlocked": {
+        "title": "Desktop notifications are blocked",
+        "description": "Desktop notifications are on in DeCave, but your browser or system isn't showing them.",
+        "fix": "Allow notifications"
+      },
+      "micTest": {
+        "title": "Test your microphone",
+        "description": "You haven't tested your microphone on this device yet. Hear how you sound before you join voice.",
+        "fix": "Test microphone"
+      },
+      "updateReady": {
+        "title": "A desktop update is ready",
+        "description": "The new version is downloaded. Restart DeCave to finish updating.",
+        "fix": "Restart to update"
+      },
+      "avatar": {
+        "title": "Add a profile photo",
+        "description": "A photo helps friends recognise you in Hubs, voice and messages.",
+        "fix": "Add a photo"
+      }
+    }
+  },
+  "appearance": {
+    "skinTitle": "Skin",
+    "skinSystemNote": "You're matching your computer's light and dark mode. Choose the two skins under Light & dark below; the skin you pick here is used if you switch back.",
+    "skins": {
+      "nebula": {
+        "name": "Nebula Pulse",
+        "detail": "Electric violet · cyan glow"
+      },
+      "arctic": {
+        "name": "Arctic Flux",
+        "detail": "Frosted blue · graphite"
+      },
+      "crimson": {
+        "name": "Crimson Glass",
+        "detail": "Deep red · polished smoked glass"
+      },
+      "royal": {
+        "name": "Royal Violet",
+        "detail": "Rich purple · luminous glass"
+      },
+      "pearl": {
+        "name": "Pearl Glass",
+        "detail": "White silver · smoked crystal"
+      },
+      "obsidian": {
+        "name": "Obsidian Glass",
+        "detail": "Pure black · gunmetal glass"
+      },
+      "verdant": {
+        "name": "Verdant Raid",
+        "detail": "Emerald green · tactical glass"
+      },
+      "bright": {
+        "name": "Bright Grey",
+        "detail": "Bright grey · clean high-contrast light"
+      }
+    },
+    "themeTitle": "Light & dark",
+    "theme": {
+      "label": "Theme",
+      "manual": "Pick a skin",
+      "manualHelp": "Always use the skin you choose above",
+      "system": "Match my computer",
+      "systemHelp": "Switch between a light and a dark skin automatically",
+      "lightSkin": "Light mode skin",
+      "darkSkin": "Dark mode skin",
+      "nowDark": "Your computer is in dark mode right now.",
+      "nowLight": "Your computer is in light mode right now."
+    },
+    "accessibilityTitle": "Accessibility",
+    "size": {
+      "title": "Text & interface size",
+      "help": "Increase or reduce DeCave text, controls, panels, and interface spacing together.",
+      "label": "DeCave text and interface size",
+      "smaller": "Smaller",
+      "default": "Default",
+      "larger": "Larger",
+      "extraLarge": "Extra large",
+      "preview": "Preview: The quick brown fox jumps over the lazy dog."
+    },
+    "readabilityTitle": "Motion & readability",
+    "motion": {
+      "label": "Motion",
+      "systemReduced": "Your computer asks for less motion",
+      "systemFull": "Your computer allows animations",
+      "system": {
+        "label": "Match my computer"
+      },
+      "reduce": {
+        "label": "Reduce motion",
+        "detail": "Turn off animations and smooth scrolling"
+      },
+      "full": {
+        "label": "Full motion",
+        "detail": "Keep every animation"
+      }
+    },
+    "density": {
+      "label": "Message density",
+      "cozy": {
+        "label": "Cozy",
+        "detail": "Roomy messages with large avatars"
+      },
+      "compact": {
+        "label": "Compact",
+        "detail": "Fit more messages on screen"
+      }
+    },
+    "contrast": "High contrast",
+    "contrastHelp": "Stronger borders, brighter secondary text and clearer focus rings.",
+    "underline": "Always underline links",
+    "underlineHelp": "Make links in messages easy to spot without relying on colour.",
+    "altText": "Show image descriptions",
+    "altTextHelp": "Show the title of GIFs and stickers under them."
+  },
+  "language": {
+    "title": "Dates & times",
+    "englishForNow": "DeCave's menus and buttons are in English for now. These choices change how dates and times are written everywhere in the app.",
+    "language": "Language",
+    "matchSystem": "Match my system",
+    "beta": "{{name}} (beta)",
+    "languageHelp": "The language DeCave's menus and buttons are shown in.",
+    "dateStyle": "Date style",
+    "dateStyleHelp": "Month names and the order of day, month and year.",
+    "timeFormat": "Time format",
+    "timeFormats": {
+      "system": "System default",
+      "12h": "12-hour",
+      "24h": "24-hour"
+    },
+    "timeFormatHelp": "Message times update immediately and follow this preference.",
+    "preview": "Preview · {{time}}"
+  },
+  "app": {
+    "systemTitle": "System",
+    "yourComputer": "your computer",
+    "startup": "Start DeCave when {{platform}} starts",
+    "startupHelp": "Open DeCave automatically after you sign in to {{platform}}.",
+    "tray": "Minimize to system tray when closing",
+    "trayHelp": "Clicking X hides DeCave. Use the tray menu to reopen or fully quit.",
+    "trayMac": "Keep running in the menu bar when closed",
+    "trayMacHelp": "Closing the window hides DeCave. Use the menu bar icon to reopen or quit.",
+    "updatesTitle": "Updates",
+    "updates": "Desktop app updates",
+    "installedVersion": "Installed version",
+    "downloadPercent": "Update download {{percent}} percent",
+    "progress": "{{done}} of {{total}}",
+    "progressSpeed": "{{done}} of {{total}} · {{speed}}/s",
+    "checking": "Checking…",
+    "checkNow": "Check now",
+    "restarting": "Restarting…",
+    "restart": "Restart to update",
+    "helpTitle": "Help"
+  },
+  "support": {
+    "bug": "Report a bug",
+    "bugHelp": "Your app version and device are filled in for you.",
+    "bugTemplate": "What happened?\n\nWhat did you expect to happen?\n\nSteps to make it happen again:\n1.\n2.\n3.",
+    "contact": "Contact support",
+    "contactHelp": "Questions about your account or your Hubs. We reply by email.",
+    "helpTemplate": "How can we help?",
+    "copiedTemplate": "Copied. Paste it into an email to {{email}}.",
+    "copiesTemplate": "{{detail}} Copies a ready-to-send email to paste.",
+    "whatsNew": "What's new",
+    "whatsNewHelp": "Read the latest patch notes in DeCave Official.",
+    "whatsNewJoin": "Join DeCave Official to read patch notes.",
+    "about": {
+      "app": "App",
+      "version": "Version",
+      "platform": "Platform",
+      "service": "Service",
+      "email": "Email",
+      "legal": "Legal"
+    },
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "copied": "Copied",
+    "copyDetails": "Copy details for support"
+  },
+  "mobile": {
+    "profile": {
+      "couldNotUpdateStatus": "Could not update status.",
+      "profileUpdated": "Profile updated.",
+      "couldNotUpdateProfile": "Could not update profile.",
+      "yourAccount": "YOUR ACCOUNT",
+      "profileBanner": "Profile banner",
+      "statusLabel": "Status: {{label}}",
+      "memberSinceMembersince": "Member since {{memberSince}}",
+      "customStatusStatustextEdit": "Custom status: {{statusText}}. Edit",
+      "setACustomStatus": "Set a custom status",
+      "id": "ID",
+      "decaveIdCopied": "DeCave ID copied",
+      "profileDetails": "PROFILE DETAILS",
+      "notSetShowsUsername": "Not set (shows {{username}})",
+      "notSet": "Not set",
+      "profile": "PROFILE",
+      "editLabel": "Edit {{label}}",
+      "status": {
+        "onlineDetail": "Available",
+        "idleDetail": "Away for a bit",
+        "dndDetail": "Minimize interruptions",
+        "invisibleDetail": "Appear offline"
+      },
+      "fields": {
+        "statusTextPlaceholder": "What’s happening?",
+        "displayNamePlaceholder": "How your name shows to others",
+        "pronounsPlaceholder": "e.g. she/her, he/him, they/them",
+        "statusTextEdit": "Edit Custom status",
+        "displayNameEdit": "Edit Display name",
+        "pronounsEdit": "Edit Pronouns"
+      }
+    },
+    "settings": {
+      "logOut": "Log out?",
+      "youLlNeedToSign": "You'll need to sign in again on this device.",
+      "couldnTLoadYourAccount": "Couldn't load your account settings. Changes are saved on this phone.",
+      "couldNotLoadYourHubs": "Could not load your Hubs.",
+      "couldnTSyncToYour": "Couldn't sync to your account. Your choices are saved on this phone.",
+      "useA24HourTime": "Use a 24-hour time like 22:00.",
+      "decaveMicrophoneAccess": "DeCave microphone access",
+      "decaveNeedsYourMicrophoneSo": "DeCave needs your microphone so you can talk in voice rooms.",
+      "allow": "Allow",
+      "notNow": "Not now",
+      "microphonePermissionIsNotEnabled": "Microphone permission is not enabled.",
+      "microphoneIsReady": "Microphone is ready.",
+      "decaveCouldNotOpenThe": "DeCave could not open the microphone.",
+      "decaveControlCenter": "DECAVE CONTROL CENTER",
+      "accountAndSecurity": "Account and security",
+      "yourAccount": "Your account",
+      "accountEmailPassword": "Account, email, password",
+      "accountSettings": "ACCOUNT SETTINGS",
+      "accountSecurity": "Account & Security",
+      "passwordAccountAccessDisableOr": "Password, account access, disable or delete",
+      "appearance": "Appearance",
+      "themeSkinAndVisualPreferences": "Theme, skin, and visual preferences",
+      "devicesSessions": "Devices & Sessions",
+      "reviewAndLogOutActive": "Review and log out active devices",
+      "privacySafety": "Privacy & Safety",
+      "friendRequestsActivityAndBlocked": "Friend requests, activity and blocked accounts",
+      "myReports": "My Reports",
+      "trackReportsAndSafetyCases": "Track reports and safety cases you submitted",
+      "scanQrCode": "Scan QR Code",
+      "signInToDecaveOn": "Sign in to DeCave on web or desktop",
+      "appSettings": "APP SETTINGS",
+      "voiceAudio": "Voice & Audio",
+      "microphoneProcessingAndScreenShare": "Microphone processing and screen share quality",
+      "notificationsPrivacy": "Notifications & Privacy",
+      "alertsSoundsMentionsAndPreview": "Alerts, sounds, mentions, and preview privacy",
+      "on": "On",
+      "support": "SUPPORT",
+      "helpFeedback": "Help & Feedback",
+      "contactDecaveSupport": "Contact DeCave support",
+      "whatDecaveCollectsAndHow": "What DeCave collects and how it is used",
+      "theRulesForUsingDecave": "The rules for using DeCave",
+      "aboutDecave": "About DeCave",
+      "mobileAppAndServiceInformation": "Mobile app and service information",
+      "clearComfortableVoice": "Clear, comfortable voice",
+      "alertsWithoutOversharing": "Alerts without oversharing",
+      "tuneMicrophoneProcessingAndHow": "Tune microphone processing and how calls behave on this device.",
+      "chooseWhatCanNotifyYou": "Choose what can notify you and how much message content appears outside DeCave.",
+      "privacyNotifications": "PRIVACY & NOTIFICATIONS",
+      "deviceNotifications": "Device notifications",
+      "controlMessageAlertsShownBy": "Control message alerts shown by this device.",
+      "checking": "CHECKING",
+      "allowed": "ALLOWED",
+      "blocked": "BLOCKED",
+      "enableNotifications": "Enable notifications",
+      "masterSwitchForDecaveMessage": "Master switch for DeCave message notifications.",
+      "notificationSounds": "Notification sounds",
+      "playASoundWhenDecave": "Play a sound when DeCave presents a message alert.",
+      "notifyWhenAFriendSends": "Notify when a friend sends you a direct message.",
+      "groupChats": "Group chats",
+      "notifyWhenSomebodyPostsIn": "Notify when somebody posts in one of your group chats.",
+      "hubMessages": "Hub messages",
+      "notifyForHubTextMessages": "Notify for Hub text messages while that room is not open.",
+      "notifyForYournameAndEveryone": "Notify for @yourname and @everyone mentions.",
+      "notificationPreview": "Notification preview",
+      "chooseHowMuchPrivateContent": "Choose how much private content can appear outside DeCave.",
+      "resetNotificationSettings": "Reset notification settings",
+      "quietHours": "QUIET HOURS",
+      "silenceNotificationsOnAllYour": "Silence notifications on all your devices at night.",
+      "quietHoursStartTime": "Quiet hours start time",
+      "quietHoursEndTime": "Quiet hours end time",
+      "use24HourTimeTimes": "Use 24-hour time. Times follow this phone's time zone.",
+      "importantMessagesStillComeThrough": "Important messages still come through during quiet hours.",
+      "hubs": "HUBS",
+      "chooseWhatEachHubCan": "Choose what each Hub can notify you about. Mentions only is the default.",
+      "youHavenTJoinedAny": "You haven't joined any Hubs yet.",
+      "voiceAudio2": "VOICE & AUDIO",
+      "voiceConnection": "Voice connection",
+      "connectedToAVoiceRoom": "Connected to a Voice Room.",
+      "notConnectedToAVoice": "Not connected to a Voice Room.",
+      "offline": "OFFLINE",
+      "reduceSteadyBackgroundNoiseBefore": "Reduce steady background noise before your voice is sent.",
+      "reduceSpeakerEchoFeedingBack": "Reduce speaker echo feeding back into your microphone.",
+      "letWebrtcAutomaticallyBalanceMicrophone": "Let WebRTC automatically balance microphone loudness.",
+      "joinVoiceMuted": "Join voice muted",
+      "startEveryNewVoiceRoom": "Start every new Voice Room muted until you choose to speak.",
+      "screenShareQuality": "Screen share quality",
+      "resolutionRequestedWhenYouStart": "Resolution requested when you start sharing your mobile screen.",
+      "captureProcessingChangesApplyNext": "Capture-processing changes apply next time the microphone opens.",
+      "checkingMicrophone": "Checking microphone…",
+      "checkMicrophone": "Check microphone",
+      "resetVoiceSettings": "Reset voice settings",
+      "senderMessageText": "Sender + message text",
+      "hideTheMessageText": "Hide the message text",
+      "genericDecaveAlertOnly": "Generic DeCave alert only",
+      "quality": {
+        "balanced": "Balanced",
+        "full": "Full",
+        "saver": "Saver"
+      }
+    },
+    "accountSecurity": {
+      "couldNotLoadTwoFactor": "Could not load two-factor settings.",
+      "couldNotLoadThisSetting": "Could not load this setting.",
+      "enterYourCurrentPassword": "Enter your current password.",
+      "couldNotStartSetup": "Could not start setup.",
+      "enterThe6DigitCode": "Enter the 6-digit code from your authenticator app.",
+      "twoFactorSignInIs": "Two-factor sign-in is on.",
+      "thatCodeDidnTWork": "That code didn't work. Try again.",
+      "enterYourPasswordAndA": "Enter your password and a code from your authenticator app.",
+      "twoFactorSignInIs2": "Two-factor sign-in is off.",
+      "newRecoveryCodesAreReady": "New recovery codes are ready. Your old codes no longer work.",
+      "decaveRecoveryCodes": "DeCave recovery codes",
+      "noAuthenticatorAppOpenedCopy": "No authenticator app opened. Copy the key and add it by hand.",
+      "couldNotSaveThisSetting": "Could not save this setting.",
+      "thisPhoneHasNoSpace": "This phone has no space to save the file.",
+      "couldNotDownloadYourData": "Could not download your data.",
+      "enterTheNewEmailAnd": "Enter the new email and your current password.",
+      "verificationEmailSentOpenIt": "Verification email sent. Open it to verify your new address.",
+      "enterYourCurrentPasswordUse": "Enter your current password, use at least 10 characters, and make the new passwords match.",
+      "couldNotChangePassword": "Could not change password.",
+      "enterYourCurrentPasswordTo": "Enter your current password to continue.",
+      "settings": "SETTINGS",
+      "emailAddress": "EMAIL ADDRESS",
+      "addAnEmailForRecovery": "Add an email for recovery and account protection.",
+      "newEmailAddress": "New email address",
+      "emailAddress2": "Email address",
+      "changeVerifyEmail": "Change / Verify Email",
+      "addEmail": "Add Email",
+      "changePassword": "CHANGE PASSWORD",
+      "changingYourPasswordSignsOut": "Changing your password signs out every active DeCave session.",
+      "twoFactorSignIn": "TWO-FACTOR SIGN-IN",
+      "twoFactorSignInIs3": "Two-factor sign-in is on",
+      "askForACodeFrom": "Ask for a code from an authenticator app each time you sign in.",
+      "youReRunningOutOf": "You're running out of recovery codes. Make new ones so you don't get locked out.",
+      "firstConfirmItSYou": "First, confirm it's you.",
+      "n1AddDecaveToYour": "1. Add DeCave to your authenticator app. Tap the button below, or copy this key into the app.",
+      "copyKey": "Copy key",
+      "openInAuthenticatorApp": "Open in authenticator app",
+      "n2EnterThe6Digit": "2. Enter the 6-digit code the app shows.",
+      "toTurnOffTwoFactor": "To turn off two-factor, enter your password and a code from your authenticator app.",
+      "toMakeNewRecoveryCodes": "To make new recovery codes, enter your password and a code from your authenticator app. Your old codes will stop working.",
+      "authenticatorCode": "Authenticator code",
+      "saveTheseRecoveryCodesSomewhere": "Save these recovery codes somewhere safe. Each one works once if you lose your phone. You won't see them again.",
+      "signInAlerts": "SIGN-IN ALERTS",
+      "whenANewDeviceApp": "When a new device, app or country signs in, we email you with a 'This wasn't me' button.",
+      "addAnEmailAddressAbove": "Add an email address above to get these alerts.",
+      "yourData": "YOUR DATA",
+      "preparingYourFile": "Preparing your file…",
+      "getACopyOfYour": "Get a copy of your account, profile and messages as a file.",
+      "accountState": "ACCOUNT STATE",
+      "disableAccount": "Disable Account",
+      "endsActiveSessionsYourNext": "Ends active sessions. Your next successful login reactivates the account.",
+      "deleteAccount": "Delete Account",
+      "schedulesDeletionAfter30Days": "Schedules deletion after 30 days. Log in before then to cancel.",
+      "yourAccountWillBeScheduled": "Your account will be scheduled for deletion in 30 days. Sign in before then to cancel.",
+      "yourAccountAndActiveSessions": "Your account and active sessions will be disabled. Signing in again reactivates it.",
+      "recoveryCodesFor": "DeCave recovery codes for {{name}}",
+      "yourAccount": "your account",
+      "downloadFailed": "Download failed ({{status}})",
+      "couldNotUpdateEmail": "Could not update email.",
+      "passwordChangedSignIn": "Password changed. Sign in again with your new password.",
+      "accountDisabled": "Your DeCave account was disabled.",
+      "deletionScheduledFor": "Account deletion scheduled for {{date}}.",
+      "deletionScheduled": "Account deletion scheduled.",
+      "turnedOn": "Turned on {{date}}. {{codes}}",
+      "recoveryCodesLeft_one": "{{count}} recovery code left.",
+      "recoveryCodesLeft_other": "{{count}} recovery codes left.",
+      "keyCopied": "Key copied.",
+      "recoveryCodesCopied": "Recovery codes copied.",
+      "couldNotDisableAccount": "Could not disable account.",
+      "couldNotDeleteAccount": "Could not delete account."
+    },
+    "appearance": {
+      "appearance": "APPEARANCE",
+      "skins": "Skins",
+      "mode": "MODE",
+      "dark": "Dark",
+      "light": "Light",
+      "inLightModeASkin": "In Light mode a skin sets the accent color; Dark mode uses its full look.",
+      "chooseAVisualStylePreview": "Choose a visual style, preview it here, then tap Save skin. DeCave restarts with the new look, and your choice is stored on this device.",
+      "skinSaved": "Skin saved",
+      "saveSkin": "Save skin"
+    },
+    "devices": {
+      "couldNotLoadActiveSessions": "Could not load active sessions.",
+      "logOutAllSessions": "Log out all sessions?",
+      "thisSignsYourAccountOut": "This signs your account out on mobile, browser and desktop devices.",
+      "logOutAll": "Log out all",
+      "couldNotLogOutAll": "Could not log out all sessions",
+      "tryAgain": "Try again.",
+      "logOutThisDevice": "Log out this device?",
+      "logOutThisSession": "Log out this session?",
+      "endTheDevicelabelSession": "End the {{deviceLabel}} session?",
+      "couldNotLogOutSession": "Could not log out session",
+      "mobileMayStaySignedIn": "Mobile may stay signed in together with one web or desktop client. Web and desktop replace each other.",
+      "scanQrLogin": "Scan QR login",
+      "signInOnWebOr": "Sign in on web or desktop using this mobile session.",
+      "noActiveSessionsWereReturned": "No active sessions were returned.",
+      "thisDevice": "THIS DEVICE",
+      "logOutDevicelabel": "Log out {{deviceLabel}}",
+      "logOutAllActiveSessions": "Log out all active sessions",
+      "endEveryDecaveLoginFor": "End every DeCave login for this account.",
+      "activity": {
+        "activeNow": "Active now",
+        "notUsedSince": "Not used since {{date}}",
+        "notUsedRecently": "Not used recently",
+        "minutesAgo_one": "Active {{count}} minute ago",
+        "minutesAgo_other": "Active {{count}} minutes ago",
+        "hoursAgo_one": "Active {{count}} hour ago",
+        "hoursAgo_other": "Active {{count}} hours ago",
+        "daysAgo_one": "Active {{count}} day ago",
+        "daysAgo_other": "Active {{count}} days ago"
+      },
+      "allSessionsSignedOut": "All DeCave sessions were signed out.",
+      "thisDeviceLoggedOut": "This device was logged out.",
+      "clientSignedIn": "{{client}} · Signed in {{date}}",
+      "expires": "Expires {{date}}"
+    },
+    "privacy": {
+      "couldNotLoadYourPrivacy": "Could not load your privacy settings.",
+      "couldNotLoadBlockedAccounts": "Could not load blocked accounts.",
+      "unblockUsername": "Unblock {{username}}?",
+      "theyLlBeAbleTo": "They'll be able to see and contact you again. You can block them again any time.",
+      "couldNotUnblockThisAccount": "Could not unblock this account.",
+      "friendRequests": "FRIEND REQUESTS",
+      "whoCanSendYouFriend": "Who can send you friend requests",
+      "activity": "ACTIVITY",
+      "messages": "MESSAGES",
+      "onlyFriendsCanMessageYou": "Only friends can message you. DeCave doesn't deliver private messages from people who aren't your friends.",
+      "encryptedMessages": "ENCRYPTED MESSAGES",
+      "blockedAccounts": "BLOCKED ACCOUNTS",
+      "unblockUsername2": "Unblock {{username}}",
+      "blockedOn": "Blocked {{date}}",
+      "requests": {
+        "everyone": "Everyone",
+        "everyoneDetail": "Anyone can send you a friend request.",
+        "friendsOfFriends": "Friends of friends",
+        "friendsOfFriendsDetail": "Only people who share a friend with you.",
+        "none": "No one",
+        "noneDetail": "Nobody can send you new requests."
+      },
+      "activityOptions": {
+        "everyone": "Everyone",
+        "friends": "Friends",
+        "nobody": "Nobody"
+      }
+    },
+    "skins": {
+      "neon": {
+        "name": "Neon Lounge",
+        "description": "Near-black with violet glow and cyan highlights."
+      },
+      "nebula": {
+        "description": "DeCave's violet and cyan default."
+      },
+      "arctic": {
+        "description": "Cool blue glass with icy highlights."
+      },
+      "crimson": {
+        "description": "Dark graphite with warm crimson glow."
+      },
+      "royal": {
+        "description": "Deep purple with bright royal accents."
+      },
+      "pearl": {
+        "description": "Soft slate glass with pearl highlights."
+      },
+      "obsidian": {
+        "description": "Near-black glass with a clean silver edge."
+      }
+    }
+  },
+  "linkPage": {
+    "closeTab": "You can close this tab and return to DeCave.",
+    "openDeCave": "Open DeCave in this browser",
+    "steam": {
+      "expiredTitle": "Steam link expired",
+      "expired": "Start the Steam connection again from DeCave.",
+      "signInTitle": "Sign in to finish Steam linking",
+      "signIn": "Steam was not linked. Open DeCave in this browser, sign in to the same account that started linking, then start Steam connection again from Settings → Activity.",
+      "failedTitle": "Steam verification failed",
+      "failed": "Steam did not return a valid identity response.",
+      "takenTitle": "Steam account already linked",
+      "taken": "That Steam account is connected to another DeCave account.",
+      "linkedTitle": "Steam connected",
+      "linked": "Your Steam account is now linked to DeCave."
+    },
+    "twitch": {
+      "expiredTitle": "Twitch link expired",
+      "expired": "Start linking Twitch again from the Hub.",
+      "cancelledTitle": "Twitch not linked",
+      "cancelled": "You cancelled the Twitch sign-in. Nothing was linked.",
+      "signInTitle": "Sign in to finish Twitch linking",
+      "signIn": "Twitch was not linked. Open DeCave in this browser, sign in to the same account that started linking, then link Twitch again.",
+      "failedTitle": "Twitch verification failed",
+      "failed": "Twitch didn't confirm the sign-in.",
+      "takenTitle": "Twitch account already linked",
+      "taken": "That Twitch account is linked to another DeCave account.",
+      "linkedTitle": "Twitch linked",
+      "linked": "Your Twitch account {{account}} is now linked to DeCave."
+    },
+    "faceit": {
+      "expiredTitle": "FACEIT link expired",
+      "expired": "Start linking FACEIT again from the Leaderboard.",
+      "cancelledTitle": "FACEIT not linked",
+      "cancelled": "You cancelled the FACEIT sign-in. Nothing was linked.",
+      "signInTitle": "Sign in to finish FACEIT linking",
+      "signIn": "FACEIT was not linked. Open DeCave in this browser, sign in to the same account that started linking, then link FACEIT again from the Leaderboard.",
+      "failedTitle": "FACEIT verification failed",
+      "failed": "FACEIT didn't confirm the sign-in. Try again.",
+      "takenTitle": "FACEIT account already linked",
+      "taken": "That FACEIT account is linked to another DeCave account.",
+      "linkedTitle": "FACEIT linked",
+      "linked": "Your FACEIT account {{account}} is now linked to DeCave."
+    }
+  },
+  "accountExport": {
+    "failed": "The export could not be completed. Retry the download.",
+    "unfinished": "The export did not finish. Retry the download."
+  },
+  "sessionDevice": {
+    "apps": {
+      "browser": "Web browser",
+      "mobileApp": "Mobile app",
+      "desktopApp": "Desktop app",
+      "legacy": "Legacy session"
+    },
+    "appOnOs": "{{app}} on {{os}}",
+    "withPlace": "{{name}} · {{place}}"
+  }
+}

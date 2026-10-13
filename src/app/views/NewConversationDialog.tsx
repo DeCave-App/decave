@@ -1,5 +1,6 @@
 // Start a direct message or a group chat with friends.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { SocialUser } from "../types";
@@ -24,6 +25,7 @@ export function NewConversationDialog({
   newConversation,
   directMessages,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { toggleNewGroupMember, createGroupChat } = directMessages;
   const { newGroupMemberIds, newGroupName, setNewGroupName, groupCreating } = newConversation;
   return (
@@ -31,22 +33,20 @@ export function NewConversationDialog({
       <div className="modal dc-social-modal" onClick={(event) => event.stopPropagation()}>
         <div className="ds-modal-head">
           <div>
-            <span className="ds-kicker">New conversation</span>
-            <h2>Message friends</h2>
+            <span className="ds-kicker">{t("chat.newConversation.kicker")}</span>
+            <h2>{t("chat.newConversation.title")}</h2>
           </div>
           <button
             type="button"
             className="ds-btn ds-btn-ghost ds-icon-btn"
-            aria-label="Close"
+            aria-label={t("common.actions.close")}
             onClick={() => setShowNewConversation(false)}
           >
             <Icon name="close" />
           </button>
         </div>
 
-        <p className="ds-text-muted dc-social-modal-lead">
-          Message one friend directly, or select at least two friends to create a group chat.
-        </p>
+        <p className="ds-text-muted dc-social-modal-lead">{t("chat.newConversation.lead")}</p>
 
         <div className="ds-list dc-social-modal-list">
           {friends.length === 0 ? (
@@ -54,7 +54,7 @@ export function NewConversationDialog({
               <span className="ds-empty-icon">
                 <Icon name="users" />
               </span>
-              <p>Add friends first to start a conversation.</p>
+              <p>{t("chat.newConversation.empty")}</p>
             </div>
           ) : (
             friends.map((friend) => {
@@ -64,7 +64,9 @@ export function NewConversationDialog({
                   <UserAvatar username={friend.username} avatarUrl={friend.avatarUrl} />
                   <div className="ds-row-copy">
                     <span className="ds-row-title">{friend.username}</span>
-                    <span className="ds-row-sub">{friend.online ? "Online" : "Offline"}</span>
+                    <span className="ds-row-sub">
+                      {friend.online ? t("common.presence.online") : t("common.presence.offline")}
+                    </span>
                   </div>
                   <div className="ds-row-actions">
                     <button
@@ -76,10 +78,10 @@ export function NewConversationDialog({
                       {selected ? (
                         <>
                           <Icon name="check" />
-                          Selected
+                          {t("chat.newConversation.selected")}
                         </>
                       ) : (
-                        "Select"
+                        t("chat.newConversation.select")
                       )}
                     </button>
                     <button
@@ -91,7 +93,7 @@ export function NewConversationDialog({
                       }}
                     >
                       <Icon name="message" />
-                      Message
+                      {t("chat.newConversation.message")}
                     </button>
                   </div>
                 </div>
@@ -101,12 +103,12 @@ export function NewConversationDialog({
         </div>
 
         <div className="ds-card dc-social-group-create">
-          <span className="ds-section-label">Create group chat</span>
+          <span className="ds-section-label">{t("chat.newConversation.createTitle")}</span>
           <input
             className="ds-input"
             value={newGroupName}
             onChange={(event) => setNewGroupName(event.target.value)}
-            placeholder="Group name (optional)"
+            placeholder={t("chat.newConversation.groupName")}
             maxLength={48}
           />
           <div className="dc-social-group-create-row">
@@ -117,9 +119,11 @@ export function NewConversationDialog({
               onClick={() => void createGroupChat()}
             >
               <Icon name="users" />
-              {groupCreating ? "Creating..." : `Create Group (${newGroupMemberIds.length + 1})`}
+              {groupCreating
+                ? t("chat.newConversation.creating")
+                : t("chat.newConversation.create", { members: newGroupMemberIds.length + 1 })}
             </button>
-            <small className="ds-text-muted">Select 2–19 friends. You become the group owner.</small>
+            <small className="ds-text-muted">{t("chat.newConversation.hint")}</small>
           </div>
           {groupError && (
             <div className="ds-notice danger" role="alert">

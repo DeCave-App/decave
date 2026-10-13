@@ -37,15 +37,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/src/theme";
 import { Avatar } from "@/src/components/Avatar";
 import { MenuSection, SettingsMenuRow, SectionHeading, SettingsCard, StatusHeader, Divider, SettingToggle } from "@/src/components/settings/SettingsParts";
+import { LanguagePicker } from "@/src/components/settings/LanguagePicker";
+import { I18N_PICKER_ENABLED } from "../../shared/i18n/flags.ts";
+import { useTranslation } from "react-i18next";
 
 export default function SettingsScreen() {
+  const { t } = useTranslation(["settings", "common"]);
   const [settingsPage, setSettingsPage] = useState<"menu" | "notifications" | "voice">("menu");
   const { user, token, logout } = useSession();
 
   const confirmLogout = () => {
-    Alert.alert("Log out?", "You'll need to sign in again on this device.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Log out", style: "destructive", onPress: () => void logout() },
+    Alert.alert(t("settings.mobile.settings.logOut"), t("settings.mobile.settings.youLlNeedToSign"), [
+      { text: t("common.actions.cancel"), style: "cancel" },
+      { text: t("common.logout.confirm"), style: "destructive", onPress: () => void logout() },
     ]);
   };
   const {
@@ -103,7 +107,7 @@ export default function SettingsScreen() {
     let active = true;
     loadAccountPreferences(token)
       .then((prefs) => { if (active && sessionTokenRef.current === sessionToken) applySynced(prefs.clientSettings); })
-      .catch(() => { if (active) setSyncError("Couldn't load your account settings. Changes are saved on this phone."); });
+      .catch(() => { if (active) setSyncError(t("settings.mobile.settings.couldnTLoadYourAccount")); });
     return () => { active = false; };
   }, [token]);
 
@@ -113,7 +117,7 @@ export default function SettingsScreen() {
     setHubsError("");
     apiJson<Hub[]>("/api/servers", {}, token)
       .then((list) => { if (active) setHubs(Array.isArray(list) ? list : []); })
-      .catch((cause) => { if (active) setHubsError(cause instanceof Error ? cause.message : "Could not load your Hubs."); });
+      .catch((cause) => { if (active) setHubsError(cause instanceof Error ? cause.message : t("settings.mobile.settings.couldNotLoadYourHubs")); });
     return () => { active = false; };
   }, [settingsPage, token]);
 
@@ -130,7 +134,7 @@ export default function SettingsScreen() {
       return true;
     } catch {
       if (sessionTokenRef.current !== sessionToken) return false;
-      setSyncError("Couldn't sync to your account. Your choices are saved on this phone.");
+      setSyncError(t("settings.mobile.settings.couldnTSyncToYour"));
       return false;
     }
   };
@@ -182,7 +186,7 @@ export default function SettingsScreen() {
     const raw = which === "start" ? quietStart : quietEnd;
     const value = normalizeClockTime(raw);
     if (!value) {
-      setQuietError("Use a 24-hour time like 22:00.");
+      setQuietError(t("settings.mobile.settings.useA24HourTime"));
       if (which === "start") setQuietStart(quietHours.start);
       else setQuietEnd(quietHours.end);
       return;
@@ -224,16 +228,16 @@ export default function SettingsScreen() {
         const result = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
           {
-            title: "DeCave microphone access",
+            title: t("settings.mobile.settings.decaveMicrophoneAccess"),
             message:
-              "DeCave needs your microphone so you can talk in voice rooms.",
-            buttonPositive: "Allow",
-            buttonNegative: "Not now",
+              t("settings.mobile.settings.decaveNeedsYourMicrophoneSo"),
+            buttonPositive: t("settings.mobile.settings.allow"),
+            buttonNegative: t("settings.mobile.settings.notNow"),
           },
         );
 
         if (result !== PermissionsAndroid.RESULTS.GRANTED) {
-          setMicNotice("Microphone permission is not enabled.");
+          setMicNotice(t("settings.mobile.settings.microphonePermissionIsNotEnabled"));
           return;
         }
       }
@@ -248,9 +252,9 @@ export default function SettingsScreen() {
       });
 
       for (const track of stream.getTracks()) track.stop();
-      setMicNotice("Microphone is ready.");
+      setMicNotice(t("settings.mobile.settings.microphoneIsReady"));
     } catch {
-      setMicNotice("DeCave could not open the microphone.");
+      setMicNotice(t("settings.mobile.settings.decaveCouldNotOpenThe"));
     } finally {
       setMicChecking(false);
     }
@@ -263,12 +267,12 @@ export default function SettingsScreen() {
     return (
       <Screen>
         <View style={styles.top}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Back" style={styles.backButton} onPress={() => router.back()} hitSlop={8}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} style={styles.backButton} onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={22} color={colors.cyan} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>DECAVE CONTROL CENTER</Text>
-            <Text style={styles.title}>Settings</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("settings.mobile.settings.decaveControlCenter")}</Text>
+            <Text style={styles.title}>{t("settings.window.title")}</Text>
           </View>
           <View style={styles.topIcon}>
             <Ionicons name="settings-outline" size={19} color={colors.violet} />
@@ -280,37 +284,39 @@ export default function SettingsScreen() {
             style={({ pressed }) => [styles.accountCard, pressed && styles.menuRowPressed]}
             onPress={() => router.push("/account-security" as any)}
             accessibilityRole="button"
-            accessibilityLabel="Account and security"
+            accessibilityLabel={t("settings.mobile.settings.accountAndSecurity")}
           >
             <View style={styles.accountRing}>
               <Avatar username={user?.username ?? "?"} avatarUrl={user?.avatarUrl} size={44} />
             </View>
             <View style={styles.menuRowCopy}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.accountName} numberOfLines={1}>{user?.username ?? "Your account"}</Text>
-              <Text style={styles.menuRowDetail} numberOfLines={1}>{user?.email ?? "Account, email, password"}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.accountName} numberOfLines={1}>{user?.username ?? t("settings.mobile.settings.yourAccount")}</Text>
+              <Text style={styles.menuRowDetail} numberOfLines={1}>{user?.email ?? t("settings.mobile.settings.accountEmailPassword")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.lilac} />
           </Pressable>
 
-          <MenuSection title="ACCOUNT SETTINGS">
-            <SettingsMenuRow icon="person-circle-outline" tint="#A78BFA" title="Account & Security" detail="Password, account access, disable or delete" onPress={() => router.push("/account-security" as any)} />
-            <SettingsMenuRow icon="color-palette-outline" tint="#F472B6" title="Appearance" detail="Theme, skin, and visual preferences" onPress={() => router.push("/appearance" as any)} />
-            <SettingsMenuRow icon="desktop-outline" tint="#67E8F9" title="Devices & Sessions" detail="Review and log out active devices" onPress={() => router.push("/devices" as any)} />
-            <SettingsMenuRow icon="hand-left-outline" tint="#FB923C" title="Privacy & Safety" detail="Friend requests, activity and blocked accounts" onPress={() => router.push("/privacy" as any)} />
-            <SettingsMenuRow icon="shield-checkmark-outline" tint="#34D399" title="My Reports" detail="Track reports and safety cases you submitted" onPress={() => router.push("/my-reports" as any)} />
-            <SettingsMenuRow icon="qr-code-outline" tint="#FBBF24" title="Scan QR Code" detail="Sign in to DeCave on web or desktop" onPress={() => router.push("/scan-login" as any)} last />
+          <MenuSection title={t("settings.mobile.settings.accountSettings")}>
+            <SettingsMenuRow icon="person-circle-outline" tint="#A78BFA" title={t("settings.mobile.settings.accountSecurity")} detail={t("settings.mobile.settings.passwordAccountAccessDisableOr")} onPress={() => router.push("/account-security" as any)} />
+            <SettingsMenuRow icon="color-palette-outline" tint="#F472B6" title={t("settings.mobile.settings.appearance")} detail={t("settings.mobile.settings.themeSkinAndVisualPreferences")} onPress={() => router.push("/appearance" as any)} />
+            <SettingsMenuRow icon="desktop-outline" tint="#67E8F9" title={t("settings.mobile.settings.devicesSessions")} detail={t("settings.mobile.settings.reviewAndLogOutActive")} onPress={() => router.push("/devices" as any)} />
+            <SettingsMenuRow icon="hand-left-outline" tint="#FB923C" title={t("settings.mobile.settings.privacySafety")} detail={t("settings.mobile.settings.friendRequestsActivityAndBlocked")} onPress={() => router.push("/privacy" as any)} />
+            <SettingsMenuRow icon="shield-checkmark-outline" tint="#34D399" title={t("settings.mobile.settings.myReports")} detail={t("settings.mobile.settings.trackReportsAndSafetyCases")} onPress={() => router.push("/my-reports" as any)} />
+            <SettingsMenuRow icon="qr-code-outline" tint="#FBBF24" title={t("settings.mobile.settings.scanQrCode")} detail={t("settings.mobile.settings.signInToDecaveOn")} onPress={() => router.push("/scan-login" as any)} last />
           </MenuSection>
 
-          <MenuSection title="APP SETTINGS">
-            <SettingsMenuRow icon="headset-outline" tint="#A78BFA" title="Voice & Audio" detail="Microphone processing and screen share quality" value={connected ? "Connected" : undefined} onPress={() => setSettingsPage("voice")} />
-            <SettingsMenuRow icon="notifications-outline" tint="#F472B6" title="Notifications & Privacy" detail="Alerts, sounds, mentions, and preview privacy" value={notificationSettings.enabled ? "On" : "Off"} onPress={() => setSettingsPage("notifications")} last />
+          <MenuSection title={t("settings.mobile.settings.appSettings")}>
+            <SettingsMenuRow icon="headset-outline" tint="#A78BFA" title={t("settings.mobile.settings.voiceAudio")} detail={t("settings.mobile.settings.microphoneProcessingAndScreenShare")} value={connected ? t("common.connection.connected") : undefined} onPress={() => setSettingsPage("voice")} />
+            <SettingsMenuRow icon="notifications-outline" tint="#F472B6" title={t("settings.mobile.settings.notificationsPrivacy")} detail={t("settings.mobile.settings.alertsSoundsMentionsAndPreview")} value={notificationSettings.enabled ? t("settings.mobile.settings.on") : t("settings.voice.noise.modes.off.label")} onPress={() => setSettingsPage("notifications")} last />
           </MenuSection>
 
-          <MenuSection title="SUPPORT">
-            <SettingsMenuRow icon="help-circle-outline" tint="#67E8F9" title="Help & Feedback" detail="Contact DeCave support" onPress={() => void Linking.openURL("mailto:support@de-cave.com?subject=DeCave%20mobile%20support")} />
-            <SettingsMenuRow icon="document-lock-outline" tint="#34D399" title="Privacy Policy" detail="What DeCave collects and how it is used" onPress={() => void Linking.openURL("https://de-cave.com/privacy")} />
-            <SettingsMenuRow icon="document-text-outline" tint="#FBBF24" title="Terms of Service" detail="The rules for using DeCave" onPress={() => void Linking.openURL("https://de-cave.com/terms")} />
-            <SettingsMenuRow icon="information-circle-outline" tint="#A29DB2" title="About DeCave" detail="Mobile app and service information" value="0.1.0" last />
+          {I18N_PICKER_ENABLED && <LanguagePicker />}
+
+          <MenuSection title={t("settings.mobile.settings.support")}>
+            <SettingsMenuRow icon="help-circle-outline" tint="#67E8F9" title={t("settings.mobile.settings.helpFeedback")} detail={t("settings.mobile.settings.contactDecaveSupport")} onPress={() => void Linking.openURL("mailto:support@de-cave.com?subject=DeCave%20mobile%20support")} />
+            <SettingsMenuRow icon="document-lock-outline" tint="#34D399" title={t("settings.support.privacy")} detail={t("settings.mobile.settings.whatDecaveCollectsAndHow")} onPress={() => void Linking.openURL("https://de-cave.com/privacy")} />
+            <SettingsMenuRow icon="document-text-outline" tint="#FBBF24" title={t("settings.support.terms")} detail={t("settings.mobile.settings.theRulesForUsingDecave")} onPress={() => void Linking.openURL("https://de-cave.com/terms")} />
+            <SettingsMenuRow icon="information-circle-outline" tint="#A29DB2" title={t("settings.mobile.settings.aboutDecave")} detail={t("settings.mobile.settings.mobileAppAndServiceInformation")} value="0.1.0" last />
           </MenuSection>
 
           <Pressable
@@ -319,7 +325,7 @@ export default function SettingsScreen() {
             accessibilityRole="button"
           >
             <Ionicons name="log-out-outline" size={18} color="#FCA5A5" />
-            <Text style={styles.logoutText}>Log out</Text>
+            <Text style={styles.logoutText}>{t("common.logout.confirm")}</Text>
           </Pressable>
         </ScrollView>
       </Screen>
@@ -329,7 +335,7 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back"
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")}
           style={styles.backButton}
           onPress={() => setSettingsPage("menu")}
           hitSlop={8}
@@ -342,8 +348,8 @@ export default function SettingsScreen() {
         </Pressable>
 
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>APP SETTINGS</Text>
-          <Text style={styles.title}>{settingsPage === "voice" ? "Voice & Audio" : "Notifications & Privacy"}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("settings.mobile.settings.appSettings")}</Text>
+          <Text style={styles.title}>{settingsPage === "voice" ? t("settings.mobile.settings.voiceAudio") : t("settings.mobile.settings.notificationsPrivacy")}</Text>
         </View>
 
         <View style={styles.topIcon}>
@@ -370,12 +376,12 @@ export default function SettingsScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.introTitle}>
-              {settingsPage === "voice" ? "Clear, comfortable voice" : "Alerts without oversharing"}
+              {settingsPage === "voice" ? t("settings.mobile.settings.clearComfortableVoice") : t("settings.mobile.settings.alertsWithoutOversharing")}
             </Text>
             <Text style={styles.introText}>
               {settingsPage === "voice"
-                ? "Tune microphone processing and how calls behave on this device."
-                : "Choose what can notify you and how much message content appears outside DeCave."}
+                ? t("settings.mobile.settings.tuneMicrophoneProcessingAndHow")
+                : t("settings.mobile.settings.chooseWhatCanNotifyYou")}
             </Text>
           </View>
         </View>
@@ -383,20 +389,20 @@ export default function SettingsScreen() {
         <View style={settingsPage !== "notifications" ? styles.hidden : undefined}>
         <SectionHeading
           icon="notifications-outline"
-          title="PRIVACY & NOTIFICATIONS"
+          title={t("settings.mobile.settings.privacyNotifications")}
         />
 
         <SettingsCard>
           <StatusHeader
             icon="notifications-outline"
-            title="Device notifications"
-            detail="Control message alerts shown by this device."
+            title={t("settings.mobile.settings.deviceNotifications")}
+            detail={t("settings.mobile.settings.controlMessageAlertsShownBy")}
             status={
               permissionState === "checking"
-                ? "CHECKING"
+                ? t("settings.mobile.settings.checking")
                 : permissionState === "granted"
-                  ? "ALLOWED"
-                  : "BLOCKED"
+                  ? t("settings.mobile.settings.allowed")
+                  : t("settings.mobile.settings.blocked")
             }
             live={permissionState === "granted"}
           />
@@ -412,7 +418,7 @@ export default function SettingsScreen() {
                 color={colors.cyan}
               />
               <Text style={styles.primarySecondaryButtonText}>
-                Enable notifications
+                {t("settings.mobile.settings.enableNotifications")}
               </Text>
             </Pressable>
           )}
@@ -421,8 +427,8 @@ export default function SettingsScreen() {
 
           <SettingToggle
             icon="notifications"
-            title="Notifications"
-            detail="Master switch for DeCave message notifications."
+            title={t("settings.notifications.title")}
+            detail={t("settings.mobile.settings.masterSwitchForDecaveMessage")}
             value={notificationSettings.enabled}
             onValueChange={(value) =>
               changeNotificationSettings({ enabled: value })
@@ -430,8 +436,8 @@ export default function SettingsScreen() {
           />
           <SettingToggle
             icon="volume-medium-outline"
-            title="Notification sounds"
-            detail="Play a sound when DeCave presents a message alert."
+            title={t("settings.mobile.settings.notificationSounds")}
+            detail={t("settings.mobile.settings.playASoundWhenDecave")}
             value={notificationSettings.sound}
             onValueChange={(value) =>
               changeNotificationSettings({ sound: value })
@@ -439,8 +445,8 @@ export default function SettingsScreen() {
           />
           <SettingToggle
             icon="chatbubble-outline"
-            title="Private messages"
-            detail="Notify when a friend sends you a direct message."
+            title={t("settings.notifications.kinds.dms")}
+            detail={t("settings.mobile.settings.notifyWhenAFriendSends")}
             value={notificationSettings.dms}
             onValueChange={(value) =>
               changeNotificationSettings({ dms: value })
@@ -448,8 +454,8 @@ export default function SettingsScreen() {
           />
           <SettingToggle
             icon="people-outline"
-            title="Group chats"
-            detail="Notify when somebody posts in one of your group chats."
+            title={t("settings.mobile.settings.groupChats")}
+            detail={t("settings.mobile.settings.notifyWhenSomebodyPostsIn")}
             value={notificationSettings.groups}
             onValueChange={(value) =>
               changeNotificationSettings({ groups: value })
@@ -457,8 +463,8 @@ export default function SettingsScreen() {
           />
           <SettingToggle
             icon="grid-outline"
-            title="Hub messages"
-            detail="Notify for Hub text messages while that room is not open."
+            title={t("settings.mobile.settings.hubMessages")}
+            detail={t("settings.mobile.settings.notifyForHubTextMessages")}
             value={notificationSettings.hubMessages}
             onValueChange={(value) =>
               changeNotificationSettings({ hubMessages: value })
@@ -466,8 +472,8 @@ export default function SettingsScreen() {
           />
           <SettingToggle
             icon="at-outline"
-            title="Mentions"
-            detail="Notify for @yourname and @everyone mentions."
+            title={t("settings.notifications.kinds.mentions")}
+            detail={t("settings.mobile.settings.notifyForYournameAndEveryone")}
             value={notificationSettings.mentions}
             onValueChange={(value) =>
               changeNotificationSettings({ mentions: value })
@@ -483,19 +489,19 @@ export default function SettingsScreen() {
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.choiceTitle}>
-                  Notification preview
+                  {t("settings.mobile.settings.notificationPreview")}
                 </Text>
                 <Text style={styles.choiceHelp}>
-                  Choose how much private content can appear outside DeCave.
+                  {t("settings.mobile.settings.chooseHowMuchPrivateContent")}
                 </Text>
               </View>
             </View>
 
             <View style={styles.previewStack}>
               {([
-                ["full", "Full preview", "Sender + message text"],
-                ["sender", "Sender only", "Hide the message text"],
-                ["hidden", "Hidden", "Generic DeCave alert only"],
+                ["full", t("settings.notifications.previews.full.label"), t("settings.mobile.settings.senderMessageText")],
+                ["sender", t("settings.notifications.previews.sender.label"), t("settings.mobile.settings.hideTheMessageText")],
+                ["hidden", t("settings.notifications.previews.hidden.label"), t("settings.mobile.settings.genericDecaveAlertOnly")],
               ] as const).map(([value, label, detail]) => {
                 const active =
                   notificationSettings.notificationPreview === value;
@@ -552,24 +558,24 @@ export default function SettingsScreen() {
               color={colors.muted}
             />
             <Text style={styles.resetButtonText}>
-              Reset notification settings
+              {t("settings.mobile.settings.resetNotificationSettings")}
             </Text>
           </Pressable>
           {!!syncError && <Text style={styles.syncError}>{syncError}</Text>}
         </SettingsCard>
 
-        <SectionHeading icon="moon-outline" title="QUIET HOURS" />
+        <SectionHeading icon="moon-outline" title={t("settings.mobile.settings.quietHours")} />
         <SettingsCard>
           <SettingToggle
             icon="moon-outline"
-            title="Quiet hours"
-            detail="Silence notifications on all your devices at night."
+            title={t("settings.anchors.quietHours.label")}
+            detail={t("settings.mobile.settings.silenceNotificationsOnAllYour")}
             value={quietHours.enabled}
             onValueChange={(value) => void saveQuietHours({ ...quietHours, enabled: value })}
           />
           <View style={[styles.timeRow, !quietHours.enabled && styles.buttonDisabled]}>
             <View style={styles.timeField}>
-              <Text style={styles.timeLabel}>From</Text>
+              <Text style={styles.timeLabel}>{t("settings.notifications.quiet.from")}</Text>
               <TextInput
                 value={quietStart}
                 onChangeText={(value) => setQuietStart(value.replace(/[^0-9:]/g, "").slice(0, 5))}
@@ -581,11 +587,11 @@ export default function SettingsScreen() {
                 returnKeyType="done"
                 maxLength={5}
                 style={styles.timeInput}
-                accessibilityLabel="Quiet hours start time"
+                accessibilityLabel={t("settings.mobile.settings.quietHoursStartTime")}
               />
             </View>
             <View style={styles.timeField}>
-              <Text style={styles.timeLabel}>Until</Text>
+              <Text style={styles.timeLabel}>{t("settings.notifications.quiet.until")}</Text>
               <TextInput
                 value={quietEnd}
                 onChangeText={(value) => setQuietEnd(value.replace(/[^0-9:]/g, "").slice(0, 5))}
@@ -597,27 +603,27 @@ export default function SettingsScreen() {
                 returnKeyType="done"
                 maxLength={5}
                 style={styles.timeInput}
-                accessibilityLabel="Quiet hours end time"
+                accessibilityLabel={t("settings.mobile.settings.quietHoursEndTime")}
               />
             </View>
           </View>
-          <Text style={styles.timeHint}>Use 24-hour time. Times follow this phone's time zone.</Text>
+          <Text style={styles.timeHint}>{t("settings.mobile.settings.use24HourTimeTimes")}</Text>
           {!!quietError && <Text style={styles.syncError}>{quietError}</Text>}
           <SettingToggle
             icon="at-outline"
-            title="Still notify me about direct messages and mentions"
-            detail="Important messages still come through during quiet hours."
+            title={t("settings.notifications.quiet.allowMentions")}
+            detail={t("settings.mobile.settings.importantMessagesStillComeThrough")}
             value={quietHours.allowMentions}
             onValueChange={(value) => void saveQuietHours({ ...quietHours, allowMentions: value })}
           />
         </SettingsCard>
 
-        <SectionHeading icon="grid-outline" title="HUBS" />
+        <SectionHeading icon="grid-outline" title={t("settings.mobile.settings.hubs")} />
         <SettingsCard>
-          <Text style={styles.choiceHelp}>Choose what each Hub can notify you about. Mentions only is the default.</Text>
+          <Text style={styles.choiceHelp}>{t("settings.mobile.settings.chooseWhatEachHubCan")}</Text>
           {hubs === null && !hubsError && <ActivityIndicator color={colors.cyan} style={{ marginTop: 12 }} />}
           {!!hubsError && <Text style={styles.syncError}>{hubsError}</Text>}
-          {hubs !== null && hubs.length === 0 && <Text style={[styles.choiceHelp, { marginTop: 10 }]}>You haven't joined any Hubs yet.</Text>}
+          {hubs !== null && hubs.length === 0 && <Text style={[styles.choiceHelp, { marginTop: 10 }]}>{t("settings.mobile.settings.youHavenTJoinedAny")}</Text>}
           {hubs?.map((hub) => {
             const level = hubLevel(hub.id);
             return (
@@ -625,9 +631,9 @@ export default function SettingsScreen() {
                 <Text style={styles.hubName} numberOfLines={1}>{hub.name}</Text>
                 <View style={styles.qualityRow}>
                   {([
-                    ["all", "All messages"],
-                    ["mentions", "Mentions only"],
-                    ["nothing", "Nothing"],
+                    ["all", t("settings.notifications.levels.all")],
+                    ["mentions", t("settings.notifications.presets.mentions")],
+                    ["nothing", t("settings.notifications.levels.nothing")],
                   ] as const).map(([value, label]) => {
                     const active = level === value;
                     return (
@@ -653,19 +659,19 @@ export default function SettingsScreen() {
         <View style={settingsPage !== "voice" ? styles.hidden : undefined}>
         <SectionHeading
           icon="headset-outline"
-          title="VOICE & AUDIO"
+          title={t("settings.mobile.settings.voiceAudio2")}
         />
 
         <SettingsCard>
           <StatusHeader
             icon="headset-outline"
-            title="Voice connection"
+            title={t("settings.mobile.settings.voiceConnection")}
             detail={
               connected
-                ? "Connected to a Voice Room."
-                : "Not connected to a Voice Room."
+                ? t("settings.mobile.settings.connectedToAVoiceRoom")
+                : t("settings.mobile.settings.notConnectedToAVoice")
             }
-            status={connected ? "LIVE" : "OFFLINE"}
+            status={connected ? t("settings.gaming.live") : t("settings.mobile.settings.offline")}
             live={connected}
           />
 
@@ -689,7 +695,7 @@ export default function SettingsScreen() {
                     muted && styles.voiceActionTextActive,
                   ]}
                 >
-                  {muted ? "Unmute" : "Mute"}
+                  {muted ? t("settings.notifications.events.unmute.label") : t("settings.notifications.events.mute.label")}
                 </Text>
               </Pressable>
 
@@ -715,7 +721,7 @@ export default function SettingsScreen() {
                     deafened && styles.voiceActionTextActive,
                   ]}
                 >
-                  {deafened ? "Undeafen" : "Deafen"}
+                  {deafened ? t("settings.notifications.events.undeafen.label") : t("settings.notifications.events.deafen.label")}
                 </Text>
               </Pressable>
             </View>
@@ -725,8 +731,8 @@ export default function SettingsScreen() {
 
           <SettingToggle
             icon="sparkles-outline"
-            title="Noise suppression"
-            detail="Reduce steady background noise before your voice is sent."
+            title={t("settings.anchors.noiseSuppression.label")}
+            detail={t("settings.mobile.settings.reduceSteadyBackgroundNoiseBefore")}
             value={settings.noiseSuppression}
             onValueChange={(value) =>
               updateSettings({ noiseSuppression: value })
@@ -734,8 +740,8 @@ export default function SettingsScreen() {
           />
           <SettingToggle
             icon="repeat-outline"
-            title="Echo cancellation"
-            detail="Reduce speaker echo feeding back into your microphone."
+            title={t("settings.voice.processing.echo")}
+            detail={t("settings.mobile.settings.reduceSpeakerEchoFeedingBack")}
             value={settings.echoCancellation}
             onValueChange={(value) =>
               updateSettings({ echoCancellation: value })
@@ -743,8 +749,8 @@ export default function SettingsScreen() {
           />
           <SettingToggle
             icon="pulse-outline"
-            title="Automatic gain control"
-            detail="Let WebRTC automatically balance microphone loudness."
+            title={t("settings.voice.processing.gain")}
+            detail={t("settings.mobile.settings.letWebrtcAutomaticallyBalanceMicrophone")}
             value={settings.autoGainControl}
             onValueChange={(value) =>
               updateSettings({ autoGainControl: value })
@@ -752,8 +758,8 @@ export default function SettingsScreen() {
           />
           <SettingToggle
             icon="mic-off-outline"
-            title="Join voice muted"
-            detail="Start every new Voice Room muted until you choose to speak."
+            title={t("settings.mobile.settings.joinVoiceMuted")}
+            detail={t("settings.mobile.settings.startEveryNewVoiceRoom")}
             value={settings.joinMuted}
             onValueChange={(value) =>
               updateSettings({ joinMuted: value })
@@ -769,20 +775,19 @@ export default function SettingsScreen() {
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.choiceTitle}>
-                  Screen share quality
+                  {t("settings.mobile.settings.screenShareQuality")}
                 </Text>
                 <Text style={styles.choiceHelp}>
-                  Resolution requested when you start sharing your mobile
-                  screen.
+                  {t("settings.mobile.settings.resolutionRequestedWhenYouStart")}
                 </Text>
               </View>
             </View>
 
             <View style={styles.qualityRow}>
               {([
-                ["dataSaver", "Saver"],
-                ["balanced", "Balanced"],
-                ["full", "Full"],
+                ["dataSaver", t("settings.mobile.settings.quality.saver")],
+                ["balanced", t("settings.mobile.settings.quality.balanced")],
+                ["full", t("settings.mobile.settings.quality.full")],
               ] as const).map(([value, label]) => {
                 const active =
                   settings.screenShareQuality === value;
@@ -822,7 +827,7 @@ export default function SettingsScreen() {
               color={colors.cyan}
             />
             <Text style={styles.restartHintText}>
-              Capture-processing changes apply next time the microphone opens.
+              {t("settings.mobile.settings.captureProcessingChangesApplyNext")}
             </Text>
           </View>
 
@@ -844,7 +849,7 @@ export default function SettingsScreen() {
               />
             )}
             <Text style={styles.micCheckText}>
-              {micChecking ? "Checking microphone…" : "Check microphone"}
+              {micChecking ? t("settings.mobile.settings.checkingMicrophone") : t("settings.mobile.settings.checkMicrophone")}
             </Text>
           </Pressable>
 
@@ -852,19 +857,19 @@ export default function SettingsScreen() {
             <View
               style={[
                 styles.micNotice,
-                micNotice === "Microphone is ready." &&
+                micNotice === t("settings.mobile.settings.microphoneIsReady") &&
                   styles.micNoticeSuccess,
               ]}
             >
               <Ionicons
                 name={
-                  micNotice === "Microphone is ready."
+                  micNotice === t("settings.mobile.settings.microphoneIsReady")
                     ? "checkmark-circle-outline"
                     : "alert-circle-outline"
                 }
                 size={15}
                 color={
-                  micNotice === "Microphone is ready."
+                  micNotice === t("settings.mobile.settings.microphoneIsReady")
                     ? colors.green
                     : colors.yellow
                 }
@@ -872,7 +877,7 @@ export default function SettingsScreen() {
               <Text
                 style={[
                   styles.micNoticeText,
-                  micNotice === "Microphone is ready." &&
+                  micNotice === t("settings.mobile.settings.microphoneIsReady") &&
                     styles.micNoticeTextSuccess,
                 ]}
               >
@@ -891,7 +896,7 @@ export default function SettingsScreen() {
               color={colors.muted}
             />
             <Text style={styles.resetButtonText}>
-              Reset voice settings
+              {t("settings.mobile.settings.resetVoiceSettings")}
             </Text>
           </Pressable>
         </SettingsCard>

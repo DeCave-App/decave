@@ -97,6 +97,8 @@ export type Channel = {
   private?: boolean;
   forumGuidelines?: string;
   forumPostPolicy?: ForumPostPolicy;
+  /** Per-room accent ('#rrggbb'); null/absent = Hub accent. */
+  accent?: string | null;
 };
 
 export type Hub = {

@@ -1,0 +1,120 @@
+{
+  "category": {
+    "HARASSMENT_BULLYING": "Nękanie lub prześladowanie",
+    "HATE_SPEECH": "Mowa nienawiści",
+    "SEXUAL_INAPPROPRIATE": "Treści seksualne lub nieodpowiednie",
+    "SUSPECTED_GROOMING": "Podejrzenie groomingu",
+    "CHILD_SAFETY": "Zagrożenie bezpieczeństwa dziecka",
+    "THREATS_VIOLENCE": "Groźby lub przemoc",
+    "SPAM_SCAM": "Spam lub oszustwo",
+    "IMPERSONATION": "Podszywanie się",
+    "UNDERAGE_USER": "Użytkownik poniżej limitu wieku",
+    "INAPPROPRIATE_MEDIA": "Nieodpowiednie multimedia",
+    "SELF_HARM": "Ryzyko samookaleczenia",
+    "OTHER": "Inne"
+  },
+  "urgency": {
+    "critical": "Krytyczny",
+    "high": "Wysoki",
+    "medium": "Średni",
+    "low": "Niski",
+    "spam_invalid": "Spam lub nieprawidłowe"
+  },
+  "report": {
+    "title": {
+      "content": "Zgłoś treść",
+      "user": "Zgłoś: {{name}}",
+      "thisUser": "Zgłoś tego użytkownika",
+      "item": "Zgłoś: {{label}}",
+      "thisContent": "Zgłoś tę treść"
+    },
+    "failed": "Nie udało się wysłać zgłoszenia.",
+    "submitted": "Zgłoszenie wysłane. Dzięki, że pomagasz dbać o bezpieczeństwo DeCave.",
+    "submittedNoEvidence": "Zgłoszenie wysłane, ale nie udało się dołączyć zgłoszonej wiadomości, więc zespół bezpieczeństwa nie może jej przeczytać. Możesz to zamknąć.",
+    "connectFailed": "Nie udało się połączyć z DeCave.",
+    "kicker": "Trust & Safety",
+    "private": "Twoje zgłoszenie jest prywatne. Zgłaszana osoba nie zobaczy, kim jesteś.",
+    "category": "Co się stało?",
+    "urgency": "Pilność",
+    "details": "Szczegóły <optional>(opcjonalnie)</optional>",
+    "detailsPlaceholder": "Powiedz nam, co powinniśmy wiedzieć",
+    "evidence": "Wybrane dowody",
+    "evidenceEncrypted": "Zostaną zaszyfrowane na tym urządzeniu przed wysłaniem.",
+    "blockAfter": "Zablokuj tego użytkownika po wysłaniu",
+    "cancel": "Anuluj",
+    "submitting": "Wysyłanie…",
+    "submit": "Wyślij zgłoszenie"
+  },
+  "myReports": {
+    "loadFailed": "Nie udało się wczytać twoich zgłoszeń.",
+    "connectFailed": "Nie udało się połączyć z DeCave.",
+    "kicker": "WIDOCZNE TYLKO DLA CIEBIE",
+    "title": "Moje zgłoszenia",
+    "intro": "Śledź wysłane zgłoszenia. Szczegóły rozpatrywania pozostają prywatne.",
+    "loading": "Wczytywanie…",
+    "refresh": "Odśwież",
+    "empty": "Nie masz jeszcze żadnych zgłoszeń.",
+    "rowMeta": "{{target}} · {{date}}",
+    "report": "Zgłoszenie",
+    "close": "Zamknij",
+    "noDetails": "Nie podano dodatkowych szczegółów.",
+    "statusLine": "Status: {{status}} · wysłano {{date}}",
+    "status": {
+      "submitted": "Wysłane",
+      "under_review": "W trakcie weryfikacji",
+      "awaiting_information": "Czeka na informacje",
+      "action_taken": "Podjęto działania",
+      "no_violation": "Brak naruszenia",
+      "escalated": "Przekazane wyżej",
+      "appealed": "Złożono odwołanie",
+      "closed": "Zamknięte"
+    },
+    "urgency": {
+      "critical": "krytyczny",
+      "high": "wysoki",
+      "medium": "średni",
+      "low": "niski",
+      "spam_invalid": "spam/nieprawidłowe"
+    },
+    "target": {
+      "user": "użytkownik",
+      "message": "wiadomość",
+      "content": "treść",
+      "attachment": "załącznik",
+      "profile": "profil",
+      "voice_participant": "uczestnik rozmowy głosowej"
+    }
+  },
+  "qrLogin": {
+    "creating": "Tworzenie bezpiecznego kodu logowania…",
+    "createFailed": "Nie udało się utworzyć logowania kodem QR.",
+    "instructions": "Otwórz DeCave Mobile → Ustawienia → Urządzenia → Skanuj kod QR logowania.",
+    "updating": "Odświeżanie bezpiecznego kodu logowania…",
+    "expired": "Kod QR logowania wygasł.",
+    "codeAlt": "Kod QR logowania DeCave",
+    "preparing": "Przygotowywanie…",
+    "scan": "Zeskanuj aplikacją DeCave"
+  },
+  "mobile": {
+    "myReports": {
+      "reportValue": "Zgłoszenie {{value}}"
+    },
+    "category": {
+      "HARASSMENT_BULLYING": "Nękanie",
+      "SEXUAL_INAPPROPRIATE": "Treści seksualne",
+      "SUSPECTED_GROOMING": "Grooming",
+      "CHILD_SAFETY": "Bezpieczeństwo dzieci",
+      "THREATS_VIOLENCE": "Groźby",
+      "SELF_HARM": "Samookaleczenie"
+    },
+    "report": {
+      "submittedNoEvidenceShort": "Zgłoszenie wysłane, ale nie udało się dołączyć zgłoszonej wiadomości.",
+      "failed": "Nie udało się wysłać zgłoszenia.",
+      "kicker": "ZAUFANIE I BEZPIECZEŃSTWO",
+      "private": "Twoje zgłoszenie jest prywatne. Zgłaszana osoba nie zobaczy, kim jesteś.",
+      "detailsPlaceholder": "Powiedz nam, co powinniśmy wiedzieć (opcjonalnie)",
+      "evidenceNote": "Zgłoszona wiadomość jest dołączona i zaszyfrowana, więc odczyta ją tylko zespół bezpieczeństwa DeCave.",
+      "contextNote": "Twoje zgłoszenie i jego kontekst trafią do zespołu bezpieczeństwa DeCave."
+    }
+  }
+}

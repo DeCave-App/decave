@@ -1,0 +1,50 @@
+{
+  "rules": {
+    "communityRules": {
+      "title": "Normas de la comunidad de DeCave",
+      "body": "Estas normas se aplican en todo DeCave: Hubs, MD, chats de grupo, voz y Buscar Squad.\n\n1. **Respeta a los demás.** Nada de acoso, bullying, amenazas ni insultos dirigidos.\n2. **Nada de discurso de odio.** Nada que ataque a personas por su raza, etnia, religión, género, orientación sexual, discapacidad o nacionalidad.\n3. **Mantén los espacios públicos aptos para todos.** Nada de contenido sexual, gore o impactante en Hubs que no lo hayan permitido expresamente. Nunca nada que involucre a menores.\n4. **Protege la privacidad.** No compartas información personal de nadie (nombre real, dirección, fotos, cuentas) sin su consentimiento.\n5. **Nada de trampas, estafas ni exploits.** Nada de vender cheats, comerciar con cuentas, enlaces de phishing, sorteos falsos ni hacerse pasar por el equipo de DeCave.\n6. **Nada de spam.** Nada de MD masivos, mensajes repetidos, publicidad no solicitada ni autopromoción fuera de los espacios que lo permitan.\n7. **Sigue las normas de cada Hub.** Los propietarios de los Hubs pueden añadir normas más estrictas para su comunidad.\n8. **Respeta la ley** y los [Términos del servicio](https://de-cave.com/terms).\n\n**Sanciones:** según la gravedad, incumplir estas normas puede conllevar una advertencia, restricciones temporales, la expulsión de un Hub o un baneo permanente de DeCave.\n\n**Reporta un problema:** haz clic derecho en un mensaje o perfil y elige **Reportar**. Los reportes son privados y nunca se le dice a la persona quién la reportó."
+    }
+  },
+  "faq": {
+    "private": {
+      "title": "¿Este Hub es privado? ¿Pueden verme otras personas aquí?",
+      "body": "Sí, es privado. Todos se unen a DeCave Official automáticamente, pero los miembros no pueden verse entre sí: la lista de miembros, el número de miembros y el estado en línea están ocultos, y solo el equipo de DeCave puede publicar. Nadie puede saber que estás aquí."
+    },
+    "profile": {
+      "title": "¿Cómo configuro mi perfil?",
+      "body": "Haz clic en tu avatar en la esquina inferior izquierda → **Perfil**. Puedes añadir una foto, un banner, una bio y los juegos a los que juegas."
+    },
+    "friends": {
+      "title": "¿Cómo añado amigos?",
+      "body": "Abre **Amigos**, elige **Añadir amigo** y busca por nombre de usuario. Cuando acepten, podrás chatear, llamarlos e invitarlos a Hubs."
+    },
+    "findSquad": {
+      "title": "¿Qué es Buscar Squad?",
+      "body": "Elige un juego y lo que buscas, y DeCave te empareja con jugadores que buscan lo mismo. Cuando hay coincidencia, tendrás una sala de Squad para chatear y hablar por voz juntos."
+    },
+    "hubs": {
+      "title": "¿Cómo me uno a un Hub o creo uno?",
+      "body": "Usa el botón **+** de la barra superior. Puedes explorar Hubs públicos, unirte a uno con un enlace de invitación o crear el tuyo a partir de una plantilla (incluido el diseño Streamer)."
+    },
+    "voiceRooms": {
+      "title": "¿Cómo funcionan las salas de voz?",
+      "body": "Haz clic en una sala de voz de cualquier Hub para unirte. Desde los controles de voz puedes silenciarte, ensordecerte, compartir pantalla y cambiar tu dispositivo de entrada. La función Pulsar para hablar está disponible en la app de escritorio."
+    },
+    "desktopApp": {
+      "title": "¿Debería usar la app de escritorio?",
+      "body": "Es opcional, pero añade detección de juegos, notificaciones de escritorio, pulsar para hablar global y actualizaciones automáticas. Descárgala para Windows o Mac en [de-cave.com](https://de-cave.com)."
+    },
+    "report": {
+      "title": "¿Cómo reporto a alguien?",
+      "body": "Haz clic derecho en su mensaje o perfil y elige **Reportar**. Los reportes son privados."
+    },
+    "whatsNew": {
+      "title": "¿Dónde puedo ver las novedades?",
+      "body": "Lee **#announcements** para noticias y **#patch-notes** para cada actualización."
+    },
+    "deleteAccount": {
+      "title": "¿Cómo elimino mi cuenta o mis datos?",
+      "body": "Ve a **Ajustes → Cuenta**. Consulta la [Política de privacidad](https://de-cave.com/privacy) para ver qué se guarda y cómo se elimina."
+    }
+  }
+}

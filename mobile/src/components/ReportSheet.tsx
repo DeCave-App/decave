@@ -1,25 +1,27 @@
 import { useState } from "react";
 import { AccessibilityInfo, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { apiFetch, apiJson } from "@/src/lib/api";
 import { uploadEvidence, type EvidenceTarget } from "@/src/lib/report-evidence";
 import { colors } from "@/src/theme";
 import { REPORT_CATEGORIES, type ReportCategory, type ReportTargetType, type ReportUrgency } from "@/src/types";
 
-const labels: Record<ReportCategory, string> = {
-  HARASSMENT_BULLYING: "Harassment",
-  HATE_SPEECH: "Hate speech",
-  SEXUAL_INAPPROPRIATE: "Sexual content",
-  SUSPECTED_GROOMING: "Grooming",
-  CHILD_SAFETY: "Child safety",
-  THREATS_VIOLENCE: "Threats",
-  SPAM_SCAM: "Spam or scam",
-  IMPERSONATION: "Impersonation",
-  UNDERAGE_USER: "Underage user",
-  INAPPROPRIATE_MEDIA: "Inappropriate media",
-  SELF_HARM: "Self-harm",
-  OTHER: "Other",
-};
+// Catalog keys for the category chips; the short mobile labels live under safety.mobile.category.
+const labels = {
+  HARASSMENT_BULLYING: "safety.mobile.category.HARASSMENT_BULLYING",
+  HATE_SPEECH: "safety.category.HATE_SPEECH",
+  SEXUAL_INAPPROPRIATE: "safety.mobile.category.SEXUAL_INAPPROPRIATE",
+  SUSPECTED_GROOMING: "safety.mobile.category.SUSPECTED_GROOMING",
+  CHILD_SAFETY: "safety.mobile.category.CHILD_SAFETY",
+  THREATS_VIOLENCE: "safety.mobile.category.THREATS_VIOLENCE",
+  SPAM_SCAM: "safety.category.SPAM_SCAM",
+  IMPERSONATION: "safety.category.IMPERSONATION",
+  UNDERAGE_USER: "safety.category.UNDERAGE_USER",
+  INAPPROPRIATE_MEDIA: "safety.category.INAPPROPRIATE_MEDIA",
+  SELF_HARM: "safety.mobile.category.SELF_HARM",
+  OTHER: "safety.category.OTHER",
+} as const satisfies Record<ReportCategory, string>;
 
 export type MobileReportTarget = {
   targetType: ReportTargetType;
@@ -48,6 +50,7 @@ type ReportSheetProps = {
 export const REPORT_CONFIRMATION_MS = 3000;
 
 export function ReportSheet({ visible, token, target, onClose, onSubmitted }: ReportSheetProps) {
+  const { t } = useTranslation(["common", "safety"]);
   const [category, setCategory] = useState<ReportCategory>("HARASSMENT_BULLYING");
   const [urgency, setUrgency] = useState<ReportUrgency>("medium");
   const [description, setDescription] = useState("");
@@ -82,7 +85,7 @@ export function ReportSheet({ visible, token, target, onClose, onSubmitted }: Re
         },
         token,
       );
-      if (!data.report?.id) throw new Error("The report could not be submitted.");
+      if (!data.report?.id) throw new Error(t("safety.report.failed"));
       let evidenceAttached = true;
       if (target.evidenceText?.trim()) {
         try {
@@ -95,26 +98,28 @@ export function ReportSheet({ visible, token, target, onClose, onSubmitted }: Re
         await apiJson(`/api/safety/blocks/${encodeURIComponent(target.subjectUserId)}`, { method: "PUT" }, token);
       }
       if (evidenceAttached) {
-        setNotice("Report submitted. Thank you for helping keep DeCave safe.");
-        AccessibilityInfo.announceForAccessibility("Report submitted. Thank you for helping keep DeCave safe.");
+        setNotice(t("safety.report.submitted"));
+        AccessibilityInfo.announceForAccessibility(t("safety.report.submitted"));
         onSubmitted?.();
       } else {
         // Leave the sheet open: the auto-close would hide this before anyone reads it.
         setNotice(
-          "Report submitted, but the reported message could not be attached, so the safety team can't read it. You can close this.",
+          t("safety.report.submittedNoEvidence"),
         );
-        AccessibilityInfo.announceForAccessibility("Report submitted, but the reported message could not be attached.");
+        AccessibilityInfo.announceForAccessibility(t("safety.mobile.report.submittedNoEvidenceShort"));
       }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not submit the report.");
+      setNotice(error instanceof Error ? error.message : t("safety.mobile.report.failed"));
     } finally {
       setBusy(false);
     }
   };
 
-  const label = target.targetType === "user" || target.targetType === "profile" || target.targetType === "voice_participant"
-    ? target.subjectUsername || "this user"
-    : "this content";
+  const title = target.targetType === "user" || target.targetType === "profile" || target.targetType === "voice_participant"
+    ? target.subjectUsername
+      ? t("safety.report.title.user", { name: target.subjectUsername })
+      : t("safety.report.title.thisUser")
+    : t("safety.report.title.thisContent");
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -123,27 +128,27 @@ export function ReportSheet({ visible, token, target, onClose, onSubmitted }: Re
           <View style={styles.grabber} />
           <View style={styles.head}>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>TRUST &amp; SAFETY</Text>
-              <Text style={styles.title}>Report {label}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("safety.mobile.report.kicker")}</Text>
+              <Text style={styles.title}>{title}</Text>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={8}><Ionicons name="close" size={21} color={colors.muted} /></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")} onPress={onClose} hitSlop={8}><Ionicons name="close" size={21} color={colors.muted} /></Pressable>
           </View>
-          <Text style={styles.copy}>Your report is private. The person being reported will not see your identity.</Text>
-          <Text style={styles.sectionLabel}>What happened?</Text>
+          <Text style={styles.copy}>{t("safety.mobile.report.private")}</Text>
+          <Text style={styles.sectionLabel}>{t("safety.report.category")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            {REPORT_CATEGORIES.map((value) => <Pressable accessibilityRole="button" key={value} style={[styles.chip, category === value && styles.chipActive]} onPress={() => setCategory(value)}><Text style={[styles.chipText, category === value && styles.chipTextActive]}>{labels[value]}</Text></Pressable>)}
+            {REPORT_CATEGORIES.map((value) => <Pressable accessibilityRole="button" key={value} style={[styles.chip, category === value && styles.chipActive]} onPress={() => setCategory(value)}><Text style={[styles.chipText, category === value && styles.chipTextActive]}>{t(labels[value])}</Text></Pressable>)}
           </ScrollView>
-          <Text style={styles.sectionLabel}>Urgency</Text>
-          <View style={styles.urgencyRow}>{(["critical", "high", "medium", "low"] as ReportUrgency[]).map((value) => <Pressable accessibilityRole="button" key={value} style={[styles.urgency, urgency === value && styles.chipActive]} onPress={() => setUrgency(value)}><Text style={[styles.chipText, urgency === value && styles.chipTextActive]}>{value}</Text></Pressable>)}</View>
-          <TextInput value={description} onChangeText={(value) => setDescription(value.slice(0, 4000))} placeholder="Tell us what we should know (optional)" placeholderTextColor={colors.faint} multiline numberOfLines={4} textAlignVertical="top" style={styles.textarea} />
-          {target.subjectUserId && <Pressable accessibilityRole="button" style={styles.checkRow} onPress={() => setBlockAfter((value) => !value)}><Ionicons name={blockAfter ? "checkbox" : "square-outline"} size={20} color={blockAfter ? colors.cyan : colors.muted} /><Text style={styles.checkText}>Block this user after submitting</Text></Pressable>}
+          <Text style={styles.sectionLabel}>{t("safety.report.urgency")}</Text>
+          <View style={styles.urgencyRow}>{(["critical", "high", "medium", "low"] as ReportUrgency[]).map((value) => <Pressable accessibilityRole="button" key={value} style={[styles.urgency, urgency === value && styles.chipActive]} onPress={() => setUrgency(value)}><Text style={[styles.chipText, urgency === value && styles.chipTextActive]}>{t(`safety.myReports.urgency.${value}`)}</Text></Pressable>)}</View>
+          <TextInput value={description} onChangeText={(value) => setDescription(value.slice(0, 4000))} placeholder={t("safety.mobile.report.detailsPlaceholder")} placeholderTextColor={colors.faint} multiline numberOfLines={4} textAlignVertical="top" style={styles.textarea} />
+          {target.subjectUserId && <Pressable accessibilityRole="button" style={styles.checkRow} onPress={() => setBlockAfter((value) => !value)}><Ionicons name={blockAfter ? "checkbox" : "square-outline"} size={20} color={blockAfter ? colors.cyan : colors.muted} /><Text style={styles.checkText}>{t("safety.report.blockAfter")}</Text></Pressable>}
           <Text style={styles.note}>
             {target.evidenceText?.trim()
-              ? "The reported message is attached, encrypted so only DeCave's safety team can read it."
-              : "Your report and its context are sent to DeCave's safety team."}
+              ? t("safety.mobile.report.evidenceNote")
+              : t("safety.mobile.report.contextNote")}
           </Text>
           {!!notice && <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text>}
-          <View style={styles.actions}><Pressable accessibilityRole="button" style={styles.cancel} onPress={onClose} disabled={busy}><Text style={styles.cancelText}>Cancel</Text></Pressable><Pressable accessibilityRole="button" style={[styles.submit, busy && styles.disabled]} onPress={() => void submit()} disabled={busy}><Text style={styles.submitText}>{busy ? "Submitting…" : "Submit report"}</Text></Pressable></View>
+          <View style={styles.actions}><Pressable accessibilityRole="button" style={styles.cancel} onPress={onClose} disabled={busy}><Text style={styles.cancelText}>{t("safety.report.cancel")}</Text></Pressable><Pressable accessibilityRole="button" style={[styles.submit, busy && styles.disabled]} onPress={() => void submit()} disabled={busy}><Text style={styles.submitText}>{busy ? t("safety.report.submitting") : t("safety.report.submit")}</Text></Pressable></View>
         </Pressable>
       </Pressable>
     </Modal>

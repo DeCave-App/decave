@@ -7,8 +7,10 @@ import { reloadAppAsync } from "expo";
 import * as SecureStore from "expo-secure-store";
 import { SKINS, type SkinId, useSkin } from "@/src/skin";
 import { COLOR_MODE_KEY, colorMode, type ColorMode } from "@/src/theme";
+import { useTranslation } from "react-i18next";
 
 export default function AppearanceScreen() {
+  const { t } = useTranslation(["settings", "common"]);
   const { skin: activeSkin, setSkin, palette: activePalette } = useSkin();
   const [selectedSkinId, setSelectedSkinId] = useState<SkinId>(activeSkin.id);
   const [saving, setSaving] = useState(false);
@@ -44,18 +46,18 @@ export default function AppearanceScreen() {
   return (
     <Screen>
       <View style={[styles.top, { backgroundColor: palette.bg, borderBottomColor: palette.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" style={[styles.back, { backgroundColor: palette.panel, borderColor: palette.border }]} onPress={() => router.back()}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} style={[styles.back, { backgroundColor: palette.panel, borderColor: palette.border }]} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={palette.accent} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.3} style={[styles.kicker, { color: palette.accent }]}>APPEARANCE</Text>
-          <Text style={[styles.title, { color: palette.text }]}>Skins</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.kicker, { color: palette.accent }]}>{t("settings.mobile.appearance.appearance")}</Text>
+          <Text style={[styles.title, { color: palette.text }]}>{t("settings.mobile.appearance.skins")}</Text>
         </View>
         <Ionicons name="color-palette-outline" size={22} color={palette.accent} />
       </View>
 
       <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={[styles.scroll, { backgroundColor: palette.bg }]}>
-        <Text style={[styles.modeLabel, { color: palette.muted }]}>MODE</Text>
+        <Text style={[styles.modeLabel, { color: palette.muted }]}>{t("settings.mobile.appearance.mode")}</Text>
         <View style={[styles.modeRow, { backgroundColor: palette.panel, borderColor: palette.border }]}>
           {(["dark", "light"] as const).map((mode) => {
             const active = colorMode === mode;
@@ -68,15 +70,15 @@ export default function AppearanceScreen() {
                 style={[styles.modeButton, active && { backgroundColor: palette.accentSoft, borderColor: palette.accent }]}
               >
                 <Ionicons name={mode === "dark" ? "moon-outline" : "sunny-outline"} size={18} color={active ? palette.accent : palette.muted} />
-                <Text style={[styles.modeText, { color: active ? palette.text : palette.muted }]}>{mode === "dark" ? "Dark" : "Light"}</Text>
+                <Text style={[styles.modeText, { color: active ? palette.text : palette.muted }]}>{mode === "dark" ? t("settings.mobile.appearance.dark") : t("settings.mobile.appearance.light")}</Text>
               </Pressable>
             );
           })}
         </View>
         {colorMode === "light" && (
-          <Text style={[styles.help, { color: palette.muted, marginBottom: 14 }]}>In Light mode a skin sets the accent color; Dark mode uses its full look.</Text>
+          <Text style={[styles.help, { color: palette.muted, marginBottom: 14 }]}>{t("settings.mobile.appearance.inLightModeASkin")}</Text>
         )}
-        <Text style={[styles.help, { color: palette.muted }]}>Choose a visual style, preview it here, then tap Save skin. DeCave restarts with the new look, and your choice is stored on this device.</Text>
+        <Text style={[styles.help, { color: palette.muted }]}>{t("settings.mobile.appearance.chooseAVisualStylePreview")}</Text>
         <View style={styles.grid}>
           {SKINS.map((skin) => {
             const selected = skin.id === selectedSkinId;
@@ -109,7 +111,7 @@ export default function AppearanceScreen() {
         </View>
       </ScrollView>
       <View style={[styles.saveFooter, { backgroundColor: palette.bg, borderTopColor: palette.border }]}>
-        {saved && !hasChanges && <Text style={[styles.savedText, { color: palette.accent }]}>Skin saved</Text>}
+        {saved && !hasChanges && <Text style={[styles.savedText, { color: palette.accent }]}>{t("settings.mobile.appearance.skinSaved")}</Text>}
         <Pressable accessibilityRole="button"
           style={[
             styles.saveButton,
@@ -120,7 +122,7 @@ export default function AppearanceScreen() {
           onPress={() => void saveSkin()}
         >
           <Ionicons name="checkmark" size={18} color={palette.bg} />
-          <Text style={[styles.saveButtonText, { color: palette.bg }]}>{saving ? "Saving…" : hasChanges ? "Save skin" : "Skin saved"}</Text>
+          <Text style={[styles.saveButtonText, { color: palette.bg }]}>{saving ? t("common.status.saving") : hasChanges ? t("settings.mobile.appearance.saveSkin") : t("settings.mobile.appearance.skinSaved")}</Text>
         </Pressable>
       </View>
     </Screen>

@@ -22,6 +22,7 @@ import {
   type HomeWidgetId,
   type HomeWidgetSize,
 } from "../../features/home";
+import { i18next } from "../../i18n/index.ts";
 import type { ExternalWidgetFormState } from "../state/external-widget-form";
 
 export type HomeDashboardActionsDeps = {
@@ -114,9 +115,7 @@ export function createHomeDashboardActions(deps: HomeDashboardActionsDeps) {
         HOME_QUICK_LINKS.find((link) => link.id === draft.id),
       );
       if (!normalized || seen.has(normalized.id)) {
-        setQuickLinkError(
-          "Each shortcut needs a valid name and a public HTTPS URL without ports, credentials, or private addresses.",
-        );
+        setQuickLinkError(i18next.t("chat.actions.home.quickLinkInvalid"));
         return;
       }
       seen.add(normalized.id);
@@ -129,17 +128,19 @@ export function createHomeDashboardActions(deps: HomeDashboardActionsDeps) {
 
   const addExternalHomeWidget = () => {
     if (homeWidgets.filter(isExternalHomeWidget).length >= MAX_EXTERNAL_HOME_WIDGETS) {
-      setExternalWidgetError(`You can add up to ${MAX_EXTERNAL_HOME_WIDGETS} external widgets.`);
+      setExternalWidgetError(i18next.t("chat.actions.home.widgetLimit", { count: MAX_EXTERNAL_HOME_WIDGETS }));
       return;
     }
     const title = normalizeExternalHomeWidgetTitle(externalWidgetTitle);
     const url = normalizeExternalHomeWidgetUrl(externalWidgetUrl);
     if (!title) {
-      setExternalWidgetError(`Enter a title of ${MAX_EXTERNAL_HOME_WIDGET_TITLE_LENGTH} characters or fewer.`);
+      setExternalWidgetError(
+        i18next.t("chat.actions.home.widgetTitleLength", { count: MAX_EXTERNAL_HOME_WIDGET_TITLE_LENGTH }),
+      );
       return;
     }
     if (!url) {
-      setExternalWidgetError("Use a public HTTPS URL without a port, credentials, or local/private hostname.");
+      setExternalWidgetError(i18next.t("chat.actions.home.widgetUrlInvalid"));
       return;
     }
     setHomeWidgets((current) => {

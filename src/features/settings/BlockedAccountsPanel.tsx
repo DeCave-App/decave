@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSettingsT } from "./useSettingsT";
 
 type Block = { userId: string; username: string; createdAt: string };
 
@@ -11,6 +12,7 @@ type Props = {
 
 /** Settings → Privacy: everyone you have blocked, with Unblock. */
 export function BlockedAccountsPanel({ apiBase, onUnblocked, formatDate }: Props) {
+  const { t } = useSettingsT();
   const [blocks, setBlocks] = useState<Block[] | null>(null);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
@@ -23,11 +25,11 @@ export function BlockedAccountsPanel({ apiBase, onUnblocked, formatDate }: Props
         const response = await fetch(`${apiBase}/api/safety/blocks`, { credentials: "include" });
         const data = (await response.json().catch(() => ({}))) as { blocks?: Block[] };
         if (!cancelled) setBlocks(response.ok ? (data.blocks ?? []) : []);
-        if (!cancelled && !response.ok) setError("Could not load your blocked accounts.");
+        if (!cancelled && !response.ok) setError(t("settings.blocked.loadFailed"));
       } catch {
         if (!cancelled) {
           setBlocks([]);
-          setError("Could not load your blocked accounts.");
+          setError(t("settings.blocked.loadFailed"));
         }
       }
     })();
@@ -48,7 +50,7 @@ export function BlockedAccountsPanel({ apiBase, onUnblocked, formatDate }: Props
       setBlocks((current) => (current ?? []).filter((item) => item.userId !== block.userId));
       onUnblocked(block.userId);
     } catch {
-      setError(`Could not unblock ${block.username}. Try again.`);
+      setError(t("settings.blocked.unblockFailed", { name: block.username }));
     } finally {
       setBusyId("");
     }
@@ -61,23 +63,24 @@ export function BlockedAccountsPanel({ apiBase, onUnblocked, formatDate }: Props
     <div className="dcs-card">
       <div className="dcs-card-row">
         <div className="dcs-card-copy">
-          <strong>Blocked accounts{blocks && blocks.length ? ` · ${blocks.length}` : ""}</strong>
-          <small>
-            Blocked people can't message you, send friend requests or add you to groups. They aren't told that you
-            blocked them.
-          </small>
+          <strong>
+            {blocks && blocks.length
+              ? t("settings.blocked.titleCount", { count: blocks.length })
+              : t("settings.blocked.title")}
+          </strong>
+          <small>{t("settings.blocked.help")}</small>
         </div>
       </div>
-      {blocks === null && <p className="dcs-muted">Loading…</p>}
-      {blocks && blocks.length === 0 && !error && <p className="dcs-muted">You haven't blocked anyone.</p>}
+      {blocks === null && <p className="dcs-muted">{t("settings.blocked.loading")}</p>}
+      {blocks && blocks.length === 0 && !error && <p className="dcs-muted">{t("settings.blocked.none")}</p>}
       {blocks && blocks.length > 6 && (
         <input
           className="dcx-input dcs-list-filter"
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Find a blocked account"
-          aria-label="Find a blocked account"
+          placeholder={t("settings.blocked.find")}
+          aria-label={t("settings.blocked.find")}
         />
       )}
       {visible.length > 0 && (
@@ -89,7 +92,7 @@ export function BlockedAccountsPanel({ apiBase, onUnblocked, formatDate }: Props
               </span>
               <span className="dcs-list-copy">
                 <strong>{block.username}</strong>
-                <small>Blocked {formatDate(block.createdAt)}</small>
+                <small>{t("settings.blocked.blockedOn", { date: formatDate(block.createdAt) })}</small>
               </span>
               <button
                 type="button"
@@ -97,7 +100,7 @@ export function BlockedAccountsPanel({ apiBase, onUnblocked, formatDate }: Props
                 disabled={busyId === block.userId}
                 onClick={() => void unblock(block)}
               >
-                {busyId === block.userId ? "Unblocking…" : "Unblock"}
+                {busyId === block.userId ? t("settings.blocked.unblocking") : t("settings.blocked.unblock")}
               </button>
             </li>
           ))}

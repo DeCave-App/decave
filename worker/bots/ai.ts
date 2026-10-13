@@ -9,6 +9,7 @@ import { validateRule } from "../../shared/bots/schema";
 import { BUILT_IN_COMMANDS } from "../../shared/bots/builtins";
 import { ACTION_TYPES, CATALOGUE, CONDITION_TYPES, TRIGGER_TYPES } from "../../shared/bots/catalogue";
 import type { Env } from "../lib/env";
+import { errorFields, type ErrorFields } from "../lib/http";
 import { releaseAiUsage, reserveAiUsage } from "./store";
 
 const ENDPOINT = "https://api.anthropic.com/v1/messages";
@@ -31,7 +32,7 @@ export type GenerateInput = {
 
 export type GenerateResult =
   | { ok: true; rules: BotRule[]; unsupported: string[]; remainingToday: number }
-  | { ok: false; status: 422 | 429 | 502; error: string };
+  | ({ ok: false; status: 422 | 429 | 502 } & ErrorFields);
 
 export const utcDay = (at = new Date()) => at.toISOString().slice(0, 10);
 
@@ -138,7 +139,7 @@ export function anthropicRequest(input: GenerateInput) {
   };
 }
 
-const FAILED = "Couldn't build that, try rephrasing";
+const failed = (): GenerateResult => ({ ok: false, status: 422, ...errorFields("botAi.failed") });
 
 export async function generateRules(
   env: Env,
@@ -149,11 +150,7 @@ export async function generateRules(
   // Reserve the slot before calling so two requests can't both take the last one.
   const used = await reserveAiUsage(env.DB, input.hubId, day, BOT_LIMITS.aiPerDay);
   if (used === null)
-    return {
-      ok: false,
-      status: 429,
-      error: `A Hub can describe ${BOT_LIMITS.aiPerDay} bots a day. Try again tomorrow.`,
-    };
+    return { ok: false, status: 429, ...errorFields("botAi.dailyLimit", { limit: BOT_LIMITS.aiPerDay }) };
 
   const remainingToday = Math.max(0, BOT_LIMITS.aiPerDay - used);
   let requestBody: string;
@@ -182,7 +179,7 @@ export async function generateRules(
   }
   if (!response || !response.ok) {
     if (response) console.error("bot ai provider error", response.status);
-    return { ok: false, status: 502, error: "The AI helper isn't available right now. Try again later." };
+    return { ok: false, status: 502, ...errorFields("botAi.unavailable") };
   }
 
   let output: unknown;
@@ -201,7 +198,7 @@ export async function generateRules(
     : [];
   // No rules is a valid answer when the model explains what it couldn't do.
   if (!Array.isArray(rules) || rules.length > BOT_LIMITS.rulesPerBot || (rules.length === 0 && !notes.length))
-    return { ok: false, status: 422, error: FAILED };
+    return failed();
 
   const ctx = {
     channelIds: new Set(input.channels.map((c) => c.id)),
@@ -213,7 +210,7 @@ export async function generateRules(
   const valid: BotRule[] = [];
   for (const rule of rules) {
     const checked = validateRule(rule, ctx);
-    if (!checked.ok) return { ok: false, status: 422, error: FAILED };
+    if (!checked.ok) return failed();
     valid.push(checked.rule);
   }
   return { ok: true, rules: valid, unsupported: notes, remainingToday };

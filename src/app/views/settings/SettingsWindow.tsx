@@ -1,13 +1,18 @@
-// The Settings window: navigation, the open section and the save bar.
+// The Settings window: sidebar (groups, search, "Your setup"), the open tab,
+// the "Saved · Undo" toast and saving. Every change saves at once.
 
-import type { Dispatch, SetStateAction, MutableRefObject } from "react";
-import {
-  SettingsHeader,
-  SettingsNav,
-  SettingsSectionIntro,
-  SettingsSaveBar,
-  SAVEABLE_SETTINGS_SECTIONS,
-} from "../../../features/settings";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Dispatch, SetStateAction, MutableRefObject, RefObject } from "react";
+import { SettingsHeader, SettingsNav, SettingsSectionIntro } from "../../../features/settings";
+import { SettingsToastProvider, useSettingsToast } from "../../../features/settings/SettingsToast";
+import { useNextCommit } from "../../../features/settings/useSettingField";
+import { SettingsPersistContext, useSettingsPersist, type PersistSettings } from "../../../features/settings/persist";
+import type { SettingsTabId } from "../../../features/settings/settingsMap";
+import type { MfaStatus } from "../../../features/settings/TwoFactorPanel";
+import type { CheckupItem } from "../../../features/settings/checkup/checks";
+import { setCheckupDismissed } from "../../../features/settings/checkup/dismissed";
+import { useCheckup } from "../../../features/settings/checkup/useCheckup";
+import { YourSetupTab } from "../../../features/settings/checkup/YourSetupTab";
 import type {
   Server,
   AccountUser,
@@ -19,20 +24,18 @@ import type {
   AudioSettings,
   UiSoundEvent,
 } from "../../types";
-import { requestDesktopNotifications } from "../../desktop";
-import type { StudioSettingSection } from "../../../components/studio";
-import { AccountSettingsSection } from "./AccountSettingsSection";
-import { AppearanceSettingsSection } from "./AppearanceSettingsSection";
-import { ProfileSettingsSection } from "./ProfileSettingsSection";
-import { ActivitySettingsSection } from "./ActivitySettingsSection";
-import { PrivacySettingsSection } from "./PrivacySettingsSection";
-import { VoiceSettingsSection } from "./VoiceSettingsSection";
-import { SystemSettingsSection } from "./SystemSettingsSection";
-import { KeybindsSettingsSection } from "./KeybindsSettingsSection";
-import { DatesSettingsSection } from "./DatesSettingsSection";
-import { NotificationsSettingsSection } from "./NotificationsSettingsSection";
-import { SoundsSettingsSection } from "./SoundsSettingsSection";
-import { SupportSettingsSection } from "./SupportSettingsSection";
+import { hasDesktopActivityBridge, requestDesktopNotifications } from "../../desktop";
+import { AppearanceTab } from "../../../features/settings/tabs/AppearanceTab";
+import { ProfileStatusTab } from "../../../features/settings/tabs/ProfileStatusTab";
+import { AccountDevicesTab } from "../../../features/settings/tabs/AccountDevicesTab";
+import { PrivacyEncryptionTab } from "../../../features/settings/tabs/PrivacyEncryptionTab";
+import { ConnectionsTab } from "../../../features/settings/tabs/ConnectionsTab";
+import { ChatTab } from "../../../features/settings/tabs/ChatTab";
+import { GamingOverlayTab } from "../../../features/settings/tabs/GamingOverlayTab";
+import { VoiceVideoTab } from "../../../features/settings/tabs/VoiceVideoTab";
+import { AppAboutTab } from "../../../features/settings/tabs/AppAboutTab";
+import { LanguageRegionTab } from "../../../features/settings/tabs/LanguageRegionTab";
+import { NotificationsSoundsTab } from "../../../features/settings/tabs/NotificationsSoundsTab";
 import type { PreferencesState } from "../../state/preferences";
 import type { SettingsWindowState } from "../../state/settings-window";
 import type { ProfileMediaState } from "../../state/profile-media";
@@ -47,35 +50,9 @@ import type { AccountActions } from "../../actions/account";
 import type { SettingsActions } from "../../actions/settings";
 import type { ProfileMediaActions } from "../../actions/profile-media";
 import type { ActivityActions } from "../../actions/activity";
+import type { QuietPresenceSettings as QuietPresenceModel } from "../../../session/quiet-presence";
 
-const studioSettingsSections: StudioSettingSection[] = [
-  { id: "profile", label: "Profile", description: "Photo, banner, display name, pronouns and status" },
-  {
-    id: "account",
-    label: "Account & security",
-    description: "Email, password, two-factor sign-in, sign-in alerts, devices and your data",
-  },
-  { id: "voice", label: "Voice & video", description: "Microphone, speakers, camera and per-person volume" },
-  { id: "activity", label: "Activity status", description: "Show the game you're playing, and who can see it" },
-  { id: "appearance", label: "Appearance", description: "Skin, light and dark, text size, motion and readability" },
-  {
-    id: "notifications",
-    label: "Notifications",
-    description: "Alerts, quiet hours, and how loud each Hub and room is",
-  },
-  { id: "sounds", label: "Sounds", description: "Interface and voice event sounds" },
-  { id: "system", label: "System", description: "Desktop app startup and updates" },
-  { id: "keybinds", label: "Keybinds", description: "Global shortcuts and every keyboard shortcut" },
-  { id: "language", label: "Dates & times", description: "How dates and times are written" },
-  {
-    id: "privacy",
-    label: "Privacy & safety",
-    description: "Friend requests, messages, blocked accounts and streaming",
-  },
-  { id: "support", label: "Support & about", description: "Report a bug, contact support, what's new" },
-];
-
-type Props = {
+export type SettingsWindowProps = {
   currentUser: AccountUser;
   preferences: PreferencesState;
   prefersDark: boolean;
@@ -116,9 +93,9 @@ type Props = {
   sendSocket: (payload: unknown) => boolean;
   applyOutputDevice: (outputDeviceId: string) => Promise<void>;
   changeInputVolume: (value: number) => void;
-  saveSettingsChanges: () => Promise<void>;
   closeSettings: () => void;
   resetVoiceUserVolumes: (userId?: string) => void;
+  changeVoiceUserVolume: (participant: VoiceParticipant, volume: number) => void;
   saveAudioSettings: (next: AudioSettings) => void;
   rebuildMicrophoneIfActive: (next: AudioSettings) => Promise<void>;
   startMicTest: () => Promise<void>;
@@ -134,248 +111,171 @@ type Props = {
   settingsActions: SettingsActions;
   profileMediaActions: ProfileMediaActions;
   activityActions: ActivityActions;
+  quietPresence: QuietPresenceModel;
+  updateQuietPresence: (next: QuietPresenceModel) => void;
 };
 
-export function SettingsWindow({
-  currentUser,
-  preferences,
-  prefersDark,
-  systemReducedMotion,
-  settingsWindow,
-  profileMedia,
-  profileAvatarError,
-  securityNotice,
-  accountSessions,
-  securityBusy,
-  keybindCapture,
-  setKeybindCapture,
-  ownerSecurity,
-  setShowMyReports,
-  setBlockedUserIds,
-  profileFields,
-  gameActivity,
-  captureApps,
-  autoStreamerActive,
-  effectiveStreamerMode,
-  servers,
-  hubMembers,
-  friends,
-  setShowHubHome,
-  voiceParticipants,
-  audioSettings,
-  voiceUserVolumes,
-  audioSetup,
-  voiceChannelRef,
-  playUiSound,
-  audioSettingsRef,
-  localScreenStreamRef,
-  desktopUpdates,
-  desktopInstalledVersion,
-  chooseAppSkin,
-  currentServer,
-  copyMyDecaveId,
-  sendSocket,
-  applyOutputDevice,
-  changeInputVolume,
-  saveSettingsChanges,
-  closeSettings,
-  resetVoiceUserVolumes,
-  saveAudioSettings,
-  rebuildMicrophoneIfActive,
-  startMicTest,
-  stopMicTest,
-  logoutAllSessions,
-  changeServer,
-  changeChannel,
-  sendTypingState,
-  automaticActivityElapsed,
-  currentGameIcon,
-  adminActions,
-  accountActions,
-  settingsActions,
-  profileMediaActions,
-  activityActions,
-}: Props) {
-  const { runAutomaticActivityScan, connectSteam, disconnectSteam } = activityActions;
-  const { uploadProfileBanner, removeProfileBanner, uploadProfileAvatar, removeProfileAvatar } = profileMediaActions;
-  const { finishCloseSettings, resetCurrentSettingsSection } = settingsActions;
-  const { openAccountEditor, loadAccountSessions, revokeDeviceSession, beginAccountDangerAction } = accountActions;
-  const {
-    startOwnerMfaSetup,
-    enableOwnerMfa,
-    ownerPrivilegedReauth,
-    promotePlatformOwner,
-    demotePlatformOwner,
-    regenerateOwnerRecoveryCodes,
-  } = adminActions;
+/** Scrolls a setting found by search into view and flashes it. */
+function flashAnchor(root: HTMLElement | null, anchor: string) {
+  const target = root?.querySelector<HTMLElement>(`[data-settings-anchor="${CSS.escape(anchor)}"]`);
+  if (!target) return;
+  target.scrollIntoView({ block: "center", behavior: "smooth" });
+  target.classList.remove("dcs-anchor-flash");
+  void target.offsetWidth; // restart the animation
+  target.classList.add("dcs-anchor-flash");
+  window.setTimeout(() => target.classList.remove("dcs-anchor-flash"), 1700);
+}
+
+export function SettingsWindow(props: SettingsWindowProps) {
+  const { settingsActions } = props;
+  const rootRef = useRef<HTMLElement | null>(null);
+
+  const nextCommit = useNextCommit();
+  const persistRef = useRef(settingsActions.persistSettings);
+  persistRef.current = settingsActions.persistSettings;
+  const persist = useCallback<PersistSettings>(
+    async (parts) => {
+      await nextCommit();
+      if (!(await persistRef.current(parts))) throw new Error("Settings were not saved");
+    },
+    [nextCommit],
+  );
+
   return (
     <section
+      ref={rootRef}
       className="dc-workspace-page dc-settings-page"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dcs-settings-title"
     >
-      <div className="dc-settings-shell vadrion-settings-modal">
-        <SettingsHeader username={currentUser.username} onClose={closeSettings} />
-        <SettingsNav
-          sections={studioSettingsSections}
-          activeId={settingsWindow.settingsTab}
-          query={settingsWindow.settingsSearch}
-          onQueryChange={settingsWindow.setSettingsSearch}
-          onSelect={(id) => settingsWindow.setSettingsTab(id as typeof settingsWindow.settingsTab)}
-          dirty={settingsWindow.settingsDirty}
-        />
-        <SettingsSectionIntro
-          section={studioSettingsSections.find((section) => section.id === settingsWindow.settingsTab)}
-        />
-
-        {settingsWindow.settingsTab === "account" && (
-          <AccountSettingsSection
-            currentUser={currentUser}
-            securityNotice={securityNotice}
-            securityBusy={securityBusy}
-            effectiveStreamerMode={effectiveStreamerMode}
-            openAccountEditor={openAccountEditor}
-            startOwnerMfaSetup={startOwnerMfaSetup}
-            enableOwnerMfa={enableOwnerMfa}
-            ownerPrivilegedReauth={ownerPrivilegedReauth}
-            promotePlatformOwner={promotePlatformOwner}
-            demotePlatformOwner={demotePlatformOwner}
-            regenerateOwnerRecoveryCodes={regenerateOwnerRecoveryCodes}
-            loadAccountSessions={loadAccountSessions}
-            revokeDeviceSession={revokeDeviceSession}
-            beginAccountDangerAction={beginAccountDangerAction}
-            logoutAllSessions={logoutAllSessions}
-            copyMyDecaveId={copyMyDecaveId}
-            ownerSecurity={ownerSecurity}
-            accountSessions={accountSessions}
-            preferences={preferences}
-          />
-        )}
-
-        {settingsWindow.settingsTab === "appearance" && (
-          <AppearanceSettingsSection
-            prefersDark={prefersDark}
-            systemReducedMotion={systemReducedMotion}
-            chooseAppSkin={chooseAppSkin}
-            preferences={preferences}
-          />
-        )}
-
-        {settingsWindow.settingsTab === "profile" && (
-          <ProfileSettingsSection
-            currentUser={currentUser}
-            profileAvatarError={profileAvatarError}
-            openAccountEditor={openAccountEditor}
-            uploadProfileBanner={uploadProfileBanner}
-            removeProfileBanner={removeProfileBanner}
-            uploadProfileAvatar={uploadProfileAvatar}
-            removeProfileAvatar={removeProfileAvatar}
-            profileMedia={profileMedia}
-            profileFields={profileFields}
-            preferences={preferences}
-          />
-        )}
-
-        {settingsWindow.settingsTab === "activity" && (
-          <ActivitySettingsSection
-            currentUser={currentUser}
-            runAutomaticActivityScan={runAutomaticActivityScan}
-            connectSteam={connectSteam}
-            disconnectSteam={disconnectSteam}
-            automaticActivityElapsed={automaticActivityElapsed}
-            currentGameIcon={currentGameIcon}
-            preferences={preferences}
-            gameActivity={gameActivity}
-          />
-        )}
-
-        {settingsWindow.settingsTab === "system" && (
-          <SystemSettingsSection desktopUpdates={desktopUpdates} preferences={preferences} />
-        )}
-
-        {settingsWindow.settingsTab === "keybinds" && (
-          <KeybindsSettingsSection
-            keybindCapture={keybindCapture}
-            setKeybindCapture={setKeybindCapture}
-            audioSettings={audioSettings}
-            preferences={preferences}
-          />
-        )}
-
-        {settingsWindow.settingsTab === "language" && <DatesSettingsSection preferences={preferences} />}
-
-        {settingsWindow.settingsTab === "notifications" && (
-          <NotificationsSettingsSection
-            servers={servers}
-            requestDesktopNotifications={requestDesktopNotifications}
-            currentServer={currentServer}
-            preferences={preferences}
-          />
-        )}
-
-        {settingsWindow.settingsTab === "sounds" && (
-          <SoundsSettingsSection playUiSound={playUiSound} preferences={preferences} />
-        )}
-
-        {settingsWindow.settingsTab === "privacy" && (
-          <PrivacySettingsSection
-            currentUser={currentUser}
-            setShowMyReports={setShowMyReports}
-            setBlockedUserIds={setBlockedUserIds}
-            captureApps={captureApps}
-            autoStreamerActive={autoStreamerActive}
-            voiceChannelRef={voiceChannelRef}
-            localScreenStreamRef={localScreenStreamRef}
-            sendSocket={sendSocket}
-            sendTypingState={sendTypingState}
-            preferences={preferences}
-          />
-        )}
-
-        {settingsWindow.settingsTab === "support" && (
-          <SupportSettingsSection
-            currentUser={currentUser}
-            settingsDirty={settingsWindow.settingsDirty}
-            setSettingsCloseConfirm={settingsWindow.setSettingsCloseConfirm}
-            servers={servers}
-            setShowHubHome={setShowHubHome}
-            finishCloseSettings={finishCloseSettings}
-            changeServer={changeServer}
-            changeChannel={changeChannel}
-            desktopInstalledVersion={desktopInstalledVersion}
-          />
-        )}
-
-        {settingsWindow.settingsTab === "voice" && (
-          <VoiceSettingsSection
-            hubMembers={hubMembers}
-            friends={friends}
-            voiceParticipants={voiceParticipants}
-            audioSettings={audioSettings}
-            voiceUserVolumes={voiceUserVolumes}
-            audioSettingsRef={audioSettingsRef}
-            resetVoiceUserVolumes={resetVoiceUserVolumes}
-            saveAudioSettings={saveAudioSettings}
-            applyOutputDevice={applyOutputDevice}
-            rebuildMicrophoneIfActive={rebuildMicrophoneIfActive}
-            changeInputVolume={changeInputVolume}
-            startMicTest={startMicTest}
-            stopMicTest={stopMicTest}
-            preferences={preferences}
-            audioSetup={audioSetup}
-          />
-        )}
-
-        <SettingsSaveBar
-          dirty={settingsWindow.settingsDirty}
-          saving={settingsWindow.settingsSaving}
-          canReset={SAVEABLE_SETTINGS_SECTIONS.includes(settingsWindow.settingsTab)}
-          onReset={resetCurrentSettingsSection}
-          onSave={() => void saveSettingsChanges()}
-          onClose={closeSettings}
-        />
-      </div>
+      <SettingsPersistContext.Provider value={persist}>
+        <SettingsToastProvider>
+          <SettingsWindowBody {...props} rootRef={rootRef} />
+        </SettingsToastProvider>
+      </SettingsPersistContext.Provider>
     </section>
   );
+}
+
+function SettingsWindowBody({ rootRef, ...props }: SettingsWindowProps & { rootRef: RefObject<HTMLElement | null> }) {
+  const { currentUser, settingsWindow, closeSettings, preferences, audioSettings, desktopUpdates } = props;
+  const persist = useSettingsPersist();
+  const toast = useSettingsToast();
+  const [pendingAnchor, setPendingAnchor] = useState<string | null>(null);
+  const [busyFix, setBusyFix] = useState<string | null>(null);
+  const tab = settingsWindow.settingsTab;
+  const checkup = useCheckup({
+    currentUser,
+    audioSettings,
+    notificationSettings: preferences.notificationSettings,
+    desktopUpdates,
+  });
+
+  // Search results and entry points can name a setting inside the tab.
+  useEffect(() => {
+    if (!pendingAnchor) return;
+    flashAnchor(rootRef.current, pendingAnchor);
+    setPendingAnchor(null);
+  }, [pendingAnchor, tab]);
+
+  const select = (next: SettingsTabId, anchor?: string) => {
+    settingsWindow.setSettingsTab(next);
+    if (anchor) setPendingAnchor(anchor);
+    else rootRef.current?.querySelector(".dc-settings-shell")?.scrollTo?.({ top: 0 });
+  };
+
+  // Settings opens on Your setup when something needs attention, unless an
+  // entry point asked for a tab (voice controls, Inbox, account actions).
+  const decided = useRef(false);
+  useEffect(() => {
+    if (!decided.current) {
+      decided.current = true;
+      if (!settingsWindow.settingsTabRequestedRef.current && checkup.items.length > 0)
+        settingsWindow.setSettingsTab("setup");
+    }
+    settingsWindow.settingsTabRequestedRef.current = false;
+    return () => {
+      settingsWindow.settingsTabRequestedRef.current = false;
+    };
+  }, []);
+
+  const fix = async (item: CheckupItem) => {
+    if ("tab" in item.fix) {
+      select(item.fix.tab, item.fix.anchor);
+      return;
+    }
+    setBusyFix(item.id);
+    try {
+      if (item.fix.action === "requestNotifications") await requestDesktopNotifications();
+      else desktopUpdates.handleRestartDesktopToUpdate();
+    } finally {
+      setBusyFix(null);
+      checkup.refresh();
+    }
+  };
+
+  const dismiss = (item: CheckupItem) => {
+    const before = checkup.dismissed;
+    const save = (next: string[]) => {
+      setCheckupDismissed(next);
+      void persist(["account"]).catch(() => undefined);
+    };
+    save([...before, item.id]);
+    toast.show("settings.checkup.dismissed", () => save(before));
+  };
+
+  return (
+    <div className="dc-settings-shell vadrion-settings-modal">
+      <SettingsHeader username={currentUser.username} onClose={closeSettings} />
+      <SettingsNav
+        activeId={tab}
+        query={settingsWindow.settingsSearch}
+        onQueryChange={settingsWindow.setSettingsSearch}
+        onSelect={select}
+        setupCount={checkup.items.length}
+        isDesktop={hasDesktopActivityBridge()}
+      />
+      <SettingsSectionIntro tab={tab} />
+      {tab === "setup" ? (
+        <YourSetupTab items={checkup.items} busyFix={busyFix} onFix={(item) => void fix(item)} onDismiss={dismiss} />
+      ) : (
+        <SettingsTabBody {...props} onJump={select} onMfaStatus={(status) => checkup.reportTwoFactor(status.enabled)} />
+      )}
+    </div>
+  );
+}
+
+type TabBodyProps = SettingsWindowProps & {
+  onJump: (tab: SettingsTabId, anchor?: string) => void;
+  onMfaStatus: (status: MfaStatus) => void;
+};
+
+function SettingsTabBody({ onJump, onMfaStatus, ...p }: TabBodyProps) {
+  switch (p.settingsWindow.settingsTab) {
+    case "profile":
+      return <ProfileStatusTab {...p} />;
+    case "account":
+      return <AccountDevicesTab {...p} onMfaStatus={onMfaStatus} />;
+    case "appearance":
+      return <AppearanceTab {...p} />;
+    case "gaming":
+      return <GamingOverlayTab {...p} />;
+    case "language":
+      return <LanguageRegionTab {...p} />;
+    case "notifications":
+      return <NotificationsSoundsTab {...p} />;
+    case "privacy":
+      return <PrivacyEncryptionTab {...p} />;
+    case "connections":
+      return <ConnectionsTab {...p} />;
+    case "chat":
+      return <ChatTab {...p} />;
+    case "app":
+      return <AppAboutTab {...p} />;
+    case "voice":
+      return <VoiceVideoTab {...p} onJump={onJump} />;
+    default:
+      return null;
+  }
 }

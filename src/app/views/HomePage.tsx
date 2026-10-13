@@ -1,5 +1,6 @@
 // Home: your personal dashboard of widgets (Hubs, friends, voice rooms, events, messages, now playing, notes, quick links).
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import type { HubTemplateId } from "../../../shared/hub-templates";
 import { Icon } from "../../components/Icon";
@@ -160,6 +161,7 @@ export function HomePage({
   pageNavigation,
   homeDashboard,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const {
     toggleHomeWidget,
     applyHomePreset,
@@ -261,9 +263,9 @@ export function HomePage({
               />
             )}
             <div className="hdx-external-note">
-              <span>Untrusted website · isolated from DeCave</span>
+              <span>{t("common.home.untrusted")}</span>
               <a className="hdx-link" href={widget.url} target="_blank" rel="noopener noreferrer">
-                Open externally ↗
+                {t("common.home.openExternally")}
               </a>
             </div>
           </div>
@@ -289,12 +291,12 @@ export function HomePage({
             icon={currentGameIcon || null}
             source={
               activityState?.source === "desktop-epic"
-                ? "Epic Games"
+                ? t("common.home.sourceEpic")
                 : activityState?.source === "steam"
-                  ? "Steam presence"
-                  : "Steam / PC"
+                  ? t("common.home.sourceSteam")
+                  : t("common.home.sourcePc")
             }
-            elapsed={automaticActivityElapsed ? `Playing for ${automaticActivityElapsed}` : ""}
+            elapsed={automaticActivityElapsed ? t("common.home.playingFor", { elapsed: automaticActivityElapsed }) : ""}
           />
         ),
       };
@@ -306,18 +308,18 @@ export function HomePage({
         ...base,
         action: (
           <button type="button" className="hdx-link" onClick={openQuickLinkEditor}>
-            Edit
+            {t("common.actions.edit")}
           </button>
         ),
         content: showQuickLinkEditor ? (
           <div className="hdx-links-editor">
             <div className="hdx-links-editor-head">
-              <strong>Choose your shortcuts</strong>
+              <strong>{t("common.home.chooseShortcuts")}</strong>
               <button
                 type="button"
                 className="hdx-tool"
-                title="Close editor"
-                aria-label="Close shortcut editor"
+                title={t("common.home.closeEditor")}
+                aria-label={t("common.home.closeShortcutEditor")}
                 onClick={() => {
                   setShowQuickLinkEditor(false);
                   setQuickLinkError("");
@@ -331,13 +333,17 @@ export function HomePage({
                 <li key={link.id} className="hdx-links-editor-row">
                   <label
                     className="hdx-links-visibility"
-                    title={link.visible ? `Hide ${link.name}` : `Show ${link.name}`}
+                    title={
+                      link.visible
+                        ? t("common.home.hideLink", { name: link.name })
+                        : t("common.home.showLink", { name: link.name })
+                    }
                   >
                     <input
                       type="checkbox"
                       checked={link.visible}
                       onChange={(event) => updateQuickLinkDraft(link.id, "visible", event.target.checked)}
-                      aria-label={`Show ${link.name}`}
+                      aria-label={t("common.home.showLink", { name: link.name })}
                     />
                     <span className="hdx-link-logo">
                       <HomeQuickLinkLogo link={link} />
@@ -345,7 +351,7 @@ export function HomePage({
                   </label>
                   <div className="hdx-links-fields">
                     <label>
-                      Name
+                      {t("common.home.linkName")}
                       <input
                         className="dcx-input"
                         value={link.name}
@@ -354,7 +360,7 @@ export function HomePage({
                       />
                     </label>
                     <label>
-                      URL
+                      {t("common.home.linkUrl")}
                       <input
                         className="dcx-input"
                         type="url"
@@ -368,8 +374,8 @@ export function HomePage({
                   <button
                     type="button"
                     className="hdx-tool danger"
-                    title={`Remove ${link.name}`}
-                    aria-label={`Remove ${link.name}`}
+                    title={t("common.home.removeLink", { name: link.name })}
+                    aria-label={t("common.home.removeLink", { name: link.name })}
                     onClick={() => removeQuickLinkDraft(link.id)}
                   >
                     <Icon name="close" size="sm" />
@@ -377,9 +383,7 @@ export function HomePage({
                 </li>
               ))}
             </ul>
-            {!quickLinkDraft.length && (
-              <small className="hdx-notice">No shortcuts selected. Restore the defaults to add them back.</small>
-            )}
+            {!quickLinkDraft.length && <small className="hdx-notice">{t("common.home.noShortcutsHint")}</small>}
             {quickLinkError && (
               <div className="hdx-error" role="alert">
                 {quickLinkError}
@@ -387,10 +391,10 @@ export function HomePage({
             )}
             <div className="hdx-form-actions">
               <button type="button" className="dcx-btn" onClick={restoreQuickLinkDefaults}>
-                Restore defaults
+                {t("common.home.restoreDefaults")}
               </button>
               <button type="button" className="dcx-btn dcx-btn-primary" onClick={saveQuickLinkChanges}>
-                Save changes
+                {t("common.home.saveChanges")}
               </button>
             </div>
           </div>
@@ -403,7 +407,7 @@ export function HomePage({
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Open ${link.name}`}
+                aria-label={t("common.home.openLink", { name: link.name })}
               >
                 <span className="hdx-link-logo" aria-hidden="true">
                   <HomeQuickLinkLogo link={link} />
@@ -418,9 +422,9 @@ export function HomePage({
         ) : (
           <HomeEmpty
             icon={<Icon name="link" />}
-            title="No shortcuts selected"
-            hint="Choose the sites you want to keep here."
-            action={{ label: "Edit shortcuts", onClick: openQuickLinkEditor }}
+            title={t("common.home.noShortcuts")}
+            hint={t("common.home.noShortcutsAction")}
+            action={{ label: t("common.home.editShortcuts"), onClick: openQuickLinkEditor }}
           />
         ),
       };
@@ -480,7 +484,7 @@ export function HomePage({
         live: onlineFriends.length > 0,
         action: (
           <button type="button" className="hdx-link" onClick={openFriends}>
-            All friends
+            {t("common.home.allFriends")}
           </button>
         ),
         content: (
@@ -538,9 +542,9 @@ export function HomePage({
             className="hdx-link"
             onClick={() => void syncHomeCalendar()}
             disabled={homeCalendarBusy}
-            aria-label="Sync Hub events"
+            aria-label={t("common.home.syncEvents")}
           >
-            {homeCalendarBusy || hubEvents.busy ? "Syncing…" : "↻ Sync"}
+            {homeCalendarBusy || hubEvents.busy ? t("common.home.syncing") : t("common.home.sync")}
           </button>
         ),
         content: (
@@ -571,7 +575,7 @@ export function HomePage({
         ...base,
         action: (
           <button type="button" className="hdx-link" onClick={openDiscover}>
-            Discover
+            {t("common.rail.discover")}
           </button>
         ),
         content: (
@@ -598,7 +602,7 @@ export function HomePage({
         ...base,
         action: (
           <button type="button" className="hdx-link" onClick={openDirectMessagesWorkspace}>
-            All messages
+            {t("common.home.allMessages")}
           </button>
         ),
         content: (
@@ -608,7 +612,7 @@ export function HomePage({
               id: conversation.user.id,
               username: conversation.user.username,
               avatar: <UserAvatar username={conversation.user.username} avatarUrl={conversation.user.avatarUrl} />,
-              preview: conversation.latestMessage || "Private conversation",
+              preview: conversation.latestMessage || t("common.home.privateConversation"),
               unread: dmUnread[conversation.user.id] ?? 0,
               onOpen: () => void openDirectMessage(conversation.user),
             }))}
@@ -662,7 +666,7 @@ export function HomePage({
             aria-pressed={homeEditMode}
             onClick={() => (homeEditMode ? closeCustomize() : setHomeEditMode(true))}
           >
-            {homeEditMode ? "Done" : "✎ Customize"}
+            {homeEditMode ? t("common.actions.done") : t("common.home.customize")}
           </button>
         }
       />
@@ -679,8 +683,8 @@ export function HomePage({
             <div className="hdx-external-library">
               <div className="hdx-external-library-head">
                 <span className="hdx-row-copy">
-                  <strong>External widgets</strong>
-                  <small>Embed a public HTTPS page. It runs in a sandbox and cannot access DeCave.</small>
+                  <strong>{t("common.home.externalTitle")}</strong>
+                  <small>{t("common.home.externalHint")}</small>
                 </span>
                 <span className="hdx-count">
                   {externalCount}/{MAX_EXTERNAL_HOME_WIDGETS}
@@ -696,7 +700,9 @@ export function HomePage({
                     setShowExternalWidgetForm(true);
                   }}
                 >
-                  {externalCount >= MAX_EXTERNAL_HOME_WIDGETS ? "Widget limit reached" : "＋ Add external widget"}
+                  {externalCount >= MAX_EXTERNAL_HOME_WIDGETS
+                    ? t("common.home.widgetLimit")
+                    : t("common.home.addExternal")}
                 </button>
               ) : (
                 <form
@@ -707,7 +713,7 @@ export function HomePage({
                   }}
                 >
                   <label>
-                    Title
+                    {t("common.home.widgetTitle")}
                     <input
                       className="dcx-input"
                       value={externalWidgetTitle}
@@ -718,34 +724,31 @@ export function HomePage({
                     />
                   </label>
                   <label>
-                    HTTPS URL
+                    {t("common.home.widgetUrl")}
                     <input
                       className="dcx-input"
                       type="url"
                       value={externalWidgetUrl}
                       onChange={(event) => setExternalWidgetUrl(event.target.value)}
                       maxLength={MAX_EXTERNAL_HOME_WIDGET_URL_LENGTH}
-                      placeholder="https://example.com/widget"
+                      placeholder={t("common.home.widgetUrlPlaceholder")}
                       autoComplete="off"
                       required
                     />
                   </label>
                   <label>
-                    Size
+                    {t("common.home.widgetSize")}
                     <select
                       className="dcx-input"
                       value={externalWidgetSize}
                       onChange={(event) => setExternalWidgetSize(event.target.value as HomeWidgetSize)}
                     >
-                      <option value="small">Small</option>
-                      <option value="medium">Medium</option>
-                      <option value="wide">Wide</option>
+                      <option value="small">{t("common.home.sizeSmall")}</option>
+                      <option value="medium">{t("common.home.sizeMedium")}</option>
+                      <option value="wide">{t("common.home.sizeWide")}</option>
                     </select>
                   </label>
-                  <p>
-                    Only public HTTPS URLs are accepted. Local addresses, ports, credentials, scripts and HTML are not
-                    allowed.
-                  </p>
+                  <p>{t("common.home.widgetRules")}</p>
                   {externalWidgetError && (
                     <div className="hdx-error" role="alert">
                       {externalWidgetError}
@@ -760,10 +763,10 @@ export function HomePage({
                         setExternalWidgetError("");
                       }}
                     >
-                      Cancel
+                      {t("common.actions.cancel")}
                     </button>
                     <button type="submit" className="dcx-btn dcx-btn-primary">
-                      Add widget
+                      {t("common.home.addWidget")}
                     </button>
                   </div>
                 </form>

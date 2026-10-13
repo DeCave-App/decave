@@ -8,6 +8,13 @@
 // Header image: the wide Hub Home / Streamer Overview header (3:1), shown whole
 // over a blurred fill; without one those headers fall back to the banner.
 // Chat background: painted behind the message list (landscape, 16:9 desktop).
+//
+// Messages are catalog keys (hints: hub.media.*; size errors: errors.hubMedia.dimensions.*)
+// so clients show them in the UI language; the Worker and older callers get the English text.
+
+import englishHub from "./i18n/locales/en/hub.json" with { type: "json" };
+import { englishText } from "./i18n/english.ts";
+import { codedError, type CodedError } from "./i18n/error-code.ts";
 
 export type HubMediaKind = "icon" | "banner" | "header" | "chat-background";
 
@@ -48,39 +55,73 @@ export const HUB_MEDIA_SPECS: Record<Exclude<HubMediaKind, "icon">, HubMediaSpec
   },
 };
 
-export function hubMediaHint(kind: Exclude<HubMediaKind, "icon">): string {
-  const spec = HUB_MEDIA_SPECS[kind];
-  if (spec.aspectRange)
-    return `Recommended: ${spec.width}×${spec.height} px; any wide image from 4:3 to 4:1 works (at least ${spec.minWidth} px wide)`;
-  return `Recommended: ${spec.width}×${spec.height} px, ${spec.orientation} (minimum ${spec.minWidth}×${spec.minHeight})`;
+type TextGroup = "banner" | "chatBackground" | "header";
+
+/** Catalog key and values for a Hub media size hint; clients render it with t(). */
+export type HubMediaText = {
+  key: `hub.media.${TextGroup}.hint`;
+  params: Record<string, number | string>;
+};
+
+/** A size error: `code` is a key of the errors catalog (errors.hubMedia.dimensions.*), `error` its English text. */
+export type HubMediaProblem = CodedError & {
+  code: `hubMedia.dimensions.${TextGroup}.${"unreadable" | "aspect" | "tooSmall"}`;
+  params: Record<string, number | string>;
+};
+
+const TEXT_GROUP = { banner: "banner", header: "header", "chat-background": "chatBackground" } as const;
+
+/** English text of a media hint, as clients without translations show it. */
+export function hubMediaEnglish(text: HubMediaText): string {
+  return englishText(englishHub, text.key.slice("hub.".length), text.params);
 }
 
-/** Returns a user-facing error, or null when the size is acceptable. */
-export function validateHubMediaDimensions(kind: HubMediaKind, width: number, height: number): string | null {
+/** The recommended size for a kind of Hub artwork. */
+export function hubMediaHintText(kind: Exclude<HubMediaKind, "icon">): HubMediaText {
+  const spec = HUB_MEDIA_SPECS[kind];
+  const { width, height, minWidth, minHeight } = spec;
+  return { key: `hub.media.${TEXT_GROUP[kind]}.hint`, params: { width, height, minWidth, minHeight } };
+}
+
+export function hubMediaHint(kind: Exclude<HubMediaKind, "icon">): string {
+  return hubMediaEnglish(hubMediaHintText(kind));
+}
+
+/** What is wrong with an image's size for this kind of artwork, or null when it is acceptable. */
+export function hubMediaDimensionProblem(kind: HubMediaKind, width: number, height: number): HubMediaProblem | null {
   if (kind === "icon") return null;
   const spec = HUB_MEDIA_SPECS[kind];
+  const group = TEXT_GROUP[kind];
+  const problem = (
+    issue: "unreadable" | "aspect" | "tooSmall",
+    params: Record<string, number | string>,
+  ): HubMediaProblem => ({ ...codedError(`hubMedia.dimensions.${group}.${issue}`, params), params }) as HubMediaProblem;
+  const params = { width: spec.width, height: spec.height, minWidth: spec.minWidth, minHeight: spec.minHeight };
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-    return `${spec.label} image size could not be read. Use a PNG, JPG, WebP or GIF of ${spec.width}×${spec.height} px.`;
+    return problem("unreadable", params);
   }
+  const withActual = { ...params, actualWidth: width, actualHeight: height };
   const actual = width / height;
   if (spec.aspectRange) {
     const [min, max] = spec.aspectRange;
-    if (actual < min || actual > max)
-      return `${spec.label} is ${width}×${height} px. Use a wide image between 4:3 and 4:1, such as ${spec.width}×${spec.height} px.`;
-    if (width < spec.minWidth || height < spec.minHeight)
-      return `${spec.label} is ${width}×${height} px, which is too small. Use at least ${spec.minWidth} px wide.`;
+    if (actual < min || actual > max) return problem("aspect", withActual);
+    if (width < spec.minWidth || height < spec.minHeight) return problem("tooSmall", withActual);
     return null;
   }
   const required = spec.width / spec.height;
   const deviation = Math.abs(actual - required) / required;
-  const shape = `${spec.width}×${spec.height} px ${spec.orientation}`;
   if (deviation > HUB_MEDIA_ASPECT_TOLERANCE) {
-    return `${spec.label} is ${width}×${height} px. It must be ${shape} (aspect ${aspectLabel(spec)}, ±5%).`;
+    return problem("aspect", { ...withActual, aspect: aspectLabel(spec) });
   }
   if (width < spec.minWidth || height < spec.minHeight) {
-    return `${spec.label} is ${width}×${height} px, which is too small. Use ${shape} (at least ${spec.minWidth}×${spec.minHeight}).`;
+    return problem("tooSmall", withActual);
   }
   return null;
+}
+
+/** Returns the English error, or null when the size is acceptable. */
+export function validateHubMediaDimensions(kind: HubMediaKind, width: number, height: number): string | null {
+  return hubMediaDimensionProblem(kind, width, height)?.error ?? null;
 }
 
 function aspectLabel(spec: HubMediaSpec): string {

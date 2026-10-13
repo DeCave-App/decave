@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { t } from "i18next";
 import { PermissionsAndroid, Platform } from "react-native";
 import {
   MediaStream,
@@ -21,6 +22,7 @@ import {
 } from "react-native-webrtc";
 import { apiJson } from "@/src/lib/api";
 import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "@/src/lib/rtc-relay";
+import { realtimeMessage } from "@/src/lib/server-text";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useVoiceSettings } from "@/src/providers/VoiceSettingsProvider";
@@ -145,21 +147,25 @@ function captureConstraints(settings: CaptureSettings): MediaTrackConstraints {
   } as MediaTrackConstraints;
 }
 
-function captureReport(track: MediaStreamTrack, requested: CaptureSettings): string {
+/** What the microphone actually applied, in the UI language, and whether any requested processing is missing. */
+function captureReport(track: MediaStreamTrack, requested: CaptureSettings): { message: string; unsupported: boolean } {
   const actual = (track as CaptureTrack).getSettings?.() as Record<string, unknown> | undefined;
   if (!actual || typeof actual !== "object") {
-    return "Microphone processing was requested; this device does not report per-setting capability.";
+    return { message: t("voice.mobile.engine.captureRequested"), unsupported: false };
   }
 
   const unavailable = (Object.keys(requested) as Array<keyof CaptureSettings>).filter(
     (key) => typeof actual[key] === "boolean" && actual[key] !== requested[key],
   );
   if (unavailable.length > 0) {
-    return `Microphone active; unsupported processing: ${unavailable
-      .map((key) => key === "echoCancellation" ? "echo cancellation" : key === "noiseSuppression" ? "noise suppression" : "automatic gain")
-      .join(", ")}.`;
+    return {
+      message: t("voice.mobile.engine.captureUnsupported", {
+        list: unavailable.map((key) => t(`voice.mobile.engine.processing.${key}`)).join(", "),
+      }),
+      unsupported: true,
+    };
   }
-  return "Microphone processing is active on this device.";
+  return { message: t("voice.mobile.engine.captureActive"), unsupported: false };
 }
 
 export function VoiceProvider({ children }: PropsWithChildren) {
@@ -577,8 +583,8 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     }
 
     if (!hasRelayIceServer(iceServersRef.current)) {
-      setVoiceError(RELAY_UNAVAILABLE_MESSAGE);
-      throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+      setVoiceError(t("voice.mobile.relayUnavailable", { defaultValue: RELAY_UNAVAILABLE_MESSAGE }));
+      throw new Error(t("voice.mobile.relayUnavailable", { defaultValue: RELAY_UNAVAILABLE_MESSAGE }));
     }
 
     
@@ -667,7 +673,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
           if (pc.signalingState !== "stable") return;
           await pc.setLocalDescription();
           if (!sendDescription(participant.connectionId, pc.localDescription)) {
-            throw new Error("Realtime is not connected.");
+            throw new Error(t("dm.call.realtimeOffline"));
           }
         } catch (cause) {
           {
@@ -695,7 +701,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     const attempt = session.recoveryAttempts;
     if (attempt >= MAX_PEER_RECOVERY_ATTEMPTS) {
       closePeer(session.participant.connectionId);
-      setVoiceError("A participant's voice connection could not recover. Leave and rejoin to try again.");
+      setVoiceError(t("voice.mobile.engine.peerUnrecoverable"));
       
       return;
     }
@@ -705,7 +711,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     session.recoveryAttempts += 1;
     setRecoveryState("reconnecting");
     setRecoveryAttempt(session.recoveryAttempts);
-    setVoiceError(`Voice connection interrupted. Reconnecting (attempt ${session.recoveryAttempts}/${MAX_PEER_RECOVERY_ATTEMPTS})…`);
+    setVoiceError(t("voice.mobile.engine.peerReconnecting", { attempt: session.recoveryAttempts, max: MAX_PEER_RECOVERY_ATTEMPTS }));
 
     session.recoveryTimer = setTimeout(() => {
       session.recoveryTimer = null;
@@ -726,10 +732,10 @@ export function VoiceProvider({ children }: PropsWithChildren) {
           const offer = await pc.createOffer({ iceRestart: true });
           await pc.setLocalDescription(offer);
         } else {
-          throw new Error("This mobile WebRTC runtime cannot restart ICE.");
+          throw new Error(t("voice.mobile.engine.noIceRestart"));
         }
         if (!sendDescription(session.participant.connectionId, pc.localDescription)) {
-          throw new Error("Realtime is not connected while recovering voice.");
+          throw new Error(t("voice.mobile.engine.realtimeRecovering"));
         }
       }).catch(() => {
         if (operationGeneration === voiceOperationGenerationRef.current) {
@@ -781,7 +787,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
           
           
           if (!sendDescription(participant.connectionId, pc.localDescription)) {
-            throw new Error("Realtime is not connected.");
+            throw new Error(t("dm.call.realtimeOffline"));
           }
         }
       } catch (cause) {
@@ -826,9 +832,9 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       const current = await getRecordingPermissionsAsync().catch(() => null);
       if (current?.status !== "undetermined") return true;
       const go = await primePermission(
-        "Talk in voice rooms",
-        "DeCave uses your microphone only while you're in a voice room or call. You can mute any time.",
-        "Continue",
+        t("voice.mobile.primer.title"),
+        t("voice.mobile.primer.message"),
+        t("common.actions.continue"),
       );
       if (!go) return false;
       const result = await requestRecordingPermissionsAsync().catch(() => null);
@@ -839,10 +845,10 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     const result = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
       {
-        title: "DeCave microphone access",
-        message: "DeCave needs your microphone so you can talk in voice rooms.",
-        buttonPositive: "Allow",
-        buttonNegative: "Not now",
+        title: t("dm.mobile.call.micPermissionTitle"),
+        message: t("voice.mobile.micPermissionMessage"),
+        buttonPositive: t("common.mobile.allow"),
+        buttonNegative: t("common.mobile.notNow"),
       },
     );
 
@@ -864,7 +870,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     const replacementTrack = replacement.getAudioTracks()[0];
     if (!replacementTrack) {
       for (const track of replacement.getTracks()) track.stop();
-      throw new Error("The microphone replacement did not create an audio track.");
+      throw new Error(t("voice.mobile.engine.micReplaceNoTrack"));
     }
     if (operation !== captureOperationRef.current) {
       for (const track of replacement.getTracks()) track.stop();
@@ -894,8 +900,8 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     }
     setLocalTrackEnabled();
     const report = captureReport(replacementTrack, settings);
-    setCaptureStatus(report.includes("unsupported processing") ? "unsupported" : "replaced");
-    setCaptureStatusMessage(report);
+    setCaptureStatus(report.unsupported ? "unsupported" : "replaced");
+    setCaptureStatusMessage(report.message);
     return true;
   };
 
@@ -906,7 +912,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
 
     const operation = ++captureOperationRef.current;
     setCaptureStatus("applying");
-    setCaptureStatusMessage("Applying microphone processing to the active call…");
+    setCaptureStatusMessage(t("voice.mobile.engine.applyingProcessing"));
 
     if (typeof track.applyConstraints === "function") {
       try {
@@ -914,8 +920,8 @@ export function VoiceProvider({ children }: PropsWithChildren) {
         if (operation !== captureOperationRef.current) return;
         setLocalTrackEnabled();
         const report = captureReport(track, settings);
-        setCaptureStatus(report.includes("unsupported processing") ? "unsupported" : "applied");
-        setCaptureStatusMessage(report);
+        setCaptureStatus(report.unsupported ? "unsupported" : "applied");
+        setCaptureStatusMessage(report.message);
         return;
       } catch (cause) {
         console.warn("Active microphone constraints were rejected; replacing the track.", cause);
@@ -926,14 +932,14 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       const replaced = await replaceMicrophoneTrack(settings, operation);
       if (!replaced && operation === captureOperationRef.current) {
         setCaptureStatus("unsupported");
-        setCaptureStatusMessage("This mobile WebRTC runtime cannot change microphone processing during a call. Leave and rejoin to apply it.");
+        setCaptureStatusMessage(t("voice.mobile.engine.cannotChangeProcessing"));
       }
     } catch (cause) {
       if (operation !== captureOperationRef.current) return;
       console.warn("Could not replace the active microphone track.", cause);
       setCaptureStatus("unsupported");
-      setCaptureStatusMessage("Microphone processing could not be changed during this call. Leave and rejoin to apply it.");
-      setVoiceError("Microphone settings could not be applied. Leave and rejoin to try again.");
+      setCaptureStatusMessage(t("voice.mobile.engine.processingChangeFailed"));
+      setVoiceError(t("voice.mobile.engine.micSettingsFailed"));
     }
   };
 
@@ -949,7 +955,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
 
     const allowed = await requestMicrophone();
     if (!allowed) {
-      setVoiceError("Microphone permission is required to join a voice room.");
+      setVoiceError(t("voice.mobile.engine.micPermission"));
       return false;
     }
 
@@ -970,16 +976,16 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       const track = stream.getAudioTracks()[0];
       if (!track) {
         for (const current of stream.getTracks()) current.stop();
-        throw new Error("The microphone did not create an audio track.");
+        throw new Error(t("voice.mobile.engine.micNoTrack"));
       }
       const report = captureReport(track, capture);
-      setCaptureStatus(report.includes("unsupported processing") ? "unsupported" : "applied");
-      setCaptureStatusMessage(report);
+      setCaptureStatus(report.unsupported ? "unsupported" : "applied");
+      setCaptureStatusMessage(report.message);
       setLocalTrackEnabled();
       return true;
     } catch (error) {
       console.warn("Could not open microphone.", error);
-      setVoiceError("DeCave could not open your microphone.");
+      setVoiceError(t("voice.mobile.engine.micOpenFailed"));
       return false;
     }
   };
@@ -1003,7 +1009,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     }
     if (!hasRelayIceServer(iceServers)) {
       iceServersRef.current = [];
-      throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+      throw new Error(t("voice.mobile.relayUnavailable", { defaultValue: RELAY_UNAVAILABLE_MESSAGE }));
     }
     iceServersRef.current = iceServers;
   };
@@ -1012,7 +1018,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     if (!Number.isSafeInteger(channelId) || channelId <= 0) return false;
 
     if (connectionState !== "connected" || !connectionId) {
-      setVoiceError("DeCave realtime is still connecting. Try again in a moment.");
+      setVoiceError(t("voice.mobile.engine.realtimeConnecting"));
       return false;
     }
 
@@ -1033,7 +1039,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
 
     if (!(await ensureMicrophone(operationGeneration))) {
       if (operationGeneration !== voiceOperationGenerationRef.current) return false;
-      if (preserveVoiceRecoveryAfterJoinFailure(channelId, "Microphone could not be reopened while recovering voice.")) return false;
+      if (preserveVoiceRecoveryAfterJoinFailure(channelId, t("voice.mobile.engine.micReopenFailed"))) return false;
       setVoiceStatus("disconnected");
       return false;
     }
@@ -1043,12 +1049,12 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       {
         await loadIceServers();
         if (!send({ type: "VOICE_JOIN", channelId })) {
-          throw new Error("Could not send the voice join request.");
+          throw new Error(t("voice.mobile.engine.joinSendFailed"));
         }
       }
     } catch (cause) {
       if (operationGeneration !== voiceOperationGenerationRef.current) return false;
-      const message = errorMessage(cause, "Could not join voice.");
+      const message = errorMessage(cause, t("voice.mobile.engine.joinFailed"));
       if (preserveVoiceRecoveryAfterJoinFailure(channelId, message)) return false;
       resetVoiceLocal(true);
       setVoiceError(message);
@@ -1064,13 +1070,13 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       if (voiceRecoveryRef.current?.channelId === channelId) {
         preserveVoiceRecoveryAfterJoinFailure(
           channelId,
-          "Voice recovery timed out. Trying again while realtime remains connected…",
+          t("voice.mobile.engine.recoveryTimedOut"),
         );
         return;
       }
       failVoice(
         new Error("Voice-room join acknowledgement timed out."),
-        "Voice join timed out. Realtime is connected, but the room did not confirm the join. Tap Retry.",
+        t("voice.mobile.engine.joinTimedOut"),
       );
     }, 10000);
 
@@ -1093,7 +1099,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     participantsRef.current = [];
     setRemoteVideos({});
     setVoiceStatus("joining");
-    setVoiceError("Voice realtime disconnected. Reconnecting to the room…");
+    setVoiceError(t("voice.mobile.engine.realtimeDisconnected"));
     setRecoveryState("reconnecting");
     setRecoveryAttempt(0);
     voiceRecoveryRef.current = {
@@ -1111,7 +1117,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     if (recovery.attempts >= VOICE_RECOVERY_DELAYS_MS.length) {
       setRecoveryState("failed");
       setVoiceStatus("disconnected");
-      setVoiceError("Voice could not recover after three attempts. Tap Retry to rejoin this room.");
+      setVoiceError(t("voice.mobile.engine.recoveryFailed"));
       return;
     }
 
@@ -1120,7 +1126,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     const attempt = recovery.attempts;
     setRecoveryAttempt(attempt);
     setRecoveryState("reconnecting");
-    setVoiceError(`Reconnecting to voice (attempt ${attempt}/${VOICE_RECOVERY_DELAYS_MS.length})…`);
+    setVoiceError(t("voice.mobile.engine.reconnecting", { attempt, max: VOICE_RECOVERY_DELAYS_MS.length }));
     recovery.timer = setTimeout(() => {
       recovery.timer = null;
       if (
@@ -1210,10 +1216,10 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     const result = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.CAMERA,
       {
-        title: "DeCave camera access",
-        message: "DeCave needs camera access when you turn on video in a Voice Room.",
-        buttonPositive: "Allow",
-        buttonNegative: "Not now",
+        title: t("dm.mobile.call.cameraPermissionTitle"),
+        message: t("voice.mobile.cameraPermissionMessage"),
+        buttonPositive: t("common.mobile.allow"),
+        buttonNegative: t("common.mobile.notNow"),
       },
     );
     return result === PermissionsAndroid.RESULTS.GRANTED;
@@ -1221,7 +1227,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
 
   const startCamera = async (): Promise<boolean> => {
     if (voiceChannelRef.current === null) {
-      setVoiceError("Join a Voice Room before turning on your camera.");
+      setVoiceError(t("voice.mobile.engine.cameraJoinFirst"));
       return false;
     }
     if (localCameraStreamRef.current) return true;
@@ -1242,12 +1248,12 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       allowed = await requestCamera();
     } catch (cause) {
       if (!isCurrentCapture()) return false;
-      setVoiceError(errorMessage(cause, "Camera permission could not be requested."));
+      setVoiceError(errorMessage(cause, t("dm.mobile.call.cameraRequestFailed")));
       return false;
     }
     if (!isCurrentCapture()) return false;
     if (!allowed) {
-      setVoiceError("Camera permission is required to turn on video.");
+      setVoiceError(t("voice.mobile.engine.cameraPermission"));
       return false;
     }
 
@@ -1260,7 +1266,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     } catch (cause) {
       if (!isCurrentCapture()) return false;
       console.warn("Could not open camera for Hub voice.", cause);
-      setVoiceError(errorMessage(cause, "DeCave could not open your camera."));
+      setVoiceError(errorMessage(cause, t("dm.mobile.call.cameraOpenFailed")));
       return false;
     }
 
@@ -1285,7 +1291,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     const videoTrack = camera.getVideoTracks()[0];
     if (!videoTrack) {
       for (const track of camera.getTracks()) track.stop();
-      setVoiceError("No camera video track was created.");
+      setVoiceError(t("voice.mobile.engine.noCameraTrack"));
       return false;
     }
 
@@ -1295,7 +1301,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
         return false;
       }
       if (!send({ type: "VOICE_CAMERA_STATE", cameraSharing: true })) {
-        throw new Error("Realtime disconnected before camera state was published.");
+        throw new Error(t("voice.mobile.engine.cameraPublishFailed"));
       }
 
       localCameraStreamRef.current = camera;
@@ -1323,7 +1329,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       if (!isCurrentCapture()) return false;
       setCameraSharing(false);
       {
-        setVoiceError(errorMessage(cause, "Could not start camera."));
+        setVoiceError(errorMessage(cause, t("voice.mobile.engine.cameraStartFailed")));
       }
       return false;
     }
@@ -1331,7 +1337,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
 
   const startScreenShare = async (): Promise<boolean> => {
     if (voiceChannelRef.current === null) {
-      setScreenShareError("Join a Voice Room before sharing your screen.");
+      setScreenShareError(t("voice.mobile.engine.screenJoinFirst"));
       return false;
     }
     if (localScreenStreamRef.current) return true;
@@ -1363,7 +1369,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
         started = await requestIosBroadcast();
       } catch (cause) {
         if (!isCurrentCapture()) return false;
-        setScreenShareError(errorMessage(cause, "Could not start screen sharing."));
+        setScreenShareError(errorMessage(cause, t("voice.mobile.engine.screenStartFailed")));
         return false;
       }
       if (!isCurrentCapture()) return false;
@@ -1378,7 +1384,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     } catch (cause) {
       if (!isCurrentCapture()) return false;
       console.warn("Could not start mobile screen sharing.", cause);
-      setScreenShareError(errorMessage(cause, "Could not start screen sharing."));
+      setScreenShareError(errorMessage(cause, t("voice.mobile.engine.screenStartFailed")));
       return false;
     }
 
@@ -1403,7 +1409,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     const videoTrack = screen.getVideoTracks()[0];
     if (!videoTrack) {
       for (const track of screen.getTracks()) track.stop();
-      setScreenShareError("No screen video track was created.");
+      setScreenShareError(t("voice.mobile.engine.noScreenTrack"));
       return false;
     }
 
@@ -1440,7 +1446,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       if (!isCurrentCapture()) return false;
       setScreenSharing(false);
       {
-        setScreenShareError(errorMessage(cause, "Could not start screen sharing."));
+        setScreenShareError(errorMessage(cause, t("voice.mobile.engine.screenStartFailed")));
       }
       return false;
     }
@@ -1456,7 +1462,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       if (voiceChannelRef.current !== null) {
         send({ type: "VOICE_LEAVE" });
       }
-      setVoiceError("Your access changed, so voice was ended. Join a room you can access to continue.");
+      setVoiceError(t("voice.mobile.engine.accessChanged"));
       resetVoiceLocal(true);
       return;
     }
@@ -1468,7 +1474,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       if (voiceChannelRef.current !== null) {
         send({ type: "VOICE_LEAVE" });
       }
-      setVoiceError("This voice room was deleted. Return to the Hub to choose another room.");
+      setVoiceError(t("voice.mobile.engine.roomDeleted"));
       resetVoiceLocal(true);
       return;
     }
@@ -1624,7 +1630,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
 
     if (type === "VOICE_ERROR") {
       clearJoinTimeout();
-      const message = typeof event.message === "string" ? event.message : "Voice connection error.";
+      const message = realtimeMessage(event, t("chat.actions.voice.connectionError"));
       setVoiceError(message);
       if (voiceChannelRef.current === null) {
         stopMicrophone();

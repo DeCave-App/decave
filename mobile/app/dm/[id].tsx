@@ -24,7 +24,8 @@ import { DM_ATTACHMENT_PREFIX as MEDIA_ATTACHMENT_PREFIX, gifMessageText, isImag
 import { errorHaptic, impactHaptic, successHaptic, tapHaptic } from "@/src/lib/haptics";
 import ReportSheet, { REPORT_CONFIRMATION_MS, type MobileReportTarget } from "@/src/components/ReportSheet";
 import { Screen } from "@/src/components/Screen";
-import { API_BASE, apiFetch, apiJson } from "@/src/lib/api";
+import { API_BASE, apiErrorText, apiFetch, apiJson } from "@/src/lib/api";
+import { e2eeErrorText } from "@/src/lib/e2ee-error-text";
 import { downloadLegacyAttachmentMobile, LegacyAttachmentError } from "@/src/lib/legacy-attachment-download";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
@@ -53,12 +54,15 @@ import {
 } from "@/src/lib/e2ee/client";
 import { DmEncryptionBadge, DmEncryptionNotice } from "@/src/providers/DmE2eeProvider";
 import type { ImagePickerAsset } from "expo-image-picker";
+import { useTranslation } from "react-i18next";
+import { i18next } from "@/src/i18n";
+import { dateLocale } from "@/src/lib/date-locale";
 
 /** Encrypt a picked photo or video, upload the ciphertext and describe it for the encrypted message. */
 async function uploadEncryptedAsset(targetId: string, asset: ImagePickerAsset, token: string) {
   const name = asset.fileName || `photo-${Date.now()}.${asset.mimeType?.split("/")[1] ?? "jpg"}`;
   const mimeType = asset.mimeType || (asset.type === "video" ? "video/mp4" : "image/jpeg");
-  if (asset.fileSize && asset.fileSize > 25 * 1024 * 1024 - 16) throw new Error("Attachments can be up to 25 MB.");
+  if (asset.fileSize && asset.fileSize > 25 * 1024 * 1024 - 16) throw new Error(i18next.t("dm.mobile.conversation.attachmentsCanBeUpTo"));
   const { body, fileKey } = await encryptFileForDm(asset.uri);
   const response = await expoFetch(`${API_BASE}/api/dms/${encodeURIComponent(targetId)}/attachments`, {
     method: "POST",
@@ -72,7 +76,7 @@ async function uploadEncryptedAsset(targetId: string, asset: ImagePickerAsset, t
     body: body as Uint8Array<ArrayBuffer>,
   });
   const data = (await response.json().catch(() => ({}))) as { attachment?: { id?: string; url: string }; error?: string };
-  if (!response.ok || !data.attachment) throw new Error(data.error || "Could not upload the attachment.");
+  if (!response.ok || !data.attachment) throw new Error(apiErrorText(data, i18next.t("dm.mobile.conversation.couldNotUploadTheAttachment")));
   return { id: data.attachment.id, url: data.attachment.url, name, mimeType, size: body.length - 16, fileKey };
 }
 
@@ -97,7 +101,7 @@ function formatMessageTime(value: string): string {
   const timestamp = Date.parse(value);
   if (!Number.isFinite(timestamp)) return "";
 
-  return new Date(timestamp).toLocaleTimeString([], {
+  return new Date(timestamp).toLocaleTimeString(dateLocale(), {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -117,10 +121,10 @@ function formatDayLabel(value: string): string {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
-  if (sameDay(date, today)) return "Today";
-  if (sameDay(date, yesterday)) return "Yesterday";
+  if (sameDay(date, today)) return i18next.t("dm.mobile.conversation.today");
+  if (sameDay(date, yesterday)) return i18next.t("dm.mobile.conversation.yesterday");
 
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(dateLocale(), {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -129,7 +133,7 @@ function formatDayLabel(value: string): string {
 
 function previewMessage(text: string): string {
   const preview = text.replace(/\s+/g, " ").trim();
-  if (!preview) return "Message";
+  if (!preview) return i18next.t("dm.mobile.conversation.messageFallback");
   return preview.length > 88 ? `${preview.slice(0, 85)}…` : preview;
 }
 
@@ -157,9 +161,10 @@ export default function DmScreen() {
  * tab on iPad (embedded: no back button, `onClosed` when the chat is deleted).
  */
 export function DmView({ params, embedded = false, onClosed }: { params: DmParams; embedded?: boolean; onClosed?: () => void }) {
+  const { t } = useTranslation(["dm", "chat", "common"]);
   const targetId = params.id;
   const fallbackName =
-    typeof params.username === "string" ? params.username : "Direct Message";
+    typeof params.username === "string" ? params.username : t("dm.mobile.conversation.directMessage");
 
   const { token, user } = useSession();
   const wide = useIsWide();
@@ -214,7 +219,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         contentType: attachment.mimeType,
       });
     } catch (error) {
-      Alert.alert("Could not download attachment", error instanceof LegacyAttachmentError ? error.message : "The authenticated attachment download failed.");
+      Alert.alert(t("dm.mobile.conversation.couldNotDownloadAttachment"), error instanceof LegacyAttachmentError ? error.message : t("dm.mobile.conversation.theAuthenticatedAttachmentDownloadFailed"));
     }
   };
 
@@ -248,7 +253,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       setLoadError("");
     } catch (error) {
       if (generation !== loadGenerationRef.current) return;
-      setLoadError(error instanceof Error ? error.message : "Could not load messages.");
+      setLoadError(e2eeErrorText(error, t("dm.mobile.conversation.couldNotLoadMessages")));
     } finally {
       if (generation === loadGenerationRef.current) setLoaded(true);
     }
@@ -308,7 +313,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       };
       let { response, result } = await post(false);
       if (result.code === "DM_E2EE_STALE_KEY") ({ response, result } = await post(true));
-      if (!response.ok) throw new Error(result.error || "Please try again.");
+      if (!response.ok) throw new Error(apiErrorText(result, t("dm.mobile.dms.pleaseTryAgain")));
       const data = result;
       if (data.message) {
         const updated = await dmE2ee.open(data.message, targetId);
@@ -316,7 +321,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       }
       setActionMessage(null);
     } catch (error) {
-      Alert.alert("Could not add reaction", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(t("dm.mobile.conversation.couldNotAddReaction"), e2eeErrorText(error, t("dm.mobile.dms.pleaseTryAgain")));
     }
   };
 
@@ -356,7 +361,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       };
       let { response, data } = await patch(false);
       if (data.code === "DM_E2EE_STALE_KEY" || data.code === "DM_E2EE_REQUIRED") ({ response, data } = await patch(true));
-      if (!response.ok) throw new Error(data.error || "The message was not changed.");
+      if (!response.ok) throw new Error(apiErrorText(data, t("dm.mobile.conversation.theMessageWasNotChanged")));
       if (data.message) {
         const edited = await dmE2ee.open(data.message, targetId);
         setMessages((current) => current.map((item) => item.id === edited.id ? edited : item));
@@ -365,18 +370,18 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       restoreDraft();
     } catch (error) {
       Alert.alert(
-        "Could not edit message",
-        error instanceof Error ? error.message : "The message was not changed.",
+        t("dm.mobile.conversation.couldNotEditMessage"),
+        e2eeErrorText(error, t("dm.mobile.conversation.theMessageWasNotChanged")),
       );
     }
   };
 
   const deleteMessage = (message: DirectMessage) => {
     setActionMessage(null);
-    Alert.alert("Delete message?", "This removes the message for both people.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("dm.mobile.conversation.deleteMessage"), t("dm.mobile.conversation.thisRemovesTheMessageFor"), [
+      { text: t("common.actions.cancel"), style: "cancel" },
       {
-        text: "Delete",
+        text: t("common.actions.delete"),
         style: "destructive",
         onPress: () => void (async () => {
           try {
@@ -384,7 +389,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
             await apiJson(`/api/dms/messages/${encodeURIComponent(message.id)}`, { method: "DELETE" }, token);
             setMessages((current) => current.filter((item) => item.id !== message.id));
           } catch (error) {
-            Alert.alert("Could not delete message", error instanceof Error ? error.message : "Please try again.");
+            Alert.alert(t("dm.mobile.conversation.couldNotDeleteMessage"), e2eeErrorText(error, t("dm.mobile.dms.pleaseTryAgain")));
           }
         })(),
       },
@@ -394,12 +399,12 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
   const deleteConversation = () => {
     const username = target?.username || fallbackName;
     Alert.alert(
-      `Delete conversation with ${username}?`,
-      "This clears the conversation from this account only. A new message will make it appear again.",
+      t("dm.mobile.conversation.deleteConversationWithUsername", { username }),
+      t("dm.mobile.conversation.thisClearsTheConversationFrom"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.actions.cancel"), style: "cancel" },
         {
-          text: "Delete conversation",
+          text: t("dm.mobile.conversation.deleteConversation"),
           style: "destructive",
           onPress: () => void (async () => {
             if (!token || !targetId) return;
@@ -409,7 +414,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
               if (embedded) onClosed?.();
               else router.back();
             } catch (error) {
-              Alert.alert("Could not delete conversation", error instanceof Error ? error.message : "Please try again.");
+              Alert.alert(t("dm.mobile.conversation.couldNotDeleteConversation"), e2eeErrorText(error, t("dm.mobile.dms.pleaseTryAgain")));
             }
           })(),
         },
@@ -453,12 +458,12 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       const frame = await dmSocketFrame(targetId, text, replyingTo?.id ?? null);
       if (!send(frame)) {
         discardDmSend(frame.clientMessageId);
-        throw new Error("Realtime is reconnecting. Try again in a moment.");
+        throw new Error(t("dm.mobile.conversation.realtimeIsReconnectingTryAgain"));
       }
       successHaptic();
       setReplyingTo(null);
     } catch (error) {
-      Alert.alert("Could not send attachment", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(t("dm.mobile.conversation.couldNotSendAttachment"), e2eeErrorText(error, t("dm.mobile.dms.pleaseTryAgain")));
     } finally {
       setUploading(false);
     }
@@ -472,7 +477,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
     try {
       frame = await dmSocketFrame(targetId, text, replyingTo?.id ?? null);
     } catch (error) {
-      Alert.alert("Could not send GIF", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(t("dm.mobile.conversation.couldNotSendGif"), e2eeErrorText(error, t("dm.mobile.dms.pleaseTryAgain")));
       return;
     }
     if (send(frame)) {
@@ -480,7 +485,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       setReplyingTo(null);
     } else {
       discardDmSend(frame.clientMessageId);
-      Alert.alert("Could not send GIF", "Realtime is reconnecting. Try again in a moment.");
+      Alert.alert(t("dm.mobile.conversation.couldNotSendGif"), t("dm.mobile.conversation.realtimeIsReconnectingTryAgain"));
     }
   };
 
@@ -496,7 +501,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       frame = await dmSocketFrame(targetId, text, replyingTo?.id ?? null);
     } catch (error) {
       errorHaptic();
-      Alert.alert("Could not send message", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(t("dm.mobile.conversation.couldNotSendMessage"), e2eeErrorText(error, t("dm.mobile.dms.pleaseTryAgain")));
       return;
     }
     if (send(frame)) {
@@ -518,29 +523,29 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
     const name = target?.username || fallbackName;
     const actions: Array<{ label: string; destructive?: boolean; run: () => void }> = [
       {
-        label: isMutedUser ? "Unmute notifications" : "Mute notifications",
+        label: isMutedUser ? t("dm.mobile.conversation.unmuteNotifications") : t("dm.mobile.conversation.muteNotifications"),
         run: () => {
           if (!muteId) return;
           toggleMute(muteId)
             .then(() => successHaptic())
             .catch((error) => {
               errorHaptic();
-              Alert.alert("Could not update mute", error instanceof Error ? error.message : "Please try again.");
+              Alert.alert(t("dm.mobile.dms.couldNotUpdateMute"), e2eeErrorText(error, t("dm.mobile.dms.pleaseTryAgain")));
             });
         },
       },
       {
-        label: `Report ${name}`,
+        label: t("dm.mobile.conversation.reportName", { name }),
         run: () =>
-          setReportTarget({ targetType: "user", targetId, subjectUserId: target?.id || targetId, subjectUsername: name, contextType: "dm", contextId: targetId, contextLabel: `Private conversation with ${name}` }),
+          setReportTarget({ targetType: "user", targetId, subjectUserId: target?.id || targetId, subjectUsername: name, contextType: "dm", contextId: targetId, contextLabel: t("chat.report.dmContext", { name }) }),
       },
-      { label: "Delete conversation", destructive: true, run: deleteConversation },
+      { label: t("dm.mobile.conversation.deleteConversation"), destructive: true, run: deleteConversation },
     ];
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
           title: name,
-          options: [...actions.map((action) => action.label), "Cancel"],
+          options: [...actions.map((action) => action.label), t("common.actions.cancel")],
           destructiveButtonIndex: actions.findIndex((action) => action.destructive),
           cancelButtonIndex: actions.length,
         },
@@ -550,7 +555,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
     }
     Alert.alert(name, undefined, [
       ...actions.map((action) => ({ text: action.label, style: action.destructive ? ("destructive" as const) : ("default" as const), onPress: action.run })),
-      { text: "Cancel", style: "cancel" as const },
+      { text: t("common.actions.cancel"), style: "cancel" as const },
     ]);
   };
 
@@ -562,7 +567,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
       <KeyboardAware style={styles.flex}>
         <View style={styles.top}>
           {!embedded && (
-            <Pressable accessibilityRole="button" accessibilityLabel="Back"
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")}
               style={styles.backButton}
               onPress={() => router.back()}
               hitSlop={8}
@@ -600,9 +605,9 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
               >
                 {connectionState === "connected"
                   ? target?.online
-                    ? "Online · Private"
-                    : "Private · Live"
-                  : "Connecting…"}
+                    ? t("dm.mobile.conversation.onlinePrivate")
+                    : t("dm.mobile.conversation.privateLive")
+                  : t("dm.mobile.conversation.connecting")}
               </Text>
             </View>
           </View>
@@ -614,8 +619,8 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
             onPress={openConversationMenu}
             hitSlop={6}
             accessibilityRole="button"
-            accessibilityLabel="Conversation options"
-            accessibilityHint="Mute, report or delete this conversation"
+            accessibilityLabel={t("dm.mobile.conversation.conversationOptions")}
+            accessibilityHint={t("dm.mobile.conversation.muteReportOrDeleteThis")}
           >
             <Ionicons name="ellipsis-horizontal" size={18} color={colors.cyan} />
           </Pressable>
@@ -624,11 +629,11 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         <View style={styles.callButtons}>
           <Pressable accessibilityRole="button" style={styles.callButton} onPress={() => void startCall(targetId, false, target?.username || fallbackName)}>
             <Ionicons name="call-outline" size={17} color={colors.cyan} />
-            <Text style={styles.callButtonText}>Voice</Text>
+            <Text style={styles.callButtonText}>{t("dm.mobile.conversation.voice")}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" style={styles.callButton} onPress={() => void startCall(targetId, true, target?.username || fallbackName)}>
             <Ionicons name="videocam-outline" size={18} color={colors.cyan} />
-            <Text style={styles.callButtonText}>Video</Text>
+            <Text style={styles.callButtonText}>{t("dm.mobile.conversation.video")}</Text>
           </Pressable>
         </View>
         {!embedded && <VoiceFloatingBar style={{ marginTop: 6, marginBottom: 4 }} />}
@@ -673,10 +678,10 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                 />
               </View>
               <Text style={styles.emptyTitle}>
-                Start a conversation with {target?.username || fallbackName}
+                {t("dm.mobile.conversation.startAConversationWithUsername", { username: target?.username || fallbackName })}
               </Text>
               <Text style={styles.emptyText}>
-                Your direct messages will appear here.
+                {t("dm.mobile.conversation.yourDirectMessagesWillAppear")}
               </Text>
             </View>
           }
@@ -714,7 +719,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                   <View style={styles.e2eeDivider} accessibilityRole="text">
                     <Ionicons name="lock-closed-outline" size={12} color={colors.muted} />
                     <Text style={styles.e2eeDividerText}>
-                      Messages below are end-to-end encrypted. Earlier ones were sent before encryption.
+                      {t("dm.mobile.conversation.messagesBelowAreEndTo")}
                     </Text>
                   </View>
                 )}
@@ -745,12 +750,12 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                     ]}
                     onLongPress={() => { tapHaptic(); setActionMessage(item); }}
                     delayLongPress={350}
-                    accessibilityHint="Long press for message actions"
+                    accessibilityHint={t("dm.mobile.conversation.longPressForMessageActions")}
                   >
                     {replyTarget && (
                       <View style={styles.replyReference}>
                         <Text style={styles.replyReferenceText} numberOfLines={1}>
-                          ↳ {replyTarget.fromUserId === user?.id ? "You" : target?.username || fallbackName}: {previewMessage(replyTarget.text)}
+                          ↳ {replyTarget.fromUserId === user?.id ? t("dm.mobile.conversation.you") : target?.username || fallbackName}: {previewMessage(replyTarget.text)}
                         </Text>
                       </View>
                     )}
@@ -758,7 +763,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                       <View style={styles.e2eePlaceholder}>
                         <Ionicons name="lock-closed-outline" size={14} color={colors.muted} />
                         <Text style={styles.e2eePlaceholderText}>
-                          {item.e2ee === "locked" ? "Encrypted message. Unlock encrypted messages on this phone to read it." : "This message couldn't be decrypted."}
+                          {item.e2ee === "locked" ? t("dm.mobile.conversation.encryptedMessageUnlockEncryptedMessages") : t("dm.e2ee.unreadable.failed")}
                         </Text>
                       </View>
                     ) : legacyAttachment && isImageMime(legacyAttachment.mimeType) ? (
@@ -768,7 +773,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                     ) : legacyAttachment ? (
                       <Pressable accessibilityRole="button" style={styles.attachmentRow} onPress={() => void downloadLegacyAttachment(legacyAttachment)}>
                         <Ionicons name="document-outline" size={18} color={colors.cyan} />
-                        <View style={styles.attachmentDetails}><Text style={styles.messageText} numberOfLines={1}>{legacyAttachment.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{legacyAttachment.fileKey ? "End-to-end encrypted · Tap to save or share" : "Tap to save or share"}</Text></View>
+                        <View style={styles.attachmentDetails}><Text style={styles.messageText} numberOfLines={1}>{legacyAttachment.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{legacyAttachment.fileKey ? t("dm.mobile.conversation.endToEndEncryptedTap") : t("dm.mobile.conversation.tapToSaveOrShare")}</Text></View>
                       </Pressable>
                     ) : <LinkifiedText style={styles.messageText} text={item.text} />}
 
@@ -807,8 +812,8 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                         {formatMessageTime(item.timestamp)}
                         {own && index === messages.length - 1
                           ? peerReadAt && peerReadAt >= item.timestamp
-                            ? " · Seen"
-                            : " · Sent"
+                            ? t("dm.mobile.conversation.seen")
+                            : t("dm.mobile.conversation.sent")
                           : ""}
                       </Text>
                     )}
@@ -823,29 +828,29 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         {!nearBottom && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={newSinceScroll > 0 ? `${newSinceScroll} new messages. Jump to latest` : "Jump to latest messages"}
+            accessibilityLabel={newSinceScroll > 0 ? t("dm.mobile.conversation.newsincescrollNewMessagesJumpTo", { newSinceScroll }) : t("dm.mobile.conversation.jumpToLatestMessages")}
             onPress={() => { nearBottomRef.current = true; setNearBottom(true); listRef.current?.scrollToEnd({ animated: true }); }}
             style={{ position: "absolute", right: 16, bottom: 92, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: colors.violet }}
           >
             <Ionicons name="arrow-down" size={15} color="#FFFFFF" />
-            <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "900" }}>{newSinceScroll > 0 ? `${newSinceScroll > 99 ? "99+" : newSinceScroll} new` : "Latest"}</Text>
+            <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "900" }}>{newSinceScroll > 0 ? t("chat.mobile.channel.newCount", { number: newSinceScroll > 99 ? "99+" : newSinceScroll }) : t("dm.mobile.conversation.latest")}</Text>
           </Pressable>
         )}
         {editingId && (
           <View style={styles.editingBanner}>
             <Ionicons name="create-outline" size={14} color={colors.cyan} />
-            <Text style={styles.editingBannerText}>Editing message</Text>
-            <Pressable accessibilityRole="button" onPress={cancelEdit}><Text style={styles.editingCancel}>Cancel</Text></Pressable>
+            <Text style={styles.editingBannerText}>{t("dm.mobile.conversation.editingMessage")}</Text>
+            <Pressable accessibilityRole="button" onPress={cancelEdit}><Text style={styles.editingCancel}>{t("common.actions.cancel")}</Text></Pressable>
           </View>
         )}
         {replyingTo && (
           <View style={styles.replyingBanner}>
             <Ionicons name="arrow-undo-outline" size={14} color={colors.cyan} />
             <Text style={styles.replyingBannerText} numberOfLines={1}>
-              Replying to {replyingTo.fromUserId === user?.id ? "You" : target?.username || fallbackName}: {previewMessage(replyingTo.text)}
+              {t("dm.mobile.conversation.replyingTo", { name: replyingTo.fromUserId === user?.id ? t("dm.mobile.conversation.you") : target?.username || fallbackName, preview: previewMessage(replyingTo.text) })}
             </Text>
             <Pressable accessibilityRole="button" onPress={() => setReplyingTo(null)}>
-              <Text style={styles.editingCancel}>Cancel</Text>
+              <Text style={styles.editingCancel}>{t("common.actions.cancel")}</Text>
             </Pressable>
           </View>
         )}
@@ -857,7 +862,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
               onPress={() => setMediaOpen(true)}
               disabled={uploading}
               accessibilityRole="button"
-              accessibilityLabel="Add photo, video or GIF"
+              accessibilityLabel={t("dm.mobile.conversation.addPhotoVideoOrGif")}
             >
               {uploading ? <ActivityIndicator size="small" color={colors.cyan} /> : <Ionicons name="add" size={21} color={colors.cyan} />}
             </Pressable>
@@ -866,7 +871,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
               testID="dm-composer"
               value={input}
               onChangeText={setInput}
-              placeholder={`Message ${target?.username || fallbackName}`}
+              placeholder={t("dm.mobile.conversation.messageUsername", { username: target?.username || fallbackName })}
               placeholderTextColor={colors.faint}
               style={styles.input}
               multiline
@@ -884,7 +889,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
               disabled={!input.trim()}
               onPress={sendMessage}
               accessibilityRole="button"
-              accessibilityLabel="Send message"
+              accessibilityLabel={t("dm.mobile.conversation.sendMessage")}
             >
               <Ionicons name="arrow-up" size={20} color="#fff" />
             </Pressable>
@@ -907,24 +912,24 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
             {actionMessage && (
               <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => beginReply(actionMessage)}>
                 <Ionicons name="arrow-undo-outline" size={18} color={colors.cyan} />
-                <Text style={styles.sheetActionText}>Reply</Text>
+                <Text style={styles.sheetActionText}>{t("dm.mobile.conversation.reply")}</Text>
               </Pressable>
             )}
             {actionMessage?.fromUserId !== user?.id && actionMessage && (
-              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: "message", targetId: message.id, subjectUserId: target?.id || targetId, subjectUsername: target?.username || fallbackName, contextType: "dm", contextId: targetId, contextLabel: `Private conversation with ${target?.username || fallbackName}`, evidenceType: "message", evidenceText: message.e2ee === "locked" || message.e2ee === "failed" ? undefined : message.text, e2eeProof: dmE2ee.reportProof(message) ?? undefined }); }}>
+              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: "message", targetId: message.id, subjectUserId: target?.id || targetId, subjectUsername: target?.username || fallbackName, contextType: "dm", contextId: targetId, contextLabel: t("chat.report.dmContext", { name: target?.username || fallbackName }), evidenceType: "message", evidenceText: message.e2ee === "locked" || message.e2ee === "failed" ? undefined : message.text, e2eeProof: dmE2ee.reportProof(message) ?? undefined }); }}>
                 <Ionicons name="flag-outline" size={18} color={colors.cyan} />
-                <Text style={styles.sheetActionText}>Report message</Text>
+                <Text style={styles.sheetActionText}>{t("dm.mobile.conversation.reportMessage")}</Text>
               </Pressable>
             )}
             {actionMessage?.fromUserId === user?.id && (
               <>
                 <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); if (message) beginEdit(message); }}>
                   <Ionicons name="create-outline" size={18} color={colors.cyan} />
-                  <Text style={styles.sheetActionText}>Edit message</Text>
+                  <Text style={styles.sheetActionText}>{t("dm.mobile.conversation.editMessage")}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" style={[styles.sheetAction, styles.sheetDanger]} onPress={() => actionMessage && deleteMessage(actionMessage)}>
                   <Ionicons name="trash-outline" size={18} color={colors.red} />
-                  <Text style={[styles.sheetActionText, { color: colors.red }]}>Delete message</Text>
+                  <Text style={[styles.sheetActionText, { color: colors.red }]}>{t("dm.mobile.conversation.deleteMessage2")}</Text>
                 </Pressable>
               </>
             )}

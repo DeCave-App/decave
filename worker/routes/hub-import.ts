@@ -1,6 +1,7 @@
 // Discord template import into a Hub: preview, apply and roll back.
 
-import { idFromPath, json, bodyJson } from "../lib/http";
+import { idFromPath, json, bodyJson, apiError } from "../lib/http";
+import { serverNotice } from "../lib/notices";
 import { requireUser } from "../lib/sessions";
 import {
   extractDiscordTemplateCode,
@@ -24,20 +25,14 @@ export async function handleHubImportRoutes({ request, env, p, method }: ApiCont
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const code = extractDiscordTemplateCode(`https://discord.new/${decodeURIComponent(discordTemplate[1])}`);
-    if (!code) return json({ error: "Invalid Discord Server Template code." }, 400);
+    if (!code) return apiError("hubImport.templateCodeInvalid", 400);
     const response = await fetch(`https://discord.com/api/v10/guilds/templates/${encodeURIComponent(code)}`, {
       headers: { Accept: "application/json", "User-Agent": "DeCave local development client" },
     });
     if (!response.ok)
-      return json(
-        {
-          error:
-            response.status === 404
-              ? "Discord template not found or unavailable."
-              : "Discord template could not be retrieved.",
-        },
-        response.status === 404 ? 404 : 502,
-      );
+      return response.status === 404
+        ? apiError("hubImport.templateNotFound", 404)
+        : apiError("hubImport.templateFetchFailed", 502);
     const payload = await response.json<unknown>();
     return json(normalizeDiscordTemplatePayload(payload, code));
   }
@@ -110,11 +105,11 @@ export async function handleHubImportRoutes({ request, env, p, method }: ApiCont
     if (user instanceof Response) return user;
     const hubId = Number(hubImportPreview[1]);
     if (!(await hasPermission(env.DB, hubId, user.id, "manageRooms")))
-      return json({ error: "Missing manageRooms permission" }, 403);
+      return apiError("common.missingManageRooms", 403);
     const body = await bodyJson(request);
     const source = body.discordImport ?? body.preview ?? body;
     const dryRun = await readHubImportDryRun(env, hubId, source);
-    if (!dryRun) return json({ error: "A valid Discord structure preview is required." }, 400);
+    if (!dryRun) return apiError("hubImport.previewRequired", 400);
     return json(dryRun);
   }
 
@@ -123,7 +118,7 @@ export async function handleHubImportRoutes({ request, env, p, method }: ApiCont
     if (user instanceof Response) return user;
     const hubId = Number(hubImportApply[1]);
     if (!(await hasPermission(env.DB, hubId, user.id, "manageRooms")))
-      return json({ error: "Missing manageRooms permission" }, 403);
+      return apiError("common.missingManageRooms", 403);
     const body = await bodyJson(request);
     const source = body.discordImport ?? body.preview ?? body;
     const sourceRecord = source && typeof source === "object" ? (source as Record<string, unknown>) : {};
@@ -132,13 +127,13 @@ export async function handleHubImportRoutes({ request, env, p, method }: ApiCont
         ? (sourceRecord.create as Record<string, unknown>)
         : null;
     const dryRun = await readHubImportDryRun(env, hubId, source);
-    if (!dryRun) return json({ error: "A valid Discord structure preview is required." }, 400);
+    if (!dryRun) return apiError("hubImport.previewRequired", 400);
     // A full preview can be fingerprinted against current Hub state. The
     // review component may send its already-filtered `create` plan instead;
     // that plan contains only entities approved for creation and is safe to
     // re-apply through the duplicate checks below.
     if (!sourceCreate && typeof body.fingerprint === "string" && body.fingerprint !== dryRun.fingerprint)
-      return json({ error: "The Hub changed after this preview. Review the updated conflicts before applying." }, 409);
+      return apiError("hubImport.hubChanged", 409);
     await ensureCollaborationSchema(env);
     const importId = crypto.randomUUID();
     const roomId = await nextIntegerId(env.DB, "decave_rooms");
@@ -248,15 +243,15 @@ export async function handleHubImportRoutes({ request, env, p, method }: ApiCont
     if (user instanceof Response) return user;
     const hubId = Number(hubImportRollback[1]);
     if (!(await hasPermission(env.DB, hubId, user.id, "manageRooms")))
-      return json({ error: "Missing manageRooms permission" }, 403);
+      return apiError("common.missingManageRooms", 403);
     let importId = "";
     try {
       importId = decodeURIComponent(hubImportRollback[2]);
     } catch {
-      return json({ error: "Import not found." }, 404);
+      return apiError("hubImport.notFound", 404);
     }
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(importId)) {
-      return json({ error: "Import not found." }, 404);
+      return apiError("hubImport.notFound", 404);
     }
     await ensureCollaborationSchema(env);
     const importRecord = await env.DB.prepare(
@@ -264,7 +259,7 @@ export async function handleHubImportRoutes({ request, env, p, method }: ApiCont
     )
       .bind(importId, hubId)
       .first<{ id: string; rolled_back_at: string | null }>();
-    if (!importRecord) return json({ error: "Import not found." }, 404);
+    if (!importRecord) return apiError("hubImport.notFound", 404);
     if (importRecord.rolled_back_at) {
       return json({
         importId,
@@ -272,7 +267,7 @@ export async function handleHubImportRoutes({ request, env, p, method }: ApiCont
         retainedRoomIds: [],
         deletedRoleIds: [],
         retainedRoleIds: [],
-        message: "This import was already rolled back.",
+        ...serverNotice("admin.server.importAlreadyRolledBack"),
       });
     }
     // Rollback checks whether a room is referenced by squad state before
@@ -448,10 +443,11 @@ export async function handleHubImportRoutes({ request, env, p, method }: ApiCont
       retainedRoomIds,
       deletedRoleIds,
       retainedRoleIds,
-      message:
+      ...serverNotice(
         retainedRoomIds.length || retainedRoleIds.length
-          ? "Some created records were retained because they changed or gained user data."
-          : "Created structure was rolled back.",
+          ? "admin.server.importRolledBackPartly"
+          : "admin.server.importRolledBack",
+      ),
     });
   }
 

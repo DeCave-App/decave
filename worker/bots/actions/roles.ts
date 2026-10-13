@@ -6,6 +6,7 @@ import { audit } from "../../db";
 import { realtimeRecheckAccess } from "../../lib/realtime";
 import { memberHasRole } from "../conditions";
 import { limitsNow } from "../limits";
+import { refusal } from "../reasons";
 import { putTimer } from "../store";
 import { armRoomTimers } from "../timer-arm";
 import { guardActor, guardRole, refused, timerHostRoom } from "./guard";
@@ -20,13 +21,13 @@ async function changeRole(
   durationMinutes: number | undefined,
 ): Promise<ActionResult> {
   const role = await guardRole(ctx, roleId);
-  if (refused(role)) return { ok: false, reason: role.reason };
+  if (refused(role)) return { ok: false, reason: role.reason, notice: role.notice };
   const userId = await guardActor(ctx);
-  if (refused(userId)) return { ok: false, reason: userId.reason };
+  if (refused(userId)) return { ok: false, reason: userId.reason, notice: userId.notice };
   const timed = typeof durationMinutes === "number" && durationMinutes > 0;
   // Timers run in a room's Durable Object; pick the room that hosts this one.
   const hostRoomId = timed ? await timerHostRoom(ctx) : null;
-  if (timed && hostRoomId === null) return { ok: false, reason: "Timed roles need a text channel in this hub" };
+  if (timed && hostRoomId === null) return { ok: false, ...refusal("bots.run.server.timedRoleNeedsChannel") };
 
   const db = ctx.env.DB;
   const has = await memberHasRole(db, ctx.event.hubId, userId, role.id);

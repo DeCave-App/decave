@@ -1,20 +1,25 @@
 import type { ExtraSettings, MessageDensity, MotionPreference } from "./extraSettings";
+import { FieldError } from "./SettingsControls";
+import type { SettingField } from "./useSettingField";
+import { useSettingsT } from "./useSettingsT";
 
 type SkinOption = { id: string; label: string };
 
 type ThemeProps = {
-  value: ExtraSettings;
+  field: SettingField<ExtraSettings>;
   skins: readonly SkinOption[];
   prefersDark: boolean;
-  onChange: (next: ExtraSettings) => void;
 };
 
-/** Settings → Appearance: keep one skin, or follow the computer's light/dark mode. */
-export function ThemeModePanel({ value, skins, prefersDark, onChange }: ThemeProps) {
+/** Settings → Appearance & accessibility: keep one skin, or follow the computer's light/dark mode. */
+export function ThemeModePanel({ field, skins, prefersDark }: ThemeProps) {
+  const { t } = useSettingsT();
+  const value = field.value;
+  const onChange = field.set;
   const system = value.themeMode === "system";
   return (
     <div className="dcs-card">
-      <div className="dcs-segmented" role="radiogroup" aria-label="Theme">
+      <div className="dcs-segmented" role="radiogroup" aria-label={t("settings.appearance.theme.label")}>
         <button
           type="button"
           role="radio"
@@ -22,8 +27,8 @@ export function ThemeModePanel({ value, skins, prefersDark, onChange }: ThemePro
           className={!system ? "is-active" : ""}
           onClick={() => onChange({ ...value, themeMode: "manual" })}
         >
-          <strong>Pick a skin</strong>
-          <small>Always use the skin you choose above</small>
+          <strong>{t("settings.appearance.theme.manual")}</strong>
+          <small>{t("settings.appearance.theme.manualHelp")}</small>
         </button>
         <button
           type="button"
@@ -32,14 +37,14 @@ export function ThemeModePanel({ value, skins, prefersDark, onChange }: ThemePro
           className={system ? "is-active" : ""}
           onClick={() => onChange({ ...value, themeMode: "system" })}
         >
-          <strong>Match my computer</strong>
-          <small>Switch between a light and a dark skin automatically</small>
+          <strong>{t("settings.appearance.theme.system")}</strong>
+          <small>{t("settings.appearance.theme.systemHelp")}</small>
         </button>
       </div>
       {system && (
         <div className="dcs-inline-fields">
           <label className="dcs-field">
-            <span>Light mode skin</span>
+            <span>{t("settings.appearance.theme.lightSkin")}</span>
             <select
               className="dcx-input"
               value={value.lightSkin}
@@ -53,7 +58,7 @@ export function ThemeModePanel({ value, skins, prefersDark, onChange }: ThemePro
             </select>
           </label>
           <label className="dcs-field">
-            <span>Dark mode skin</span>
+            <span>{t("settings.appearance.theme.darkSkin")}</span>
             <select
               className="dcx-input"
               value={value.darkSkin}
@@ -66,17 +71,19 @@ export function ThemeModePanel({ value, skins, prefersDark, onChange }: ThemePro
               ))}
             </select>
           </label>
-          <p className="dcs-muted">Your computer is in {prefersDark ? "dark" : "light"} mode right now.</p>
+          <p className="dcs-muted">
+            {prefersDark ? t("settings.appearance.theme.nowDark") : t("settings.appearance.theme.nowLight")}
+          </p>
         </div>
       )}
+      <FieldError field={field} />
     </div>
   );
 }
 
 type A11yProps = {
-  value: ExtraSettings;
+  field: SettingField<ExtraSettings>;
   systemReducedMotion: boolean;
-  onChange: (next: ExtraSettings) => void;
 };
 
 function Toggle({
@@ -90,6 +97,7 @@ function Toggle({
   checked: boolean;
   onChange: (checked: boolean) => void;
 }) {
+  const { t } = useSettingsT();
   return (
     <label className={`settings-toggle-row${checked ? " enabled" : " disabled"}`}>
       <span>
@@ -97,34 +105,37 @@ function Toggle({
         <small>{detail}</small>
       </span>
       <span className="settings-toggle-control">
-        <em>{checked ? "ON" : "OFF"}</em>
+        <em>{checked ? t("settings.field.on") : t("settings.field.off")}</em>
         <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       </span>
     </label>
   );
 }
 
-/** Settings → Appearance: motion, density and readability options. */
-export function ReadabilityPanel({ value, systemReducedMotion, onChange }: A11yProps) {
-  const motion: Array<[MotionPreference, string, string]> = [
-    [
-      "system",
-      "Match my computer",
-      systemReducedMotion ? "Your computer asks for less motion" : "Your computer allows animations",
-    ],
-    ["reduce", "Reduce motion", "Turn off animations and smooth scrolling"],
-    ["full", "Full motion", "Keep every animation"],
-  ];
-  const density: Array<[MessageDensity, string, string]> = [
-    ["cozy", "Cozy", "Roomy messages with large avatars"],
-    ["compact", "Compact", "Fit more messages on screen"],
-  ];
+const MOTIONS: MotionPreference[] = ["system", "reduce", "full"];
+const DENSITIES: MessageDensity[] = ["cozy", "compact"];
+
+/** Settings → Appearance & accessibility: motion, density and readability options. */
+export function ReadabilityPanel({ field, systemReducedMotion }: A11yProps) {
+  const { t, tk } = useSettingsT();
+  const value = field.value;
+  const onChange = field.set;
+  const motionDetail = (id: MotionPreference) =>
+    id === "system"
+      ? systemReducedMotion
+        ? t("settings.appearance.motion.systemReduced")
+        : t("settings.appearance.motion.systemFull")
+      : tk(`settings.appearance.motion.${id}.detail`);
   return (
     <div className="dcs-card">
       <div className="dcs-field">
-        <span>Motion</span>
-        <div className="dcs-segmented dcs-segmented-3" role="radiogroup" aria-label="Motion">
-          {motion.map(([id, label, detail]) => (
+        <span>{t("settings.appearance.motion.label")}</span>
+        <div
+          className="dcs-segmented dcs-segmented-3"
+          role="radiogroup"
+          aria-label={t("settings.appearance.motion.label")}
+        >
+          {MOTIONS.map((id) => (
             <button
               key={id}
               type="button"
@@ -133,16 +144,16 @@ export function ReadabilityPanel({ value, systemReducedMotion, onChange }: A11yP
               className={value.motion === id ? "is-active" : ""}
               onClick={() => onChange({ ...value, motion: id })}
             >
-              <strong>{label}</strong>
-              <small>{detail}</small>
+              <strong>{tk(`settings.appearance.motion.${id}.label`)}</strong>
+              <small>{motionDetail(id)}</small>
             </button>
           ))}
         </div>
       </div>
       <div className="dcs-field">
-        <span>Message density</span>
-        <div className="dcs-segmented" role="radiogroup" aria-label="Message density">
-          {density.map(([id, label, detail]) => (
+        <span>{t("settings.appearance.density.label")}</span>
+        <div className="dcs-segmented" role="radiogroup" aria-label={t("settings.appearance.density.label")}>
+          {DENSITIES.map((id) => (
             <button
               key={id}
               type="button"
@@ -151,30 +162,31 @@ export function ReadabilityPanel({ value, systemReducedMotion, onChange }: A11yP
               className={value.density === id ? "is-active" : ""}
               onClick={() => onChange({ ...value, density: id })}
             >
-              <strong>{label}</strong>
-              <small>{detail}</small>
+              <strong>{tk(`settings.appearance.density.${id}.label`)}</strong>
+              <small>{tk(`settings.appearance.density.${id}.detail`)}</small>
             </button>
           ))}
         </div>
       </div>
       <Toggle
-        label="High contrast"
-        detail="Stronger borders, brighter secondary text and clearer focus rings."
+        label={t("settings.appearance.contrast")}
+        detail={t("settings.appearance.contrastHelp")}
         checked={value.highContrast}
         onChange={(highContrast) => onChange({ ...value, highContrast })}
       />
       <Toggle
-        label="Always underline links"
-        detail="Make links in messages easy to spot without relying on colour."
+        label={t("settings.appearance.underline")}
+        detail={t("settings.appearance.underlineHelp")}
         checked={value.underlineLinks}
         onChange={(underlineLinks) => onChange({ ...value, underlineLinks })}
       />
       <Toggle
-        label="Show image descriptions"
-        detail="Show the title of GIFs and stickers under them."
+        label={t("settings.appearance.altText")}
+        detail={t("settings.appearance.altTextHelp")}
         checked={value.showAltText}
         onChange={(showAltText) => onChange({ ...value, showAltText })}
       />
+      <FieldError field={field} />
     </div>
   );
 }

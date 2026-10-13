@@ -27,6 +27,7 @@ import type {
 import { POLL_PREFIX, EVENT_PREFIX } from "../message-payloads";
 import type { ProfileFieldsState } from "../state/profile-fields";
 import type { PreferencesState } from "../state/preferences";
+import { i18next } from "../../i18n/index.ts";
 import type { AudioSetupState } from "../state/audio-setup";
 
 export type SessionActionsDeps = {
@@ -142,12 +143,11 @@ export function createSessionActions(deps: SessionActionsDeps) {
     const wasActive = micTestActiveRef.current;
     try {
       if (!wasActive) await startMicTest();
-      if (!localMicStreamRef.current)
-        throw new Error("Microphone preview is unavailable. Open Voice & Audio and choose an input first.");
+      if (!localMicStreamRef.current) throw new Error(i18next.t("chat.actions.voiceTest.previewUnavailable"));
       const startedAt = performance.now();
       await new Promise<void>((resolve) => window.setTimeout(resolve, 1_000));
       const metrics = voiceActivationMetricsRef.current;
-      if (!metrics) throw new Error("The local voice meter has not produced a reading yet. Try the test again.");
+      if (!metrics) throw new Error(i18next.t("chat.actions.voiceTest.noReading"));
       const inputDb = variant === "raw" ? metrics.rawDb : metrics.postDb;
       return {
         variant,
@@ -182,9 +182,7 @@ export function createSessionActions(deps: SessionActionsDeps) {
         else stopMicTest();
       } catch (error) {
         setAudioSettingsError(
-          error instanceof Error
-            ? error.message
-            : "The microphone graph could not be restored after the local comparison.",
+          error instanceof Error ? error.message : i18next.t("chat.actions.voiceTest.restoreFailed"),
         );
       }
     }
@@ -200,11 +198,11 @@ export function createSessionActions(deps: SessionActionsDeps) {
     },
   ) => {
     if (!currentServer.id || !currentChannel.id || currentChannel.type !== "text")
-      throw new Error("Open a text room before posting a decision card.");
+      throw new Error(i18next.t("chat.actions.decision.openRoomFirst"));
     const encoded = `${POLL_PREFIX}${JSON.stringify({ question: payload.question, options: payload.options } satisfies PollPayload)}`;
     const beforeIds = new Set(messagesRef.current.map((message) => message.id));
     if (!(await sendRichComposerText("hub", encoded, currentChannel.id)))
-      throw new Error("The Hub is reconnecting; the decision card was not posted.");
+      throw new Error(i18next.t("chat.actions.decision.reconnecting"));
     const sourceMessageId = await waitForPostedHubMessage(encoded, currentChannel.id, beforeIds);
     appendSessionRecap({
       kind: "poll-created",
@@ -232,13 +230,13 @@ export function createSessionActions(deps: SessionActionsDeps) {
       eventId: string | null;
     },
   ) => {
-    if (!currentServer.id) throw new Error("Open a Hub before linking an event.");
+    if (!currentServer.id) throw new Error(i18next.t("chat.actions.event.openHubFirst"));
     const targetChannel = currentServer.channels.find((channel) => channel.type === "text");
-    if (!targetChannel) throw new Error("This Hub has no text room for the linked event.");
+    if (!targetChannel) throw new Error(i18next.t("chat.actions.event.noTextRoom"));
     const encoded = `${EVENT_PREFIX}${JSON.stringify(payload)}`;
     const beforeIds = new Set(messagesRef.current.map((message) => message.id));
     if (!(await sendRichComposerText("hub", encoded, targetChannel.id)))
-      throw new Error("The Hub is reconnecting; the linked event was not posted.");
+      throw new Error(i18next.t("chat.actions.event.reconnecting"));
     const eventId = await waitForPostedHubMessage(encoded, targetChannel.id, beforeIds);
     appendSessionRecap({ kind: "event-scheduled", eventId, title: payload.title, startAt: payload.startAt });
     void metadata;
@@ -353,5 +351,6 @@ export function createSessionActions(deps: SessionActionsDeps) {
     launchSessionKit,
     removeSessionKit,
     runSquadPreset,
+    updateQuietPresence,
   };
 }

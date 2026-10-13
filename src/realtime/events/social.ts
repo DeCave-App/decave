@@ -17,6 +17,8 @@ import type {
   UiSoundEvent,
 } from "../../app/types";
 import type { RealtimeFrame } from "../connection";
+import { i18next } from "../../i18n/index.ts";
+import { realtimeErrorMessage } from "../../i18n/apiError.ts";
 import { restoreDraftIfUnchanged, type PendingSocialMessage } from "../../app/actions/social-message-recovery";
 
 export type SocialEventContext = {
@@ -295,10 +297,13 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
       const username =
         typeof realtimeSender?.username === "string" && realtimeSender.username
           ? realtimeSender.username
-          : (sender?.username ?? "DeCave user");
+          : (sender?.username ?? i18next.t("chat.actions.realtime.someUser"));
       const avatarUrl = typeof realtimeSender?.avatarUrl === "string" ? realtimeSender.avatarUrl : sender?.avatarUrl;
       // A device that can't decrypt yet still says a message arrived.
-      const readable = message.e2ee === "locked" || message.e2ee === "failed" ? "🔒 Encrypted message" : message.text;
+      const readable =
+        message.e2ee === "locked" || message.e2ee === "failed"
+          ? i18next.t("chat.actions.realtime.encryptedMessage")
+          : message.text;
       const preview = notificationPreviewText(username, readable, "DeCave");
 
       const previewMode = notificationPreviewMode();
@@ -344,7 +349,7 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
   }
 
   if (data.type === "DM_ERROR") {
-    const fallback = typeof data.message === "string" ? data.message : "Private message failed.";
+    const fallback = realtimeErrorMessage(data, i18next.t("chat.actions.dm.sendFailed"));
     // A stale key is fixed by sealing again with fresh keys, once.
     if (!e2ee) {
       restorePendingSend(data.clientMessageId, "dm", data.targetUserId);
@@ -403,9 +408,17 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
       !mutedUserIdsRef.current.has(message.fromUserId)
     ) {
       const group = groupChats.find((item) => item.id === groupId);
-      const context = group?.name || "Group chat";
-      const readable = message.e2ee === "locked" || message.e2ee === "failed" ? "🔒 Encrypted message" : message.text;
-      const preview = notificationPreviewText(message.username || "DeCave user", readable, "DeCave", context);
+      const context = group?.name || i18next.t("chat.actions.dm.groupFallback");
+      const readable =
+        message.e2ee === "locked" || message.e2ee === "failed"
+          ? i18next.t("chat.actions.realtime.encryptedMessage")
+          : message.text;
+      const preview = notificationPreviewText(
+        message.username || i18next.t("chat.actions.realtime.someUser"),
+        readable,
+        "DeCave",
+        context,
+      );
       desktopNotify(preview.title, preview.body, "dm", undefined, "other");
     }
   }
@@ -436,7 +449,7 @@ export function handleSocialEvent(data: RealtimeFrame, context: SocialEventConte
   }
 
   if (data.type === "GROUP_ERROR") {
-    const fallback = typeof data.message === "string" ? data.message : "Group message failed.";
+    const fallback = realtimeErrorMessage(data, i18next.t("chat.actions.dm.groupSendFailed"));
     // Keys or members changed since the message was sealed: seal again, once.
     if (!e2ee) {
       restorePendingSend(data.clientMessageId, "group", data.groupId);

@@ -9,7 +9,7 @@ import {
   platformOwnerForClient,
   platformUserByIdentifier,
 } from "../../lib/platform-owner";
-import { json, bodyJson } from "../../lib/http";
+import { json, bodyJson, apiError } from "../../lib/http";
 import { ownerRequireReauth, platformOwnerMfaEnabled } from "../../lib/mfa";
 import { userByReference, publicIdOf } from "../../db";
 import { revokeAccountSessions, securityEvent } from "../../lib/sessions";
@@ -81,10 +81,10 @@ export async function handlePlatformAdminRoutes({
     const body = await bodyJson(request);
     const targetUserId = typeof body.targetUserId === "string" ? body.targetUserId.trim() : "";
 
-    if (!targetUserId) return json({ error: "Target account is required" }, 400);
+    if (!targetUserId) return apiError("admin.targetRequired", 400);
 
     const target = await userByReference(env.DB, targetUserId);
-    if (!target) return json({ error: "Target account was not found" }, 404);
+    if (!target) return apiError("admin.targetNotFound", 404);
 
     await revokeAccountSessions(env, target.id, "platform_security_revocation");
 
@@ -209,24 +209,24 @@ export async function handlePlatformAdminRoutes({
       key: `platform-owner-promote:${owner.id}`,
     });
     if (!limited.success) {
-      return json({ error: "Too many owner-management attempts. Try again shortly." }, 429);
+      return apiError("admin.tooManyOwnerAttempts", 429);
     }
 
     const body = await bodyJson(request);
     const targetIdentifier = typeof body.targetIdentifier === "string" ? body.targetIdentifier.trim() : "";
 
     if (!targetIdentifier) {
-      return json({ error: "Target account is required" }, 400);
+      return apiError("admin.targetRequired", 400);
     }
 
     const target = await platformUserByIdentifier(env.DB, targetIdentifier);
     if (!target) {
       await platformAudit(env, owner.id, "platform.owner_promote_target_not_found", request);
-      return json({ error: "Target account was not found" }, 404);
+      return apiError("admin.targetNotFound", 404);
     }
 
     if (!target.email_verified_at && target.requires_email_verification === 1) {
-      return json({ error: "The target account must verify its email first" }, 409);
+      return apiError("admin.targetEmailUnverified", 409);
     }
 
     if (target.platform_role === "owner") {
@@ -250,8 +250,7 @@ export async function handlePlatformAdminRoutes({
     )
       .bind(target.id)
       .run();
-    if (Number(promoted.meta.changes ?? 0) !== 1)
-      return json({ error: "That account is being erased and cannot be promoted." }, 409);
+    if (Number(promoted.meta.changes ?? 0) !== 1) return apiError("admin.erasingCannotPromote", 409);
 
     await platformAudit(env, owner.id, "platform.owner_promoted", request, target.id, {
       previousRole: target.platform_role,
@@ -282,35 +281,31 @@ export async function handlePlatformAdminRoutes({
       key: `platform-owner-demote:${owner.id}`,
     });
     if (!limited.success) {
-      return json({ error: "Too many owner-management attempts. Try again shortly." }, 429);
+      return apiError("admin.tooManyOwnerAttempts", 429);
     }
 
     const body = await bodyJson(request);
     const targetUserId = typeof body.targetUserId === "string" ? body.targetUserId.trim() : "";
 
     if (!targetUserId) {
-      return json({ error: "Target owner is required" }, 400);
+      return apiError("admin.targetOwnerRequired", 400);
     }
 
     const target = await userByReference(env.DB, targetUserId);
     if (!target || target.platform_role !== "owner") {
-      return json({ error: "Target platform owner was not found" }, 404);
+      return apiError("admin.targetOwnerNotFound", 404);
     }
 
     if (target.id === owner.id) {
-      return json({ error: "You cannot demote your own platform-owner account. Use another owner account." }, 409);
+      return apiError("admin.cannotDemoteSelfUseAnother", 409);
     }
 
     const countBefore = await platformOwnerCount(env.DB);
     if (countBefore <= 2) {
-      return json(
-        {
-          error: "DeCave must always keep at least two platform owners. Promote another owner first.",
-          ownerCount: countBefore,
-          minimumOwnerCount: 2,
-        },
-        409,
-      );
+      return apiError("admin.minimumOwnersAlways", 409, undefined, undefined, {
+        ownerCount: countBefore,
+        minimumOwnerCount: 2,
+      });
     }
 
     const demoted = await env.DB.prepare(
@@ -318,8 +313,7 @@ export async function handlePlatformAdminRoutes({
     )
       .bind(target.id)
       .run();
-    if (Number(demoted.meta.changes ?? 0) !== 1)
-      return json({ error: "That account is being erased or is no longer an owner." }, 409);
+    if (Number(demoted.meta.changes ?? 0) !== 1) return apiError("admin.erasingOrNotOwner", 409);
     await revokeAccountSessions(env, target.id, "platform_owner_removed");
 
     await platformAudit(env, owner.id, "platform.owner_demoted", request, target.id, {

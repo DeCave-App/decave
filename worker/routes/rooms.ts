@@ -2,12 +2,13 @@
 // Hub insights.
 
 import { hubCommunityFeatures } from "../lib/hubs";
-import { boundedBodyBytes, idFromPath, json, bodyJson } from "../lib/http";
+import { apiError, apiErrorLegacy, boundedBodyBytes, idFromPath, json, bodyJson } from "../lib/http";
+import { apiErrorWithFields } from "../lib/api-error-fields";
 import { queueBotEvent } from "../bots/events";
 import { safeUploadedContentType, UploadTypeError } from "../lib/upload-content-type";
 import { requireUser } from "../lib/sessions";
 import { getRoom, hasPermission, nowIso, getRole, canCreateForumPost, publicIdOf, audit } from "../db";
-import { deleteQueuedMedia, ensureMediaDeletionQueueSchema } from "../lib/media";
+import { deleteQueuedMedia, ensureMediaDeletionQueueSchema, mediaUrl } from "../lib/media";
 import {
   cleanRoomName,
   cleanRoomIcon,
@@ -21,9 +22,10 @@ import {
   normalizeForumTags,
   structuredPrefixOf,
   FORUM_POST_PREFIX,
-  validateForumPostExtras,
+  forumPostExtrasProblem,
   rawForumPostJson,
 } from "../../shared/forum";
+import { parseRoomAccent } from "../../shared/room-style";
 import { realtimeRecheckAccess, realtimeBroadcast } from "../lib/realtime";
 import { historyCursor, HISTORY_PAGE_SIZE } from "../lib/social";
 import { messagesForClient, messageForClient } from "../lib/messages";
@@ -38,9 +40,9 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     if (user instanceof Response) return user;
     const roomId = Number(roomAccess[1]);
     const room = await getRoom(env.DB, roomId);
-    if (!room) return json({ error: "Room not found" }, 404);
+    if (!room) return apiError("rooms.notFound", 404);
     if (!(await hasPermission(env.DB, room.hub_id, user.id, "manageRooms")))
-      return json({ error: "Missing manageRooms permission" }, 403);
+      return apiError("rooms.manageRoomsRequired", 403);
     const rows = await env.DB.prepare(
       `SELECT u.public_id FROM decave_room_members rm JOIN decave_users u ON u.id=rm.user_id WHERE rm.room_id=? ORDER BY u.username`,
     )
@@ -58,13 +60,13 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     if (user instanceof Response) return user;
     const roomId = Number(roomBase[1]);
     const room = await getRoom(env.DB, roomId);
-    if (!room) return json({ error: "Room not found" }, 404);
+    if (!room) return apiError("rooms.notFound", 404);
     if (!(await hasPermission(env.DB, room.hub_id, user.id, "manageRooms")))
-      return json({ error: "Missing manageRooms permission" }, 403);
+      return apiError("rooms.manageRoomsRequired", 403);
     if (method === "PATCH") {
       const body = await bodyJson(request);
       const name = body.name === undefined ? room.name : cleanRoomName(body.name);
-      if (!name) return json({ error: "Room name is required" }, 400);
+      if (!name) return apiError("rooms.nameRequired", 400);
       // B8: same duplicate rule as room creation (excluding this room). The
       // position field is ignored; ordering goes through /channels/reorder.
       const dup = await env.DB.prepare(
@@ -72,7 +74,7 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
       )
         .bind(room.hub_id, name, room.type, room.kind, roomId)
         .first();
-      if (dup) return json({ error: "Room already exists" }, 409);
+      if (dup) return apiError("rooms.alreadyExists", 409);
       const icon = body.icon === undefined ? room.icon : cleanRoomIcon(body.icon);
       const category = typeof body.category === "string" ? body.category.trim().slice(0, 40) : room.category;
       const priv = typeof body.private === "boolean" ? (body.private ? 1 : 0) : room.private;
@@ -94,17 +96,17 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
           ? await validatedHubRoleIds(env.DB, room.hub_id, body.forumPostRoleIds)
           : safeJsonStringArray(room.forum_post_role_ids_json);
       if (forumPostRoleIds === null)
-        return json({ error: "Forum posting roles must be roles of this Hub", field: "forumPostRoleIds" }, 400);
+        return apiErrorWithFields("rooms.forumPostRolesInvalid", 400, { field: "forumPostRoleIds" });
       const forumPostMemberIds =
         forumPostPolicy === "members" && body.forumPostMemberIds !== undefined
           ? await validatedHubMemberPublicIds(env.DB, room.hub_id, body.forumPostMemberIds)
           : safeJsonStringArray(room.forum_post_member_ids_json);
       if (forumPostMemberIds === null)
-        return json({ error: "Forum posting members must be members of this Hub", field: "forumPostMemberIds" }, 400);
+        return apiErrorWithFields("rooms.forumPostMembersInvalid", 400, { field: "forumPostMemberIds" });
       let forumTags = safeJsonStringArray(room.forum_tags_json);
       if (room.kind === "forum" && body.forumTags !== undefined) {
         const parsed = normalizeForumTags(body.forumTags);
-        if (!parsed.ok) return json({ error: parsed.error, field: "forumTags" }, 400);
+        if (!parsed.ok) return apiError(parsed.code, 400, parsed.params, undefined, { field: "forumTags" });
         forumTags = parsed.tags;
       }
       // Read-only chat rooms: who can post (forums use forumPostPolicy).
@@ -112,14 +114,20 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
       let postRoleIds = safeJsonStringArray((room as { post_role_ids_json?: string }).post_role_ids_json ?? "[]");
       if (room.type === "text" && room.kind !== "forum" && body.postPolicy !== undefined) {
         if (body.postPolicy !== "everyone" && body.postPolicy !== "staff" && body.postPolicy !== "roles")
-          return json({ error: "Who can post must be everyone, staff or roles", field: "postPolicy" }, 400);
+          return apiErrorWithFields("rooms.postPolicyInvalid", 400, { field: "postPolicy" });
         postPolicy = body.postPolicy;
         if (postPolicy === "roles") {
           const ids = await validatedHubRoleIds(env.DB, room.hub_id, body.postRoleIds ?? []);
-          if (ids === null)
-            return json({ error: "Posting roles must be roles of this Hub", field: "postRoleIds" }, 400);
+          if (ids === null) return apiErrorWithFields("rooms.postRolesInvalid", 400, { field: "postRoleIds" });
           postRoleIds = ids;
         } else postRoleIds = [];
+      }
+      // Per-room styling: '#rrggbb', or null to fall back to the Hub accent.
+      let accent = room.accent ?? null;
+      if (body.accent !== undefined) {
+        const parsed = parseRoomAccent(body.accent);
+        if (parsed === undefined) return apiErrorWithFields("rooms.accentInvalid", 400, { field: "accent" });
+        accent = parsed;
       }
       // Player caps are a custom per-Hub feature; other Hubs keep whatever is stored (0).
       let userLimit = Number((room as { user_limit?: number }).user_limit ?? 0);
@@ -130,11 +138,11 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
       ) {
         const next = Number(body.userLimit);
         if (!Number.isInteger(next) || next < 0 || next > 99)
-          return json({ error: "Max players must be a whole number from 0 to 99", field: "userLimit" }, 400);
+          return apiErrorWithFields("rooms.userLimitInvalid", 400, { field: "userLimit" });
         userLimit = next;
       }
       await env.DB.prepare(
-        "UPDATE decave_rooms SET name=?,icon=?,category=?,private=?,forum_guidelines=?,forum_post_policy=?,forum_post_role_ids_json=?,forum_post_member_ids_json=?,forum_tags_json=?,user_limit=?,post_policy=?,post_role_ids_json=?,updated_at=? WHERE id=?",
+        "UPDATE decave_rooms SET name=?,icon=?,category=?,private=?,forum_guidelines=?,forum_post_policy=?,forum_post_role_ids_json=?,forum_post_member_ids_json=?,forum_tags_json=?,user_limit=?,post_policy=?,post_role_ids_json=?,accent=?,updated_at=? WHERE id=?",
       )
         .bind(
           name,
@@ -149,6 +157,7 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
           userLimit,
           postPolicy,
           JSON.stringify(postRoleIds),
+          accent,
           nowIso(),
           roomId,
         )
@@ -158,7 +167,7 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
       else if (priv !== 1) await env.DB.prepare("DELETE FROM decave_room_members WHERE room_id=?").bind(roomId).run();
       await realtimeRecheckAccess(env, room.hub_id);
       await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { hubId: room.hub_id });
-      const { forum_tags_json: _storedTags, ...publicRoom } = room;
+      const { forum_tags_json: _storedTags, background_key: backgroundKey, ...publicRoom } = room;
       return json({
         ...publicRoom,
         name,
@@ -171,6 +180,8 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
         forumPostRoleIds,
         forumPostMemberIds,
         forumTags,
+        accent,
+        backgroundUrl: mediaUrl(backgroundKey ?? null),
       });
     }
     const count = await env.DB.prepare(
@@ -178,9 +189,8 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     )
       .bind(room.hub_id)
       .first<{ count: number; texts: number }>();
-    if (Number(count?.count ?? 0) <= 1) return json({ error: "A server must have at least one room" }, 400);
-    if (room.type === "text" && Number(count?.texts ?? 0) <= 1)
-      return json({ error: "A server must keep at least one text room" }, 400);
+    if (Number(count?.count ?? 0) <= 1) return apiError("rooms.lastRoom", 400);
+    if (room.type === "text" && Number(count?.texts ?? 0) <= 1) return apiError("rooms.lastTextRoom", 400);
     await ensureMediaDeletionQueueSchema(env.DB);
     // Capture sent, legacy and not-yet-sent uploads in the same transaction as
     // the cascade. A pre-read alone would miss uploads added before deletion.
@@ -190,8 +200,9 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
          SELECT object_key,?,0 FROM (
            SELECT attachment_key AS object_key FROM decave_messages WHERE room_id=? AND attachment_key IS NOT NULL
            UNION SELECT r2_key AS object_key FROM decave_attachment_access WHERE room_id=?
+           UNION SELECT background_key AS object_key FROM decave_rooms WHERE id=? AND background_key IS NOT NULL
          )`,
-      ).bind(nowIso(), roomId, roomId),
+      ).bind(nowIso(), roomId, roomId, roomId),
       env.DB.prepare("DELETE FROM decave_rooms WHERE id=?").bind(roomId),
     ]);
     // The retention job drains the durable queue, including retries after R2 failures.
@@ -226,9 +237,8 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     if (user instanceof Response) return user;
     const roomId = Number(messagesRoute[1]);
     const room = await getRoom(env.DB, roomId);
-    if (!room) return json({ error: "Room not found" }, 404);
-    if (!(await canAccessRoom(env.DB, room, user.id)))
-      return json({ error: "You do not have access to this room" }, 403);
+    if (!room) return apiError("rooms.notFound", 404);
+    if (!(await canAccessRoom(env.DB, room, user.id))) return apiError("rooms.noAccess", 403);
     const cursor = await historyCursor(
       env,
       "decave_messages",
@@ -258,9 +268,8 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     if (user instanceof Response) return user;
     const roomId = Number(pinsRoute[1]);
     const room = await getRoom(env.DB, roomId);
-    if (!room) return json({ error: "Room not found" }, 404);
-    if (!(await canAccessRoom(env.DB, room, user.id)))
-      return json({ error: "You do not have access to this room" }, 403);
+    if (!room) return apiError("rooms.notFound", 404);
+    if (!(await canAccessRoom(env.DB, room, user.id))) return apiError("rooms.noAccess", 403);
     const rows = await env.DB.prepare(
       "SELECT id FROM decave_messages WHERE room_id=? AND pinned=1 AND (visible_to_user_id IS NULL OR visible_to_user_id = ?) ORDER BY created_at DESC, id DESC LIMIT 100",
     )
@@ -287,8 +296,7 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     if (user instanceof Response) return user;
     const hubId = Number(insightsRoute[1]);
     const role = await getRole(env.DB, hubId, user.id);
-    if (role !== "owner" && role !== "admin")
-      return json({ error: "Only the Hub owner and admins can see insights." }, 403);
+    if (role !== "owner" && role !== "admin") return apiError("rooms.insightsForbidden", 403);
     const now = Date.now();
     const iso = (daysAgo: number) => new Date(now - daysAgo * 86400000).toISOString();
     const one = async <T>(sql: string, ...binds: unknown[]) =>
@@ -375,8 +383,8 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     if (user instanceof Response) return user;
     const roomId = Number(search[1]);
     const room = await getRoom(env.DB, roomId);
-    if (!room) return json({ error: "Room not found" }, 404);
-    if (!(await canAccessRoom(env.DB, room, user.id))) return json({ error: "No access" }, 403);
+    if (!room) return apiError("rooms.notFound", 404);
+    if (!(await canAccessRoom(env.DB, room, user.id))) return apiError("rooms.accessDenied", 403);
     const q = (url.searchParams.get("q") ?? "").trim();
     if (!q) return json([]);
     const rows = await env.DB.prepare(
@@ -395,7 +403,7 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     const roomId = Number(messageItem[1]);
     const messageId = decodeURIComponent(messageItem[2]);
     const room = await getRoom(env.DB, roomId);
-    if (!room || !(await canAccessRoom(env.DB, room, user.id))) return json({ error: "No access" }, 403);
+    if (!room || !(await canAccessRoom(env.DB, room, user.id))) return apiError("rooms.accessDenied", 403);
     const row = await env.DB.prepare(
       "SELECT hub_id,author_user_id,attachment_key,text,reply_to_id,bot_id FROM decave_messages WHERE id=? AND room_id=? AND visible_to_user_id IS NULL",
     )
@@ -408,26 +416,22 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
         reply_to_id: string | null;
         bot_id: string | null;
       }>();
-    if (!row) return json({ error: "Message not found" }, 404);
+    if (!row) return apiError("rooms.messageNotFound", 404);
     // Bot messages are stored under the publisher but are not theirs: only the
     // bot edits them, and only moderators delete them.
     const ownMessage = row.author_user_id === user.id && !row.bot_id;
     if (method === "PATCH") {
       const postingError = await requireHubPostingPermission(env.DB, row.hub_id, user.id);
       if (postingError) return postingError;
-      if (!ownMessage) return json({ error: "You can only edit your own messages" }, 403);
+      if (!ownMessage) return apiError("rooms.editOwnOnly", 403);
       const body = await bodyJson(request);
       const text = typeof body.text === "string" ? body.text.trim().slice(0, 4000) : "";
-      if (!text) return json({ error: "Message cannot be empty" }, 400);
+      if (!text) return apiError("rooms.messageEmpty", 400);
       // B10: edits cannot turn a message into (or out of) an event/forum post/poll/bot payload.
       if (structuredPrefixOf(row.text) !== structuredPrefixOf(text))
-        return json(
-          { error: "Structured messages cannot change type when edited", code: "STRUCTURED_TYPE_CHANGE" },
-          400,
-        );
+        return apiErrorLegacy("STRUCTURED_TYPE_CHANGE", "rooms.structuredTypeChange", 400);
       if (room.kind === "forum" && row.reply_to_id === null && text.startsWith(FORUM_POST_PREFIX)) {
-        if (!(await canCreateForumPost(env.DB, room, user.id)))
-          return json({ error: "Your role cannot create or edit posts in this forum" }, 403);
+        if (!(await canCreateForumPost(env.DB, room, user.id))) return apiError("rooms.forumRoleCannotPost", 403);
         const payloadOk = (() => {
           try {
             const v = JSON.parse(text.slice(FORUM_POST_PREFIX.length));
@@ -436,9 +440,9 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
             return false;
           }
         })();
-        if (!payloadOk) return json({ error: "Forum posts need a title" }, 400);
-        const extrasError = validateForumPostExtras(rawForumPostJson(text), Date.now(), { isEdit: true });
-        if (extrasError) return json({ error: extrasError, code: "FORUM_POST_INVALID" }, 400);
+        if (!payloadOk) return apiError("rooms.forumTitleRequired", 400);
+        const extrasProblem = forumPostExtrasProblem(rawForumPostJson(text), Date.now(), { isEdit: true });
+        if (extrasProblem) return apiErrorLegacy("FORUM_POST_INVALID", extrasProblem.code, 400, extrasProblem.params);
         const roomTags = safeJsonStringArray(room.forum_tags_json);
         if (roomTags.length) {
           const allowedTags = new Set(roomTags.map((t) => t.toLowerCase()));
@@ -446,7 +450,7 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
             JSON.stringify((JSON.parse(text.slice(FORUM_POST_PREFIX.length)) as { tags?: unknown }).tags ?? []),
           );
           if (tags.length > 5 || tags.some((t) => !allowedTags.has(t.trim().toLowerCase())))
-            return json({ error: "Choose tags from this forum's tag list", code: "FORUM_TAG_INVALID" }, 400);
+            return apiErrorLegacy("FORUM_TAG_INVALID", "rooms.forumTagInvalid", 400);
         }
       }
       await env.DB.prepare("UPDATE decave_messages SET text=?,edited_at=? WHERE id=?")
@@ -457,8 +461,7 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
       return json(message);
     }
     const role = await getRole(env.DB, row.hub_id, user.id);
-    if (!ownMessage && role !== "owner" && role !== "admin")
-      return json({ error: "You can only delete your own messages" }, 403);
+    if (!ownMessage && role !== "owner" && role !== "admin") return apiError("rooms.deleteOwnOnly", 403);
     // Deleting a forum post deletes its thread; otherwise replies would become
     // orphaned top-level messages (reply_to_id is ON DELETE SET NULL).
     const threadReplies =
@@ -523,28 +526,28 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     const roomId = Number(reaction[1]);
     const messageId = decodeURIComponent(reaction[2]);
     const room = await getRoom(env.DB, roomId);
-    if (!room || !(await canAccessRoom(env.DB, room, user.id))) return json({ error: "No access" }, 403);
+    if (!room || !(await canAccessRoom(env.DB, room, user.id))) return apiError("rooms.accessDenied", 403);
     const row = await env.DB.prepare(
       "SELECT hub_id,reply_to_id,text FROM decave_messages WHERE id=? AND room_id=? AND visible_to_user_id IS NULL",
     )
       .bind(messageId, roomId)
       .first<{ hub_id: number; reply_to_id: string | null; text: string | null }>();
-    if (!row) return json({ error: "Message not found" }, 404);
+    if (!row) return apiError("rooms.messageNotFound", 404);
     const body = await bodyJson(request);
     const emoji = typeof body.emoji === "string" ? body.emoji.slice(0, 24) : "";
-    if (!emoji) return json({ error: "Emoji required" }, 400);
+    if (!emoji) return apiError("rooms.emojiRequired", 400);
     if (
       emoji.startsWith("forum_vote_") &&
       (room.kind !== "forum" || row.reply_to_id !== null || !(emoji === "forum_vote_up" || emoji === "forum_vote_down"))
     )
-      return json({ error: "Invalid forum vote" }, 400);
+      return apiError("rooms.forumVoteInvalid", 400);
     const exists = await env.DB.prepare(
       "SELECT 1 FROM decave_message_reactions WHERE message_id=? AND user_id=? AND emoji=?",
     )
       .bind(messageId, user.id, emoji)
       .first();
     const pollVote = decidePollVote(row.text, emoji, Boolean(exists), Date.now());
-    if (pollVote.kind === "reject") return json({ error: pollVote.error, code: pollVote.code }, 400);
+    if (pollVote.kind === "reject") return apiErrorLegacy(pollVote.code, pollVote.i18nKey, 400);
     if (exists)
       await env.DB.prepare("DELETE FROM decave_message_reactions WHERE message_id=? AND user_id=? AND emoji=?")
         .bind(messageId, user.id, emoji)
@@ -593,15 +596,15 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     const roomId = Number(pin[1]);
     const messageId = decodeURIComponent(pin[2]);
     const room = await getRoom(env.DB, roomId);
-    if (!room || !(await canAccessRoom(env.DB, room, user.id))) return json({ error: "No access" }, 403);
+    if (!room || !(await canAccessRoom(env.DB, room, user.id))) return apiError("rooms.accessDenied", 403);
     const row = await env.DB.prepare(
       "SELECT hub_id,pinned,author_user_id FROM decave_messages WHERE id=? AND room_id=? AND visible_to_user_id IS NULL",
     )
       .bind(messageId, roomId)
       .first<{ hub_id: number; pinned: number; author_user_id: string }>();
-    if (!row) return json({ error: "Message not found" }, 404);
+    if (!row) return apiError("rooms.messageNotFound", 404);
     if (!(await hasPermission(env.DB, row.hub_id, user.id, "moderateMessages")))
-      return json({ error: "Moderate messages permission required" }, 403);
+      return apiError("rooms.moderateRequired", 403);
     const next = row.pinned ? 0 : 1;
     await env.DB.prepare("UPDATE decave_messages SET pinned=? WHERE id=?").bind(next, messageId).run();
     await audit(env.DB, row.hub_id, user.id, next ? "message.pin" : "message.unpin", row.author_user_id, messageId);
@@ -616,14 +619,13 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     if (user instanceof Response) return user;
     const roomId = Number(attachmentRoute[1]);
     const room = await getRoom(env.DB, roomId);
-    if (!room) return json({ error: "Room not found" }, 404);
-    if (!(await canAccessRoom(env.DB, room, user.id)))
-      return json({ error: "You do not have access to this room" }, 403);
+    if (!room) return apiError("rooms.notFound", 404);
+    if (!(await canAccessRoom(env.DB, room, user.id))) return apiError("rooms.noAccess", 403);
     const postingError = await requireHubPostingPermission(env.DB, room.hub_id, user.id);
     if (postingError) return postingError;
     const bytes = await boundedBodyBytes(request, 25 * 1024 * 1024);
-    if (!bytes) return json({ error: "Maximum attachment size is 25 MB" }, 413);
-    if (!bytes.byteLength) return json({ error: "Attachment is empty" }, 400);
+    if (!bytes) return apiError("rooms.attachmentTooLarge", 413);
+    if (!bytes.byteLength) return apiError("rooms.attachmentEmpty", 400);
     let name = "attachment";
     try {
       name =
@@ -635,7 +637,7 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     try {
       mime = safeUploadedContentType(request.headers.get("X-File-Type") ?? "", new Uint8Array(bytes));
     } catch (error) {
-      if (error instanceof UploadTypeError) return json({ error: error.message }, 415);
+      if (error instanceof UploadTypeError) return apiError("rooms.attachmentImageType", 415);
       throw error;
     }
     const id = crypto.randomUUID();

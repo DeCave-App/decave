@@ -1,5 +1,6 @@
 // Server-side rules for poll votes, which are stored as `poll_<index>` reactions.
 import { FORUM_POST_PREFIX, parseForumPostPayload } from "../shared/forum";
+import { legacyErrorFields, type ErrorCode, type LegacyErrorFields } from "./lib/http";
 
 export const CHAT_POLL_PREFIX = "__DECAVE_POLL__";
 
@@ -7,10 +8,15 @@ export type PollRules = { optionCount: number; multi: boolean; endsAt: number | 
 
 export type PollVoteDecision =
   | { kind: "not_poll_vote" }
-  | { kind: "reject"; error: string; code: string }
+  | ({ kind: "reject" } & LegacyErrorFields)
   | { kind: "allow"; clearOtherPollVotes: boolean };
 
 const POLL_EMOJI = /^poll_(0|[1-9]\d{0,2})$/;
+
+// `code` stays the machine code clients branch on; `i18nKey` is the catalog key.
+function reject(code: string, i18nKey: ErrorCode): PollVoteDecision {
+  return { kind: "reject", ...legacyErrorFields(code, i18nKey) };
+}
 
 export function pollRulesFromMessageText(text: string | null | undefined): PollRules | null {
   if (typeof text !== "string") return null;
@@ -46,16 +52,12 @@ export function decidePollVote(
   const rules = pollRulesFromMessageText(messageText);
   if (!rules) {
     // Allow cleaning up a stray legacy vote, but never add one to a non-poll.
-    return removing
-      ? { kind: "allow", clearOtherPollVotes: false }
-      : { kind: "reject", error: "This message is not a poll.", code: "POLL_INVALID" };
+    return removing ? { kind: "allow", clearOtherPollVotes: false } : reject("POLL_INVALID", "polls.notPoll");
   }
-  if (rules.endsAt !== null && now >= rules.endsAt)
-    return { kind: "reject", error: "This poll has ended.", code: "POLL_ENDED" };
+  if (rules.endsAt !== null && now >= rules.endsAt) return reject("POLL_ENDED", "polls.ended");
   if (removing) return { kind: "allow", clearOtherPollVotes: false };
   const match = POLL_EMOJI.exec(emoji);
-  if (!match || Number(match[1]) >= rules.optionCount)
-    return { kind: "reject", error: "Invalid poll option.", code: "POLL_OPTION_INVALID" };
+  if (!match || Number(match[1]) >= rules.optionCount) return reject("POLL_OPTION_INVALID", "polls.invalidOption");
   return { kind: "allow", clearOtherPollVotes: !rules.multi };
 }
 
@@ -66,6 +68,6 @@ export function decidePollVote(
  */
 export function decideEncryptedPollVote(emoji: string, removing: boolean): PollVoteDecision {
   if (!emoji.startsWith("poll_")) return { kind: "not_poll_vote" };
-  if (!POLL_EMOJI.test(emoji)) return { kind: "reject", error: "Invalid poll option.", code: "POLL_OPTION_INVALID" };
+  if (!POLL_EMOJI.test(emoji)) return reject("POLL_OPTION_INVALID", "polls.invalidOption");
   return { kind: "allow", clearOtherPollVotes: !removing };
 }

@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { i18next } from "../../i18n/index.ts";
+import { realtimeErrorMessage } from "../../i18n/apiError.ts";
 import {
   FORUM_REPLY_MAX,
   FORUM_SORT_LABELS,
@@ -11,7 +14,7 @@ import {
   isForumStaff,
   isUnread,
   loadSeen,
-  parseForumPostPayload,
+  displayForumPayload,
   patchForumPost,
   plainPreview,
   postTypeOf,
@@ -118,10 +121,13 @@ export function TagChip({
 }
 
 function fileSize(size: number) {
-  return size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(size / 1024))} KB`;
+  return size >= 1024 * 1024
+    ? i18next.t("forum.view.sizeMb", { size: (size / 1024 / 1024).toFixed(1) })
+    : i18next.t("forum.view.sizeKb", { size: Math.max(1, Math.round(size / 1024)) });
 }
 
 export function ForumView(props: ForumViewProps) {
+  const { t } = useTranslation(["forum"]);
   const { apiBase, room, viewer, activePostId } = props;
   // App re-creates these callbacks every render; keep effects stable via refs.
   const fetcherRef = useRef(props.fetcher);
@@ -171,7 +177,7 @@ export function ForumView(props: ForumViewProps) {
         setNextCursor(page.nextCursor);
       } catch (error) {
         if (request === feedRequestRef.current)
-          setFeedError(error instanceof Error ? error.message : "Could not load posts.");
+          setFeedError(error instanceof Error ? error.message : t("forum.view.loadPostsFailed"));
       } finally {
         if (request === feedRequestRef.current) {
           setFeedLoading(false);
@@ -245,7 +251,7 @@ export function ForumView(props: ForumViewProps) {
           fetchForumReplies(fetcher, apiBase, roomId, activePostId, null),
         ]);
         if (request !== threadRequestRef.current) return;
-        if (!entry) throw new Error("This post could not be found.");
+        if (!entry) throw new Error(t("forum.view.notFound"));
         setSelected(entry);
         setReplies(page.replies);
         setRepliesCursor(page.nextCursor);
@@ -253,7 +259,7 @@ export function ForumView(props: ForumViewProps) {
         markSeen(entry);
       } catch (error) {
         if (request === threadRequestRef.current)
-          setThreadError(error instanceof Error ? error.message : "Could not load this post.");
+          setThreadError(error instanceof Error ? error.message : t("forum.view.loadPostFailed"));
       } finally {
         if (request === threadRequestRef.current) setRepliesLoading(false);
       }
@@ -275,7 +281,7 @@ export function ForumView(props: ForumViewProps) {
       page.replies.forEach((reply) => countedReplyIdsRef.current.add(reply.id));
       setRepliesCursor(page.nextCursor);
     } catch (error) {
-      setThreadError(error instanceof Error ? error.message : "Could not load replies.");
+      setThreadError(error instanceof Error ? error.message : t("forum.view.loadRepliesFailed"));
     } finally {
       setRepliesLoading(false);
     }
@@ -315,7 +321,7 @@ export function ForumView(props: ForumViewProps) {
       const live = liveRef.current;
       if (data.type === "ERROR") {
         if (typeof data.code === "string" && data.code.startsWith("FORUM_"))
-          setBanner(typeof data.message === "string" ? data.message : "The forum rejected that message.");
+          setBanner(realtimeErrorMessage(data, t("forum.view.rejected")));
         return;
       }
       if (
@@ -332,7 +338,7 @@ export function ForumView(props: ForumViewProps) {
         const message: ForumMessage = {
           id: data.id,
           userId: typeof data.userId === "string" ? data.userId : undefined,
-          username: typeof data.username === "string" ? data.username : "Unknown",
+          username: typeof data.username === "string" ? data.username : t("forum.view.unknownUser"),
           avatarUrl: typeof data.avatarUrl === "string" ? data.avatarUrl : null,
           text: typeof data.text === "string" ? data.text : "",
           timestamp: typeof data.timestamp === "string" ? data.timestamp : new Date().toISOString(),
@@ -345,7 +351,7 @@ export function ForumView(props: ForumViewProps) {
           ...messageBotFields(data),
         };
         if (!message.replyToId) {
-          const payload = parseForumPostPayload(message.text);
+          const payload = displayForumPayload(message);
           if (!payload) return;
           const matchesTag = !live.tag || payload.tags.some((item) => item.toLowerCase() === live.tag!.toLowerCase());
           const q = live.debouncedQuery.toLowerCase();
@@ -388,7 +394,7 @@ export function ForumView(props: ForumViewProps) {
         if (message.replyToId) {
           setReplies((current) => current.map((reply) => (reply.id === message.id ? { ...reply, ...message } : reply)));
         } else {
-          const payload = parseForumPostPayload(message.text);
+          const payload = displayForumPayload(message);
           if (payload)
             patchEntry(
               message.id,
@@ -403,7 +409,7 @@ export function ForumView(props: ForumViewProps) {
         const messageId = data.messageId;
         if (live.activePostId === messageId) {
           onOpenPost(null);
-          setBanner("That post was deleted.");
+          setBanner(t("forum.view.deleted"));
         }
         setPosts((current) => current.filter((entry) => entry.message.id !== messageId));
         if (live.activePostId && live.replies.some((reply) => reply.id === messageId)) {
@@ -459,7 +465,7 @@ export function ForumView(props: ForumViewProps) {
         true,
       );
     } catch (error) {
-      setBanner(error instanceof Error ? error.message : "Could not update the post.");
+      setBanner(error instanceof Error ? error.message : t("forum.view.updateFailed"));
     } finally {
       setBusyAction("");
     }
@@ -502,7 +508,7 @@ export function ForumView(props: ForumViewProps) {
       if (!controller.signal.aborted) setReplyAttachment(attachment);
     } catch (error) {
       if (!controller.signal.aborted)
-        setReplyError(error instanceof Error ? error.message : "Could not upload the file.");
+        setReplyError(error instanceof Error ? error.message : t("forum.api.uploadFailed"));
     } finally {
       if (uploadAbortRef.current === controller) {
         uploadAbortRef.current = null;
@@ -523,12 +529,12 @@ export function ForumView(props: ForumViewProps) {
     setReplyError("");
     try {
       if (!(await props.publishReply(text, selected.message.id, replyAttachment)))
-        throw new Error("Realtime is reconnecting. Try again in a moment.");
+        throw new Error(t("forum.view.reconnecting"));
       props.onReplyInputChange("");
       setReplyAttachment(null);
       props.onSent();
     } catch (error) {
-      setReplyError(error instanceof Error ? error.message : "Could not send the reply.");
+      setReplyError(error instanceof Error ? error.message : t("forum.view.sendFailed"));
     } finally {
       setSending(false);
     }
@@ -593,12 +599,12 @@ export function ForumView(props: ForumViewProps) {
     const mineUp = up.includes(viewer.userId);
     const mineDown = down.includes(viewer.userId);
     return (
-      <div className={`fx-votes ${className}`} role="group" aria-label="Votes">
+      <div className={`fx-votes ${className}`} role="group" aria-label={t("forum.view.votes")}>
         <button
           type="button"
           className={mineUp ? "active" : ""}
           aria-pressed={mineUp}
-          aria-label={`Upvote (${up.length})`}
+          aria-label={t("forum.view.upvote", { count: up.length })}
           onClick={(event) => {
             event.stopPropagation();
             props.onVote(message, "up");
@@ -610,7 +616,7 @@ export function ForumView(props: ForumViewProps) {
           type="button"
           className={mineDown ? "active down" : "down"}
           aria-pressed={mineDown}
-          aria-label={`Downvote (${down.length})`}
+          aria-label={t("forum.view.downvote", { count: down.length })}
           onClick={(event) => {
             event.stopPropagation();
             props.onVote(message, "down");
@@ -628,7 +634,7 @@ export function ForumView(props: ForumViewProps) {
       <span>
         <strong>{attachment.name}</strong>
         <small>
-          {attachment.mimeType || "File"} · {fileSize(attachment.size)}
+          {attachment.mimeType || t("forum.view.file")} · {fileSize(attachment.size)}
         </small>
       </span>
     </button>
@@ -636,10 +642,10 @@ export function ForumView(props: ForumViewProps) {
 
   // ----- render -----
   const feed = (
-    <section className="fx-forum-feed" aria-label={`${room.name} posts`}>
+    <section className="fx-forum-feed" aria-label={t("forum.view.feedLabel", { room: room.name })}>
       <header className="fx-forum-head">
         <div className="fx-forum-head-copy">
-          <span className="fx-kicker">Forum</span>
+          <span className="fx-kicker">{t("forum.view.kicker")}</span>
           <h2>{room.name}</h2>
         </div>
         <div className="fx-forum-head-actions">
@@ -650,7 +656,7 @@ export function ForumView(props: ForumViewProps) {
             </p>
           ) : (
             <button type="button" className="dcx-btn dcx-btn-primary" onClick={props.onNewPost}>
-              New post
+              {t("forum.view.newPost")}
             </button>
           )}
         </div>
@@ -658,13 +664,13 @@ export function ForumView(props: ForumViewProps) {
 
       {room.forumGuidelines && (
         <details className="fx-guidelines">
-          <summary>Posting guidelines</summary>
+          <summary>{t("forum.view.guidelines")}</summary>
           <p>{room.forumGuidelines}</p>
         </details>
       )}
 
       <div className="fx-controls">
-        <div className="fx-sort-tabs" role="tablist" aria-label="Sort posts">
+        <div className="fx-sort-tabs" role="tablist" aria-label={t("forum.view.sort")}>
           {SORTS.map((item) => (
             <button
               key={item}
@@ -686,20 +692,20 @@ export function ForumView(props: ForumViewProps) {
             value={query}
             maxLength={100}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search posts"
-            aria-label="Search posts by title or text"
+            placeholder={t("forum.view.searchPlaceholder")}
+            aria-label={t("forum.view.search")}
           />
         </label>
       </div>
       {filterTags.length > 0 && (
-        <div className="fx-tag-filter" role="group" aria-label="Filter by tag">
+        <div className="fx-tag-filter" role="group" aria-label={t("forum.view.filterTag")}>
           <button
             type="button"
             className={`fx-tag-all${tag ? "" : " active"}`}
             aria-pressed={!tag}
             onClick={() => setTag(null)}
           >
-            All
+            {t("forum.view.allTags")}
           </button>
           {filterTags.map((item) => (
             <TagChip
@@ -733,7 +739,7 @@ export function ForumView(props: ForumViewProps) {
                 className="fx-post-open"
                 onClick={() => onOpenPost(message.id)}
                 aria-current={isActive ? "true" : undefined}
-                aria-label={`${payload.title}${unread ? ", new activity" : ""}`}
+                aria-label={unread ? t("forum.view.newActivity", { title: payload.title }) : payload.title}
               />
               <div className="fx-post-avatar" aria-hidden="true">
                 {iconUrl ? <img src={iconUrl} alt="" /> : props.renderAvatar(message.username, message.avatarUrl)}
@@ -744,9 +750,9 @@ export function ForumView(props: ForumViewProps) {
                   <strong className="fx-post-title">{payload.title}</strong>
                   <span className="fx-badges">
                     {payload.type && payload.type !== "discussion" && <TypeBadge type={payload.type} />}
-                    {entry.pinned && <span className="fx-badge pin">Pinned</span>}
-                    {entry.solvedReplyId && <span className="fx-badge solved">Solved</span>}
-                    {entry.locked && <span className="fx-badge lock">Locked</span>}
+                    {entry.pinned && <span className="fx-badge pin">{t("forum.view.pinned")}</span>}
+                    {entry.solvedReplyId && <span className="fx-badge solved">{t("forum.view.solved")}</span>}
+                    {entry.locked && <span className="fx-badge lock">{t("forum.view.locked")}</span>}
                   </span>
                 </div>
                 {payload.lfg && <LfgBlock lfg={payload.lfg} compact />}
@@ -761,16 +767,13 @@ export function ForumView(props: ForumViewProps) {
                   ))}
                   <span className="fx-meta-text">{authorName(message)}</span>
                   <ForumBotBadge message={message} />
-                  <span
-                    className="fx-meta-text"
-                    title={`${entry.replyCount} ${entry.replyCount === 1 ? "reply" : "replies"}`}
-                  >
+                  <span className="fx-meta-text" title={t("forum.view.replies", { count: entry.replyCount })}>
                     💬 {entry.replyCount}
                   </span>
                   <time
                     className="fx-meta-text"
                     dateTime={entry.lastActivityAt}
-                    title={`Last activity ${props.formatTimestamp(entry.lastActivityAt)}`}
+                    title={t("forum.view.lastActivity", { time: props.formatTimestamp(entry.lastActivityAt) })}
                   >
                     {relativeTime(entry.lastActivityAt)}
                   </time>
@@ -782,10 +785,10 @@ export function ForumView(props: ForumViewProps) {
         })}
         {!feedLoading && feedError && (
           <div className="fx-empty" role="alert">
-            <strong>Couldn’t load posts</strong>
+            <strong>{t("forum.view.feedErrorTitle")}</strong>
             <p>{feedError}</p>
             <button type="button" className="dcx-btn" onClick={() => void loadFeed(null)}>
-              Retry
+              {t("forum.view.retry")}
             </button>
           </div>
         )}
@@ -794,12 +797,8 @@ export function ForumView(props: ForumViewProps) {
             <span className="fx-empty-icon" aria-hidden="true">
               <Icon name="forum" size="xl" />
             </span>
-            <strong>{filtersActive ? "No posts match" : "No posts yet"}</strong>
-            <p>
-              {filtersActive
-                ? "Try another tag, sort, or search."
-                : (restriction ?? "Start the first discussion, guide, or question in this forum.")}
-            </p>
+            <strong>{filtersActive ? t("forum.view.noMatch") : t("forum.view.empty")}</strong>
+            <p>{filtersActive ? t("forum.view.noMatchHint") : (restriction ?? t("forum.view.emptyHint"))}</p>
             {filtersActive ? (
               <button
                 type="button"
@@ -810,12 +809,12 @@ export function ForumView(props: ForumViewProps) {
                   setSort("active");
                 }}
               >
-                Clear filters
+                {t("forum.view.clearFilters")}
               </button>
             ) : (
               !restriction && (
                 <button type="button" className="dcx-btn dcx-btn-primary" onClick={props.onNewPost}>
-                  Create the first post
+                  {t("forum.view.createFirst")}
                 </button>
               )
             )}
@@ -824,7 +823,7 @@ export function ForumView(props: ForumViewProps) {
         {nextCursor && (
           <div ref={sentinelRef} className="fx-sentinel">
             <button type="button" className="dcx-btn dcx-btn-sm" onClick={() => void loadFeed(nextCursor)}>
-              Load more
+              {t("forum.view.loadMore")}
             </button>
           </div>
         )}
@@ -833,21 +832,24 @@ export function ForumView(props: ForumViewProps) {
   );
 
   const thread = activePostId && (
-    <section className="fx-thread" aria-label={selected ? `Thread: ${selected.payload.title}` : "Thread"}>
+    <section
+      className="fx-thread"
+      aria-label={selected ? t("forum.view.threadNamed", { title: selected.payload.title }) : t("forum.view.thread")}
+    >
       <header className="fx-thread-bar">
         <button
           type="button"
           className="dcx-btn dcx-btn-ghost dcx-btn-sm fx-back"
           onClick={() => onOpenPost(null)}
-          aria-label="Back to all posts"
+          aria-label={t("forum.view.back")}
         >
-          ← <span>All posts</span>
+          ← <span>{t("forum.view.allPosts")}</span>
         </button>
         {selected && (
           <div className="fx-menu" ref={menuRef}>
             {busyAction && (
               <span className="fx-busy" role="status">
-                {busyAction}…
+                {busyAction}
               </span>
             )}
             <button
@@ -855,7 +857,7 @@ export function ForumView(props: ForumViewProps) {
               className="dcx-btn dcx-btn-ghost dcx-btn-sm"
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              aria-label="Post actions"
+              aria-label={t("forum.view.actions")}
               onClick={() => setMenuOpen((value) => !value)}
             >
               ⋯
@@ -867,10 +869,13 @@ export function ForumView(props: ForumViewProps) {
                     type="button"
                     role="menuitem"
                     onClick={() =>
-                      void runPatch({ pinned: !selected.pinned }, selected.pinned ? "Unpinning" : "Pinning")
+                      void runPatch(
+                        { pinned: !selected.pinned },
+                        selected.pinned ? t("forum.view.busy.unpinning") : t("forum.view.busy.pinning"),
+                      )
                     }
                   >
-                    {selected.pinned ? "Unpin post" : "Pin post"}
+                    {selected.pinned ? t("forum.view.unpin") : t("forum.view.pin")}
                   </button>
                 )}
                 {canModerate && (
@@ -878,19 +883,22 @@ export function ForumView(props: ForumViewProps) {
                     type="button"
                     role="menuitem"
                     onClick={() =>
-                      void runPatch({ locked: !selected.locked }, selected.locked ? "Unlocking" : "Locking")
+                      void runPatch(
+                        { locked: !selected.locked },
+                        selected.locked ? t("forum.view.busy.unlocking") : t("forum.view.busy.locking"),
+                      )
                     }
                   >
-                    {selected.locked ? "Unlock replies" : "Lock replies"}
+                    {selected.locked ? t("forum.view.unlock") : t("forum.view.lock")}
                   </button>
                 )}
                 {canSolve && selected.solvedReplyId && (
                   <button
                     type="button"
                     role="menuitem"
-                    onClick={() => void runPatch({ solvedReplyId: null }, "Updating")}
+                    onClick={() => void runPatch({ solvedReplyId: null }, t("forum.view.busy.updating"))}
                   >
-                    Unmark solved
+                    {t("forum.view.unmarkSolved")}
                   </button>
                 )}
                 {selected.message.userId !== viewer.userId && (
@@ -903,11 +911,11 @@ export function ForumView(props: ForumViewProps) {
                       props.onReport(selected.message, selected);
                     }}
                   >
-                    Report post
+                    {t("forum.view.reportPost")}
                   </button>
                 )}
                 {!canModerate && !(canSolve && selected.solvedReplyId) && selected.message.userId === viewer.userId && (
-                  <span className="fx-menu-empty">No actions available</span>
+                  <span className="fx-menu-empty">{t("forum.view.noActions")}</span>
                 )}
               </div>
             )}
@@ -925,9 +933,9 @@ export function ForumView(props: ForumViewProps) {
           <article className="fx-thread-root">
             <div className="fx-badges">
               <TypeBadge type={postTypeOf(selected.payload)} />
-              {selected.pinned && <span className="fx-badge pin">Pinned</span>}
-              {selected.solvedReplyId && <span className="fx-badge solved">Solved</span>}
-              {selected.locked && <span className="fx-badge lock">Locked</span>}
+              {selected.pinned && <span className="fx-badge pin">{t("forum.view.pinned")}</span>}
+              {selected.solvedReplyId && <span className="fx-badge solved">{t("forum.view.solved")}</span>}
+              {selected.locked && <span className="fx-badge lock">{t("forum.view.locked")}</span>}
               {selected.payload.tags.map((item) => (
                 <TagChip key={item} tag={item} />
               ))}
@@ -943,7 +951,7 @@ export function ForumView(props: ForumViewProps) {
                 <strong>{authorName(selected.message)}</strong> <ForumBotBadge message={selected.message} />
                 <small>
                   {props.formatTimestamp(selected.message.timestamp)}
-                  {selected.message.editedAt ? " · edited" : ""}
+                  {selected.message.editedAt ? t("forum.view.edited") : ""}
                 </small>
               </span>
             </div>
@@ -977,8 +985,8 @@ export function ForumView(props: ForumViewProps) {
         )}
 
         {solvedReply && (
-          <aside className="fx-solution" aria-label="Accepted answer">
-            <span className="fx-kicker ok">✓ Accepted answer · {solvedReply.username}</span>
+          <aside className="fx-solution" aria-label={t("forum.view.accepted")}>
+            <span className="fx-kicker ok">{t("forum.view.acceptedBy", { name: solvedReply.username })}</span>
             <div className="fx-reply-body">{props.renderReplyBody(solvedReply)}</div>
             <button
               type="button"
@@ -989,16 +997,14 @@ export function ForumView(props: ForumViewProps) {
                   ?.scrollIntoView({ behavior: "smooth", block: "center" })
               }
             >
-              Jump to reply
+              {t("forum.view.jump")}
             </button>
           </aside>
         )}
 
         {selected && (
           <div className="fx-replies" aria-live="polite">
-            <h3>
-              {selected.replyCount} {selected.replyCount === 1 ? "reply" : "replies"}
-            </h3>
+            <h3>{t("forum.view.replies", { count: selected.replyCount })}</h3>
             {replies.map((reply) => {
               const isSolution = reply.id === selected.solvedReplyId;
               return (
@@ -1017,9 +1023,9 @@ export function ForumView(props: ForumViewProps) {
                       <strong>{authorName(reply)}</strong>
                       <ForumBotBadge message={reply} />
                       {selected.message.userId && reply.userId === selected.message.userId && (
-                        <span className="fx-badge op">Author</span>
+                        <span className="fx-badge op">{t("forum.view.author")}</span>
                       )}
-                      {isSolution && <span className="fx-badge solved">✓ Solution</span>}
+                      {isSolution && <span className="fx-badge solved">{t("forum.view.solution")}</span>}
                       <time dateTime={reply.timestamp} title={props.formatTimestamp(reply.timestamp)}>
                         {relativeTime(reply.timestamp)}
                       </time>
@@ -1029,9 +1035,14 @@ export function ForumView(props: ForumViewProps) {
                             type="button"
                             className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                             disabled={Boolean(busyAction)}
-                            onClick={() => void runPatch({ solvedReplyId: isSolution ? null : reply.id }, "Updating")}
+                            onClick={() =>
+                              void runPatch(
+                                { solvedReplyId: isSolution ? null : reply.id },
+                                t("forum.view.busy.updating"),
+                              )
+                            }
                           >
-                            {isSolution ? "Unmark" : "Mark solution"}
+                            {isSolution ? t("forum.view.unmark") : t("forum.view.markSolution")}
                           </button>
                         )}
                         {reply.userId !== viewer.userId && (
@@ -1039,9 +1050,9 @@ export function ForumView(props: ForumViewProps) {
                             type="button"
                             className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                             onClick={() => props.onReport(reply, null)}
-                            aria-label={`Report reply by ${reply.username}`}
+                            aria-label={t("forum.view.reportReply", { name: reply.username })}
                           >
-                            Report
+                            {t("forum.view.report")}
                           </button>
                         )}
                       </span>
@@ -1054,16 +1065,18 @@ export function ForumView(props: ForumViewProps) {
             })}
             {repliesLoading && (
               <p className="fx-muted" role="status">
-                Loading replies…
+                {t("forum.view.loadingReplies")}
               </p>
             )}
             {!repliesLoading && repliesCursor && (
               <button type="button" className="dcx-btn dcx-btn-sm fx-more" onClick={() => void loadMoreReplies()}>
-                Load more replies
+                {t("forum.view.loadMoreReplies")}
               </button>
             )}
             {!repliesLoading && replies.length === 0 && !threadError && (
-              <p className="fx-muted fx-no-replies">No replies yet{canReply ? " — be the first to help." : "."}</p>
+              <p className="fx-muted fx-no-replies">
+                {canReply ? t("forum.view.noRepliesHelp") : t("forum.view.noReplies")}
+              </p>
             )}
           </div>
         )}
@@ -1074,14 +1087,14 @@ export function ForumView(props: ForumViewProps) {
           <div className="fx-composer">
             {locked && (
               <p className="fx-lock-note" role="note">
-                🔒 This post is locked. You can reply because you are forum staff.
+                {t("forum.view.lockedStaff")}
               </p>
             )}
             {(replyAttachment || replyUploading || replyError) && (
               <div className="fx-composer-state">
                 {replyUploading ? (
                   <>
-                    <span>Uploading…</span>
+                    <span>{t("forum.view.uploading")}</span>
                     <button
                       type="button"
                       className="dcx-btn dcx-btn-ghost dcx-btn-sm"
@@ -1091,7 +1104,7 @@ export function ForumView(props: ForumViewProps) {
                         setReplyUploading(false);
                       }}
                     >
-                      Cancel
+                      {t("forum.view.cancel")}
                     </button>
                   </>
                 ) : replyAttachment ? (
@@ -1104,7 +1117,7 @@ export function ForumView(props: ForumViewProps) {
                       className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                       onClick={() => setReplyAttachment(null)}
                     >
-                      Remove
+                      {t("forum.view.remove")}
                     </button>
                   </>
                 ) : (
@@ -1128,8 +1141,8 @@ export function ForumView(props: ForumViewProps) {
               <button
                 type="button"
                 className="fx-icon-btn"
-                aria-label="Attach a file"
-                title="Attach a file"
+                aria-label={t("forum.view.attach")}
+                title={t("forum.view.attach")}
                 disabled={replyUploading}
                 onClick={() => replyFileRef.current?.click()}
               >
@@ -1142,15 +1155,15 @@ export function ForumView(props: ForumViewProps) {
                 maxLength={FORUM_REPLY_MAX}
                 onChange={(event) => props.onReplyInputChange(event.target.value)}
                 onKeyDown={onReplyKeyDown}
-                placeholder={`Reply to ${selected.message.username}…`}
-                aria-label="Write a reply (Enter to send, Shift+Enter for a new line)"
+                placeholder={t("forum.view.replyTo", { name: selected.message.username })}
+                aria-label={t("forum.view.replyLabel")}
               />
               {props.gifSlot}
               {props.emojiSlot}
               <button
                 type="button"
                 className="fx-send"
-                aria-label="Send reply"
+                aria-label={t("forum.view.send")}
                 disabled={sending || replyUploading || (!props.replyInput.trim() && !replyAttachment)}
                 onClick={() => void sendReply()}
               >
@@ -1165,9 +1178,7 @@ export function ForumView(props: ForumViewProps) {
           </div>
         ) : (
           <p className="fx-composer-locked" role="note">
-            {!viewer.canPostInHub
-              ? "Only the Hub owner can post in this Hub."
-              : "🔒 This post is locked by a moderator. New replies are turned off."}
+            {!viewer.canPostInHub ? t("forum.restriction.ownerOnly") : t("forum.view.lockedNote")}
           </p>
         ))}
     </section>
@@ -1183,7 +1194,7 @@ export function ForumView(props: ForumViewProps) {
           <button
             type="button"
             className="dcx-btn dcx-btn-ghost dcx-btn-sm"
-            aria-label="Dismiss"
+            aria-label={t("forum.view.dismiss")}
             onClick={() => setBanner("")}
           >
             <Icon name="close" size="sm" />

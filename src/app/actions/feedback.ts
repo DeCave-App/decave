@@ -2,6 +2,8 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { HTTP_URL } from "../env";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import { authorizedFetch } from "../http";
 
 export type FeedbackActionsDeps = {
@@ -41,7 +43,7 @@ export function createFeedbackActions(deps: FeedbackActionsDeps) {
   const submitFeedback = async () => {
     const message = feedbackMessage.trim();
     if (!message) {
-      setFeedbackNotice("Describe the bug or feature idea first.");
+      setFeedbackNotice(i18next.t("chat.actions.feedback.empty"));
       return;
     }
     setFeedbackBusy(true);
@@ -65,7 +67,7 @@ export function createFeedbackActions(deps: FeedbackActionsDeps) {
         error?: string;
       };
       if (!response.ok) {
-        setFeedbackNotice(data.error || "Could not send feedback.");
+        setFeedbackNotice(apiErrorMessage(data, "client.feedback.send"));
         return;
       }
       setFeedbackMessage("");
@@ -74,7 +76,7 @@ export function createFeedbackActions(deps: FeedbackActionsDeps) {
       setFeedbackDiagnosticsConsent(false);
       setFeedbackNotice("Sent. Thank you for helping improve DeCave.");
     } catch {
-      setFeedbackNotice("Could not send feedback.");
+      setFeedbackNotice(i18next.t("errors.client.feedback.send"));
     } finally {
       setFeedbackBusy(false);
     }

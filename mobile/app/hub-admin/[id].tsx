@@ -16,9 +16,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Screen } from "@/src/components/Screen";
-import { API_BASE, apiFetch, apiJson } from "@/src/lib/api";
+import { API_BASE, apiErrorText, apiFetch, apiJson, type ApiErrorBody } from "@/src/lib/api";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
+import { DEFAULT_HUB_CATEGORY } from "../../../shared/hub-categories";
+import { hubCategoryField, hubCategoryInput } from "@/src/lib/hub-category";
+import { dateLocale } from "@/src/lib/date-locale";
 
 type HubRole = "owner" | "admin" | "member";
 type Permission =
@@ -90,14 +94,7 @@ type HubBot = {
   createdAt?: string;
 };
 
-const ROLE_PERMISSIONS: Array<{ key: Permission; label: string }> = [
-  { key: "manageRooms", label: "Manage rooms" },
-  { key: "moderateMessages", label: "Moderate messages" },
-  { key: "moderateMembers", label: "Moderate members" },
-  { key: "voiceModerate", label: "Voice moderation" },
-  { key: "createInvites", label: "Create invites" },
-  { key: "viewAudit", label: "View audit" },
-];
+const ROLE_PERMISSIONS: Permission[] = ["manageRooms", "moderateMessages", "moderateMembers", "voiceModerate", "createInvites", "viewAudit"];
 
 function assetUrl(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -110,7 +107,15 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export default function HubAdminScreen() {
+  const { t } = useTranslation(["hub", "common"]);
   const { id } = useLocalSearchParams<{ id: string }>();
+  const permissionLabel = (key: Permission) =>
+    key === "voiceModerate" ? t("hub.mobile.hubAdmin.permissions.voiceModerate")
+      : key === "viewAudit" ? t("hub.mobile.hubAdmin.permissions.viewAudit")
+      : key === "manageRooms" ? t("hub.manageHub.roles.permissions.manageRooms.label")
+      : key === "moderateMessages" ? t("hub.manageHub.roles.permissions.moderateMessages.label")
+      : key === "moderateMembers" ? t("hub.manageHub.roles.permissions.moderateMembers.label")
+      : t("hub.manageHub.roles.permissions.createInvites.label");
   const hubId = Number(id);
   const { token } = useSession();
 
@@ -123,7 +128,7 @@ export default function HubAdminScreen() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Gaming");
+  const [category, setCategory] = useState<string>(DEFAULT_HUB_CATEGORY);
   const [accent, setAccent] = useState("#7c5cff");
   const [tags, setTags] = useState("");
   const [slowMode, setSlowMode] = useState("0");
@@ -176,13 +181,13 @@ export default function HubAdminScreen() {
       setMembers(Array.isArray(memberData) ? memberData : []);
       setName(hubData.name ?? "");
       setDescription(hubData.description ?? "");
-      setCategory(hubData.category ?? "Gaming");
+      setCategory(hubData.category ?? DEFAULT_HUB_CATEGORY);
       setAccent(/^#[0-9a-fA-F]{6}$/.test(hubData.accent ?? "") ? hubData.accent! : "#7c5cff");
       setTags((hubData.tags ?? []).join(", "));
       setSlowMode(String(Math.max(0, Math.min(120, Number(hubData.slowModeSeconds ?? 0)))));
       void loadFeatures();
     } catch (cause) {
-      setError(errorMessage(cause, "Could not load Hub management."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.loadFailed")));
     }
   }, [token, hubId, loadFeatures]);
 
@@ -203,15 +208,15 @@ export default function HubAdminScreen() {
         body: JSON.stringify({
           description: description.trim(),
           accent: /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : "#7c5cff",
-          category: category.trim() || "Gaming",
+          category: category.trim() || DEFAULT_HUB_CATEGORY,
           tags: tags.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 6),
           slowModeSeconds: Math.max(0, Math.min(120, Number(slowMode) || 0)),
         }),
       }, token);
-      setNotice("Hub settings updated.");
+      setNotice(t("hub.mobile.hubAdmin.hubSettingsUpdated"));
       await load();
     } catch (cause) {
-      setError(errorMessage(cause, "Could not update Hub."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.updateFailed")));
     } finally { setBusy(""); }
   };
 
@@ -226,7 +231,7 @@ export default function HubAdminScreen() {
       }, token);
       await load();
     } catch (cause) {
-      setError(errorMessage(cause, "Could not update Hub visibility."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.visibilityFailed")));
     } finally { setBusy(""); }
   };
 
@@ -236,10 +241,10 @@ export default function HubAdminScreen() {
     try {
       await apiJson(`/api/servers/${hubId}/members/${encodeURIComponent(memberRef.trim())}`, { method: "PUT" }, token);
       setMemberRef("");
-      setNotice("Member added.");
+      setNotice(t("hub.mobile.hubAdmin.memberAdded"));
       await load();
     } catch (cause) {
-      setError(errorMessage(cause, "Could not add member."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.addMemberFailed")));
     } finally { setBusy(""); }
   };
 
@@ -247,14 +252,14 @@ export default function HubAdminScreen() {
     if (!token || !isOwner) return;
     const promoting = role === "admin";
     Alert.alert(
-      promoting ? `Make ${member.username} an admin?` : `Remove admin access from ${member.username}?`,
+      promoting ? t("hub.mobile.hubAdmin.makeUsernameAnAdmin", { username: member.username }) : t("hub.mobile.hubAdmin.removeAdminAccessFromUsername", { username: member.username }),
       promoting
-        ? "Admins can manage rooms and moderate Hub members."
-        : "They will become a regular member and lose Hub management permissions.",
+        ? t("hub.mobile.hubAdmin.adminsCanManageRoomsAnd")
+        : t("hub.mobile.hubAdmin.theyWillBecomeARegular"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.actions.cancel"), style: "cancel" },
         {
-          text: promoting ? "Make Admin" : "Remove Admin",
+          text: promoting ? t("hub.mobile.hubAdmin.makeAdmin") : t("hub.mobile.hubAdmin.removeAdmin"),
           style: promoting ? "default" : "destructive",
           onPress: () => void (async () => {
             setBusy(`role:${member.userId}`); setError("");
@@ -266,7 +271,7 @@ export default function HubAdminScreen() {
               }, token);
               await load();
             } catch (cause) {
-              setError(errorMessage(cause, "Could not update role."));
+              setError(errorMessage(cause, t("hub.mobile.hubAdmin.roleFailed")));
             } finally { setBusy(""); }
           })(),
         },
@@ -275,27 +280,30 @@ export default function HubAdminScreen() {
   };
 
   const removeMember = (member: Member) => Alert.alert(
-    "Remove member?",
-    `Remove ${member.username} from this Hub?`,
+    t("hub.mobile.hubAdmin.removeMember"),
+    t("hub.mobile.hubAdmin.removeUsernameFromThisHub", { username: member.username }),
     [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => void (async () => {
+      { text: t("common.actions.cancel"), style: "cancel" },
+      { text: t("common.actions.remove"), style: "destructive", onPress: () => void (async () => {
         if (!token || !canManage) return;
         setBusy(`remove:${member.userId}`);
         try {
           await apiJson(`/api/servers/${hubId}/members/${encodeURIComponent(member.userId)}`, { method: "DELETE" }, token);
           await load();
         } catch (cause) {
-          setError(errorMessage(cause, "Could not remove member."));
+          setError(errorMessage(cause, t("hub.mobile.hubAdmin.removeMemberFailed")));
         } finally { setBusy(""); }
       })() },
     ],
   );
 
   const moderateMember = (member: Member, action: "kick" | "ban" | "timeout") => {
-    const label = action === "timeout" ? "Timeout 10 minutes" : action === "kick" ? "Kick" : "Ban";
-    Alert.alert(`${label} ${member.username}?`, action === "ban" ? "This removes the member and blocks rejoining until unbanned." : "This action is recorded in the Hub audit log.", [
-      { text: "Cancel", style: "cancel" },
+    const label = action === "timeout" ? t("hub.mobile.hubAdmin.moderation.timeout") : action === "kick" ? t("hub.mobile.hubAdmin.kick") : t("hub.mobile.hubAdmin.ban");
+    const title = action === "timeout"
+      ? t("hub.mobile.hubAdmin.moderation.timeoutConfirm", { username: member.username })
+      : action === "kick" ? t("hub.mobile.hubAdmin.moderation.kickConfirm", { username: member.username }) : t("hub.mobile.hubAdmin.moderation.banConfirm", { username: member.username });
+    Alert.alert(title, action === "ban" ? t("hub.mobile.hubAdmin.thisRemovesTheMemberAnd") : t("hub.mobile.hubAdmin.thisActionIsRecordedIn"), [
+      { text: t("common.actions.cancel"), style: "cancel" },
       { text: label, style: action === "timeout" ? "default" : "destructive", onPress: () => void (async () => {
         if (!token) return;
         setBusy(`${action}:${member.userId}`); setError("");
@@ -307,7 +315,7 @@ export default function HubAdminScreen() {
           }, token);
           await load();
         } catch (cause) {
-          setError(errorMessage(cause, `Could not ${action} member.`));
+          setError(errorMessage(cause, action === "timeout" ? t("hub.mobile.hubAdmin.moderation.timeoutFailed") : action === "kick" ? t("hub.mobile.hubAdmin.moderation.kickFailed") : t("hub.mobile.hubAdmin.moderation.banFailed")));
         } finally { setBusy(""); }
       })() },
     ]);
@@ -324,12 +332,12 @@ export default function HubAdminScreen() {
       }, token);
       const nested = data.invite && typeof data.invite === "object" ? data.invite as Record<string, unknown> : null;
       const raw = String(data.url ?? data.inviteUrl ?? data.code ?? nested?.url ?? nested?.code ?? "");
-      if (!raw) throw new Error("Invite was created but the server returned no link/code.");
+      if (!raw) throw new Error(t("hub.mobile.hubAdmin.inviteWasCreatedButThe"));
       const value = /^https?:/i.test(raw) ? raw : `https://app.de-cave.com/join/hub/${encodeURIComponent(raw)}`;
-      await Share.share({ title: `Join ${hub?.name ?? "my Hub"} on DeCave`, message: value });
-      setNotice("One-time invite created (24 hours, one use). ");
+      await Share.share({ title: hub?.name ? t("hub.mobile.hubAdmin.inviteTitle", { hub: hub.name }) : t("hub.mobile.hubAdmin.inviteTitleFallback"), message: value });
+      setNotice(t("hub.mobile.hubAdmin.oneTimeInviteCreated24"));
     } catch (cause) {
-      setError(errorMessage(cause, "Could not create invite."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.inviteFailed")));
     } finally { setBusy(""); }
   };
 
@@ -344,23 +352,22 @@ export default function HubAdminScreen() {
       }, token);
       await load();
     } catch (cause) {
-      setError(errorMessage(cause, "Could not update Hub artwork."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.artworkFailed")));
     } finally { setBusy(""); }
   };
 
   const removeMedia = (kind: "banner" | "chat-background") => {
     if (!token || !isOwner) return;
-    const label = kind === "banner" ? "sidebar banner" : "chat background";
-    Alert.alert(`Remove ${label}?`, "The image is deleted and hidden for everyone in this Hub.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => void (async () => {
+    Alert.alert(kind === "banner" ? t("hub.mobile.hubAdmin.removeBanner") : t("hub.mobile.hubAdmin.removeChatBackground"), t("hub.mobile.hubAdmin.theImageIsDeletedAnd"), [
+      { text: t("common.actions.cancel"), style: "cancel" },
+      { text: t("common.actions.remove"), style: "destructive", onPress: () => void (async () => {
         setBusy(`media-remove:${kind}`); setError("");
         try {
           await apiJson(`/api/servers/${hubId}/media/${kind}`, { method: "DELETE" }, token);
-          setNotice(kind === "banner" ? "Sidebar banner removed." : "Chat background removed.");
+          setNotice(kind === "banner" ? t("hub.mobile.hubAdmin.sidebarBannerRemoved") : t("hub.mobile.hubAdmin.chatBackgroundRemoved"));
           await load();
         } catch (cause) {
-          setError(errorMessage(cause, `Could not remove ${label}.`));
+          setError(errorMessage(cause, kind === "banner" ? t("hub.mobile.hubAdmin.removeBannerFailed") : t("hub.mobile.hubAdmin.removeChatBackgroundFailed")));
         } finally { setBusy(""); }
       })() },
     ]);
@@ -370,7 +377,7 @@ export default function HubAdminScreen() {
     if (!token || !isOwner) return;
     setError("");
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) { setError("Photo library permission is required."); return; }
+    if (!permission.granted) { setError(t("hub.mobile.hubAdmin.photoLibraryPermissionIsRequired")); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
@@ -383,7 +390,7 @@ export default function HubAdminScreen() {
     const local = await fetch(asset.uri);
     const blob = await local.blob();
     const limit = kind === "icon" ? 3 * 1024 * 1024 : 8 * 1024 * 1024;
-    if (blob.size > limit) { setError(`${kind === "icon" ? "Icon" : kind === "banner" ? "Banner" : "Chat background"} is too large.`); return; }
+    if (blob.size > limit) { setError(kind === "icon" ? t("hub.actions.media.iconTooLarge") : kind === "banner" ? t("hub.actions.media.bannerTooLarge") : t("hub.actions.media.chatBackgroundTooLarge")); return; }
     setBusy(`media:${kind}`);
     try {
       const response = await apiFetch(`/api/servers/${hubId}/media/${kind}`, {
@@ -391,12 +398,12 @@ export default function HubAdminScreen() {
         headers: { "Content-Type": "application/octet-stream", "X-File-Type": mime },
         body: blob as any,
       }, token);
-      const data = await response.json().catch(() => ({})) as { error?: string };
-      if (!response.ok) throw new Error(data.error || "Could not upload Hub image.");
-      setNotice(`${kind === "icon" ? "Hub profile image" : kind === "banner" ? "Sidebar banner" : "Chat background"} updated.`);
+      const data = await response.json().catch(() => ({})) as ApiErrorBody;
+      if (!response.ok) throw new Error(apiErrorText(data, t("hub.mobile.hubAdmin.couldNotUploadHubImage")));
+      setNotice(kind === "icon" ? t("hub.mobile.hubAdmin.iconUpdated") : kind === "banner" ? t("hub.mobile.hubAdmin.bannerUpdated") : t("hub.mobile.hubAdmin.chatBackgroundUpdated"));
       await load();
     } catch (cause) {
-      setError(errorMessage(cause, "Could not upload Hub image."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.uploadImageFailed")));
     } finally { setBusy(""); }
   };
 
@@ -420,7 +427,7 @@ export default function HubAdminScreen() {
       setNewRoleName(""); setNewRolePermissions([]);
       await loadFeatures();
     } catch (cause) {
-      setError(errorMessage(cause, "Could not create custom role."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.createRoleFailed")));
     } finally { setBusy(""); }
   };
 
@@ -437,14 +444,14 @@ export default function HubAdminScreen() {
       }, token);
       await load();
     } catch (cause) {
-      setError(errorMessage(cause, "Could not assign custom role."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.assignRoleFailed")));
     } finally { setBusy(""); }
   };
 
   const uploadAsset = async (kind: "emote" | "sticker") => {
     if (!token || !canManage) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) { setError("Photo library permission is required."); return; }
+    if (!permission.granted) { setError(t("hub.mobile.hubAdmin.photoLibraryPermissionIsRequired")); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.9 });
     if (result.canceled || !result.assets[0]) return;
     const file = result.assets[0];
@@ -452,7 +459,7 @@ export default function HubAdminScreen() {
     const source = await fetch(file.uri);
     const blob = await source.blob();
     const limit = kind === "emote" ? 1024 * 1024 : 5 * 1024 * 1024;
-    if (blob.size > limit) { setError(`${kind === "emote" ? "Emote" : "Sticker"} is too large.`); return; }
+    if (blob.size > limit) { setError(kind === "emote" ? t("hub.mobile.hubAdmin.emoteTooLarge") : t("hub.mobile.hubAdmin.stickerTooLarge")); return; }
     setBusy(`asset:${kind}`); setError("");
     try {
       const response = await apiFetch(`/api/servers/${hubId}/assets/${kind}`, {
@@ -464,24 +471,24 @@ export default function HubAdminScreen() {
         },
         body: blob as any,
       }, token);
-      const data = await response.json().catch(() => ({})) as { error?: string };
-      if (!response.ok) throw new Error(data.error || `Could not upload ${kind}.`);
+      const data = await response.json().catch(() => ({})) as ApiErrorBody;
+      if (!response.ok) throw new Error(apiErrorText(data, kind === "emote" ? t("hub.mobile.hubAdmin.uploadEmoteFailed") : t("hub.mobile.hubAdmin.uploadStickerFailed")));
       setAssetName("");
       await loadFeatures();
     } catch (cause) {
-      setError(errorMessage(cause, `Could not upload ${kind}.`));
+      setError(errorMessage(cause, kind === "emote" ? t("hub.mobile.hubAdmin.uploadEmoteFailed") : t("hub.mobile.hubAdmin.uploadStickerFailed")));
     } finally { setBusy(""); }
   };
 
-  const deleteAsset = (asset: HubAsset) => Alert.alert("Delete asset?", `Delete ${asset.name}?`, [
-    { text: "Cancel", style: "cancel" },
-    { text: "Delete", style: "destructive", onPress: () => void (async () => {
+  const deleteAsset = (asset: HubAsset) => Alert.alert(t("hub.mobile.hubAdmin.deleteAsset"), t("hub.mobile.hubAdmin.deleteName", { name: asset.name }), [
+    { text: t("common.actions.cancel"), style: "cancel" },
+    { text: t("common.actions.delete"), style: "destructive", onPress: () => void (async () => {
       if (!token) return;
       setBusy(`asset-delete:${asset.id}`);
       try {
         await apiJson(`/api/servers/${hubId}/assets/${encodeURIComponent(asset.id)}`, { method: "DELETE" }, token);
         await loadFeatures();
-      } catch (cause) { setError(errorMessage(cause, "Could not delete asset.")); }
+      } catch (cause) { setError(errorMessage(cause, t("hub.mobile.hubAdmin.deleteAssetFailed"))); }
       finally { setBusy(""); }
     })() },
   ]);
@@ -499,7 +506,7 @@ export default function HubAdminScreen() {
       setNewBotToken(data.token ?? "");
       await loadFeatures();
     } catch (cause) {
-      setError(errorMessage(cause, "Could not create Hub bot."));
+      setError(errorMessage(cause, t("hub.mobile.hubAdmin.createBotFailed")));
     } finally { setBusy(""); }
   };
 
@@ -513,19 +520,19 @@ export default function HubAdminScreen() {
         body: JSON.stringify({ enabled: !bot.enabled }),
       }, token);
       await loadFeatures();
-    } catch (cause) { setError(errorMessage(cause, "Could not update bot.")); }
+    } catch (cause) { setError(errorMessage(cause, t("hub.mobile.hubAdmin.updateBotFailed"))); }
     finally { setBusy(""); }
   };
 
-  const deleteBot = (bot: HubBot) => Alert.alert("Delete bot?", `Delete ${bot.name}?`, [
-    { text: "Cancel", style: "cancel" },
-    { text: "Delete", style: "destructive", onPress: () => void (async () => {
+  const deleteBot = (bot: HubBot) => Alert.alert(t("hub.mobile.hubAdmin.deleteBot"), t("hub.mobile.hubAdmin.deleteName", { name: bot.name }), [
+    { text: t("common.actions.cancel"), style: "cancel" },
+    { text: t("common.actions.delete"), style: "destructive", onPress: () => void (async () => {
       if (!token || !isOwner) return;
       setBusy(`bot-delete:${bot.id}`);
       try {
         await apiJson(`/api/servers/${hubId}/bots/${encodeURIComponent(bot.id)}`, { method: "DELETE" }, token);
         await loadFeatures();
-      } catch (cause) { setError(errorMessage(cause, "Could not delete bot.")); }
+      } catch (cause) { setError(errorMessage(cause, t("hub.mobile.hubAdmin.deleteBotFailed"))); }
       finally { setBusy(""); }
     })() },
   ]);
@@ -536,34 +543,34 @@ export default function HubAdminScreen() {
   }), [members]);
 
   if (!hub) {
-    return <Screen><View style={styles.loading}><Text style={styles.muted}>{error || "Loading Hub management…"}</Text></View></Screen>;
+    return <Screen><View style={styles.loading}><Text style={styles.muted}>{error || t("hub.mobile.hubAdmin.loadingHubManagement")}</Text></View></Screen>;
   }
 
   return (
     <Screen>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable>
-        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>HUB CONTROL</Text><Text style={styles.title} numberOfLines={1}>Manage {hub.name}</Text><Text style={styles.roleLine}>{(hub.myRole ?? "member").toUpperCase()}</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable>
+        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("hub.mobile.hubAdmin.hubControl")}</Text><Text style={styles.title} numberOfLines={1}>{t("hub.mobile.hubAdmin.manageName", { name: hub.name })}</Text><Text style={styles.roleLine}>{(hub.myRole ?? "member").toUpperCase()}</Text></View>
         <Ionicons name="construct-outline" size={21} color={colors.cyan} />
       </View>
 
       <ScrollView keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Section title="HUB PROFILE & DISCOVERY">
+        <Section title={t("hub.mobile.hubAdmin.hubProfileDiscovery")}>
           <View style={styles.mediaRow}>
             <View style={styles.hubImage}>{assetUrl(hub.iconUrl) ? <Image source={{ uri: assetUrl(hub.iconUrl)! }} style={styles.hubImageFill} /> : <Text style={styles.hubInitial}>{(hub.name || "H").slice(0, 1).toUpperCase()}</Text>}</View>
             <View style={{ flex: 1, gap: 7 }}>
-              <Pressable accessibilityRole="button" style={styles.smallButton} disabled={!isOwner || !!busy} onPress={() => void uploadMedia("icon")}><Ionicons name="image-outline" size={15} color={colors.cyan} /><Text style={styles.smallButtonText}>Change Hub image</Text></Pressable>
+              <Pressable accessibilityRole="button" style={styles.smallButton} disabled={!isOwner || !!busy} onPress={() => void uploadMedia("icon")}><Ionicons name="image-outline" size={15} color={colors.cyan} /><Text style={styles.smallButtonText}>{t("hub.mobile.hubAdmin.changeHubImage")}</Text></Pressable>
             </View>
           </View>
           <MediaCard
-            title="Sidebar banner"
-            hint="Fills the Hub sidebar behind the room list."
+            title={t("hub.manageHub.media.banner.title")}
+            hint={t("hub.mobile.hubAdmin.fillsTheHubSidebarBehind")}
             shape="tall"
             url={assetUrl(hub.bannerUrl)}
-            emptyLabel="No banner"
-            addLabel="Add banner"
+            emptyLabel={t("hub.manageHub.media.banner.none")}
+            addLabel={t("hub.manageHub.media.banner.add")}
             shown={hub.useBannerBackground === true}
-            note={hub.bannerUrl ? "Dimmed for readability." : "Add a banner to turn this on."}
+            note={hub.bannerUrl ? t("hub.mobile.hubAdmin.bannerNote") : t("hub.mobile.hubAdmin.bannerNoteEmpty")}
             editable={isOwner}
             busy={!!busy}
             uploading={busy === "media:banner"}
@@ -572,14 +579,14 @@ export default function HubAdminScreen() {
             onToggle={(value) => void setMediaShown("banner", value)}
           />
           <MediaCard
-            title="Chat background"
-            hint="Behind the message list, dimmed automatically."
+            title={t("hub.manageHub.media.chat.title")}
+            hint={t("hub.mobile.hubAdmin.behindTheMessageListDimmed")}
             shape="wide"
             url={assetUrl(hub.chatBackgroundUrl)}
-            emptyLabel="No photo"
-            addLabel="Add photo"
+            emptyLabel={t("hub.manageHub.media.chat.none")}
+            addLabel={t("hub.manageHub.media.chat.add")}
             shown={hub.useChatBackground === true}
-            note={hub.chatBackgroundUrl ? "Shown in every room of this Hub." : "Add a photo to turn this on."}
+            note={hub.chatBackgroundUrl ? t("hub.mobile.hubAdmin.chatNote") : t("hub.mobile.hubAdmin.chatNoteEmpty")}
             editable={isOwner}
             busy={!!busy}
             uploading={busy === "media:chat-background"}
@@ -587,100 +594,100 @@ export default function HubAdminScreen() {
             onRemove={() => removeMedia("chat-background")}
             onToggle={(value) => void setMediaShown("chat-background", value)}
           />
-          <Field label="Hub name" value={name} onChangeText={setName} />
-          <Field label="Description" value={description} onChangeText={setDescription} multiline />
-          <Field label="Category" value={category} onChangeText={setCategory} />
-          <Field label="Accent (#RRGGBB)" value={accent} onChangeText={setAccent} autoCapitalize="none" />
-          <Field label="Tags (comma separated, max 6)" value={tags} onChangeText={setTags} />
-          <Field label="Slow mode seconds (0–120)" value={slowMode} onChangeText={setSlowMode} keyboardType="number-pad" />
+          <Field label={t("hub.createHub.nameLabel")} value={name} onChangeText={setName} />
+          <Field label={t("hub.manageHub.profile.description")} value={description} onChangeText={setDescription} multiline />
+          <Field label={t("hub.manageHub.profile.category")} value={hubCategoryField(category)} onChangeText={(text) => setCategory(hubCategoryInput(text))} />
+          <Field label={t("hub.mobile.hubAdmin.accentRrggbb")} value={accent} onChangeText={setAccent} autoCapitalize="none" />
+          <Field label={t("hub.mobile.hubAdmin.tagsCommaSeparatedMax6")} value={tags} onChangeText={setTags} />
+          <Field label={t("hub.mobile.hubAdmin.slowModeSeconds0120")} value={slowMode} onChangeText={setSlowMode} keyboardType="number-pad" />
           {isOwner && <View style={styles.visibility}>
-            <Pressable accessibilityRole="button" style={[styles.choice, hub.visibility === "public" && styles.choiceActive]} onPress={() => void setVisibility("public")}><Ionicons name="globe-outline" size={15} color={colors.cyan} /><Text style={styles.choiceText}>Public</Text></Pressable>
-            <Pressable accessibilityRole="button" style={[styles.choice, hub.visibility === "private" && styles.choiceActive]} onPress={() => void setVisibility("private")}><Ionicons name="lock-closed-outline" size={15} color={colors.cyan} /><Text style={styles.choiceText}>Private</Text></Pressable>
+            <Pressable accessibilityRole="button" style={[styles.choice, hub.visibility === "public" && styles.choiceActive]} onPress={() => void setVisibility("public")}><Ionicons name="globe-outline" size={15} color={colors.cyan} /><Text style={styles.choiceText}>{t("hub.createHub.visibility.public.title")}</Text></Pressable>
+            <Pressable accessibilityRole="button" style={[styles.choice, hub.visibility === "private" && styles.choiceActive]} onPress={() => void setVisibility("private")}><Ionicons name="lock-closed-outline" size={15} color={colors.cyan} /><Text style={styles.choiceText}>{t("hub.sidebar.private")}</Text></Pressable>
           </View>}
         </Section>
 
-        <Section title="ROOMS & PRIVATE ACCESS">
+        <Section title={t("hub.mobile.hubAdmin.roomsPrivateAccess")}>
           <Pressable accessibilityRole="button" style={styles.actionRow} onPress={() => router.replace(`/hub/${hubId}` as any)}>
             <Ionicons name="grid-outline" size={19} color={colors.cyan} />
-            <View style={{ flex: 1 }}><Text style={styles.actionTitle}>Manage rooms</Text><Text style={styles.muted}>Create, edit, reorder or delete text, voice and forum rooms, set room icons, and choose members for private rooms.</Text></View>
+            <View style={{ flex: 1 }}><Text style={styles.actionTitle}>{t("hub.manageHub.roles.permissions.manageRooms.label")}</Text><Text style={styles.muted}>{t("hub.mobile.hubAdmin.createEditReorderOrDelete")}</Text></View>
             <Ionicons name="chevron-forward" size={18} color={colors.faint} />
           </Pressable>
         </Section>
 
         {botBuilderAvailable && (
-          <Section title="BOT BUILDER">
+          <Section title={t("hub.mobile.hubAdmin.botBuilder")}>
             <Pressable accessibilityRole="button" style={styles.actionRow} onPress={() => router.push(`/hub-bots/${hubId}` as any)}>
               <Ionicons name="sparkles-outline" size={19} color={colors.cyan} />
-              <View style={{ flex: 1 }}><Text style={styles.actionTitle}>Bots</Text><Text style={styles.muted}>Turn bots on or off, see their activity, or start from a template. Edit rules on desktop or web.</Text></View>
+              <View style={{ flex: 1 }}><Text style={styles.actionTitle}>{t("hub.manageHub.nav.bots.label")}</Text><Text style={styles.muted}>{t("hub.mobile.hubAdmin.turnBotsOnOrOff")}</Text></View>
               <Ionicons name="chevron-forward" size={18} color={colors.faint} />
             </Pressable>
           </Section>
         )}
 
-        <Section title="INVITES">
+        <Section title={t("hub.mobile.hubAdmin.invites")}>
           <Pressable accessibilityRole="button" style={styles.actionRow} disabled={!canManage || !!busy} onPress={() => void createOneTimeInvite()}>
             <Ionicons name="link-outline" size={19} color={colors.cyan} />
-            <View style={{ flex: 1 }}><Text style={styles.actionTitle}>Create one-time invite</Text><Text style={styles.muted}>Expires after 24 hours and can be consumed once.</Text></View>
+            <View style={{ flex: 1 }}><Text style={styles.actionTitle}>{t("hub.mobile.hubAdmin.createOneTimeInvite")}</Text><Text style={styles.muted}>{t("hub.mobile.hubAdmin.expiresAfter24HoursAnd")}</Text></View>
             <Ionicons name="share-outline" size={18} color={colors.cyan} />
           </Pressable>
         </Section>
 
-        <Section title={`MEMBERS · ${members.length}`}>
-          {isOwner && <View style={styles.addRow}><TextInput value={memberRef} onChangeText={setMemberRef} placeholder="Username or DeCave ID" placeholderTextColor={colors.faint} style={[styles.input, { flex: 1 }]} autoCapitalize="none" /><Pressable accessibilityRole="button" accessibilityLabel="Add member" style={styles.plus} disabled={!!busy} onPress={() => void addMember()}><Ionicons name="person-add-outline" size={18} color="#061018" /></Pressable></View>}
+        <Section title={t("hub.mobile.hubAdmin.membersCount", { count: members.length })}>
+          {isOwner && <View style={styles.addRow}><TextInput value={memberRef} onChangeText={setMemberRef} placeholder={t("hub.mobile.hubAdmin.usernameOrDecaveId")} placeholderTextColor={colors.faint} style={[styles.input, { flex: 1 }]} autoCapitalize="none" /><Pressable accessibilityRole="button" accessibilityLabel={t("hub.mobile.hubAdmin.addMember")} style={styles.plus} disabled={!!busy} onPress={() => void addMember()}><Ionicons name="person-add-outline" size={18} color="#061018" /></Pressable></View>}
           {sortedMembers.map((member) => (
             <View key={member.userId} style={styles.memberBlock}>
               <View style={styles.member}>
                 <View style={styles.memberAvatar}>{assetUrl(member.avatarUrl) ? <Image source={{ uri: assetUrl(member.avatarUrl)! }} style={styles.hubImageFill} /> : <Text style={styles.memberAvatarText}>{member.username.slice(0, 1).toUpperCase()}</Text>}</View>
                 <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.memberName} numberOfLines={1}>{member.username}</Text><Text style={styles.memberRole}>{member.role.toUpperCase()}</Text></View>
-                {isOwner && member.role !== "owner" && <Pressable style={[styles.roleSelect, roleMenuUserId === member.userId && styles.roleSelectOpen]} disabled={!!busy} accessibilityRole="button" accessibilityLabel={`Change ${member.username}'s role. Current role: ${member.role}`} accessibilityState={{ expanded: roleMenuUserId === member.userId }} onPress={() => setRoleMenuUserId((current) => current === member.userId ? null : member.userId)}><Text style={styles.roleSelectText}>{member.role === "admin" ? "Admin" : "Member"}</Text><Ionicons name={roleMenuUserId === member.userId ? "chevron-up" : "chevron-down"} size={13} color={colors.cyan} /></Pressable>}
-                {canManage && member.role !== "owner" && <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${member.username}`} style={styles.iconButtonDanger} disabled={!!busy} onPress={() => removeMember(member)}><Ionicons name="trash-outline" size={16} color={colors.red} /></Pressable>}
+                {isOwner && member.role !== "owner" && <Pressable style={[styles.roleSelect, roleMenuUserId === member.userId && styles.roleSelectOpen]} disabled={!!busy} accessibilityRole="button" accessibilityLabel={t("hub.mobile.hubAdmin.changeUsernameSRoleCurrent", { username: member.username, role: member.role })} accessibilityState={{ expanded: roleMenuUserId === member.userId }} onPress={() => setRoleMenuUserId((current) => current === member.userId ? null : member.userId)}><Text style={styles.roleSelectText}>{member.role === "admin" ? t("hub.manageHub.members.roles.admin") : t("hub.manageHub.members.columns.member")}</Text><Ionicons name={roleMenuUserId === member.userId ? "chevron-up" : "chevron-down"} size={13} color={colors.cyan} /></Pressable>}
+                {canManage && member.role !== "owner" && <Pressable accessibilityRole="button" accessibilityLabel={t("hub.mobile.hubAdmin.removeUsername", { username: member.username })} style={styles.iconButtonDanger} disabled={!!busy} onPress={() => removeMember(member)}><Ionicons name="trash-outline" size={16} color={colors.red} /></Pressable>}
               </View>
               {isOwner && member.role !== "owner" && roleMenuUserId === member.userId && <View style={styles.roleDropdown} accessibilityRole="menu">
-                {(["member", "admin"] as const).map((role) => { const selected = member.role === role; return <Pressable key={role} style={[styles.roleOption, selected && styles.roleOptionSelected]} disabled={!!busy} accessibilityRole="menuitem" accessibilityState={{ selected }} onPress={() => { setRoleMenuUserId(null); if (!selected) setRole(member, role); }}><Text style={[styles.roleOptionText, selected && styles.roleOptionTextSelected]}>{role === "admin" ? "Admin" : "Member"}</Text>{selected && <Ionicons name="checkmark" size={14} color={colors.cyan} />}</Pressable>; })}
+                {(["member", "admin"] as const).map((role) => { const selected = member.role === role; return <Pressable key={role} style={[styles.roleOption, selected && styles.roleOptionSelected]} disabled={!!busy} accessibilityRole="menuitem" accessibilityState={{ selected }} onPress={() => { setRoleMenuUserId(null); if (!selected) setRole(member, role); }}><Text style={[styles.roleOptionText, selected && styles.roleOptionTextSelected]}>{role === "admin" ? t("hub.manageHub.members.roles.admin") : t("hub.manageHub.members.columns.member")}</Text>{selected && <Ionicons name="checkmark" size={14} color={colors.cyan} />}</Pressable>; })}
               </View>}
               {member.role !== "owner" && <View style={styles.moderationRow}>
-                <Pressable accessibilityRole="button" style={styles.miniAction} disabled={!!busy} onPress={() => moderateMember(member, "timeout")}><Text style={styles.miniActionText}>10m timeout</Text></Pressable>
-                <Pressable accessibilityRole="button" style={styles.miniAction} disabled={!!busy} onPress={() => moderateMember(member, "kick")}><Text style={styles.miniActionText}>Kick</Text></Pressable>
-                <Pressable accessibilityRole="button" style={[styles.miniAction, styles.miniDanger]} disabled={!!busy} onPress={() => moderateMember(member, "ban")}><Text style={[styles.miniActionText, { color: colors.red }]}>Ban</Text></Pressable>
+                <Pressable accessibilityRole="button" style={styles.miniAction} disabled={!!busy} onPress={() => moderateMember(member, "timeout")}><Text style={styles.miniActionText}>{t("hub.mobile.hubAdmin.n10mTimeout")}</Text></Pressable>
+                <Pressable accessibilityRole="button" style={styles.miniAction} disabled={!!busy} onPress={() => moderateMember(member, "kick")}><Text style={styles.miniActionText}>{t("hub.mobile.hubAdmin.kick")}</Text></Pressable>
+                <Pressable accessibilityRole="button" style={[styles.miniAction, styles.miniDanger]} disabled={!!busy} onPress={() => moderateMember(member, "ban")}><Text style={[styles.miniActionText, { color: colors.red }]}>{t("hub.mobile.hubAdmin.ban")}</Text></Pressable>
               </View>}
               {isOwner && roles.length > 0 && member.role !== "owner" && <View style={styles.chips}>{roles.map((role) => { const active=(member.customRoleIds ?? []).includes(role.id); return <Pressable accessibilityRole="button" key={role.id} style={[styles.chip, active && styles.chipActive]} disabled={!!busy} onPress={() => void toggleMemberCustomRole(member, role.id)}><View style={[styles.roleDot,{backgroundColor:role.color}]} /><Text style={[styles.chipText,active&&styles.chipTextActive]}>{role.name}</Text></Pressable>; })}</View>}
             </View>
           ))}
         </Section>
 
-        {isOwner && <Section title="CUSTOM ROLES">
-          <View style={styles.twoFields}><View style={{ flex: 1 }}><Field label="Role name" value={newRoleName} onChangeText={setNewRoleName} /></View><View style={{ width: 115 }}><Field label="Color" value={newRoleColor} onChangeText={setNewRoleColor} autoCapitalize="none" /></View></View>
-          <View style={styles.chips}>{ROLE_PERMISSIONS.map(({ key, label }) => { const active=newRolePermissions.includes(key); return <Pressable accessibilityRole="button" key={key} style={[styles.chip,active&&styles.chipActive]} onPress={() => toggleRolePermission(key)}><Text style={[styles.chipText,active&&styles.chipTextActive]}>{label}</Text></Pressable>; })}</View>
-          <Pressable accessibilityRole="button" style={styles.primary} disabled={!!busy || !newRoleName.trim()} onPress={() => void createCustomRole()}><Text style={styles.primaryText}>Create role</Text></Pressable>
-          {roles.map((role) => <View key={role.id} style={styles.simpleRow}><View style={[styles.roleDot,{backgroundColor:role.color}]} /><View style={{ flex: 1 }}><Text style={styles.actionTitle}>{role.name}</Text><Text style={styles.muted}>{role.permissions.length ? role.permissions.join(" · ") : "No extra permissions"}</Text></View></View>)}
+        {isOwner && <Section title={t("hub.mobile.hubAdmin.customRoles")}>
+          <View style={styles.twoFields}><View style={{ flex: 1 }}><Field label={t("hub.mobile.hubAdmin.roleName")} value={newRoleName} onChangeText={setNewRoleName} /></View><View style={{ width: 115 }}><Field label={t("hub.manageHub.roles.color")} value={newRoleColor} onChangeText={setNewRoleColor} autoCapitalize="none" /></View></View>
+          <View style={styles.chips}>{ROLE_PERMISSIONS.map((key) => { const label = permissionLabel(key); const active=newRolePermissions.includes(key); return <Pressable accessibilityRole="button" key={key} style={[styles.chip,active&&styles.chipActive]} onPress={() => toggleRolePermission(key)}><Text style={[styles.chipText,active&&styles.chipTextActive]}>{label}</Text></Pressable>; })}</View>
+          <Pressable accessibilityRole="button" style={styles.primary} disabled={!!busy || !newRoleName.trim()} onPress={() => void createCustomRole()}><Text style={styles.primaryText}>{t("hub.manageHub.roles.create")}</Text></Pressable>
+          {roles.map((role) => <View key={role.id} style={styles.simpleRow}><View style={[styles.roleDot,{backgroundColor:role.color}]} /><View style={{ flex: 1 }}><Text style={styles.actionTitle}>{role.name}</Text><Text style={styles.muted}>{role.permissions.length ? role.permissions.join(" · ") : t("hub.mobile.hubAdmin.noExtraPermissions")}</Text></View></View>)}
         </Section>}
 
-        {canManage && <Section title="EMOTES & STICKERS">
-          <Field label="Asset name (optional)" value={assetName} onChangeText={setAssetName} autoCapitalize="none" />
-          <View style={styles.visibility}><Pressable accessibilityRole="button" style={styles.choice} disabled={!!busy} onPress={() => void uploadAsset("emote")}><Ionicons name="happy-outline" size={16} color={colors.cyan} /><Text style={styles.choiceText}>Upload emote</Text></Pressable><Pressable accessibilityRole="button" style={styles.choice} disabled={!!busy} onPress={() => void uploadAsset("sticker")}><Ionicons name="sparkles-outline" size={16} color={colors.cyan} /><Text style={styles.choiceText}>Upload sticker</Text></Pressable></View>
-          {assets.length === 0 ? <Text style={styles.muted}>No custom assets.</Text> : assets.map((asset) => <View key={asset.id} style={styles.simpleRow}><View style={{ flex: 1 }}><Text style={styles.actionTitle}>{asset.name}</Text><Text style={styles.muted}>{asset.kind.toUpperCase()}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Delete asset" style={styles.iconButtonDanger} onPress={() => deleteAsset(asset)}><Ionicons name="trash-outline" size={16} color={colors.red} /></Pressable></View>)}
+        {canManage && <Section title={t("hub.mobile.hubAdmin.emotesStickers")}>
+          <Field label={t("hub.mobile.hubAdmin.assetNameOptional")} value={assetName} onChangeText={setAssetName} autoCapitalize="none" />
+          <View style={styles.visibility}><Pressable accessibilityRole="button" style={styles.choice} disabled={!!busy} onPress={() => void uploadAsset("emote")}><Ionicons name="happy-outline" size={16} color={colors.cyan} /><Text style={styles.choiceText}>{t("hub.manageHub.moderation.uploadEmote")}</Text></Pressable><Pressable accessibilityRole="button" style={styles.choice} disabled={!!busy} onPress={() => void uploadAsset("sticker")}><Ionicons name="sparkles-outline" size={16} color={colors.cyan} /><Text style={styles.choiceText}>{t("hub.manageHub.moderation.uploadSticker")}</Text></Pressable></View>
+          {assets.length === 0 ? <Text style={styles.muted}>{t("hub.mobile.hubAdmin.noCustomAssets")}</Text> : assets.map((asset) => <View key={asset.id} style={styles.simpleRow}><View style={{ flex: 1 }}><Text style={styles.actionTitle}>{asset.name}</Text><Text style={styles.muted}>{asset.kind.toUpperCase()}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t("hub.mobile.hubAdmin.deleteAsset2")} style={styles.iconButtonDanger} onPress={() => deleteAsset(asset)}><Ionicons name="trash-outline" size={16} color={colors.red} /></Pressable></View>)}
         </Section>}
 
-        {isOwner && <Section title="HUB BOTS">
-          <View style={styles.addRow}><TextInput value={newBotName} onChangeText={setNewBotName} placeholder="Bot name" placeholderTextColor={colors.faint} style={[styles.input,{flex:1}]} /><Pressable accessibilityRole="button" accessibilityLabel="Create bot" style={styles.plus} disabled={!!busy || !newBotName.trim()} onPress={() => void createBot()}><Ionicons name="add" size={20} color="#061018" /></Pressable></View>
-          {!!newBotToken && <View style={styles.tokenBox}><Text style={styles.tokenTitle}>COPY THIS TOKEN NOW — IT IS SHOWN ONCE</Text><Text selectable style={styles.tokenText}>{newBotToken}</Text></View>}
-          {bots.length === 0 ? <Text style={styles.muted}>No Hub bots.</Text> : bots.map((bot) => <View key={bot.id} style={styles.simpleRow}><Ionicons name="hardware-chip-outline" size={17} color={bot.enabled?colors.green:colors.muted} /><View style={{flex:1}}><Text style={styles.actionTitle}>{bot.name}</Text><Text style={styles.muted}>{bot.enabled?"ENABLED":"DISABLED"}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={bot.enabled ? `Pause ${bot.name}` : `Resume ${bot.name}`} style={styles.iconButton} onPress={() => void toggleBot(bot)}><Ionicons name={bot.enabled?"pause-outline":"play-outline"} size={16} color={colors.cyan}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={`Delete ${bot.name}`} style={styles.iconButtonDanger} onPress={() => deleteBot(bot)}><Ionicons name="trash-outline" size={16} color={colors.red}/></Pressable></View>)}
+        {isOwner && <Section title={t("hub.mobile.hubAdmin.hubBots")}>
+          <View style={styles.addRow}><TextInput value={newBotName} onChangeText={setNewBotName} placeholder={t("hub.mobile.hubAdmin.botName")} placeholderTextColor={colors.faint} style={[styles.input,{flex:1}]} /><Pressable accessibilityRole="button" accessibilityLabel={t("hub.mobile.hubAdmin.createBot")} style={styles.plus} disabled={!!busy || !newBotName.trim()} onPress={() => void createBot()}><Ionicons name="add" size={20} color="#061018" /></Pressable></View>
+          {!!newBotToken && <View style={styles.tokenBox}><Text style={styles.tokenTitle}>{t("hub.mobile.hubAdmin.copyThisTokenNowIt")}</Text><Text selectable style={styles.tokenText}>{newBotToken}</Text></View>}
+          {bots.length === 0 ? <Text style={styles.muted}>{t("hub.mobile.hubAdmin.noHubBots")}</Text> : bots.map((bot) => <View key={bot.id} style={styles.simpleRow}><Ionicons name="hardware-chip-outline" size={17} color={bot.enabled?colors.green:colors.muted} /><View style={{flex:1}}><Text style={styles.actionTitle}>{bot.name}</Text><Text style={styles.muted}>{bot.enabled?t("hub.mobile.hubAdmin.enabled"):t("hub.mobile.hubAdmin.disabled")}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={bot.enabled ? t("hub.mobile.hubAdmin.pauseName", { name: bot.name }) : t("hub.mobile.hubAdmin.resumeName", { name: bot.name })} style={styles.iconButton} onPress={() => void toggleBot(bot)}><Ionicons name={bot.enabled?"pause-outline":"play-outline"} size={16} color={colors.cyan}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t("hub.mobile.hubAdmin.deleteName2", { name: bot.name })} style={styles.iconButtonDanger} onPress={() => deleteBot(bot)}><Ionicons name="trash-outline" size={16} color={colors.red}/></Pressable></View>)}
         </Section>}
 
-        {auditLog.length > 0 && <Section title="AUDIT LOG">
+        {auditLog.length > 0 && <Section title={t("hub.mobile.hubAdmin.auditLog")}>
           <Pressable style={styles.auditToggle} accessibilityRole="button" accessibilityState={{ expanded: auditExpanded }} onPress={() => setAuditExpanded((value) => !value)}>
             <View style={styles.auditToggleIcon}><Ionicons name="document-text-outline" size={16} color={colors.cyan} /></View>
-            <View style={{ flex: 1 }}><Text style={styles.actionTitle}>View audit log</Text><Text style={styles.muted}>{auditLog.length} recent {auditLog.length === 1 ? "event" : "events"}</Text></View>
+            <View style={{ flex: 1 }}><Text style={styles.actionTitle}>{t("hub.manageHub.roles.permissions.viewAudit.label")}</Text><Text style={styles.muted}>{t("hub.mobile.hubAdmin.recentEvents", { count: auditLog.length })}</Text></View>
             <Ionicons name={auditExpanded ? "chevron-up" : "chevron-down"} size={17} color={colors.faint} />
           </Pressable>
-          {auditExpanded && auditLog.slice(0, 30).map((entry) => <View key={entry.id} style={styles.auditRow}><Text style={styles.actionTitle}>{entry.action}</Text><Text style={styles.muted}>{entry.actorUsername || entry.actorUserId || "System"}{entry.targetUsername ? ` → ${entry.targetUsername}` : ""}{entry.detail ? ` · ${entry.detail}` : ""}</Text><Text style={styles.auditTime}>{new Date(entry.timestamp).toLocaleString()}</Text></View>)}
+          {auditExpanded && auditLog.slice(0, 30).map((entry) => <View key={entry.id} style={styles.auditRow}><Text style={styles.actionTitle}>{entry.action}</Text><Text style={styles.muted}>{entry.actorUsername || entry.actorUserId || t("hub.mobile.hubAdmin.system")}{entry.targetUsername ? ` → ${entry.targetUsername}` : ""}{entry.detail ? ` · ${entry.detail}` : ""}</Text><Text style={styles.auditTime}>{new Date(entry.timestamp).toLocaleString(dateLocale())}</Text></View>)}
         </Section>}
 
         {!!notice && <Text style={styles.notice}>{notice}</Text>}
         {!!error && <Text style={styles.error}>{error}</Text>}
       </ScrollView>
       <View style={styles.saveFooter}>
-        <Pressable accessibilityRole="button" style={styles.primary} disabled={!canManage || !!busy} onPress={() => void saveDetails()}><Text style={styles.primaryText}>{busy === "save" ? "Saving…" : "Save Hub settings"}</Text></Pressable>
+        <Pressable accessibilityRole="button" style={styles.primary} disabled={!canManage || !!busy} onPress={() => void saveDetails()}><Text style={styles.primaryText}>{busy === "save" ? t("common.status.saving") : t("hub.mobile.hubAdmin.saveHubSettings")}</Text></Pressable>
       </View>
     </Screen>
   );
@@ -706,11 +713,12 @@ function MediaCard({ title, hint, shape, url, emptyLabel, addLabel, shown, note,
   onRemove: () => void;
   onToggle: (value: boolean) => void;
 }) {
+  const { t } = useTranslation(["hub", "common"]);
   return (
     <View style={styles.mediaCard}>
       <View style={styles.mediaHead}>
         <View style={[styles.mediaPreview, shape === "tall" ? styles.mediaPreviewTall : styles.mediaPreviewWide]}>
-          {url ? <Image source={{ uri: url }} style={styles.hubImageFill} resizeMode="cover" accessibilityLabel={`Current ${title.toLowerCase()}`} /> : <Text style={styles.mediaEmpty}>{emptyLabel}</Text>}
+          {url ? <Image source={{ uri: url }} style={styles.hubImageFill} resizeMode="cover" accessibilityLabel={t("hub.mobile.hubAdmin.mediaCurrent", { item: title.toLowerCase() })} /> : <Text style={styles.mediaEmpty}>{emptyLabel}</Text>}
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.actionTitle}>{title}</Text>
@@ -720,15 +728,15 @@ function MediaCard({ title, hint, shape, url, emptyLabel, addLabel, shown, note,
       <View style={styles.mediaActions}>
         <Pressable accessibilityRole="button" style={styles.mediaButton} disabled={!editable || busy} onPress={onChange}>
           <Ionicons name="image-outline" size={15} color={colors.cyan} />
-          <Text style={styles.smallButtonText}>{uploading ? "Uploading…" : url ? "Change" : addLabel}</Text>
+          <Text style={styles.smallButtonText}>{uploading ? t("hub.manageHub.uploading") : url ? t("hub.manageHub.media.change") : addLabel}</Text>
         </Pressable>
-        {!!url && <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${title.toLowerCase()}`} style={styles.mediaRemove} disabled={!editable || busy} onPress={onRemove}>
-          <Text style={styles.mediaRemoveText}>Remove</Text>
+        {!!url && <Pressable accessibilityRole="button" accessibilityLabel={t("hub.mobile.hubAdmin.mediaRemove", { item: title.toLowerCase() })} style={styles.mediaRemove} disabled={!editable || busy} onPress={onRemove}>
+          <Text style={styles.mediaRemoveText}>{t("common.actions.remove")}</Text>
         </Pressable>}
         <View style={{ flex: 1 }} />
-        <Text style={styles.mediaShow}>Show</Text>
+        <Text style={styles.mediaShow}>{t("hub.manageHub.media.show")}</Text>
         <Switch
-          accessibilityLabel={`Show ${title.toLowerCase()}`}
+          accessibilityLabel={t("hub.mobile.hubAdmin.mediaShow", { item: title.toLowerCase() })}
           value={shown && !!url}
           disabled={!editable || busy || !url}
           onValueChange={onToggle}

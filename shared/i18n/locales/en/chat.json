@@ -1,0 +1,1105 @@
+{
+  "dmNotice": {
+    "kicker": "NEW PRIVATE MESSAGE"
+  },
+  "composer": {
+    "jumpToLatest": "Jump to latest ↓",
+    "editing": "Editing your message",
+    "replyingTo": "Replying to {{name}}",
+    "typing": "{{names}} typing…",
+    "sendGif": "Send a GIF",
+    "gif": "GIF",
+    "emoji": "Emoji",
+    "uploading": "Uploading attachment…",
+    "retryUpload": "Retry upload",
+    "addToMessage": "Add to message",
+    "uploadHint": "Images, video or documents",
+    "pollHint": "Ask the room to vote",
+    "gifHint": "Search the GIF library",
+    "eventHint": "Add it to the Hub calendar",
+    "send": "Send message",
+    "sizeMb": "{{size}} MB",
+    "placeholder": "Message #{{room}}",
+    "readOnly": "#{{room}} is read-only",
+    "ownerOnly": "Only the Hub owner can post in this Hub"
+  },
+  "groupMembers": {
+    "kicker": "Group members",
+    "addTitle": "Add a friend",
+    "noneToAdd": "No other friends are available to add.",
+    "ownerNote": "As owner, remove the other members before leaving the group.",
+    "deleteGroup": "Delete group",
+    "youSuffix": " · You",
+    "owner": "Group owner",
+    "member": "Member"
+  },
+  "messageSearch": {
+    "kicker": "Message search",
+    "placeholder": "Search messages or usernames",
+    "title": "Search #{{room}}"
+  },
+  "newConversation": {
+    "kicker": "New conversation",
+    "title": "Message friends",
+    "lead": "Message one friend directly, or select at least two friends to create a group chat.",
+    "empty": "Add friends first to start a conversation.",
+    "selected": "Selected",
+    "message": "Message",
+    "createTitle": "Create group chat",
+    "groupName": "Group name (optional)",
+    "hint": "Select 2–19 friends. You become the group owner.",
+    "creating": "Creating...",
+    "create": "Create Group ({{members}})",
+    "select": "Select"
+  },
+  "poll": {
+    "kicker": "New poll",
+    "title": "Create a poll",
+    "lead": "Ask a question and add between 2 and 8 choices.",
+    "question": "Question",
+    "questionPlaceholder": "What should we play tonight?",
+    "addOption": "Add option",
+    "post": "Post Poll",
+    "option": "Option {{number}}",
+    "removeOption": "Remove option {{number}}"
+  },
+  "roomHero": {
+    "announcements": "Announcements from the Hub owner land here. Turn on notifications so you don't miss anything.",
+    "private": "Private room",
+    "public": "Visible to all members",
+    "ownerOnly": "Only the owner can post",
+    "sendMessage": "Send a message",
+    "uploadFile": "Upload a file",
+    "createPoll": "Create poll",
+    "scheduleEvent": "Schedule event",
+    "roomSettings": "Room settings",
+    "kickerCategory": "{{hub}} · {{category}}",
+    "title": "Welcome to #{{room}}",
+    "beginning": "This is the very beginning of #{{room}}. Say hi, share a clip or kick things off with a poll."
+  },
+  "messages": {
+    "tapToDownload": "Tap to download",
+    "addReaction": "Add reaction",
+    "reply": "Reply",
+    "reportMessage": "Report message",
+    "editMessage": "Edit message",
+    "deleteMessage": "Delete message",
+    "rightClickUser": "Right-click {{name}}",
+    "replyTo": "↳ Reply to {{name}}: {{preview}}",
+    "replyToMessage": "↳ Reply to message",
+    "imageAttachment": "Image · {{name}}",
+    "videoAttachment": "Video · {{name}}",
+    "attachmentMeta": "{{size}} MB · {{type}}",
+    "file": "File",
+    "download": "Download",
+    "pinned": "PINNED",
+    "unpin": "Unpin",
+    "pin": "Pin",
+    "unpinMessage": "Unpin message",
+    "pinMessage": "Pin message",
+    "deleteOwn": "Delete your message",
+    "deleteAsModerator": "Delete message as moderator",
+    "you": "You",
+    "waitingForConnection": "Waiting for connection…",
+    "couldNotSend": "Couldn't send"
+  },
+  "report": {
+    "forumPostEvidence": "{{name}}'s forum post",
+    "forumReplyEvidence": "{{name}}'s forum reply",
+    "messageEvidence": "{{name}}'s message",
+    "groupMessageEvidence": "{{name}}'s group message",
+    "dmContext": "Private conversation with {{name}}",
+    "dmEvidence": "{{name}}'s private message"
+  },
+  "social": {
+    "searchConversations": "Search conversations",
+    "filters": "Conversation filters",
+    "incomingRequest": "Incoming friend request",
+    "noRequests": "No pending friend requests.",
+    "dmLabel": "Direct messages",
+    "friendsTitle": "Friends",
+    "dmTitle": "Messages",
+    "dmLead": "Your private and group conversations.",
+    "friendsLead": "See who is online, share your ID and add friends.",
+    "conversations": "Conversations",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "filterUnreadCount": "Unread {{number}}",
+    "filterRequests": "Requests",
+    "filterRequestsCount": "Requests {{number}}",
+    "archived": "Archived",
+    "groupMembers_one": "{{count}} members",
+    "groupMembers_other": "{{count}} members",
+    "noUnread": "You have no unread conversations.",
+    "noArchived": "No archived chats.",
+    "noConversations": "No conversations yet. Use the compose button to message a friend.",
+    "backToChats": "Back to chats",
+    "archivedCount": "Archived ({{number}})",
+    "groupChatMeta_one": "{{count}} members · Group chat",
+    "groupChatMeta_other": "{{count}} members · Group chat",
+    "members": "Members",
+    "loadOlder": "Load older messages",
+    "today": "Today",
+    "groupBeginning": "This is the beginning of {{name}}.",
+    "cancelReply": "Cancel reply",
+    "add": "Add",
+    "voiceCall": "Voice call",
+    "videoCall": "Video call",
+    "options": "Conversation options",
+    "deleteConversation": "Delete conversation",
+    "dmBeginning": "This is the beginning of your private conversation.",
+    "deleteAsGroupOwner": "Delete message as group owner",
+    "replyingToPreview": "Replying to {{name}}: {{preview}}",
+    "messagePlaceholder": "Message {{name}}",
+    "removeFavorite": "Remove favorite",
+    "addFavorite": "Add favorite",
+    "unarchive": "Unarchive chat",
+    "archive": "Archive chat",
+    "saveEdit": "Save edit",
+    "cancelEdit": "Cancel edit",
+    "pollHint": "Ask the chat to vote",
+    "startTitle": "Start a conversation",
+    "startBody": "Choose someone from your conversations or send a new private message.",
+    "newMessage": "New message",
+    "findFriend": "Find a friend",
+    "recent": "RECENT CONVERSATIONS",
+    "messageFallback": "message",
+    "uploadingNamed": "Uploading {{name}}…",
+    "attachmentReady": "Attachment ready: {{name}}",
+    "dmPlaceholder": "Message @{{name}}",
+    "deleteDmTitle": "Delete this DM?",
+    "deleteDmBody": "This removes the message for both people. This cannot be undone.",
+    "deleteDmConfirm": "Delete Message",
+    "deleteConversationBody": "This clears the conversation from your DeCave account only. It does not erase the other person's copy. If either of you sends a new DM later, the conversation will appear again.",
+    "deleteConversationConfirm": "Delete Conversation",
+    "openFailed": "Could not open private messages.",
+    "loadFailed": "Could not load private messages.",
+    "deleteConversationTitle": "Delete conversation with {{name}}?"
+  },
+  "actions": {
+    "account": {
+      "usernameAvailableOn": "You can change your username again on {{date}}.",
+      "usernameUpdated": "Username updated.",
+      "verificationEmailSent": "Verification email sent.",
+      "updateUnconfirmed": "Could not confirm the account update. Verify your account and try again.",
+      "sessionNotReady": "Your session is not ready yet.",
+      "passwordFieldsMissing": "Fill in all password fields.",
+      "passwordsMismatch": "The new passwords do not match.",
+      "passwordUnchanged": "Your new password must be different from your current password.",
+      "passwordLength": "Use 10-128 characters for the new password.",
+      "passwordChanged": "Password changed successfully. Sign in again with your new password.",
+      "confirmLogoutSession": "Log out {{device}}?",
+      "sessionLoggedOut": "Session logged out.",
+      "dangerUnconfirmed": "Could not confirm the account action. It may already have taken effect; check account status before trying again.",
+      "enterCurrentPassword": "Enter your current password first.",
+      "disabled": "Account disabled. Sign in again whenever you want to reactivate it.",
+      "deletionScheduledOn": "Account deletion scheduled for {{date}}. Sign in before then to cancel.",
+      "deletionScheduled": "Account deletion scheduled in 30 days. Sign in before then to cancel.",
+      "disableNotAuthenticated": "Could not disable account. Authentication was not completed.",
+      "deleteNotAuthenticated": "Could not delete account. Authentication was not completed."
+    },
+    "activity": {
+      "localDetectionUnavailable": "Local game detection is unavailable on {{platform}}.",
+      "desktopScanFailedWithReason": "Desktop activity scan failed: {{reason}}",
+      "desktopScanFailed": "Desktop activity scan failed.",
+      "steamCompleteSignIn": "Complete Steam sign-in in a browser signed in to the same DeCave account. If needed, sign in there and start Steam linking again from Settings → Activity; DeCave will detect the link automatically.",
+      "steamConnectedAs": "Steam connected as {{name}}.",
+      "steamConnected": "Steam connected.",
+      "steamSignInFailed": "Could not open Steam sign-in.",
+      "steamDisconnected": "Steam disconnected."
+    },
+    "owner": {
+      "mfaAddSecret": "Add the secret to your authenticator, then enter its 6-digit code.",
+      "mfaSetupUnconfirmed": "Could not confirm MFA setup. It may already have changed; check owner security status before starting again.",
+      "mfaSetupCancelled": "Owner MFA setup cancelled or authentication was not completed.",
+      "mfaEnabled": "Owner MFA is enabled. Save the recovery codes offline.",
+      "reauthUnlocked": "Privileged owner access unlocked for 10 minutes.",
+      "reauthUnconfirmed": "Could not confirm privileged authentication. A token may have been issued; access was not retained here. Check owner security status.",
+      "reauthCancelled": "Owner authentication cancelled or not completed.",
+      "actionUnconfirmed": "Could not confirm the owner action. It may already have taken effect; check owner security status before trying again.",
+      "unlockFirst": "Unlock privileged owner access first.",
+      "promoted": "Platform owner updated.",
+      "demoted": "Platform owner removed.",
+      "recoveryCodesCreated": "New recovery codes created. The previous set is now invalid."
+    },
+    "admin": {
+      "ownerRequired": "Platform owner access is required.",
+      "loadFailed": "Could not load the admin dashboard.",
+      "gameApproved": "Game approved and added to Squad Finder.",
+      "gameRejected": "Game suggestion rejected.",
+      "unlockFirst": "Unlock privileged owner actions with your password + MFA first.",
+      "ownSessionsRevoked": "Your sessions were revoked. Sign in again.",
+      "sessionsRevoked": "All active sessions for that account were revoked.",
+      "suspendReasonMissing": "Enter a reason for the suspension.",
+      "suspended": "Account suspended and all sessions revoked.",
+      "unsuspended": "Account suspension removed.",
+      "birthDateMissing": "Enter the corrected birth date.",
+      "ageCorrected": "Age corrected and the age restriction was removed.",
+      "resetForced": "Password reset required and reset email sent.",
+      "deleteReasonMissing": "Enter a reason before scheduling deletion.",
+      "erasureAvailableAfter": "Account disabled now. Permanent erasure becomes available after {{date}}.",
+      "deletionScheduled": "Account scheduled for deletion.",
+      "restored": "Account restored.",
+      "erased": "Account personal data permanently erased.",
+      "roleChanged": "Platform role updated. Existing sessions were revoked.",
+      "transferTargetMissing": "Enter the new owner's DeCave ID, username or verified email.",
+      "hubTransferred": "Hub ownership transferred."
+    },
+    "auth": {
+      "enterEmail": "Enter your account email address.",
+      "acceptTerms": "Agree to the Terms and acknowledge the Privacy Notice to create an account.",
+      "invalidEmail": "Enter a valid email address.",
+      "passwordsMismatch": "Passwords do not match.",
+      "passwordTooShort": "Use a password with at least 10 characters.",
+      "birthDateRequired": "Enter your birth date to confirm you are {{age}} or older.",
+      "checkEmail": "Check your email to verify your account.",
+      "enterMfaCode": "Enter your authenticator code or a one-time recovery code.",
+      "confirmLogoutAll": "Log out every active DeCave session, including this device?",
+      "loggedOutAll": "All active sessions were logged out. Sign in again to continue."
+    },
+    "feedback": {
+      "empty": "Describe the bug or feature idea first."
+    },
+    "friends": {
+      "newRequestTitle": "New friend request",
+      "newRequestBody": "{{username}} wants to be friends.",
+      "enterId": "Enter a DeCave ID.",
+      "ownId": "That is your own DeCave ID.",
+      "alreadyFriends": "You are already friends.",
+      "alreadySent": "Friend request already sent.",
+      "requestSent": "Friend request sent.",
+      "idCopied": "Your DeCave ID was copied.",
+      "idShown": "Your DeCave ID: {{id}}"
+    },
+    "home": {
+      "calendarSyncFailed": "Calendar events could not be synced right now.",
+      "quickLinkInvalid": "Each shortcut needs a valid name and a public HTTPS URL without ports, credentials, or private addresses.",
+      "widgetLimit_one": "You can add up to {{count}} external widget.",
+      "widgetLimit_other": "You can add up to {{count}} external widgets.",
+      "widgetTitleLength_one": "Enter a title of {{count}} character or fewer.",
+      "widgetTitleLength_other": "Enter a title of {{count}} characters or fewer.",
+      "widgetUrlInvalid": "Use a public HTTPS URL without a port, credentials, or local/private hostname."
+    },
+    "profile": {
+      "imageType": "Choose a PNG, JPEG or WebP image.",
+      "bannerTooLarge": "Banner images must be 3 MB or smaller.",
+      "readImageFailed": "Could not read image.",
+      "uploadBannerFailed": "Could not upload the banner.",
+      "avatarTooLarge": "Profile images must be 2 MB or smaller.",
+      "uploadAvatarFailed": "Could not upload profile photo.",
+      "dateUnavailable": "Not available"
+    },
+    "safety": {
+      "birthDateMissing": "Enter your birth date to continue."
+    },
+    "settings": {
+      "desktopSaveFailed": "Could not save desktop system settings.",
+      "saved": "Settings saved.",
+      "sectionReset": "This section was reset. Save changes to keep the defaults."
+    },
+    "dm": {
+      "yesterday": "Yesterday",
+      "daysAgo_one": "{{count}}d ago",
+      "daysAgo_other": "{{count}}d ago",
+      "encryptFailed": "Could not encrypt this message.",
+      "prepareFailed": "Could not prepare this message to send. Please try again.",
+      "confirmDeleteMessage": "Delete this message? This cannot be undone.",
+      "confirmDeleteGroup": "Delete “{{name}}” for everyone? This cannot be undone.",
+      "sendFailed": "Private message failed.",
+      "groupFallback": "Group chat",
+      "groupSendFailed": "Group message failed."
+    },
+    "message": {
+      "attachmentReconnecting": "Realtime is reconnecting. Try the attachment again in a moment.",
+      "uploadCanceledRetry": "Upload canceled. You can retry the same file.",
+      "attachmentTooLarge": "Maximum attachment size is 25 MB.",
+      "uploadCanceled": "Upload canceled.",
+      "ownerOnly": "Only the Hub owner can post in this Hub.",
+      "previousPostPending": "Your previous post is still being sent.",
+      "postUnconfirmed": "The server did not confirm the post. Check the forum before trying again.",
+      "idPending": "The Hub accepted the message, but its message ID has not arrived yet. Try again after reconnecting.",
+      "searchUnavailable": "Search is unavailable right now. Try again in a moment.",
+      "confirmDelete": "Delete this message?",
+      "confirmDeleteAsOwner": "Delete {{username}}'s message as owner?",
+      "confirmDeleteAsAdmin": "Delete {{username}}'s message as admin?",
+      "confirmDeleteAsMember": "Delete {{username}}'s message as member?",
+      "confirmDeleteAsModerator": "Delete {{username}}'s message as moderator?",
+      "deleteOffline": "Could not connect to the server to delete this message.",
+      "downloadFailed": "Could not download attachment.",
+      "botBadge": "BOT",
+      "edited": "edited",
+      "postRejected": "The server rejected the post."
+    },
+    "gif": {
+      "unsafe": "This GIF could not be used safely.",
+      "sendFailed": "Could not send GIF.",
+      "reconnecting": "Realtime is reconnecting. Try the GIF again in a moment.",
+      "searchPlaceholder": "Search GIPHY",
+      "search": "Search",
+      "loading": "Loading GIFs…",
+      "empty": "No GIFs found.",
+      "fallbackTitle": "GIF",
+      "attribution": "Powered by GIPHY"
+    },
+    "emoji": {
+      "hubAssets": "Hub Emotes & Stickers",
+      "emoteTitle": "emote: {{name}}",
+      "stickerTitle": "sticker: {{name}}",
+      "groups": {
+        "smileys": "Smileys",
+        "hands": "Hands",
+        "gaming": "Gaming",
+        "hearts": "Hearts",
+        "objects": "Objects",
+        "nature": "Nature"
+      }
+    },
+    "poll": {
+      "kicker": "POLL",
+      "votes_one": "{{count}} vote",
+      "votes_other": "{{count}} votes"
+    },
+    "event": {
+      "invitedAll": "Invited: All Hub members",
+      "invited": "Invited: {{names}}",
+      "selectedMembers": "Selected members",
+      "openHubFirst": "Open a Hub before linking an event.",
+      "noTextRoom": "This Hub has no text room for the linked event.",
+      "reconnecting": "The Hub is reconnecting; the linked event was not posted."
+    },
+    "attachment": {
+      "details": "{{type}} · {{size}} MB · {{security}}",
+      "fallbackType": "Attachment",
+      "encrypted": "End-to-end encrypted",
+      "legacy": "Authenticated legacy download"
+    },
+    "session": {
+      "changed": "This account session changed.",
+      "expired": "Session expired.",
+      "signedInElsewhere": "Your DeCave account was signed in on another browser or desktop app.",
+      "ended": "Your session was ended.",
+      "expiredSignIn": "Your session expired. Please sign in again."
+    },
+    "history": {
+      "loadFailedStatus": "Older messages failed to load ({{status}})."
+    },
+    "notifications": {
+      "hiddenBody": "You have a new notification.",
+      "senderSentMessage": "{{sender}} sent a message.",
+      "senderSentYouMessage": "{{sender}} sent you a message."
+    },
+    "voiceTest": {
+      "previewUnavailable": "Microphone preview is unavailable. Open Voice & Audio and choose an input first.",
+      "noReading": "The local voice meter has not produced a reading yet. Try the test again.",
+      "restoreFailed": "The microphone graph could not be restored after the local comparison."
+    },
+    "decision": {
+      "openRoomFirst": "Open a text room before posting a decision card.",
+      "reconnecting": "The Hub is reconnecting; the decision card was not posted."
+    },
+    "soundboard": {
+      "tooLarge": "Soundboard files must be 1.5 MB or smaller.",
+      "badType": "Upload an MP3, WAV, OGG, M4A or WebM audio file.",
+      "readFailed": "Could not read audio file.",
+      "added": "{{name}} added.",
+      "someone": "Someone",
+      "played": "{{username}} played {{sound}}.",
+      "playedUnnamed": "{{username}} played a sound."
+    },
+    "camera": {
+      "blurUnsupported": "Background blur is not supported by this browser or camera driver; camera started without it.",
+      "replaceUnsupported": "Background replacement is not supported by this browser or camera driver; camera started without it.",
+      "noTrack": "No camera video track available.",
+      "startFailed": "Could not start protected camera."
+    },
+    "screen": {
+      "noTrack": "No screen video track was selected.",
+      "systemAudioDropped": "Screen sharing started without system audio: this device cannot keep DeCave voices out of the shared sound, so everyone would hear themselves echo.",
+      "startFailed": "Could not start protected screen sharing."
+    },
+    "desktopUpdate": {
+      "statusFailed": "Could not read the desktop update status.",
+      "checkFailed": "DeCave could not check for updates. Try again later.",
+      "restartRefused": "DeCave could not restart to apply the update. Save your work and try again.",
+      "restartFailed": "DeCave could not restart to apply the update. Try again later.",
+      "versionLoading": "Loading…",
+      "webVersion": "Web (live)",
+      "webOnly": "Desktop updates are available in the DeCave Windows desktop app.",
+      "loading": "Installed version is loading from the desktop bridge.",
+      "checking": "Installed version {{installed}} · Checking for updates…",
+      "downloadingPercent": "Installed version {{installed}} · Downloading update {{available}} · {{percent}}%",
+      "downloading": "Installed version {{installed}} · Downloading update {{available}}",
+      "downloaded": "Installed version {{installed}} · Update {{available}} downloaded and ready. Restart to apply.",
+      "upToDate": "Installed version {{installed}} · You're up to date.",
+      "failed": "Installed version {{installed}} · Update check failed: {{reason}}",
+      "tryLater": "Try again later.",
+      "disabled": "Installed version {{installed}} · Desktop updates are disabled in this build.",
+      "ready": "Installed version {{installed}} · Ready to check for updates."
+    },
+    "desktopBridge": {
+      "unavailable": "DeCave desktop bridge is unavailable.",
+      "failed": "Desktop bridge request failed.",
+      "timedOut": "DeCave desktop bridge timed out."
+    },
+    "device": {
+      "unknownDetails": "Device details unavailable",
+      "unknownClient": "Unknown client",
+      "unknownSystem": "Unknown OS",
+      "browserOnSystem": "{{browser}} on {{system}}"
+    },
+    "presence": {
+      "offline": "Offline",
+      "idle": "Idle",
+      "dnd": "Do Not Disturb",
+      "online": "Online"
+    },
+    "noise": {
+      "standard": "Standard",
+      "off": "Off",
+      "standardShort": "STD",
+      "offShort": "OFF"
+    },
+    "microphone": {
+      "blocked": "Microphone access is blocked. Allow microphone permission for DeCave in your browser settings and try again.",
+      "notFound": "No microphone was found on this device.",
+      "busy": "The microphone is busy or unavailable. Close other apps using it and try again.",
+      "overconstrained": "The selected microphone does not support the requested audio settings.",
+      "failed": "Could not access the microphone."
+    },
+    "realtime": {
+      "unknownUser": "Unknown",
+      "mention": "Mention",
+      "someUser": "DeCave user",
+      "roomFallback": "room",
+      "mentionedHidden": "You were mentioned in a Hub.",
+      "mentionedIn": "Mentioned you in #{{channel}}.",
+      "newMessageHidden": "New message in a Hub.",
+      "encryptedMessage": "🔒 Encrypted message"
+    },
+    "voice": {
+      "kicked": "You were disconnected by a moderator.",
+      "connectionError": "Voice connection error."
+    }
+  },
+  "session": {
+    "storage": {
+      "unavailable": "Local storage is unavailable on this device.",
+      "readFailed": "Saved local data could not be read; using a safe empty state.",
+      "unavailableNotSaved": "Local storage is unavailable on this device; your change was not saved.",
+      "writeRejected": "Local storage rejected this change; your current session remains usable.",
+      "unavailableKept": "Local storage is unavailable on this device; saved data was kept.",
+      "clearRejected": "Local storage rejected clearing this data; nothing was removed."
+    },
+    "recap": {
+      "readFailed": "Local session recap could not be read.",
+      "invalidAction": "This recap action is invalid and was not recorded.",
+      "saveFailed": "Local session recap could not be saved.",
+      "clearFailed": "Local session recap could not be cleared.",
+      "yourSession": "your session",
+      "actionsRecorded_one": "{{count}} local action recorded in {{hub}}.",
+      "actionsRecorded_other": "{{count}} local actions recorded in {{hub}}.",
+      "participantsVisible_one": "{{count}} participant visible.",
+      "participantsVisible_other": "{{count}} participants visible.",
+      "roomsVisited_one": "{{count}} room visited.",
+      "roomsVisited_other": "{{count}} rooms visited.",
+      "sharedLinks_one": "{{count}} shared link.",
+      "sharedLinks_other": "{{count}} shared links.",
+      "planningItems_one": "{{count}} planning item.",
+      "planningItems_other": "{{count}} planning items."
+    },
+    "quiet": {
+      "readFailed": "Quiet presence could not be read.",
+      "saveFailed": "Quiet presence could not be saved.",
+      "intentAvailable": "Available",
+      "intentPlaying": "Playing",
+      "intentWatching": "Watching",
+      "intentPlanning": "Planning",
+      "intentQuiet": "Quiet",
+      "saveFailedDevice": "Quiet presence could not be saved on this device.",
+      "kicker": "QUIET PRESENCE",
+      "title": "Share intent, keep control",
+      "mapping": "Presence uses the existing {{status}} status and {{preset}} notification preset.",
+      "intent": "Intent",
+      "intentLabel": "Presence intent",
+      "expires": "Expires",
+      "expiryLabel": "Presence expiry",
+      "expiryNone": "Until I change it",
+      "expiryHour": "For 1 hour",
+      "expiryFourHours": "For 4 hours",
+      "expiryToday": "Until end of day",
+      "interrupts": "INTERRUPTS",
+      "urgentMentions": "Urgent mentions",
+      "ordinaryJoins": "Ordinary joins",
+      "soundboardEvents": "Soundboard events",
+      "recommendations": "Recommendations",
+      "note": "Saved locally by the integration. Squad Finder availability follows this intent; urgent mentions remain separately controlled."
+    },
+    "kits": {
+      "readFailed": "Saved Session Kits could not be read.",
+      "saveFailed": "Session Kit changes could not be saved.",
+      "invalid": "This Session Kit is invalid and was not saved.",
+      "clearFailed": "Session Kits could not be cleared."
+    },
+    "squad": {
+      "playStyle": "Play style",
+      "playStyleDetail": "Saved in this device; the current matcher does not filter by play style.",
+      "timeWindow": "Time window",
+      "timeWindowDetail": "Saved in this device; the current matcher does not filter by time window.",
+      "partySize": "Party size",
+      "partySizeDetail": "Saved in this device; the current matcher does not filter by party size.",
+      "defaultName": "Squad preset",
+      "savedOnlyExtra": "{{label}}: saved only",
+      "readFailed": "Squad presets could not be read.",
+      "saveFailed": "Squad presets could not be saved.",
+      "invalid": "This squad preset is invalid and was not saved.",
+      "clearFailed": "Squad presets could not be cleared."
+    },
+    "voice": {
+      "inputFallback": "Input {{number}}",
+      "outputFallback": "Output {{number}}",
+      "permissionGranted": "Microphone allowed",
+      "permissionDenied": "Microphone blocked",
+      "permissionPrompt": "Microphone permission needed",
+      "permissionUnknown": "Microphone permission unknown",
+      "modeHighQuality": "High quality",
+      "modeLowCpu": "Low CPU",
+      "modeStandard": "Standard",
+      "rawInput": "Raw input",
+      "processedInput": "Processed input",
+      "durationMs": "{{ms}} ms",
+      "durationUnavailable": "duration unavailable",
+      "activityPercent": "{{percent}}% activity",
+      "activityUnavailable": "activity unavailable",
+      "testSummary": "{{variant}}: {{duration}} measured · {{activity}}"
+    },
+    "decision": {
+      "noDeadline": "No deadline",
+      "deadlineUnavailable": "Deadline unavailable",
+      "closes": "Closes {{date}}",
+      "voteFailed": "Your vote could not be saved.",
+      "pinFailed": "The card pin could not be saved.",
+      "kickerAvailability": "AVAILABILITY CARD",
+      "kickerChooseGame": "CHOOSE GAME CARD",
+      "kickerPoll": "POLL CARD",
+      "closed": "Closed",
+      "open": "Open",
+      "votes_one": "{{count}} vote",
+      "votes_other": "{{count}} votes",
+      "openEvent": "Open event",
+      "unpin": "Unpin",
+      "pin": "Pin card"
+    },
+    "composer": {
+      "eventFailed": "The linked event could not be created.",
+      "pollFailed": "The decision poll could not be created.",
+      "createFailed": "Could not create this decision card.",
+      "kicker": "SHARED DECISION",
+      "title": "Ask the room",
+      "cardType": "Card type",
+      "kindPoll": "Poll",
+      "kindAvailability": "Availability",
+      "kindChooseGame": "Choose a game",
+      "deadline": "Deadline",
+      "optional": "optional",
+      "question": "Question",
+      "questionPlaceholder": "What should we play?",
+      "option": "Option {{number}}",
+      "addOption": "Add option",
+      "linkEvent": "Link an event at the deadline",
+      "posting": "Posting…",
+      "post": "Post decision"
+    },
+    "cancel": "Cancel",
+    "recapCard": {
+      "clearFailed": "The local recap could not be cleared on this device.",
+      "kicker": "LOCAL SESSION RECAP",
+      "title": "What you chose to keep",
+      "clear": "Clear recap",
+      "totals": "Recap totals",
+      "participants": "Participants visible",
+      "rooms": "Rooms visited",
+      "links": "Shared links",
+      "planning": "Planning items",
+      "followUps": "Follow-ups: {{items}}",
+      "privacyNote": "Only explicit local/session actions are included. Voice and private message content are not recorded."
+    },
+    "kitPanel": {
+      "saveFailed": "The Session Kit could not be saved on this device.",
+      "removeFailed": "The Session Kit could not be removed from this device.",
+      "kicker": "LOCAL SESSION KITS",
+      "title": "Start with your context",
+      "savedCount_one": "{{count}} saved on this device",
+      "savedCount_other": "{{count}} saved on this device",
+      "saveCurrent": "Save current",
+      "kitName": "Kit name",
+      "kitNamePlaceholder": "Friday night co-op",
+      "intent": "Intent",
+      "intentPlay": "Play",
+      "intentWatch": "Watch",
+      "intentChat": "Chat",
+      "intentPlan": "Plan",
+      "saveNote": "Saves this Hub, room, voice device choices, notification preset, and game context on this device. Microphone and camera stay off until you choose them.",
+      "saveKit": "Save kit",
+      "empty": "No kits saved yet. Save your current Hub, room, and voice preferences to create one.",
+      "kickerPlay": "PLAY",
+      "kickerWatch": "WATCH",
+      "kickerChat": "CHAT",
+      "kickerPlan": "PLAN",
+      "noGame": "No game",
+      "reviewLaunch": "Review launch",
+      "remove": "Remove",
+      "reviewKicker": "REVIEW BEFORE STARTING",
+      "canLaunch": "Available parts will be restored for this session.",
+      "cannotLaunch": "This Hub is unavailable, so the kit cannot open its context.",
+      "inviteNote": "Invite candidates are ready for your review. Starting this session will not send invitations or messages.",
+      "skippedLabel": "Skipped unavailable kit references",
+      "start": "Start session"
+    },
+    "presets": {
+      "newName": "New squad preset",
+      "saveFailed": "The squad preset could not be saved on this device.",
+      "removeFailed": "The squad preset could not be removed from this device.",
+      "kicker": "SQUAD FINDER",
+      "title": "Saved presets",
+      "new": "New preset",
+      "name": "Name",
+      "game": "Game",
+      "platform": "Platform",
+      "language": "Language",
+      "region": "Region",
+      "requireMic": "Require a microphone",
+      "savedOnly": "saved only",
+      "styleAny": "Any",
+      "styleCasual": "Casual",
+      "styleCompetitive": "Competitive",
+      "timeWindowPlaceholder": "e.g. evenings",
+      "partyMin": "Minimum party size",
+      "partyMax": "Maximum party size",
+      "matcherNote": "Game, platform, language, region, and microphone are sent through the current matcher. The extra preferences stay on this device until matcher support exists.",
+      "save": "Save preset",
+      "empty": "No presets saved yet.",
+      "anyGame": "Any game",
+      "micRequired": "Mic required",
+      "micOptional": "Mic optional",
+      "savedOnlyList": "Saved only: {{items}}",
+      "use": "Use preset",
+      "edit": "Edit"
+    },
+    "readiness": {
+      "testFailed": "The local voice test could not run.",
+      "compareFailed": "The local comparison could not run.",
+      "kicker": "VOICE READINESS",
+      "title": "Check before joining",
+      "noiseNotMeasured": "Noise not measured",
+      "environment": "Environment {{environment}}",
+      "refresh": "Refresh devices",
+      "input": "Input",
+      "systemInput": "System input",
+      "unavailable": "Unavailable",
+      "output": "Output",
+      "systemOutput": "System output",
+      "systemOutputSelectable": "System output · selectable",
+      "processing": "Processing",
+      "latency": "Expected latency",
+      "notMeasured": "Not measured",
+      "processingMode": "Processing mode",
+      "measuringRaw": "Measuring raw…",
+      "testRaw": "Test raw input",
+      "measuringProcessed": "Measuring processed…",
+      "testProcessed": "Test cleaned input",
+      "comparing": "Comparing…",
+      "runAb": "Run local A/B test",
+      "note": "Tests run locally after you choose a button and are not saved by this component."
+    },
+    "kitLaunch": {
+      "issues": {
+        "hubUnavailable": "This Hub is no longer available; the kit will open at the safe home state.",
+        "channelUnavailable": "This room is no longer available and was skipped.",
+        "eventUnavailable": "This event is unavailable and was skipped.",
+        "inviteMemberUnavailable": "An unavailable invite was skipped.",
+        "inputDeviceUnavailable": "The saved input is unavailable; the system input will be kept.",
+        "outputDeviceUnavailable": "The saved output is unavailable; the system output will be kept."
+      },
+      "summary": {
+        "hub": "Hub: {{hub}}",
+        "hubUnavailable": "Hub: unavailable (safe home state)",
+        "room": "Room: {{room}}",
+        "roomUnavailable": "Room: unavailable (skipped)",
+        "roomUnchanged": "Room: unchanged",
+        "game": "Game: {{game}}",
+        "gameWithPlatform": "Game: {{game}} · {{platform}}",
+        "gameNotSet": "Game: not set",
+        "event": "Event: {{event}}",
+        "eventUnavailable": "Event: unavailable (skipped)",
+        "eventNone": "Event: none",
+        "invites_one": "Invites: {{count}} available; unchanged until you choose Invite",
+        "invites_other": "Invites: {{count}} available; unchanged until you choose Invite",
+        "invitesNone": "Invites: none",
+        "microphone": "Microphone: unchanged until you choose Join and enable it",
+        "camera": "Camera: unchanged until you choose Camera"
+      }
+    }
+  },
+  "shared": {
+    "typeToConfirm": {
+      "prompt": "Type <strong>{{text}}</strong> to confirm",
+      "cancel": "Cancel",
+      "working": "Working…"
+    }
+  },
+  "media": {
+    "download": {
+      "originInvalid": "The attachment origin is invalid.",
+      "originProtocol": "The attachment origin must use HTTP(S).",
+      "originState": "The attachment origin must not contain credentials or URL state.",
+      "urlEmpty": "The attachment URL is empty.",
+      "urlSeparator": "The attachment URL contains an encoded or literal path separator.",
+      "urlTraversal": "The attachment URL contains traversal.",
+      "urlInvalid": "The attachment URL is invalid.",
+      "urlCrossOrigin": "The attachment URL is not same-origin.",
+      "urlState": "The attachment URL must not contain credentials, a query, or a fragment.",
+      "urlEncodedTraversal": "The attachment URL contains encoded traversal.",
+      "urlOutsideRoute": "The attachment URL is outside the legacy attachment route.",
+      "urlUnsafeSegment": "The attachment URL contains an unsafe path segment.",
+      "limitInvalid": "The attachment size limit is invalid.",
+      "sizeInvalid": "The attachment size is invalid.",
+      "tooLarge": "The attachment exceeds the 25 MiB limit.",
+      "noBoundedBody": "The attachment response has no bounded body.",
+      "incomplete": "The attachment response size was incomplete.",
+      "downloadFailed": "The attachment download failed.",
+      "redirected": "The attachment response was redirected.",
+      "noVerifiedUrl": "The attachment response has no verified URL.",
+      "urlNotApproved": "The attachment response URL is not approved.",
+      "requestFailed": "The attachment request failed.",
+      "exportUnavailable": "Desktop file export is unavailable in this environment.",
+      "requestFailedStatus": "The attachment request failed ({{status}})."
+    },
+    "image": {
+      "failedName": "Image · {{name}}",
+      "failedHint": "Couldn't show the preview. Download instead.",
+      "open": "Open image {{name}}",
+      "loading": "Loading image…",
+      "download": "Download",
+      "close": "Close"
+    }
+  },
+  "outbox": {
+    "noReply": "No reply from DeCave. Check your connection and try again."
+  },
+  "home": {
+    "hero": {
+      "greeting": {
+        "lateNight": "Late night grind, <em>{{name}}</em>",
+        "morning": "Good morning, <em>{{name}}</em>",
+        "afternoon": "Good afternoon, <em>{{name}}</em>",
+        "evening": "Good evening, <em>{{name}}</em>"
+      },
+      "inVoice": "You're connected to {{room}}. Your crew is waiting.",
+      "friendsOnline_one": "{{count}} friend is online right now.",
+      "friendsOnline_other": "{{count}} friends are online right now.",
+      "ready": "Ready when you are. Pick up where you left off.",
+      "kicker": "My Cave · Personal dashboard"
+    },
+    "jumpBack": {
+      "connectedToVoice": "Connected to voice",
+      "inRoom_one": "{{count}} in room",
+      "inRoom_other": "{{count}} in room",
+      "jumpBackIn": "Jump back in",
+      "getStarted": "Get started",
+      "discoverHubs": "Discover Hubs",
+      "discoverHint": "Find a community for your games",
+      "friends": "Friends",
+      "discover": "Discover",
+      "findSquad": "Find a Squad",
+      "createHub": "＋ Create Hub",
+      "settings": "Settings"
+    },
+    "stats": {
+      "friendsOnline": "Friends online",
+      "inVoice": "People in voice",
+      "hubs": "Your Hubs",
+      "unreadDms": "Unread DMs"
+    },
+    "friends": {
+      "emptyTitle": "Nobody online yet",
+      "emptyHint": "Friends light up here as soon as they connect.",
+      "add": "Add friends",
+      "message": "Message {{name}}",
+      "online": "Online"
+    },
+    "voice": {
+      "emptyTitle": "No voice rooms",
+      "emptyHint": "Join or create a Hub to hang out in voice.",
+      "connected": "Connected · {{hub}}",
+      "open": "Open",
+      "join": "Join"
+    },
+    "events": {
+      "liveNow": "Live now",
+      "syncingTitle": "Syncing events",
+      "syncingHint": "Checking your Hubs for scheduled sessions.",
+      "emptyTitle": "Nothing scheduled",
+      "emptyHint": "Raid nights, tournaments and hangouts from your Hubs show up here."
+    },
+    "hubs": {
+      "emptyTitle": "No Hubs yet",
+      "emptyHint": "Create your own or find a community to join.",
+      "membershipPrivate": "Membership private",
+      "online_one": "{{count}} online",
+      "online_other": "{{count}} online"
+    },
+    "messages": {
+      "emptyTitle": "No recent DMs",
+      "emptyHint": "Your latest conversations stay close here.",
+      "open": "Open messages"
+    },
+    "nowPlaying": {
+      "emptyTitle": "No game detected",
+      "emptyHint": "Launch a supported game and DeCave updates this automatically.",
+      "kicker": "Playing now"
+    },
+    "profile": {
+      "edit": "Edit"
+    },
+    "notes": {
+      "placeholder": "Keep a quick note here…",
+      "label": "Notes"
+    },
+    "board": {
+      "emptyTitle": "Your Home is empty",
+      "emptyHint": "Pick widgets to show here.",
+      "addWidgets": "＋ Add widgets",
+      "options": "{{title}} widget options",
+      "size": "{{title}} size",
+      "moveEarlierNamed": "Move {{title}} earlier",
+      "moveEarlier": "Move earlier",
+      "moveLaterNamed": "Move {{title}} later",
+      "moveLater": "Move later",
+      "hideNamed": "Hide {{title}}",
+      "hide": "Hide widget"
+    },
+    "library": {
+      "label": "Widget library",
+      "kicker": "Customize Home",
+      "title": "Choose your widgets",
+      "hint": "Toggle widgets on or off, then drag cards (or use ↑ ↓) to reorder them.",
+      "reset": "Reset to default",
+      "done": "Done",
+      "presets": "Start from a preset",
+      "show": "Show {{title}}"
+    },
+    "category": {
+      "Gaming": "Gaming",
+      "Social": "Social",
+      "Voice": "Voice",
+      "Hubs": "Hubs",
+      "Personal": "Personal"
+    },
+    "size": {
+      "small": "Small",
+      "medium": "Medium",
+      "wide": "Wide"
+    },
+    "widget": {
+      "jumpBack": {
+        "title": "Jump back in",
+        "description": "Resume your last room, voice call and quick actions"
+      },
+      "stats": {
+        "title": "At a glance",
+        "description": "Friends online, people in voice, Hubs and unread DMs"
+      },
+      "friendsOnline": {
+        "title": "Friends online",
+        "description": "Who is online and what they're playing"
+      },
+      "voiceRooms": {
+        "title": "Voice rooms",
+        "description": "Join voice rooms across your Hubs"
+      },
+      "events": {
+        "title": "Upcoming events",
+        "description": "Scheduled sessions from your Hubs"
+      },
+      "hubs": {
+        "title": "Your Hubs",
+        "description": "Fast access to your communities"
+      },
+      "messages": {
+        "title": "Messages",
+        "description": "Jump back into private chats"
+      },
+      "nowPlaying": {
+        "title": "Now playing",
+        "description": "Your detected game and session time"
+      },
+      "quickLinks": {
+        "title": "Quick links",
+        "description": "Shortcuts to your favorite websites"
+      },
+      "profile": {
+        "title": "Profile",
+        "description": "Your presence at a glance"
+      },
+      "clock": {
+        "title": "Clock",
+        "description": "Local time and date"
+      },
+      "notes": {
+        "title": "Notes",
+        "description": "A private scratchpad on this device"
+      }
+    },
+    "preset": {
+      "gaming": {
+        "label": "Gaming",
+        "description": "Now playing, voice and events up front"
+      },
+      "social": {
+        "label": "Social",
+        "description": "Friends, messages and your Hubs first"
+      },
+      "minimal": {
+        "label": "Minimal",
+        "description": "Just the essentials"
+      }
+    }
+  },
+  "server": {
+    "authTimedOut": "Authentication timed out. Please reconnect.",
+    "rateLimited": "Too many realtime requests. Slow down.",
+    "payloadTooLarge": "Realtime payload is too large.",
+    "invalidJson": "Invalid JSON payload",
+    "unknownType": "Unknown realtime message type.",
+    "authTooManyAttempts": "Too many authentication attempts. Try again later.",
+    "authUnavailable": "Authentication is temporarily unavailable. Please retry.",
+    "sessionExpired": "Session expired. Please log in again.",
+    "authenticateFirst": "You must authenticate first",
+    "noHubAccess": "You do not have access to this server",
+    "roomNotFound": "Room not found or inaccessible",
+    "officialPolicyUnavailable": "Official Hub posting policy is temporarily unavailable.",
+    "ownerOnlyPosting": "Only the Hub owner can post in this Hub.",
+    "roomReadOnly": "#{{room}} is read-only.",
+    "timedOut": "You are currently timed out in this Hub.",
+    "slowMode": "Slow mode is enabled. Wait {{seconds}} seconds between messages.",
+    "attachmentNotOwned": "That attachment is not owned by you or is not available in this room.",
+    "replyTargetMissingInRoom": "The message you are replying to was not found in this room.",
+    "forumReplyTarget": "Forum replies must target a forum post.",
+    "forumReplyNotPost": "Forum replies cannot be posts.",
+    "forumPostLocked": "This post is locked.",
+    "forumPostsOnlyInForums": "Forum posts can only be created in forum rooms.",
+    "forumTopLevelPosts": "Forum top-level messages must be created as posts.",
+    "forumTooManyTags": "Posts can have at most {{max}} tags.",
+    "forumTagInvalid": "Choose tags from this forum's tag list.",
+    "forumRoleCannotPost": "Your role cannot create posts in this forum.",
+    "forumLockForbidden": "Only forum moderators can create posts with replies turned off.",
+    "attachmentUnavailable": "That attachment isn't available.",
+    "dmFriendsOnly": "Private messages are available between friends.",
+    "dmBlocked": "This user is blocked. Unblock them before sending private messages.",
+    "replyTargetMissing": "The message you are replying to was not found.",
+    "alreadySent": "That message was already sent.",
+    "groupNotMember": "You are not a member of this group chat.",
+    "voiceRoomNotFound": "Voice room not found",
+    "voiceRoomFull": "This room is full ({{cap}}/{{cap}}).",
+    "soundUnavailable": "That soundboard sound is unavailable.",
+    "soundboardUnavailable": "Soundboard is unavailable right now.",
+    "voiceRoomDeleted": "This voice room was deleted.",
+    "voiceAccessRevoked": "You no longer have access to this voice room.",
+    "roomAccessRevoked": "You no longer have access to this room.",
+    "roomDeleted": "This room was deleted.",
+    "leftHub": "You left this Hub.",
+    "removedFromHub": "You were removed from this Hub.",
+    "kickedFromHub": "You were kicked from this Hub.",
+    "bannedFromHub": "You were banned from this Hub.",
+    "leftSquadRoom": "You left the squad room."
+  },
+  "mobile": {
+    "channel": {
+      "couldNotDownloadAttachment": "Could not download attachment",
+      "theAuthenticatedAttachmentDownloadFailed": "The authenticated attachment download failed.",
+      "couldNotLoadMessages": "Could not load messages.",
+      "realtimeIsReconnectingTryAgain": "Realtime is reconnecting. Try again in a moment.",
+      "couldNotSendAttachment": "Could not send attachment",
+      "pleaseTryAgain": "Please try again.",
+      "couldNotSendGif": "Could not send GIF",
+      "couldNotUnpinMessage": "Could not unpin message",
+      "couldNotPinMessage": "Could not pin message",
+      "olderMessage": "Older message",
+      "thisMessageIsFurtherBack": "This message is further back than the loaded history.",
+      "couldNotAddReaction": "Could not add reaction",
+      "deleteMessage": "Delete message?",
+      "thisRemovesTheMessageFor": "This removes the message for everyone in this room.",
+      "couldNotDeleteMessage": "Could not delete message",
+      "couldNotEditMessage": "Could not edit message",
+      "theMessageWasNotChanged": "The message was not changed.",
+      "live": "Live",
+      "connecting": "Connecting…",
+      "searchMessages": "Search messages",
+      "pinnedMessages": "Pinned messages",
+      "returnToVoiceControls": "Return to voice controls",
+      "voiceAndMessagesLiveTogether": "Voice and messages live together in this room.",
+      "noPostsInThisForum": "No posts in this forum yet.",
+      "thisIsTheBeginningOf": "This is the beginning of this text room.",
+      "longPressForMessageActions": "Long press for message actions",
+      "pinned": "Pinned",
+      "newsincescrollNewMessagesJumpTo": "{{newSinceScroll}} new messages. Jump to latest",
+      "jumpToLatestMessages": "Jump to latest messages",
+      "latest": "Latest",
+      "severalPeopleAreTyping": "Several people are typing…",
+      "editingMessage": "Editing message",
+      "replyingToNameValue": "Replying to {{name}}: {{value}}",
+      "longPressAPostTo": "Long press a post to reply. New forum posts can be started on desktop or web.",
+      "addPhotoVideoOrGif": "Add photo, video or GIF",
+      "writeAReply": "Write a reply",
+      "messageName": "Message #{{name}}",
+      "couldNotUpdateMute": "Could not update mute",
+      "unmuteUsername": "Unmute {{username}}",
+      "muteNotificationsFromUsername": "Mute notifications from {{username}}",
+      "roomFallback": "Room",
+      "welcomeVoice": "Welcome to {{name}}",
+      "welcomeText": "Welcome to #{{name}}",
+      "reactedByYou": "{{emoji}} {{count}}, you reacted",
+      "newCount": "{{number}} new",
+      "isTyping": "{{name}} is typing…",
+      "twoTyping": "{{first}} and {{second}} are typing…"
+    },
+    "finder": {
+      "searchFailed": "Search failed.",
+      "pinsEmpty": "No pinned messages yet. Moderators can pin from a message's long-press menu.",
+      "noMatches": "No messages match.",
+      "searchHint": "Search by message text or username.",
+      "searchTitle": "Search messages",
+      "placeholder": "Search this channel"
+    },
+    "media": {
+      "gifLoadFailed": "Couldn't load GIFs.",
+      "photos": "Photos",
+      "camera": "Camera",
+      "searchGiphy": "Search GIPHY",
+      "poweredByGiphy": "Powered by GIPHY",
+      "saveOrShare": "Save or share",
+      "cameraOff": "Camera access is off for DeCave. Turn it on in Settings.",
+      "photosOff": "Photo access is off for DeCave. Turn it on in Settings.",
+      "tooLarge": "Attachments can be up to 25 MB.",
+      "uploadFailed": "Could not upload the attachment."
+    },
+    "preview": {
+      "mine": "Your message: {{body}}",
+      "from": "Message from {{author}}: {{body}}"
+    },
+    "sendFailed": {
+      "text": "Not sent — you're offline or reconnecting.",
+      "retryLabel": "Retry sending"
+    },
+    "size": {
+      "bytes": "{{size}} B"
+    },
+    "download": {
+      "imageRequestFailed": "The attachment image request failed.",
+      "unsupportedImage": "The attachment response is not a supported image.",
+      "unsupportedPlatform": "Saving attachments is supported on Android and iOS.",
+      "cannotSave": "This device cannot save attachments.",
+      "chooseFolder": "Choose a folder to save the attachment."
+    }
+  }
+}

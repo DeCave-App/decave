@@ -1,6 +1,7 @@
 // One rule as a sentence card: When [trigger] · If [conditions] · Do [actions] ·
 // Otherwise [else]. Collapsed it reads as a sentence; expanded every part is editable.
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { BotAction, BotCondition, BotRule, BotTrigger } from "../../../shared/bots/types.ts";
 import { BOT_LIMITS } from "../../../shared/bots/types.ts";
 import type { FieldEnv } from "./FieldInput";
@@ -37,15 +38,8 @@ type Props = {
   onAskAi: (description: string) => Promise<void>;
 };
 
-const STATUS_TEXT: Record<LocalRule["status"], string> = {
-  saved: "Draft saved",
-  pending: "Saving…",
-  saving: "Saving…",
-  invalid: "Needs fixing",
-  failed: "Not saved",
-};
-
 function ScopeOptions({ rule, env, onEdit }: { rule: BotRule; env: FieldEnv; onEdit: (draft: BotRule) => void }) {
+  const { t } = useTranslation(["bots"]);
   const everywhere = rule.scope.channels.includes("*");
   const toggleRoom = (id: string) => {
     const current = rule.scope.channels.filter((c) => c !== "*");
@@ -54,10 +48,10 @@ function ScopeOptions({ rule, env, onEdit }: { rule: BotRule; env: FieldEnv; onE
   };
   return (
     <details className="bb-more">
-      <summary>Where and how often</summary>
+      <summary>{t("bots.ruleCard.scope")}</summary>
       <div className="bb-fields">
         <div className="bb-field wide">
-          <span className="bb-field-label">Rooms</span>
+          <span className="bb-field-label">{t("bots.ruleCard.rooms")}</span>
           <span className="bb-chips">
             <button
               type="button"
@@ -65,7 +59,7 @@ function ScopeOptions({ rule, env, onEdit }: { rule: BotRule; env: FieldEnv; onE
               aria-pressed={everywhere}
               onClick={() => onEdit({ ...rule, scope: { ...rule.scope, channels: ["*"] } })}
             >
-              All rooms
+              {t("bots.ruleCard.allRooms")}
             </button>
             {env.textRooms.map((room) => {
               const on = rule.scope.channels.includes(room.id);
@@ -85,7 +79,7 @@ function ScopeOptions({ rule, env, onEdit }: { rule: BotRule; env: FieldEnv; onE
         </div>
         <div className="bb-field">
           <label className="bb-field-label" htmlFor={`cd-user-${rule.trigger.type}`}>
-            Cooldown per member (seconds)
+            {t("bots.ruleCard.cooldownMember")}
           </label>
           <input
             id={`cd-user-${rule.trigger.type}`}
@@ -98,7 +92,7 @@ function ScopeOptions({ rule, env, onEdit }: { rule: BotRule; env: FieldEnv; onE
         </div>
         <div className="bb-field">
           <label className="bb-field-label" htmlFor={`cd-room-${rule.trigger.type}`}>
-            Cooldown per room (seconds)
+            {t("bots.ruleCard.cooldownRoom")}
           </label>
           <input
             id={`cd-room-${rule.trigger.type}`}
@@ -115,6 +109,7 @@ function ScopeOptions({ rule, env, onEdit }: { rule: BotRule; env: FieldEnv; onE
 }
 
 function AiEdit({ onAskAi }: { onAskAi: (description: string) => Promise<void> }) {
+  const { t } = useTranslation(["bots"]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   return (
@@ -134,20 +129,21 @@ function AiEdit({ onAskAi }: { onAskAi: (description: string) => Promise<void> }
     >
       <input
         className="dcx-input"
-        aria-label="Change this rule with AI"
-        placeholder="Change it with AI, e.g. “only on weekends”"
+        aria-label={t("bots.ruleCard.aiLabel")}
+        placeholder={t("bots.ruleCard.aiPlaceholder")}
         value={text}
         maxLength={1000}
         onChange={(e) => setText(e.target.value)}
       />
       <button type="submit" className="dcx-btn dcx-btn-sm" disabled={!text.trim() || busy}>
-        {busy ? "Thinking…" : "Change"}
+        {busy ? t("bots.ruleCard.thinking") : t("bots.ruleCard.change")}
       </button>
     </form>
   );
 }
 
 export function RuleCard(props: Props) {
+  const { t } = useTranslation(["bots"]);
   const { rule, label, names, env, expanded, onEdit } = props;
   const draft = rule.draft;
   const errors = rule.errors;
@@ -183,19 +179,22 @@ export function RuleCard(props: Props) {
             title={rule.message ?? (errors.length ? errors.map((e) => e.message).join("\n") : undefined)}
           >
             {!rule.enabled
-              ? "Paused"
+              ? t("bots.ruleCard.paused")
               : rule.status === "saved"
                 ? !live
-                  ? "New"
+                  ? t("bots.ruleCard.new")
                   : changed
-                    ? "Changed"
-                    : "Live"
-                : STATUS_TEXT[rule.status]}
+                    ? t("bots.ruleCard.changed")
+                    : t("bots.status.live")
+                : t(`bots.ruleCard.status.${rule.status}`)}
           </span>
-          <label className="dcx-switch" title={rule.enabled ? "Pause this rule" : "Resume this rule"}>
+          <label
+            className="dcx-switch"
+            title={rule.enabled ? t("bots.ruleCard.pauseTitle") : t("bots.ruleCard.resumeTitle")}
+          >
             <input
               type="checkbox"
-              aria-label={rule.enabled ? `Pause ${label}` : `Resume ${label}`}
+              aria-label={rule.enabled ? t("bots.ruleCard.pause", { label }) : t("bots.ruleCard.resume", { label })}
               checked={rule.enabled}
               disabled={!rule.id}
               onChange={props.onToggle}
@@ -205,8 +204,8 @@ export function RuleCard(props: Props) {
           <button
             type="button"
             className="dcx-btn dcx-btn-sm dcx-btn-ghost"
-            aria-label={`Move ${label} up`}
-            title="Move up"
+            aria-label={t("bots.ruleCard.moveUp", { label })}
+            title={t("bots.part.moveUp")}
             disabled={props.first}
             onClick={() => props.onMove(-1)}
           >
@@ -215,38 +214,37 @@ export function RuleCard(props: Props) {
           <button
             type="button"
             className="dcx-btn dcx-btn-sm dcx-btn-ghost"
-            aria-label={`Move ${label} down`}
-            title="Move down"
+            aria-label={t("bots.ruleCard.moveDown", { label })}
+            title={t("bots.part.moveDown")}
             disabled={props.last}
             onClick={() => props.onMove(1)}
           >
             ↓
           </button>
           <button type="button" className="dcx-btn dcx-btn-sm dcx-btn-ghost" onClick={props.onDuplicate}>
-            Duplicate
+            {t("bots.ruleCard.duplicate")}
           </button>
           <button type="button" className="dcx-btn dcx-btn-sm dcx-btn-ghost bb-danger-text" onClick={props.onDelete}>
-            Delete
+            {t("bots.ruleCard.delete")}
           </button>
         </span>
       </header>
 
       {!expanded && errors.length > 0 && (
         <p className="bb-error bb-rule-errors" role="alert">
-          {errors[0].message}
-          {errors.length > 1 ? ` (+${errors.length - 1} more)` : ""} Open the rule to fix it.
+          {errors.length > 1
+            ? t("bots.ruleCard.errorsMore", { message: errors[0].message, count: errors.length - 1 })
+            : t("bots.ruleCard.error", { message: errors[0].message })}
         </p>
       )}
 
       {expanded && (
         <div className="bb-rule-body">
-          {rule.generated && (
-            <p className="dcx-notice dcx-notice-info bb-generated">Generated, review before publishing</p>
-          )}
+          {rule.generated && <p className="dcx-notice dcx-notice-info bb-generated">{t("bots.ruleCard.generated")}</p>}
           {rule.message && <p className="dcx-notice dcx-notice-error">{rule.message}</p>}
 
           <section className="bb-step">
-            <h5>When</h5>
+            <h5>{t("bots.ruleCard.when")}</h5>
             <PartEditor
               kind="triggers"
               value={draft.trigger as unknown as Part}
@@ -262,11 +260,11 @@ export function RuleCard(props: Props) {
 
           <section className="bb-step">
             <h5>
-              If
+              {t("bots.ruleCard.if")}
               {conditions.length > 1 && (
                 <select
                   className="dcx-input bb-match"
-                  aria-label="Match"
+                  aria-label={t("bots.ruleCard.match")}
                   value={conditionKey}
                   onChange={(e) => {
                     const key = e.target.value as "all" | "any";
@@ -274,12 +272,12 @@ export function RuleCard(props: Props) {
                     onEdit({ ...draft, when });
                   }}
                 >
-                  <option value="all">all of these</option>
-                  <option value="any">any of these</option>
+                  <option value="all">{t("bots.ruleCard.all")}</option>
+                  <option value="any">{t("bots.ruleCard.any")}</option>
                 </select>
               )}
             </h5>
-            {conditions.length === 0 && <small className="bb-hint">Always, unless you add a condition.</small>}
+            {conditions.length === 0 && <small className="bb-hint">{t("bots.ruleCard.always")}</small>}
             <PartList
               kind="conditions"
               items={conditions}
@@ -287,7 +285,7 @@ export function RuleCard(props: Props) {
               errors={errors}
               env={env}
               limit={20}
-              addLabel="Add condition"
+              addLabel={t("bots.ruleCard.addCondition")}
               makeDefault={(type) => defaultCondition(type as BotCondition["type"]) as unknown as Part}
               onChange={(items) => setConditions(items)}
             />
@@ -299,7 +297,7 @@ export function RuleCard(props: Props) {
                 errors={errors}
                 env={env}
                 limit={20}
-                addLabel={`Add condition (${otherKey})`}
+                addLabel={t("bots.ruleCard.addConditionTo", { key: otherKey })}
                 makeDefault={(type) => defaultCondition(type as BotCondition["type"]) as unknown as Part}
                 onChange={(items) => setConditions(items, otherKey)}
               />
@@ -307,7 +305,7 @@ export function RuleCard(props: Props) {
           </section>
 
           <section className="bb-step">
-            <h5>Do</h5>
+            <h5>{t("bots.ruleCard.do")}</h5>
             <PartList
               kind="actions"
               items={draft.then as unknown as Part[]}
@@ -315,7 +313,7 @@ export function RuleCard(props: Props) {
               errors={errors}
               env={env}
               limit={BOT_LIMITS.actionsPerRule}
-              addLabel="Add action"
+              addLabel={t("bots.ruleCard.addAction")}
               makeDefault={(type) => defaultAction(type as BotAction["type"]) as unknown as Part}
               onChange={(items) => onEdit({ ...draft, then: items as unknown as BotAction[] })}
             />
@@ -323,7 +321,7 @@ export function RuleCard(props: Props) {
 
           {(conditions.length > 0 || (draft.else?.length ?? 0) > 0) && (
             <section className="bb-step">
-              <h5>Otherwise</h5>
+              <h5>{t("bots.ruleCard.otherwise")}</h5>
               <PartList
                 kind="actions"
                 items={(draft.else ?? []) as unknown as Part[]}
@@ -331,7 +329,7 @@ export function RuleCard(props: Props) {
                 errors={errors}
                 env={env}
                 limit={BOT_LIMITS.actionsPerRule}
-                addLabel="Add action"
+                addLabel={t("bots.ruleCard.addAction")}
                 makeDefault={(type) => defaultAction(type as BotAction["type"]) as unknown as Part}
                 onChange={(items) => {
                   const next: BotRule = { ...draft, else: items as unknown as BotAction[] };

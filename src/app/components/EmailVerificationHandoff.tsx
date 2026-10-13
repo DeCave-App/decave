@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { apiErrorMessage, type ApiErrorBody } from "../../i18n/apiError";
 
 type VerificationState = "ready" | "sending" | "verified" | "error";
 
@@ -13,6 +15,7 @@ function tokenFromHash(hash: string): string {
 
 /** Show an explicit confirmation before sending a one-time email credential. */
 export function EmailVerificationHandoff() {
+  const { t } = useTranslation(["common"]);
   const [token] = useState(() => (typeof window === "undefined" ? "" : tokenFromHash(window.location.hash)));
   const [open, setOpen] = useState(Boolean(token));
   const [state, setState] = useState<VerificationState>("ready");
@@ -40,15 +43,15 @@ export function EmailVerificationHandoff() {
         body: JSON.stringify({ token }),
       });
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
-        setMessage(body.error || "This verification link is invalid or has expired.");
+        const body = (await response.json().catch(() => ({}))) as ApiErrorBody;
+        setMessage(apiErrorMessage(body, "client.auth.verificationLinkInvalid"));
         setState("error");
         return;
       }
-      setMessage("Your email is verified. You can now return to DeCave and sign in.");
+      setMessage(t("common.auth.emailHandoff.done"));
       setState("verified");
     } catch {
-      setMessage("We could not verify your email. Check your connection and try again.");
+      setMessage(t("common.auth.emailHandoff.networkFailed"));
       setState("error");
     }
   };
@@ -82,10 +85,10 @@ export function EmailVerificationHandoff() {
         }}
       >
         <h1 id="email-verification-title" style={{ margin: "0 0 10px", fontSize: 22 }}>
-          {state === "verified" ? "Email verified" : "Verify your email"}
+          {state === "verified" ? t("common.auth.emailHandoff.titleVerified") : t("common.auth.emailHandoff.title")}
         </h1>
         <p aria-live="polite" style={{ margin: "0 0 20px", color: "var(--ds-text-soft, #aebbd0)" }}>
-          {message || "Confirm this address to activate your DeCave account."}
+          {message || t("common.auth.emailHandoff.body")}
         </p>
         {state !== "verified" && token && (
           <button
@@ -103,7 +106,7 @@ export function EmailVerificationHandoff() {
               cursor: state === "sending" ? "wait" : "pointer",
             }}
           >
-            {state === "sending" ? "Verifying…" : "Confirm email"}
+            {state === "sending" ? t("common.auth.emailHandoff.verifying") : t("common.auth.emailHandoff.confirm")}
           </button>
         )}
         {(state === "verified" || state === "error") && (
@@ -122,7 +125,7 @@ export function EmailVerificationHandoff() {
               cursor: "pointer",
             }}
           >
-            Return to DeCave
+            {t("common.auth.emailHandoff.returnToApp")}
           </button>
         )}
       </section>

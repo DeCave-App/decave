@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   buildDiscordImportDryRun,
   type DiscordImportApplyResult,
@@ -8,6 +9,9 @@ import {
   type DiscordImportPreview,
   type DiscordImportRollbackResult,
 } from "../../../shared/discord-template";
+
+// The shape of a Discord Server Template link, the same in every language.
+const TEMPLATE_URL_SHAPE = "https://discord.new/xxxxxxxx";
 
 export type DiscordImportReviewProps = {
   preview: DiscordImportPreview | null;
@@ -39,6 +43,7 @@ export function DiscordImportReview({
   onApply,
   onRollback,
 }: DiscordImportReviewProps) {
+  const { t } = useTranslation(["admin"]);
   const [url, setUrl] = useState("");
   const [applyBusy, setApplyBusy] = useState(false);
   const [applyError, setApplyError] = useState("");
@@ -58,7 +63,7 @@ export function DiscordImportReview({
       const result = await onApply(dryRun);
       if (result) setApplied(result);
     } catch (reason) {
-      setApplyError(reason instanceof Error ? reason.message : "The import could not be applied.");
+      setApplyError(reason instanceof Error ? reason.message : t("admin.discordImport.applyFailed"));
     } finally {
       setApplyBusy(false);
     }
@@ -73,30 +78,30 @@ export function DiscordImportReview({
       if (result) setRollbackResult(result);
       if (result && result.retainedRoomIds.length === 0 && result.retainedRoleIds.length === 0) setApplied(null);
     } catch (reason) {
-      setApplyError(reason instanceof Error ? reason.message : "The import could not be rolled back.");
+      setApplyError(reason instanceof Error ? reason.message : t("admin.discordImport.rollbackFailed"));
     } finally {
       setApplyBusy(false);
     }
   };
 
   return (
-    <section className="dc-discord-import dc-discord-import-review" aria-label="Discord structure import">
+    <section className="dc-discord-import dc-discord-import-review" aria-label={t("admin.discordImport.label")}>
       <div className="dc-discord-import-head">
         <div>
-          <span>STRUCTURE IMPORT</span>
-          <strong>Review before adding Discord structure</strong>
+          <span>{t("admin.discordImport.kicker")}</span>
+          <strong>{t("admin.discordImport.title")}</strong>
         </div>
-        <small>No login or message history is needed.</small>
+        <small>{t("admin.discordImport.noLogin")}</small>
       </div>
       <div className="dc-discord-import-form">
         <input
           value={url}
           onChange={(event) => setUrl(event.target.value)}
-          placeholder="https://discord.new/xxxxxxxx"
-          aria-label="Discord Server Template URL"
+          placeholder={TEMPLATE_URL_SHAPE}
+          aria-label={t("admin.discordImport.urlLabel")}
         />
         <button type="button" className="modal-secondary" disabled={busy || !url.trim()} onClick={() => onLoad(url)}>
-          {busy ? "Loading…" : "Preview import"}
+          {busy ? t("admin.discordImport.loading") : t("admin.discordImport.preview")}
         </button>
       </div>
       {error && (
@@ -116,42 +121,70 @@ export function DiscordImportReview({
                 onClear();
               }}
             >
-              Clear import
+              {t("admin.discordImport.clear")}
             </button>
           </div>
           <p>{preview.description}</p>
           <div className="dc-discord-import-stats">
             <span>
-              <b>{dryRun.summary.rooms}</b> new rooms
+              <Trans
+                t={t}
+                i18nKey="admin.discordImport.rooms"
+                count={dryRun.summary.rooms}
+                values={{ count: dryRun.summary.rooms }}
+                components={{ b: <b /> }}
+              />
             </span>
             <span>
-              <b>{dryRun.summary.roles}</b> new roles
+              <Trans
+                t={t}
+                i18nKey="admin.discordImport.roles"
+                count={dryRun.summary.roles}
+                values={{ count: dryRun.summary.roles }}
+                components={{ b: <b /> }}
+              />
             </span>
             <span>
-              <b>{dryRun.summary.conflicts}</b> conflicts skipped
+              <Trans
+                t={t}
+                i18nKey="admin.discordImport.conflicts"
+                count={dryRun.summary.conflicts}
+                values={{ count: dryRun.summary.conflicts }}
+                components={{ b: <b /> }}
+              />
             </span>
             <span>
-              <b>{dryRun.summary.unsupported}</b> unsupported
+              <Trans
+                t={t}
+                i18nKey="admin.discordImport.unsupported"
+                count={dryRun.summary.unsupported}
+                values={{ count: dryRun.summary.unsupported }}
+                components={{ b: <b /> }}
+              />
             </span>
           </div>
           {dryRun.conflicts.length > 0 && (
             <div className="dc-discord-import-review-list">
-              <strong>Existing records kept</strong>
+              <strong>{t("admin.discordImport.kept")}</strong>
               {dryRun.conflicts.slice(0, 12).map((conflict) => (
                 <span key={`${conflict.kind}-${conflict.existingId}`}>
-                  {conflict.kind === "room" ? "Room" : "Role"}: {conflict.name}
-                  {conflict.category ? ` · ${conflict.category}` : ""}
+                  {conflict.kind === "room"
+                    ? conflict.category
+                      ? t("admin.discordImport.conflictRoomIn", { name: conflict.name, category: conflict.category })
+                      : t("admin.discordImport.conflictRoom", { name: conflict.name })
+                    : conflict.category
+                      ? t("admin.discordImport.conflictRoleIn", { name: conflict.name, category: conflict.category })
+                      : t("admin.discordImport.conflictRole", { name: conflict.name })}
                 </span>
               ))}
             </div>
           )}
           {dryRun.unsupported.length > 0 && (
-            <small className="dc-discord-import-warning">Not imported: {dryRun.unsupported.join(", ")}</small>
+            <small className="dc-discord-import-warning">
+              {t("admin.discordImport.notImported", { items: dryRun.unsupported.join(", ") })}
+            </small>
           )}
-          <small className="dc-discord-import-note">
-            Users, historical messages, bots, integrations, and Discord permissions are not imported. Existing DeCave
-            records are preserved.
-          </small>
+          <small className="dc-discord-import-note">{t("admin.discordImport.note")}</small>
           {applyError && (
             <p className="dc-discord-import-error" role="alert">
               {applyError}
@@ -159,22 +192,24 @@ export function DiscordImportReview({
           )}
           {rollbackResult && (
             <p className="dc-discord-import-note" role="status">
-              Rollback removed {rollbackResult.deletedRoomIds.length} empty room(s) and{" "}
-              {rollbackResult.deletedRoleIds.length} unused role(s).{" "}
+              {t("admin.discordImport.rollback", {
+                rooms: t("admin.discordImport.rollbackRooms", { count: rollbackResult.deletedRoomIds.length }),
+                roles: t("admin.discordImport.rollbackRoles", { count: rollbackResult.deletedRoleIds.length }),
+              })}{" "}
               {rollbackResult.retainedRoomIds.length + rollbackResult.retainedRoleIds.length > 0
-                ? "Records with later activity or assignments were kept."
+                ? t("admin.discordImport.rollbackKept")
                 : ""}
             </p>
           )}
           <div className="dc-discord-import-review-actions">
             {!applied && onApply && (
               <button type="button" className="modal-primary" disabled={applyBusy} onClick={() => void apply()}>
-                {applyBusy ? "Applying…" : "Apply reviewed import"}
+                {applyBusy ? t("admin.discordImport.applying") : t("admin.discordImport.apply")}
               </button>
             )}
             {applied && onRollback && (
               <button type="button" className="modal-secondary" disabled={applyBusy} onClick={() => void rollback()}>
-                {applyBusy ? "Rolling back…" : "Undo created structure"}
+                {applyBusy ? t("admin.discordImport.rollingBack") : t("admin.discordImport.undo")}
               </button>
             )}
           </div>

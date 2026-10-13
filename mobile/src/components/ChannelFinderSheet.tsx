@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Avatar } from "@/src/components/Avatar";
 import { apiJson } from "@/src/lib/api";
 import { colors } from "@/src/theme";
 import type { ChatMessage } from "@/src/types";
+import { dateLocale } from "@/src/lib/date-locale";
 
 type Mode = "search" | "pins";
 
@@ -27,6 +29,7 @@ export function ChannelFinderSheet({
   onPick: (message: ChatMessage) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation(["common", "chat", "hub"]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -84,7 +87,7 @@ export function ChannelFinderSheet({
           setError("");
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Search failed.");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("chat.mobile.finder.searchFailed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -100,12 +103,12 @@ export function ChannelFinderSheet({
     mode === "pins"
       ? pinsLoading && serverPins === null
         ? ""
-        : "No pinned messages yet. Moderators can pin from a message's long-press menu."
+        : t("chat.mobile.finder.pinsEmpty")
       : query.trim()
         ? loading
           ? ""
-          : "No messages match."
-        : "Search by message text or username.";
+          : t("chat.mobile.finder.noMatches")
+        : t("chat.mobile.finder.searchHint");
 
   return (
     <Modal visible={mode !== null} transparent animationType="slide" onRequestClose={onClose}>
@@ -115,8 +118,8 @@ export function ChannelFinderSheet({
           <View style={styles.grabber} />
           <View style={styles.head}>
             <Ionicons name={mode === "pins" ? "pin" : "search"} size={18} color={colors.cyan} />
-            <Text style={styles.title}>{mode === "pins" ? "Pinned messages" : "Search messages"}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={onClose}>
+            <Text style={styles.title}>{mode === "pins" ? t("hub.pins.title") : t("chat.mobile.finder.searchTitle")}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")} hitSlop={10} onPress={onClose}>
               <Ionicons name="close" size={22} color={colors.muted} />
             </Pressable>
           </View>
@@ -127,7 +130,7 @@ export function ChannelFinderSheet({
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder="Search this channel"
+                placeholder={t("chat.mobile.finder.placeholder")}
                 placeholderTextColor={colors.faint}
                 style={styles.searchInput}
                 autoFocus
@@ -160,10 +163,10 @@ export function ChannelFinderSheet({
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.rowHead} numberOfLines={1}>
                     {item.username}
-                    <Text style={styles.rowTime}>  {new Date(item.timestamp).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</Text>
+                    <Text style={styles.rowTime}>  {new Date(item.timestamp).toLocaleString(dateLocale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</Text>
                   </Text>
                   <Text style={styles.rowText} numberOfLines={3}>
-                    {item.text || item.attachment?.name || "Attachment"}
+                    {item.text || item.attachment?.name || t("chat.actions.attachment.fallbackType")}
                   </Text>
                 </View>
               </Pressable>

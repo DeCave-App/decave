@@ -1,5 +1,7 @@
 import type { IconName } from "../../components/Icon";
-/* Home widget catalogue, presets and legacy-layout migration (pure data). */
+import { i18next } from "../../i18n/index.ts";
+/* Home widget catalogue, presets and legacy-layout migration (pure data).
+   Titles, descriptions and labels are getters, so they read in the current UI language. */
 
 export type HomeWidgetId =
   | "jumpBack"
@@ -31,16 +33,26 @@ export type HomeWidgetDefinition = {
 
 export const HOME_WIDGET_SIZES: readonly HomeWidgetSize[] = ["small", "medium", "wide"];
 export const HOME_WIDGET_SIZE_LABELS: Record<HomeWidgetSize, string> = {
-  small: "Small",
-  medium: "Medium",
-  wide: "Wide",
+  get small() {
+    return i18next.t("chat.home.size.small");
+  },
+  get medium() {
+    return i18next.t("chat.home.size.medium");
+  },
+  get wide() {
+    return i18next.t("chat.home.size.wide");
+  },
 };
 
 export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   {
     id: "jumpBack",
-    title: "Jump back in",
-    description: "Resume your last room, voice call and quick actions",
+    get title() {
+      return i18next.t("chat.home.widget.jumpBack.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.jumpBack.description");
+    },
     icon: "zap",
     category: "Personal",
     defaultSize: "wide",
@@ -48,8 +60,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "stats",
-    title: "At a glance",
-    description: "Friends online, people in voice, Hubs and unread DMs",
+    get title() {
+      return i18next.t("chat.home.widget.stats.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.stats.description");
+    },
     icon: "bar-chart",
     category: "Personal",
     defaultSize: "wide",
@@ -57,8 +73,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "friendsOnline",
-    title: "Friends online",
-    description: "Who is online and what they're playing",
+    get title() {
+      return i18next.t("chat.home.widget.friendsOnline.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.friendsOnline.description");
+    },
     icon: "users",
     category: "Social",
     defaultSize: "medium",
@@ -66,8 +86,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "voiceRooms",
-    title: "Voice rooms",
-    description: "Join voice rooms across your Hubs",
+    get title() {
+      return i18next.t("chat.home.widget.voiceRooms.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.voiceRooms.description");
+    },
     icon: "mic",
     category: "Voice",
     defaultSize: "medium",
@@ -75,8 +99,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "events",
-    title: "Upcoming events",
-    description: "Scheduled sessions from your Hubs",
+    get title() {
+      return i18next.t("chat.home.widget.events.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.events.description");
+    },
     icon: "calendar",
     category: "Hubs",
     defaultSize: "medium",
@@ -84,8 +112,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "hubs",
-    title: "Your Hubs",
-    description: "Fast access to your communities",
+    get title() {
+      return i18next.t("chat.home.widget.hubs.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.hubs.description");
+    },
     icon: "castle",
     category: "Hubs",
     defaultSize: "medium",
@@ -93,8 +125,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "messages",
-    title: "Messages",
-    description: "Jump back into private chats",
+    get title() {
+      return i18next.t("chat.home.widget.messages.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.messages.description");
+    },
     icon: "mail",
     category: "Social",
     defaultSize: "medium",
@@ -102,8 +138,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "nowPlaying",
-    title: "Now playing",
-    description: "Your detected game and session time",
+    get title() {
+      return i18next.t("chat.home.widget.nowPlaying.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.nowPlaying.description");
+    },
     icon: "gamepad",
     category: "Gaming",
     defaultSize: "medium",
@@ -111,8 +151,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "quickLinks",
-    title: "Quick links",
-    description: "Shortcuts to your favorite websites",
+    get title() {
+      return i18next.t("chat.home.widget.quickLinks.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.quickLinks.description");
+    },
     icon: "link",
     category: "Personal",
     defaultSize: "wide",
@@ -120,8 +164,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "profile",
-    title: "Profile",
-    description: "Your presence at a glance",
+    get title() {
+      return i18next.t("chat.home.widget.profile.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.profile.description");
+    },
     icon: "id-card",
     category: "Personal",
     defaultSize: "small",
@@ -129,8 +177,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "clock",
-    title: "Clock",
-    description: "Local time and date",
+    get title() {
+      return i18next.t("chat.home.widget.clock.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.clock.description");
+    },
     icon: "clock",
     category: "Personal",
     defaultSize: "small",
@@ -138,8 +190,12 @@ export const HOME_WIDGET_DEFINITIONS: readonly HomeWidgetDefinition[] = [
   },
   {
     id: "notes",
-    title: "Notes",
-    description: "A private scratchpad on this device",
+    get title() {
+      return i18next.t("chat.home.widget.notes.title");
+    },
+    get description() {
+      return i18next.t("chat.home.widget.notes.description");
+    },
     icon: "note",
     category: "Personal",
     defaultSize: "medium",
@@ -159,8 +215,12 @@ export const HOME_PRESETS: Record<
   { label: string; description: string; layout: readonly HomeWidgetConfig[] }
 > = {
   gaming: {
-    label: "Gaming",
-    description: "Now playing, voice and events up front",
+    get label() {
+      return i18next.t("chat.home.preset.gaming.label");
+    },
+    get description() {
+      return i18next.t("chat.home.preset.gaming.description");
+    },
     layout: [
       { id: "jumpBack", size: "wide" },
       { id: "stats", size: "wide" },
@@ -174,8 +234,12 @@ export const HOME_PRESETS: Record<
     ],
   },
   social: {
-    label: "Social",
-    description: "Friends, messages and your Hubs first",
+    get label() {
+      return i18next.t("chat.home.preset.social.label");
+    },
+    get description() {
+      return i18next.t("chat.home.preset.social.description");
+    },
     layout: [
       { id: "jumpBack", size: "wide" },
       { id: "friendsOnline", size: "medium" },
@@ -188,8 +252,12 @@ export const HOME_PRESETS: Record<
     ],
   },
   minimal: {
-    label: "Minimal",
-    description: "Just the essentials",
+    get label() {
+      return i18next.t("chat.home.preset.minimal.label");
+    },
+    get description() {
+      return i18next.t("chat.home.preset.minimal.description");
+    },
     layout: [
       { id: "jumpBack", size: "wide" },
       { id: "stats", size: "wide" },

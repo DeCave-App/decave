@@ -1,5 +1,8 @@
 // A Hub's home page, wired to rooms, voice, events, the setup checklist and unread state.
 
+import { hubRoleName } from "./roleLabels";
+import { hubCategoryText } from "../../i18n/hubCategory";
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction, MutableRefObject, JSX } from "react";
 import { HubSetupChecklist } from "../../features/hub-home/HubOwnerTools";
 import { hubSetupSteps } from "../../features/hub-home/hubSetup";
@@ -78,6 +81,7 @@ export function HubHomePanel({
   hubHomeCatchUp,
   hubHomeMembers,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <HubHome
       name={currentServer.name}
@@ -89,13 +93,15 @@ export function HubHomePanel({
       }
       accent={currentServer.accent}
       description={currentServer.description}
-      category={currentServer.category}
+      category={currentServer.category ? hubCategoryText(currentServer.category) : currentServer.category}
       tags={currentServer.tags ?? []}
       visibility={currentServer.visibility}
       memberCount={currentServer.memberCount ?? null}
       onlineCount={currentServer.onlineCount ?? null}
       membershipPrivate={Boolean(currentServer.membershipPrivate) && !isCurrentServerOwner}
-      roleLabel={currentServer.myRole ? `You are ${currentServer.myRole}` : undefined}
+      roleLabel={
+        currentServer.myRole ? t("hub.home.roleLabel", { role: hubRoleName(currentServer.myRole) }) : undefined
+      }
       home={currentHubHome}
       canCustomize={currentServer.myRole === "owner" || currentServer.myRole === "admin"}
       onSaveHome={(config) => saveHubHome(currentServer.id, config)}

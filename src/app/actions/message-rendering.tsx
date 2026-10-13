@@ -23,6 +23,8 @@ import type {
   DirectMessage,
   GroupChatMessage,
 } from "../types";
+import { i18next } from "../../i18n/index.ts";
+import { noticeText } from "../../i18n/notice.ts";
 import { HTTP_URL } from "../env";
 import {
   POLL_PREFIX,
@@ -34,11 +36,13 @@ import {
   parsePrefixedJson,
   parseHubCalendarEvent,
   giphyMediaProxyUrl,
-  dmPreviewText,
 } from "../message-payloads";
+import { translatedDmPreview as dmPreviewText } from "../../i18n/dmPreview.ts";
 import type { ComposerState } from "../state/composer";
 import { attachmentDecrypter } from "../../e2ee/dm-e2ee-client";
 import { unreadableMessageText } from "../../e2ee/DmEncryptionUi";
+import { isEmojiOnly } from "../../features/settings/chatPrefs";
+import { ChatAnimatedImage, LargeEmoji } from "../../features/settings/ChatMedia";
 
 export type MessageRenderingDeps = {
   currentUser: AccountUser;
@@ -97,6 +101,12 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
   };
 
   const renderRichMessageText = (text: string) => {
+    const parts = renderRichTokens(text);
+    // Settings → Chat: a message of one to three emoji renders large.
+    return isEmojiOnly(text) ? [<LargeEmoji key="large-emoji">{parts}</LargeEmoji>] : parts;
+  };
+
+  const renderRichTokens = (text: string) => {
     const tokens = text.split(/(\s+|:[\p{L}\p{N}_-]+:)/gu);
     return tokens.map((token, index) => {
       const customName = token.startsWith(":") && token.endsWith(":") ? token.slice(1, -1) : "";
@@ -105,7 +115,7 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
         : undefined;
       if (asset)
         return (
-          <img
+          <ChatAnimatedImage
             key={index}
             className="dc-inline-emote"
             src={`${HTTP_URL}${asset.url}`}
@@ -174,7 +184,7 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
     const total = poll.options.reduce((sum, _option, index) => sum + (reactions?.[`poll_${index}`]?.length ?? 0), 0);
     return (
       <div className="dc-poll-card">
-        <div className="dc-poll-kicker">POLL</div>
+        <div className="dc-poll-kicker">{i18next.t("chat.actions.poll.kicker")}</div>
         <strong>{poll.question}</strong>
         <div className="dc-poll-options">
           {poll.options.map((option, index) => {
@@ -192,9 +202,7 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
             );
           })}
         </div>
-        <small>
-          {total} vote{total === 1 ? "" : "s"}
-        </small>
+        <small>{i18next.t("chat.actions.poll.votes", { count: total })}</small>
       </div>
     );
   };
@@ -210,7 +218,7 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
         contentType: attachment.mimeType,
       });
     } catch (error) {
-      setAttachmentError(error instanceof Error ? error.message : "Could not download attachment.");
+      setAttachmentError(error instanceof Error ? error.message : i18next.t("chat.actions.message.downloadFailed"));
     }
   };
 
@@ -219,8 +227,18 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
     const gifSrc = giphyMediaProxyUrl(gif?.url);
     if (gif && gifSrc)
       return (
-        <a className="dc-gif-message" data-alt={gif.title || "GIF"} href={gifSrc} target="_blank" rel="noreferrer">
-          <img src={gifSrc} alt={gif.title || "GIF"} loading="lazy" />
+        <a
+          className="dc-gif-message"
+          data-alt={gif.title || i18next.t("chat.actions.gif.fallbackTitle")}
+          href={gifSrc}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <ChatAnimatedImage
+            src={gifSrc}
+            alt={gif.title || i18next.t("chat.actions.gif.fallbackTitle")}
+            loading="lazy"
+          />
         </a>
       );
     const poll = parsePrefixedJson<PollPayload>(item.text, POLL_PREFIX);
@@ -239,8 +257,10 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
           description={event.description}
           inviteLabel={
             event.inviteMode === "all"
-              ? "Invited: All Hub members"
-              : `Invited: ${event.invitedUsernames.join(", ") || "Selected members"}`
+              ? i18next.t("chat.actions.event.invitedAll")
+              : i18next.t("chat.actions.event.invited", {
+                  names: event.invitedUsernames.join(", ") || i18next.t("chat.actions.event.selectedMembers"),
+                })
           }
           event={apiEvent}
           api={hubEventsApi}
@@ -287,11 +307,14 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
     if (sticker)
       return (
         <div className="dc-sticker-message">
-          <img src={`${HTTP_URL}${sticker.url}`} alt={sticker.name} />
+          <ChatAnimatedImage src={`${HTTP_URL}${sticker.url}`} alt={sticker.name} />
           <small>{sticker.name}</small>
         </div>
       );
-    const bot = parsePrefixedJson<{ botId: string; name: string; text: string }>(item.text, BOT_PREFIX);
+    const bot = parsePrefixedJson<{ botId: string; name: string; text: string; notice?: unknown }>(
+      item.text,
+      BOT_PREFIX,
+    );
     // Builder bots: the API adds `bot`, `card` and `privateNotice` to the message.
     // Bot posts that aren't bot-wrapped (forum posts, token-bot text) fall through
     // to the normal pipeline; the author row adds the BOT badge for those.
@@ -304,7 +327,8 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
           bot={builder.bot}
           card={builder.card}
           privateNotice={builder.privateNotice}
-          body={bot ? renderRichMessageText(bot.text) : null}
+          // Text DeCave wrote for the bot (usage hints, Twitch clips) in the reader's language.
+          body={bot ? renderRichMessageText(noticeText(bot.notice) ?? bot.text) : null}
           baseUrl={HTTP_URL}
           authorizedFetch={authorizedFetch}
           showHead={false}
@@ -313,7 +337,7 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
     if (bot)
       return (
         <div className="dc-bot-message">
-          <span>BOT</span>
+          <span>{i18next.t("chat.actions.message.botBadge")}</span>
           <strong>{bot.name}</strong>
           <p>{renderRichMessageText(bot.text)}</p>
         </div>
@@ -321,14 +345,14 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
     return (
       <>
         {renderRichMessageText(item.text)}
-        {item.editedAt ? <em className="chat-edited"> · edited</em> : null}
+        {item.editedAt ? <em className="chat-edited"> · {i18next.t("chat.actions.message.edited")}</em> : null}
       </>
     );
   };
 
   const replyPreviewText = (text: string) => {
     const preview = dmPreviewText(text).replace(/\s+/g, " ").trim();
-    if (!preview || preview.startsWith("__DECAVE_")) return "Message";
+    if (!preview || preview.startsWith("__DECAVE_")) return i18next.t("dm.preview.message");
     return preview.length > 96 ? `${preview.slice(0, 93)}…` : preview;
   };
 
@@ -351,8 +375,18 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
     const gifSrc = giphyMediaProxyUrl(gif?.url);
     if (gif && gifSrc)
       return (
-        <a className="dc-gif-message" data-alt={gif.title || "GIF"} href={gifSrc} target="_blank" rel="noreferrer">
-          <img src={gifSrc} alt={gif.title || "GIF"} loading="lazy" />
+        <a
+          className="dc-gif-message"
+          data-alt={gif.title || i18next.t("chat.actions.gif.fallbackTitle")}
+          href={gifSrc}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <ChatAnimatedImage
+            src={gifSrc}
+            alt={gif.title || i18next.t("chat.actions.gif.fallbackTitle")}
+            loading="lazy"
+          />
         </a>
       );
     const poll = parsePrefixedJson<PollPayload>(message.text, POLL_PREFIX);
@@ -377,8 +411,13 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
           <span>
             <strong>{attachment.name}</strong>
             <small>
-              {attachment.mimeType || "Attachment"} · {(attachment.size / 1024 / 1024).toFixed(2)} MB ·{" "}
-              {attachment.fileKey ? "End-to-end encrypted" : "Authenticated legacy download"}
+              {i18next.t("chat.actions.attachment.details", {
+                type: attachment.mimeType || i18next.t("chat.actions.attachment.fallbackType"),
+                size: (attachment.size / 1024 / 1024).toFixed(2),
+                security: attachment.fileKey
+                  ? i18next.t("chat.actions.attachment.encrypted")
+                  : i18next.t("chat.actions.attachment.legacy"),
+              })}
             </small>
           </span>
         </button>
@@ -410,8 +449,14 @@ export const renderGroupMessageBody = (message: GroupChatMessage) => {
   const gifSrc = giphyMediaProxyUrl(gif?.url);
   if (gif && gifSrc)
     return (
-      <a className="dc-gif-message" data-alt={gif.title || "GIF"} href={gifSrc} target="_blank" rel="noreferrer">
-        <img src={gifSrc} alt={gif.title || "GIF"} loading="lazy" />
+      <a
+        className="dc-gif-message"
+        data-alt={gif.title || i18next.t("chat.actions.gif.fallbackTitle")}
+        href={gifSrc}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <ChatAnimatedImage src={gifSrc} alt={gif.title || i18next.t("chat.actions.gif.fallbackTitle")} loading="lazy" />
       </a>
     );
   return message.text;

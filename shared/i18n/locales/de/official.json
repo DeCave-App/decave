@@ -1,0 +1,50 @@
+{
+  "rules": {
+    "communityRules": {
+      "title": "DeCave-Community-Regeln",
+      "body": "Diese Regeln gelten überall auf DeCave: in Hubs, DMs, Gruppenchats, im Voice-Chat und bei Find a Squad.\n\n1. **Sei respektvoll.** Keine Belästigung, kein Mobbing, keine Drohungen oder gezielten Beleidigungen.\n2. **Keine Hassrede.** Nichts, was Menschen wegen ihrer Herkunft, Ethnie, Religion, ihres Geschlechts, ihrer sexuellen Orientierung, Behinderung oder Nationalität angreift.\n3. **Öffentliche Bereiche bleiben jugendfrei.** Keine sexuellen, blutigen oder schockierenden Inhalte in Hubs, die das nicht ausdrücklich erlauben. Niemals etwas mit Minderjährigen.\n4. **Schütze die Privatsphäre.** Teile keine persönlichen Daten anderer (echter Name, Adresse, Fotos, Accounts) ohne deren Zustimmung.\n5. **Keine Cheats, Betrügereien oder Exploits.** Kein Verkauf von Cheats, kein Account-Handel, keine Phishing-Links, keine Fake-Giveaways und kein Ausgeben als DeCave-Team.\n6. **Kein Spam.** Keine Massen-DMs, wiederholten Nachrichten, ungefragte Werbung oder Eigenwerbung außerhalb von Bereichen, die das erlauben.\n7. **Halte dich an die Regeln jedes Hubs.** Hub-Eigentümer können für ihre Community strengere Regeln festlegen.\n8. **Halte dich an das Gesetz** und die [Nutzungsbedingungen](https://de-cave.com/terms).\n\n**Durchsetzung:** Je nach Schwere kann ein Verstoß gegen diese Regeln zu einer Verwarnung, vorübergehenden Einschränkungen, dem Entfernen aus einem Hub oder einem dauerhaften Bann auf DeCave führen.\n\n**Problem melden:** Klick mit der rechten Maustaste auf eine Nachricht oder ein Profil und wähle **Melden**. Meldungen sind privat und die Person erfährt nie, wer sie gemeldet hat."
+    }
+  },
+  "faq": {
+    "private": {
+      "title": "Ist dieser Hub privat? Können andere mich hier sehen?",
+      "body": "Ja, er ist privat. Alle treten DeCave Official automatisch bei, aber Mitglieder können sich gegenseitig nicht sehen: Mitgliederliste, Mitgliederzahlen und Online-Status sind ausgeblendet, und nur das DeCave-Team kann posten. Niemand kann erkennen, dass du hier bist."
+    },
+    "profile": {
+      "title": "Wie richte ich mein Profil ein?",
+      "body": "Klick unten links auf deinen Avatar → **Profil**. Du kannst ein Bild, ein Banner, eine Bio und die Spiele hinzufügen, die du spielst."
+    },
+    "friends": {
+      "title": "Wie füge ich Freunde hinzu?",
+      "body": "Öffne **Freunde**, wähle **Freund hinzufügen** und such nach dem Benutzernamen. Sobald die Person annimmt, könnt ihr chatten und telefonieren, und du kannst sie in Hubs einladen."
+    },
+    "findSquad": {
+      "title": "Was ist Find a Squad?",
+      "body": "Wähl ein Spiel und was du suchst, und DeCave bringt dich mit Spielern zusammen, die dasselbe suchen. Bei einem Match bekommt ihr einen Squad-Raum zum gemeinsamen Chatten und Voice-Chat."
+    },
+    "hubs": {
+      "title": "Wie trete ich einem Hub bei oder erstelle einen?",
+      "body": "Nutze den **+**-Button in der oberen Leiste. Du kannst öffentliche Hubs durchstöbern, über einen Einladungslink beitreten oder deinen eigenen aus einer Vorlage erstellen (auch mit dem Streamer-Layout)."
+    },
+    "voiceRooms": {
+      "title": "Wie funktionieren Sprachräume?",
+      "body": "Klick in einem beliebigen Hub auf einen Sprachraum, um beizutreten. Über die Voice-Steuerung kannst du dich stummschalten, Ein- und Ausgabe deaktivieren, deinen Bildschirm teilen und dein Eingabegerät wechseln. Push-to-Talk gibt es in der Desktop-App."
+    },
+    "desktopApp": {
+      "title": "Soll ich die Desktop-App nutzen?",
+      "body": "Sie ist optional, bietet aber Spielerkennung, Desktop-Benachrichtigungen, globales Push-to-Talk und automatische Updates. Lade sie für Windows oder Mac auf [de-cave.com](https://de-cave.com) herunter."
+    },
+    "report": {
+      "title": "Wie melde ich jemanden?",
+      "body": "Klick mit der rechten Maustaste auf die Nachricht oder das Profil der Person und wähle **Melden**. Meldungen sind privat."
+    },
+    "whatsNew": {
+      "title": "Wo sehe ich, was neu ist?",
+      "body": "Lies **#announcements** für News und **#patch-notes** für jedes Update."
+    },
+    "deleteAccount": {
+      "title": "Wie lösche ich meinen Account oder meine Daten?",
+      "body": "Geh zu **Einstellungen → Account**. In der [Datenschutzerklärung](https://de-cave.com/privacy) erfährst du, was gespeichert wird und wie es gelöscht wird."
+    }
+  }
+}

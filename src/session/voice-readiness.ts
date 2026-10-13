@@ -1,3 +1,4 @@
+import { i18next } from "../i18n/index.ts";
 export type VoicePermissionState = "granted" | "denied" | "prompt" | "unknown";
 export type VoiceProcessingMode = "standard" | "high-quality" | "low-cpu";
 export type VoiceTestVariant = "raw" | "processed";
@@ -114,13 +115,13 @@ export async function inspectVoiceReadiness(environment: VoiceReadinessEnvironme
     .filter((device) => device.kind === "audioinput")
     .map((device, index) => ({
       id: device.deviceId || `audioinput-${index}`,
-      label: device.label || `Input ${index + 1}`,
+      label: device.label || i18next.t("chat.session.voice.inputFallback", { number: index + 1 }),
     }));
   const outputDevices = rawDevices
     .filter((device) => device.kind === "audiooutput")
     .map((device, index) => ({
       id: device.deviceId || `audiooutput-${index}`,
-      label: device.label || `Output ${index + 1}`,
+      label: device.label || i18next.t("chat.session.voice.outputFallback", { number: index + 1 }),
     }));
   const inputPermission = environment.microphonePermission ?? (await permissionFromNavigator());
   const sinkSelectionSupported = environment.outputSelectionSupported ?? sinkSupportedFromBrowser();
@@ -159,25 +160,34 @@ export async function inspectVoiceReadiness(environment: VoiceReadinessEnvironme
 
 export function voicePermissionLabel(permission: VoicePermissionState): string {
   return permission === "granted"
-    ? "Microphone allowed"
+    ? i18next.t("chat.session.voice.permissionGranted")
     : permission === "denied"
-      ? "Microphone blocked"
+      ? i18next.t("chat.session.voice.permissionDenied")
       : permission === "prompt"
-        ? "Microphone permission needed"
-        : "Microphone permission unknown";
+        ? i18next.t("chat.session.voice.permissionPrompt")
+        : i18next.t("chat.session.voice.permissionUnknown");
 }
 
 export function voiceProcessingModeLabel(mode: VoiceProcessingMode): string {
-  return mode === "high-quality" ? "High quality" : mode === "low-cpu" ? "Low CPU" : "Standard";
+  return mode === "high-quality"
+    ? i18next.t("chat.session.voice.modeHighQuality")
+    : mode === "low-cpu"
+      ? i18next.t("chat.session.voice.modeLowCpu")
+      : i18next.t("chat.session.voice.modeStandard");
 }
 
 export function summarizeVoiceTest(result: VoiceLocalTestResult): string {
-  const variant = result.variant === "raw" ? "Raw input" : "Processed input";
+  const variant =
+    result.variant === "raw"
+      ? i18next.t("chat.session.voice.rawInput")
+      : i18next.t("chat.session.voice.processedInput");
   const duration = Number.isFinite(result.durationMs)
-    ? `${Math.max(0, Math.round(result.durationMs))} ms`
-    : "duration unavailable";
+    ? i18next.t("chat.session.voice.durationMs", { ms: Math.max(0, Math.round(result.durationMs)) })
+    : i18next.t("chat.session.voice.durationUnavailable");
   const activity = Number.isFinite(result.transmittedActivity)
-    ? `${Math.round(Math.max(0, Math.min(1, result.transmittedActivity)) * 100)}% activity`
-    : "activity unavailable";
-  return `${variant}: ${duration} measured · ${activity}`;
+    ? i18next.t("chat.session.voice.activityPercent", {
+        percent: Math.round(Math.max(0, Math.min(1, result.transmittedActivity)) * 100),
+      })
+    : i18next.t("chat.session.voice.activityUnavailable");
+  return i18next.t("chat.session.voice.testSummary", { variant, duration, activity });
 }

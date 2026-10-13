@@ -11,8 +11,10 @@ import {
 import { router } from "expo-router";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
 
 export default function MfaScreen() {
+  const { t } = useTranslation(["auth", "common"]);
   const { pendingMfa, pendingMfaKind, completeMfa } = useSession();
   const isUser = pendingMfaKind === "user";
   const [code, setCode] = useState("");
@@ -49,12 +51,12 @@ export default function MfaScreen() {
             <Text style={styles.brandText}>DeCave</Text>
           </View>
 
-          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{isUser ? "TWO-FACTOR" : "PLATFORM OWNER"}</Text>
-          <Text style={styles.title}>{isUser ? "Two-factor check" : "Verify owner access"}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{isUser ? t("auth.mobile.mfa.twoFactor") : t("auth.mobile.mfa.platformOwner")}</Text>
+          <Text style={styles.title}>{isUser ? t("common.auth.titleTwoFactor") : t("common.auth.titleOwner")}</Text>
           <Text style={styles.subtitle}>
             {isUser
-              ? "Enter the 6-digit code from your authenticator app, or one of your recovery codes."
-              : "Enter your 6-digit authenticator code or a one-time recovery code."}
+              ? t("common.auth.leadTwoFactor")
+              : t("auth.mobile.mfa.enterYour6DigitAuthenticator")}
           </Text>
 
           {!!error && <Text style={styles.error}>{error}</Text>}
@@ -62,7 +64,7 @@ export default function MfaScreen() {
           <TextInput
             value={code}
             onChangeText={(value) => setCode(value.toUpperCase().replace(/\s/g, "").slice(0, 19))}
-            placeholder="Authenticator or recovery code"
+            placeholder={t("common.account.mfaCodeLabel")}
             placeholderTextColor={colors.faint}
             autoCapitalize="characters"
             autoCorrect={false}
@@ -74,7 +76,7 @@ export default function MfaScreen() {
           />
 
           <Pressable accessibilityRole="button" style={styles.button} onPress={() => void submit()} disabled={busy}>
-            <Text style={styles.buttonText}>{busy ? "Checking…" : isUser ? "Continue" : "Verify & enter"}</Text>
+            <Text style={styles.buttonText}>{busy ? t("common.status.checking") : isUser ? t("common.actions.continue") : t("auth.mobile.mfa.verifyEnter")}</Text>
           </Pressable>
         </View>
       </ScrollView>

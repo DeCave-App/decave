@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type PropsWithChildren } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { InShellContext } from "@/src/components/Screen";
@@ -18,18 +19,18 @@ const HUB_TINTS = ["#7C3AED", "#DB2777", "#0891B2", "#16A34A", "#EA580C", "#4F46
 
 type RailItem = {
   key: string;
-  label: string;
+  labelKey: "common.rail.home" | "common.rail.dms" | "common.app.commandHubs" | "common.rail.squad" | "common.rail.friends";
   icon: string;
   activeIcon: string;
   href: string;
 };
 
 const RAIL: RailItem[] = [
-  { key: "/home", label: "Home", icon: "home-outline", activeIcon: "home", href: "/home" },
-  { key: "/dms", label: "DMs", icon: "chatbubble-outline", activeIcon: "chatbubble", href: "/dms" },
-  { key: "/hubs", label: "Hubs", icon: "grid-outline", activeIcon: "grid", href: "/hubs" },
-  { key: "/squad-finder", label: "Squad", icon: "game-controller-outline", activeIcon: "game-controller", href: "/squad-finder" },
-  { key: "/friends", label: "Friends", icon: "people-outline", activeIcon: "people", href: "/friends" },
+  { key: "/home", labelKey: "common.rail.home", icon: "home-outline", activeIcon: "home", href: "/home" },
+  { key: "/dms", labelKey: "common.rail.dms", icon: "chatbubble-outline", activeIcon: "chatbubble", href: "/dms" },
+  { key: "/hubs", labelKey: "common.app.commandHubs", icon: "grid-outline", activeIcon: "grid", href: "/hubs" },
+  { key: "/squad-finder", labelKey: "common.rail.squad", icon: "game-controller-outline", activeIcon: "game-controller", href: "/squad-finder" },
+  { key: "/friends", labelKey: "common.rail.friends", icon: "people-outline", activeIcon: "people", href: "/friends" },
 ];
 
 function initials(name: string): string {
@@ -43,6 +44,7 @@ function initials(name: string): string {
  * connected, and an iOS-style tab bar at the bottom.
  */
 export function LoungeShell({ children }: PropsWithChildren) {
+  const { t } = useTranslation(["common", "hub"]);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const { token, user } = useSession();
@@ -70,8 +72,8 @@ export function LoungeShell({ children }: PropsWithChildren) {
       const channel = hub.channels?.find((item) => item.id === voiceChannelId);
       if (channel) return `${channel.name} · ${hub.name}`;
     }
-    return "Voice room";
-  }, [hubs, voiceChannelId]);
+    return t("hub.sidebar.voiceRoom");
+  }, [hubs, voiceChannelId, t]);
 
   const openHubId = /^\/hub\/(\d+)/.exec(pathname)?.[1];
   const activeRail = openHubId ? "/hubs" : pathname;
@@ -82,12 +84,12 @@ export function LoungeShell({ children }: PropsWithChildren) {
       <View pointerEvents="none" style={styles.glow} />
 
       <View style={styles.header}>
-        <Image source={require("../../assets/decave-mark.png")} style={styles.logo} accessibilityLabel="DeCave logo" />
+        <Image source={require("../../assets/decave-mark.png")} style={styles.logo} accessibilityLabel={t("common.mobile.lounge.logo")} />
         <Text style={styles.brand}>DeCave</Text>
         <View style={{ flex: 1 }} />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Discover public Hubs"
+          accessibilityLabel={t("common.mobile.lounge.discover")}
           hitSlop={8}
           onPress={() => router.navigate("/hubs?mode=discover")}
           style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
@@ -96,7 +98,7 @@ export function LoungeShell({ children }: PropsWithChildren) {
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Your profile"
+          accessibilityLabel={t("common.topBar.profile")}
           accessibilityState={{ selected: pathname === "/profile" }}
           onPress={() => router.navigate("/profile")}
           style={({ pressed }) => [
@@ -123,7 +125,7 @@ export function LoungeShell({ children }: PropsWithChildren) {
             <Pressable
               key={hub.id}
               accessibilityRole="button"
-              accessibilityLabel={`Open ${hub.name}`}
+              accessibilityLabel={t("common.mobile.lounge.openHub", { name: hub.name })}
               accessibilityState={{ selected: open }}
               onPress={() => {
                 if (open) return;
@@ -155,7 +157,7 @@ export function LoungeShell({ children }: PropsWithChildren) {
         })}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Add or join a Hub"
+          accessibilityLabel={t("common.mobile.lounge.addHub")}
           onPress={() => router.navigate("/hubs")}
           style={({ pressed }) => [styles.addPill, pressed && styles.pressed]}
         >
@@ -178,7 +180,7 @@ export function LoungeShell({ children }: PropsWithChildren) {
             <Pressable
               key={item.key}
               accessibilityRole="tab"
-              accessibilityLabel={item.label}
+              accessibilityLabel={t(item.labelKey)}
               accessibilityState={{ selected: active }}
               onPress={() => {
                 if (!active) tapHaptic();
@@ -194,7 +196,7 @@ export function LoungeShell({ children }: PropsWithChildren) {
                   </View>
                 )}
               </View>
-              <Text maxFontSizeMultiplier={1.3} style={[styles.tabLabel, active && styles.tabLabelActive]}>{item.label}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.tabLabel, active && styles.tabLabelActive]}>{t(item.labelKey)}</Text>
             </Pressable>
           );
         })}

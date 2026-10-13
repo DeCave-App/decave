@@ -1,5 +1,7 @@
 import type { HubEvent, HubEventRsvpStatus } from "../../../shared/hub-events";
 import type { AccountSessionGuard, AccountSessionSnapshot } from "../../app/account-session-guard";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorText } from "../shared/apiErrorText.ts";
 
 export type AuthorizedFetch = (url: string, init?: RequestInit) => Promise<Response>;
 export type EventsApiContext = {
@@ -15,7 +17,7 @@ export type EventsApiContext = {
 
 function assertCurrent(ctx: EventsApiContext): void {
   if (!ctx.sessionGuard.owns(ctx.sessionSnapshot) || (ctx.isScopeCurrent && !ctx.isScopeCurrent()))
-    throw new Error("This account or Hub access changed. Try again.");
+    throw new Error(i18next.t("events.api.accessChanged"));
 }
 
 export class HubEventApiError extends Error {
@@ -40,7 +42,7 @@ async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const data = (body && typeof body === "object" ? body : {}) as { error?: unknown; field?: unknown; code?: unknown };
     throw new HubEventApiError(
-      typeof data.error === "string" ? data.error : `Request failed (${response.status})`,
+      apiErrorText(data, i18next.t("events.api.requestFailed", { status: response.status })),
       response.status,
       typeof data.field === "string" ? data.field : undefined,
       typeof data.code === "string" ? data.code : undefined,
@@ -165,7 +167,7 @@ export async function downloadHubEventIcs(ctx: EventsApiContext, hubId: number, 
   assertCurrent(ctx);
   const response = await ctx.authorizedFetch(`${base(ctx, hubId)}/${encodeURIComponent(eventId)}/ics`);
   assertCurrent(ctx);
-  if (!response.ok) throw new HubEventApiError("Could not download the calendar file.", response.status);
+  if (!response.ok) throw new HubEventApiError(i18next.t("events.api.icsFailed"), response.status);
   const blob = await response.blob();
   assertCurrent(ctx);
   saveBlob(blob, icsFileName(title));

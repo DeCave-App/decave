@@ -40,7 +40,9 @@ import { MessagePreview } from "@/src/components/MessagePreview";
 import { ComposerMediaSheet } from "@/src/components/ComposerMediaSheet";
 import { ChannelFinderSheet } from "@/src/components/ChannelFinderSheet";
 import { BotBadge, BotMessage } from "@/src/components/channel/BotMessage";
-import { botMessageText, botRenderMode, messageBotFields } from "../../../shared/bots/card-view";
+import { botMessageNotice, botMessageText, botRenderMode, messageBotFields } from "../../../shared/bots/card-view";
+import { noticeText } from "@/src/lib/server-text";
+import { useTranslation } from "react-i18next";
 
 type ChannelParams = {
   id: string;
@@ -65,10 +67,11 @@ export default function ChannelScreen() {
  * the hub screen on iPad (embedded: no back button, the room list stays put).
  */
 export function ChannelView({ params, embedded = false }: { params: ChannelParams; embedded?: boolean }) {
+  const { t } = useTranslation(["chat", "common"]);
 
   const channelId = Number(params.id);
   const hubId = Number(params.hubId ?? 0);
-  const name = typeof params.name === "string" ? params.name : "Room";
+  const name = typeof params.name === "string" ? params.name : t("chat.mobile.channel.roomFallback");
   const isVoiceRoom = params.voice === "1";
   const isForum = params.forum === "1";
 
@@ -125,7 +128,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
         platform: Platform.OS,
       });
     } catch (error) {
-      Alert.alert("Could not download attachment", error instanceof LegacyAttachmentError ? error.message : "The authenticated attachment download failed.");
+      Alert.alert(t("chat.mobile.channel.couldNotDownloadAttachment"), error instanceof LegacyAttachmentError ? error.message : t("chat.mobile.channel.theAuthenticatedAttachmentDownloadFailed"));
     }
   };
 
@@ -152,7 +155,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
       setLoadError("");
     } catch (error) {
       if (generation !== loadGenerationRef.current) return;
-      setLoadError(error instanceof Error ? error.message : "Could not load messages.");
+      setLoadError(error instanceof Error ? error.message : t("chat.mobile.channel.couldNotLoadMessages"));
     } finally {
       if (generation === loadGenerationRef.current) setLoaded(true);
     }
@@ -276,13 +279,13 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
       const attachment = await uploadAsset({ kind: "channel", channelId }, asset, token);
       const text = input.trim();
       if (!send({ type: "CHAT_MESSAGE", text, channelId, replyToId: replyingTo?.id ?? null, attachment })) {
-        throw new Error("Realtime is reconnecting. Try again in a moment.");
+        throw new Error(t("chat.mobile.channel.realtimeIsReconnectingTryAgain"));
       }
       successHaptic();
       setInput("");
       setReplyingTo(null);
     } catch (error) {
-      Alert.alert("Could not send attachment", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(t("chat.mobile.channel.couldNotSendAttachment"), error instanceof Error ? error.message : t("chat.mobile.channel.pleaseTryAgain"));
     } finally {
       setUploading(false);
     }
@@ -296,7 +299,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
       impactHaptic();
       setReplyingTo(null);
     } else {
-      Alert.alert("Could not send GIF", "Realtime is reconnecting. Try again in a moment.");
+      Alert.alert(t("chat.mobile.channel.couldNotSendGif"), t("chat.mobile.channel.realtimeIsReconnectingTryAgain"));
     }
   };
 
@@ -313,7 +316,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
       successHaptic();
     } catch (error) {
       errorHaptic();
-      Alert.alert(message.pinned ? "Could not unpin message" : "Could not pin message", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(message.pinned ? t("chat.mobile.channel.couldNotUnpinMessage") : t("chat.mobile.channel.couldNotPinMessage"), error instanceof Error ? error.message : t("chat.mobile.channel.pleaseTryAgain"));
     }
   };
 
@@ -321,7 +324,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
     setFinder(null);
     const index = messages.findIndex((item) => item.id === message.id);
     if (index < 0) {
-      Alert.alert("Older message", "This message is further back than the loaded history.");
+      Alert.alert(t("chat.mobile.channel.olderMessage"), t("chat.mobile.channel.thisMessageIsFurtherBack"));
       return;
     }
     setHighlightId(message.id);
@@ -342,7 +345,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
       if (data.message) setMessages((current) => current.map((item) => item.id === data.message!.id ? data.message! : item));
       else void load();
     } catch (error) {
-      Alert.alert("Could not add reaction", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(t("chat.mobile.channel.couldNotAddReaction"), error instanceof Error ? error.message : t("chat.mobile.channel.pleaseTryAgain"));
     }
   };
 
@@ -366,16 +369,16 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
 
   const deleteMessage = (message: ChatMessage) => {
     if (message.userId !== user?.id) return;
-    Alert.alert("Delete message?", "This removes the message for everyone in this room.", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => void (async () => {
+    Alert.alert(t("chat.mobile.channel.deleteMessage"), t("chat.mobile.channel.thisRemovesTheMessageFor"), [
+        { text: t("common.actions.cancel"), style: "cancel" },
+        { text: t("common.actions.delete"), style: "destructive", onPress: () => void (async () => {
           try {
             if (!token) return;
             await apiJson(`/api/channels/${channelId}/messages/${encodeURIComponent(message.id)}`, { method: "DELETE" }, token);
           setMessages((current) => current.filter((item) => item.id !== message.id));
           setActionMessage(null);
         } catch (error) {
-          Alert.alert("Could not delete message", error instanceof Error ? error.message : "Please try again.");
+          Alert.alert(t("chat.mobile.channel.couldNotDeleteMessage"), error instanceof Error ? error.message : t("chat.mobile.channel.pleaseTryAgain"));
         }
       })() },
     ]);
@@ -396,8 +399,8 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
       restoreDraft();
     } catch (error) {
       Alert.alert(
-        "Could not edit message",
-        error instanceof Error ? error.message : "The message was not changed.",
+        t("chat.mobile.channel.couldNotEditMessage"),
+        error instanceof Error ? error.message : t("chat.mobile.channel.theMessageWasNotChanged"),
       );
     }
   };
@@ -429,7 +432,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
       <KeyboardAware style={styles.flex}>
         <View style={styles.top}>
           {!embedded && (
-            <Pressable accessibilityRole="button" accessibilityLabel="Back"
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")}
               style={styles.backButton}
               onPress={() => router.back()}
               hitSlop={8}
@@ -467,7 +470,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                     styles.statusWaiting,
                 ]}
               >
-                {connectionState === "connected" ? "Live" : "Connecting…"}
+                {connectionState === "connected" ? t("chat.mobile.channel.live") : t("chat.mobile.channel.connecting")}
               </Text>
             </View>
           </View>
@@ -476,7 +479,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
             style={styles.hashBadge}
             onPress={() => setFinder("search")}
             accessibilityRole="button"
-            accessibilityLabel="Search messages"
+            accessibilityLabel={t("chat.mobile.channel.searchMessages")}
             hitSlop={6}
           >
             <Ionicons name="search" size={16} color={colors.cyan} />
@@ -485,7 +488,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
             style={styles.hashBadge}
             onPress={() => setFinder("pins")}
             accessibilityRole="button"
-            accessibilityLabel="Pinned messages"
+            accessibilityLabel={t("chat.mobile.channel.pinnedMessages")}
             hitSlop={6}
           >
             <Ionicons name="pin-outline" size={16} color={colors.cyan} />
@@ -495,7 +498,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
             <Pressable accessibilityRole="button"
               style={styles.hashBadge}
               onPress={() => router.replace(`/voice/${channelId}?hubId=${hubId}&name=${encodeURIComponent(name)}${params.squad === "1" ? "&squad=1" : ""}`)}
-              accessibilityLabel="Return to voice controls"
+              accessibilityLabel={t("chat.mobile.channel.returnToVoiceControls")}
             >
               <Ionicons name="volume-high" size={16} color={colors.cyan} />
             </Pressable>
@@ -550,13 +553,13 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                   color={colors.cyan}
                 />
               </View>
-              <Text style={styles.emptyTitle}>Welcome to {isVoiceRoom ? "" : "#"}{name}</Text>
+              <Text style={styles.emptyTitle}>{isVoiceRoom ? t("chat.mobile.channel.welcomeVoice", { name }) : t("chat.mobile.channel.welcomeText", { name })}</Text>
               <Text style={styles.emptyText}>
                 {isVoiceRoom
-                  ? "Voice and messages live together in this room."
+                  ? t("chat.mobile.channel.voiceAndMessagesLiveTogether")
                   : isForum
-                    ? "No posts in this forum yet."
-                    : "This is the beginning of this text room."}
+                    ? t("chat.mobile.channel.noPostsInThisForum")
+                    : t("chat.mobile.channel.thisIsTheBeginningOf")}
               </Text>
             </View>
           }
@@ -605,7 +608,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                   ]}
                   onLongPress={() => { tapHaptic(); setActionMessage(item); }}
                   delayLongPress={350}
-                  accessibilityHint="Long press for message actions"
+                  accessibilityHint={t("chat.mobile.channel.longPressForMessageActions")}
                 >
                   {!grouped && author ? (
                     <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: colors.wash }}>
@@ -659,7 +662,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                     {replyTarget && (
                       <View style={styles.replyReference}>
                         <Text style={styles.replyReferenceText} numberOfLines={1}>
-                          ↳ {messageBotFields(replyTarget).bot?.name ?? replyTarget.username}: {previewMessage(messagePreviewText(replyTarget.text))}
+                          ↳ {messageBotFields(replyTarget).bot?.name ?? replyTarget.username}: {previewMessage(messagePreviewText(replyTarget.text, replyTarget))}
                         </Text>
                       </View>
                     )}
@@ -667,7 +670,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                     {item.pinned && (
                       <View style={styles.pinnedTag}>
                         <Ionicons name="pin" size={11} color={colors.yellow} />
-                        <Text maxFontSizeMultiplier={1.3} style={styles.pinnedTagText}>Pinned</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.pinnedTagText}>{t("chat.mobile.channel.pinned")}</Text>
                       </View>
                     )}
 
@@ -680,7 +683,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                           bot={builder.bot}
                           card={builder.card}
                           privateNotice={builder.privateNotice}
-                          text={botMessageText(item.text)}
+                          text={noticeText(botMessageNotice(item.text)) ?? botMessageText(item.text)}
                           token={token}
                           showHead={false}
                         />
@@ -688,7 +691,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                     })() : parseGif(item.text) ? (
                       <MessageImage url={parseGif(item.text)!.url} title={parseGif(item.text)!.title} token={token} authenticated />
                     ) : !item.text ? null : (() => {
-                      const post = parseForumPost(item.text);
+                      const post = parseForumPost(item.text, item);
                       if (!post) {
                         return (
                           <>
@@ -773,7 +776,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                               <Pressable
                                 key={emoji}
                                 accessibilityRole="button"
-                                accessibilityLabel={`${emoji} ${userIds.length}${user && userIds.includes(user.id) ? ", you reacted" : ""}`}
+                                accessibilityLabel={user && userIds.includes(user.id) ? t("chat.mobile.channel.reactedByYou", { emoji, count: userIds.length }) : `${emoji} ${userIds.length}`}
                                 onPress={() => { tapHaptic(); void reactToMessage(item, emoji); }}
                                 hitSlop={4}
                                 style={[styles.reactionChip, !!user && userIds.includes(user.id) && styles.reactionChipMine]}
@@ -791,7 +794,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                       )}
 
                     {!!item.editedAt && (
-                      <Text style={styles.edited}>edited</Text>
+                      <Text style={styles.edited}>{t("chat.actions.message.edited")}</Text>
                     )}
 
                     {grouped && (
@@ -810,47 +813,47 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
         {!nearBottom && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={newSinceScroll > 0 ? `${newSinceScroll} new messages. Jump to latest` : "Jump to latest messages"}
+            accessibilityLabel={newSinceScroll > 0 ? t("chat.mobile.channel.newsincescrollNewMessagesJumpTo", { newSinceScroll }) : t("chat.mobile.channel.jumpToLatestMessages")}
             onPress={() => { nearBottomRef.current = true; setNearBottom(true); listRef.current?.scrollToEnd({ animated: true }); }}
             style={styles.jumpLatest}
           >
             <Ionicons name="arrow-down" size={15} color="#FFFFFF" />
-            <Text style={styles.jumpLatestText}>{newSinceScroll > 0 ? `${newSinceScroll > 99 ? "99+" : newSinceScroll} new` : "Latest"}</Text>
+            <Text style={styles.jumpLatestText}>{newSinceScroll > 0 ? t("chat.mobile.channel.newCount", { number: newSinceScroll > 99 ? "99+" : newSinceScroll }) : t("chat.mobile.channel.latest")}</Text>
           </Pressable>
         )}
         {typingNames.length > 0 && (
           <View style={styles.typingRow}>
             <Text style={styles.typingText} numberOfLines={1}>
               {typingNames.length === 1
-                ? `${typingNames[0]} is typing…`
+                ? t("chat.mobile.channel.isTyping", { name: typingNames[0] })
                 : typingNames.length === 2
-                  ? `${typingNames[0]} and ${typingNames[1]} are typing…`
-                  : "Several people are typing…"}
+                  ? t("chat.mobile.channel.twoTyping", { first: typingNames[0], second: typingNames[1] })
+                  : t("chat.mobile.channel.severalPeopleAreTyping")}
             </Text>
           </View>
         )}
         {editingId && (
           <View style={styles.editingBanner}>
             <Ionicons name="create-outline" size={14} color={colors.cyan} />
-            <Text style={styles.editingBannerText}>Editing message</Text>
-            <Pressable accessibilityRole="button" onPress={cancelEdit}><Text style={styles.editingCancel}>Cancel</Text></Pressable>
+            <Text style={styles.editingBannerText}>{t("chat.mobile.channel.editingMessage")}</Text>
+            <Pressable accessibilityRole="button" onPress={cancelEdit}><Text style={styles.editingCancel}>{t("common.actions.cancel")}</Text></Pressable>
           </View>
         )}
         {replyingTo && (
           <View style={styles.replyingBanner}>
             <Ionicons name="arrow-undo-outline" size={14} color={colors.cyan} />
             <Text style={styles.replyingBannerText} numberOfLines={1}>
-              Replying to {messageBotFields(replyingTo).bot?.name ?? replyingTo.username}: {previewMessage(messagePreviewText(replyingTo.text))}
+              {t("chat.mobile.channel.replyingToNameValue", { name: messageBotFields(replyingTo).bot?.name ?? replyingTo.username, value: previewMessage(messagePreviewText(replyingTo.text, replyingTo)) })}
             </Text>
             <Pressable accessibilityRole="button" onPress={() => setReplyingTo(null)}>
-              <Text style={styles.editingCancel}>Cancel</Text>
+              <Text style={styles.editingCancel}>{t("common.actions.cancel")}</Text>
             </Pressable>
           </View>
         )}
         {isForum && !replyingTo ? (
           <View style={styles.composerShell}>
             <Text style={styles.composerHint}>
-              Long press a post to reply. New forum posts can be started on desktop or web.
+              {t("chat.mobile.channel.longPressAPostTo")}
             </Text>
           </View>
         ) : <View style={styles.composerShell}>
@@ -861,7 +864,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
               onPress={() => setMediaOpen(true)}
               disabled={uploading}
               accessibilityRole="button"
-              accessibilityLabel="Add photo, video or GIF"
+              accessibilityLabel={t("chat.mobile.channel.addPhotoVideoOrGif")}
             >
               {uploading ? <ActivityIndicator size="small" color={colors.cyan} /> : <Ionicons name="add" size={21} color={colors.cyan} />}
             </Pressable>
@@ -870,7 +873,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
               testID="room-composer"
               value={input}
               onChangeText={onChangeInput}
-              placeholder={replyingTo && isForum ? "Write a reply" : `Message #${name}`}
+              placeholder={replyingTo && isForum ? t("chat.mobile.channel.writeAReply") : t("chat.mobile.channel.messageName", { name })}
               placeholderTextColor={colors.faint}
               style={styles.input}
               multiline
@@ -888,7 +891,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
               disabled={!input.trim()}
               onPress={sendMessage}
               accessibilityRole="button"
-              accessibilityLabel="Send message"
+              accessibilityLabel={t("chat.composer.send")}
             >
               <Ionicons name="arrow-up" size={20} color="#fff" />
             </Pressable>
@@ -904,14 +907,14 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
             <View style={styles.emojiGrid}>
               {CHANNEL_REACTION_EMOJIS.map((emoji) => <Pressable accessibilityRole="button" key={emoji} style={styles.emojiButton} onPress={() => { const message=actionMessage; setActionMessage(null); if(message) void reactToMessage(message,emoji); }}><Text style={styles.emojiButtonText}>{emoji}</Text></Pressable>)}
             </View>
-            {actionMessage && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => void togglePin(actionMessage)}><Ionicons name={actionMessage.pinned ? "pin" : "pin-outline"} size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>{actionMessage.pinned ? "Unpin message" : "Pin message"}</Text></Pressable>}
-            {actionMessage && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => beginReply(actionMessage)}><Ionicons name="arrow-undo-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>Reply</Text></Pressable>}
-            {actionMessage && actionMessage.userId !== user?.id && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); toggleMute(message.userId).then(() => successHaptic()).catch((error) => { errorHaptic(); Alert.alert("Could not update mute", error instanceof Error ? error.message : "Please try again."); }); }}><Ionicons name={mutedIds.has(actionMessage.userId) ? "notifications-outline" : "notifications-off-outline"} size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>{mutedIds.has(actionMessage.userId) ? `Unmute ${actionMessage.username}` : `Mute notifications from ${actionMessage.username}`}</Text></Pressable>}
-            {actionMessage && actionMessage.userId !== user?.id && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: message.attachment ? "attachment" : "message", targetId: message.id, subjectUserId: message.userId, subjectUsername: messageBotFields(message).bot?.name ?? message.username, contextType: "channel", contextId: String(channelId), contextLabel: `#${name}` }); }}><Ionicons name="flag-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>Report message</Text></Pressable>}
+            {actionMessage && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => void togglePin(actionMessage)}><Ionicons name={actionMessage.pinned ? "pin" : "pin-outline"} size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>{actionMessage.pinned ? t("chat.messages.unpinMessage") : t("chat.messages.pinMessage")}</Text></Pressable>}
+            {actionMessage && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => beginReply(actionMessage)}><Ionicons name="arrow-undo-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>{t("chat.messages.reply")}</Text></Pressable>}
+            {actionMessage && actionMessage.userId !== user?.id && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); toggleMute(message.userId).then(() => successHaptic()).catch((error) => { errorHaptic(); Alert.alert(t("chat.mobile.channel.couldNotUpdateMute"), error instanceof Error ? error.message : t("chat.mobile.channel.pleaseTryAgain")); }); }}><Ionicons name={mutedIds.has(actionMessage.userId) ? "notifications-outline" : "notifications-off-outline"} size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>{mutedIds.has(actionMessage.userId) ? t("chat.mobile.channel.unmuteUsername", { username: actionMessage.username }) : t("chat.mobile.channel.muteNotificationsFromUsername", { username: actionMessage.username })}</Text></Pressable>}
+            {actionMessage && actionMessage.userId !== user?.id && <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: message.attachment ? "attachment" : "message", targetId: message.id, subjectUserId: message.userId, subjectUsername: messageBotFields(message).bot?.name ?? message.username, contextType: "channel", contextId: String(channelId), contextLabel: `#${name}` }); }}><Ionicons name="flag-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>{t("chat.messages.reportMessage")}</Text></Pressable>}
             {/* A bot's message is not the publisher's own to edit or delete. */}
             {actionMessage?.userId === user?.id && !messageBotFields(actionMessage).bot && <>
-              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message=actionMessage; setActionMessage(null); if(message) beginEdit(message); }}><Ionicons name="create-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>Edit message</Text></Pressable>
-              <Pressable accessibilityRole="button" style={[styles.sheetAction,styles.sheetDanger]} onPress={() => actionMessage && deleteMessage(actionMessage)}><Ionicons name="trash-outline" size={18} color={colors.red}/><Text style={[styles.sheetActionText,{color:colors.red}]}>Delete message</Text></Pressable>
+              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message=actionMessage; setActionMessage(null); if(message) beginEdit(message); }}><Ionicons name="create-outline" size={18} color={colors.cyan}/><Text style={styles.sheetActionText}>{t("chat.messages.editMessage")}</Text></Pressable>
+              <Pressable accessibilityRole="button" style={[styles.sheetAction,styles.sheetDanger]} onPress={() => actionMessage && deleteMessage(actionMessage)}><Ionicons name="trash-outline" size={18} color={colors.red}/><Text style={[styles.sheetActionText,{color:colors.red}]}>{t("chat.messages.deleteMessage")}</Text></Pressable>
             </>}
           </Pressable>
         </Pressable>

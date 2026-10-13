@@ -1,0 +1,43 @@
+{
+  "tray": {
+    "open": "Open DeCave",
+    "toggleMute": "Mute / Unmute",
+    "toggleDeafen": "Deafen / Undeafen",
+    "quit": "Quit DeCave"
+  },
+  "window": {
+    "streamTitle": "DeCave Stream"
+  },
+  "update": {
+    "checkFailed": "DeCave could not check for updates. Check your connection and try again.",
+    "publisherUnverified": "Automatic updates are disabled because the installed Windows publisher could not be verified.",
+    "installFailed": "DeCave could not complete the update. Please try again later."
+  },
+  "keybinds": {
+    "mustDiffer": "Mute and deafen keybinds must be different.",
+    "inUse": "One of those shortcuts is already in use by Windows or another app."
+  },
+  "picker": {
+    "windowTitle": "Choose what to share · DeCave",
+    "title": "Choose what to share",
+    "subtitle": "Select a screen or application window for DeCave screen sharing.",
+    "cancel": "Cancel",
+    "entireScreen": "Entire Screen",
+    "window": "Window",
+    "noPreview": "No preview"
+  },
+  "turnstile": {
+    "windowTitle": "DeCave security verification",
+    "invalidToken": "Security verification returned an invalid token.",
+    "unsupportedAction": "Unsupported security-verification action.",
+    "replaced": "Security verification was replaced by a new request.",
+    "timedOut": "Security verification timed out.",
+    "loadFailed": "Security verification could not be loaded."
+  },
+  "overlay": {
+    "voice": "Voice",
+    "unknown": "Unknown",
+    "muted": "Muted",
+    "deafened": "Deafened"
+  }
+}

@@ -19,7 +19,10 @@ test("Official Hub posting policy fails closed across all write boundaries", () 
     db,
     /export async function officialHubPostingDecision\([\s\S]*?if \(policy\.status === "unavailable"\) return "unavailable"/,
   );
-  assert.match(worker, /async function requireHubPostingPermission\([\s\S]*?code: "HUB_POLICY_UNAVAILABLE"/);
+  assert.match(
+    worker,
+    /async function requireHubPostingPermission\([\s\S]*?apiErrorLegacy\("HUB_POLICY_UNAVAILABLE", "officialHub\.postingPolicyUnavailable"/,
+  );
   assert.match(worker, /const postingError = await requireHubPostingPermission\(/);
   assert.equal((worker.match(/requireHubPostingPermission\(env\.DB/g) ?? []).length, 4);
   assert.match(worker, /await ensureOfficialHubSchema\(env\)/);
@@ -28,7 +31,10 @@ test("Official Hub posting policy fails closed across all write boundaries", () 
   assert.doesNotMatch(worker, /async function officialHubOwnerOnlyPosting\(/);
   assert.doesNotMatch(hub, /async function canPostToHub\(/);
   assert.match(worker, /UPDATE decave_official_hubs SET owner_only_posts=1 WHERE key='decave-community-v1'/);
-  assert.match(worker, /Official Hub posting policy is temporarily unavailable\.[\s\S]*?HUB_POLICY_UNAVAILABLE/);
+  assert.equal(
+    JSON.parse(read("shared/i18n/locales/en/errors.json")).officialHub.postingPolicyUnavailable,
+    "Official Hub posting policy is temporarily unavailable.",
+  );
 });
 
 test("WebSocket admission and message processing are bounded", () => {
@@ -49,7 +55,7 @@ test("WebSocket admission and message processing are bounded", () => {
     "raw frame admission must happen before JSON parsing",
   );
   assert.match(hub, /if \(!this\.allowRealtime\(state\.connectionId, rateType, false\)\)/);
-  assert.match(hub, /Unknown realtime message type/);
+  assert.match(hub, /serverNotice\("chat\.server\.unknownType"\)/);
   assert.match(hub, /const MAX_IDENTIFY_FAILURES = 5/);
   assert.match(hub, /const WS_IDENTIFY_FAILURE_LIMIT_PER_ADDRESS = 60/);
   assert.match(hub, /identifyFailures: state\.identifyFailures \+ 1/);
@@ -57,14 +63,14 @@ test("WebSocket admission and message processing are bounded", () => {
   assert.match(hub, /identifyFailuresForAddress\(peerAddress\)/);
   assert.match(hub, /recordIdentifyFailure\(peerAddress\)/);
   assert.match(hub, /data\.token\.length <= 256/);
-  assert.match(hub, /Authentication is temporarily unavailable/);
+  assert.match(hub, /serverNotice\("chat\.server\.authUnavailable"\)/);
   assert.match(hub, /state\.identifyFailures >= MAX_IDENTIFY_FAILURES/);
   assert.match(hub, /const MAX_REALTIME_RATE_VIOLATIONS = 3/);
   assert.match(hub, /rateLimitViolations: state\.rateLimitViolations \+ 1/);
   assert.match(hub, /next\.rateLimitViolations >= MAX_REALTIME_RATE_VIOLATIONS/);
   assert.match(hub, /const WS_AUTH_DEADLINE_MS = 30_000/);
   assert.match(hub, /async alarm\(\): Promise<void>/);
-  assert.match(hub, /Authentication timed out/);
+  assert.match(hub, /serverNotice\("chat\.server\.authTimedOut"\)/);
   assert.match(hub, /storage\.setAlarm\(Math\.min\(\.\.\.deadlines\)\)/);
   assert.match(hub, /storage\.deleteAlarm\(\)/);
   assert.match(hub, /private realtimeRate = new Map<string, Map<string, RealtimeRateBucket>>\(\)/);

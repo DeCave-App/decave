@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+// Storage errors are worded through the English catalogs.
+import "../test-support/i18n-english.mjs";
 import { createSessionKit, prepareSessionKitLaunch } from "../../shared/session-kit.ts";
 import { createSessionKitRepository } from "../../src/session/session-kits.ts";
 import {

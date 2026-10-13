@@ -20,6 +20,9 @@ import { clearAccountDataOnSignOut } from "./clear-account-storage";
 import type { AuthFormState } from "../state/auth-form";
 import type { OwnerSecurityState } from "../state/owner-security";
 import type { HubPanelsState } from "../state/hub-panels";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
+import { noticeText, serverMessage } from "../../i18n/notice.ts";
 import { dmE2ee } from "../../e2ee/dm-e2ee-client";
 
 export type AuthActionsDeps = {
@@ -159,9 +162,12 @@ export function createAuthActions(deps: AuthActionsDeps) {
           body: JSON.stringify({ email, turnstileToken }),
         });
         const data = (await response.json()) as { message?: string; error?: string };
-        setAuthError(data.message || data.error || "If that verified email exists, a reset link has been sent.");
+        setAuthError(
+          noticeText((data as { notice?: unknown }).notice) ??
+            (data.message || apiErrorMessage(data, "client.auth.resetLinkSent")),
+        );
       } catch {
-        setAuthError("Could not connect to DeCave.");
+        setAuthError(i18next.t("errors.client.connect"));
       } finally {
         setAuthBusy(false);
         setTurnstileToken("");
@@ -172,29 +178,29 @@ export function createAuthActions(deps: AuthActionsDeps) {
 
     if (!identifier || !passwordInput || !turnstileToken) return;
     if (authMode === "login" && !/^\S+@\S+\.\S+$/.test(identifier)) {
-      setAuthError("Enter your account email address.");
+      setAuthError(i18next.t("chat.actions.auth.enterEmail"));
       return;
     }
 
     if (authMode === "register") {
       if (!termsAccepted) {
-        setAuthError("Agree to the Terms and acknowledge the Privacy Notice to create an account.");
+        setAuthError(i18next.t("chat.actions.auth.acceptTerms"));
         return;
       }
       if (!email) {
-        setAuthError("Enter a valid email address.");
+        setAuthError(i18next.t("chat.actions.auth.invalidEmail"));
         return;
       }
       if (!/^\S+@\S+\.\S+$/.test(email)) {
-        setAuthError("Enter a valid email address.");
+        setAuthError(i18next.t("chat.actions.auth.invalidEmail"));
         return;
       }
       if (passwordInput !== confirmPasswordInput) {
-        setAuthError("Passwords do not match.");
+        setAuthError(i18next.t("chat.actions.auth.passwordsMismatch"));
         return;
       }
       if (passwordInput.length < 10) {
-        setAuthError("Use a password with at least 10 characters.");
+        setAuthError(i18next.t("chat.actions.auth.passwordTooShort"));
         return;
       }
       const birthDate = new Date(`${birthDateInput}T00:00:00Z`);
@@ -206,7 +212,7 @@ export function createAuthActions(deps: AuthActionsDeps) {
         birthDate.toISOString().slice(0, 10) !== birthDateInput ||
         birthDate > ageDate
       ) {
-        setAuthError(`Enter your birth date to confirm you are ${MINIMUM_SIGNUP_AGE} or older.`);
+        setAuthError(i18next.t("chat.actions.auth.birthDateRequired", { age: MINIMUM_SIGNUP_AGE }));
         return;
       }
     }
@@ -241,12 +247,12 @@ export function createAuthActions(deps: AuthActionsDeps) {
       const data = (await response.json()) as AuthResponse & ApiError;
 
       if (!response.ok) {
-        setAuthError(data.error || "Authentication failed.");
+        setAuthError(apiErrorMessage(data, "client.auth.failed"));
         return;
       }
 
       if (data.verificationRequired) {
-        setAuthError(data.message || "Check your email to verify your account.");
+        setAuthError(serverMessage(data, i18next.t("chat.actions.auth.checkEmail")));
         setAuthMode("login");
         setPasswordInput("");
         setConfirmPasswordInput("");
@@ -257,12 +263,12 @@ export function createAuthActions(deps: AuthActionsDeps) {
         setLoginMfaKind(data.mfaKind === "user" ? "user" : "owner");
         setOwnerLoginChallengeToken(data.challengeToken);
         setOwnerLoginMfaCode("");
-        setAuthError(data.mfaKind === "user" ? "" : "Enter your authenticator code or a one-time recovery code.");
+        setAuthError(data.mfaKind === "user" ? "" : i18next.t("chat.actions.auth.enterMfaCode"));
         return;
       }
 
       if (!data.user || !data.wsToken) {
-        setAuthError("Authentication failed.");
+        setAuthError(i18next.t("errors.client.auth.failed"));
         return;
       }
 
@@ -278,7 +284,7 @@ export function createAuthActions(deps: AuthActionsDeps) {
       setAuthReady(true);
     } catch (error) {
       console.error("Authentication error:", error);
-      setAuthError(error instanceof Error ? error.message : "Could not connect to DeCave.");
+      setAuthError(error instanceof Error ? error.message : i18next.t("errors.client.connect"));
     } finally {
       setAuthBusy(false);
       setOwnerLoginMfaBusy(false);
@@ -350,7 +356,7 @@ export function createAuthActions(deps: AuthActionsDeps) {
   };
 
   const logoutAllSessions = async () => {
-    if (!window.confirm("Log out every active DeCave session, including this device?")) return;
+    if (!window.confirm(i18next.t("chat.actions.auth.confirmLogoutAll"))) return;
     setSecurityBusy(true);
     setSecurityNotice("");
     try {
@@ -359,13 +365,13 @@ export function createAuthActions(deps: AuthActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
-        setSecurityNotice(data.error || "Could not log out all sessions.");
+        setSecurityNotice(apiErrorMessage(data, "client.auth.logoutAll"));
         return;
       }
       await logout();
-      setAuthError("All active sessions were logged out. Sign in again to continue.");
+      setAuthError(i18next.t("chat.actions.auth.loggedOutAll"));
     } catch {
-      setSecurityNotice("Could not log out all sessions.");
+      setSecurityNotice(i18next.t("errors.client.auth.logoutAll"));
     } finally {
       setSecurityBusy(false);
     }

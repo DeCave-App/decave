@@ -1,4 +1,5 @@
 // An ordered list of conditions or actions with add, remove and move.
+import { useTranslation } from "react-i18next";
 import { CATALOGUE } from "../../../shared/bots/catalogue.ts";
 import type { BotRuleError } from "../../../shared/bots/schema.ts";
 import type { FieldEnv } from "./FieldInput";
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function PartList({ kind, items, path, errors, env, limit, addLabel, makeDefault, onChange }: Props) {
+  const { t } = useTranslation(["bots"]);
   const types = Object.keys(CATALOGUE[kind]);
   const replace = (i: number, next: Part) => onChange(items.map((p, j) => (j === i ? next : p)));
   const move = (i: number, delta: number) => {
@@ -47,8 +49,8 @@ export function PartList({ kind, items, path, errors, env, limit, addLabel, make
                   <button
                     type="button"
                     className="dcx-btn dcx-btn-sm dcx-btn-ghost"
-                    aria-label="Move up"
-                    title="Move up"
+                    aria-label={t("bots.part.moveUp")}
+                    title={t("bots.part.moveUp")}
                     disabled={i === 0}
                     onClick={() => move(i, -1)}
                   >
@@ -57,8 +59,8 @@ export function PartList({ kind, items, path, errors, env, limit, addLabel, make
                   <button
                     type="button"
                     className="dcx-btn dcx-btn-sm dcx-btn-ghost"
-                    aria-label="Move down"
-                    title="Move down"
+                    aria-label={t("bots.part.moveDown")}
+                    title={t("bots.part.moveDown")}
                     disabled={i === items.length - 1}
                     onClick={() => move(i, 1)}
                   >
@@ -69,8 +71,8 @@ export function PartList({ kind, items, path, errors, env, limit, addLabel, make
               <button
                 type="button"
                 className="dcx-btn dcx-btn-sm dcx-btn-ghost"
-                aria-label="Remove"
-                title="Remove"
+                aria-label={t("bots.part.remove")}
+                title={t("bots.part.remove")}
                 onClick={() => onChange(items.filter((_, j) => j !== i))}
               >
                 ×

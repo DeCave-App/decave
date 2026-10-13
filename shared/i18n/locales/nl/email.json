@@ -1,0 +1,41 @@
+{
+  "common": {
+    "greeting": "Hoi {{username}},",
+    "settingsPath": "Instellingen > Account en beveiliging"
+  },
+  "verify": {
+    "subject": "Bevestig je DeCave-e-mailadres",
+    "text": "Hoi {{username}}, bevestig je DeCave-e-mailadres: {{link}}",
+    "heading": "Bevestig je DeCave-e-mailadres",
+    "body": "Bevestig dit e-mailadres om je account te activeren.",
+    "button": "E-mailadres bevestigen",
+    "expiry": "Deze link verloopt over 24 uur."
+  },
+  "reset": {
+    "subject": "Stel je DeCave-wachtwoord opnieuw in",
+    "text": "Hoi {{username}}, stel je DeCave-wachtwoord opnieuw in: {{link}}",
+    "heading": "Stel je DeCave-wachtwoord opnieuw in",
+    "body": "Heb je gevraagd om je wachtwoord opnieuw in te stellen? Gebruik dan de knop hieronder.",
+    "button": "Wachtwoord resetten",
+    "expiry": "Deze link verloopt over 30 minuten."
+  },
+  "signInAlert": {
+    "subject": "Nieuwe inlog op je DeCave-account",
+    "heading": "Nieuwe inlog op DeCave",
+    "usedOnText": "Er is zojuist met je DeCave-account ingelogd op: {{device}}",
+    "time": "Tijd: {{when}}",
+    "usedOn": "Er is zojuist met je account ingelogd op:",
+    "ifYou": "Was jij dit? Dan hoef je niets te doen.",
+    "notYouText": "Was jij het niet? Beveilig je account nu (logt alle apparaten uit en stuurt een link om je wachtwoord te resetten): {{link}}",
+    "turnOffText": "Je kunt deze e-mails uitzetten via {{settingsPath}}.",
+    "button": "Dit was ik niet",
+    "footer": "Hiermee worden alle apparaten uitgelogd en krijg je een e-mail met een link om je wachtwoord te resetten. De link werkt 7 dagen. Zet deze e-mails uit via {{settingsPath}}."
+  },
+  "emailChanged": {
+    "subject": "Het e-mailadres van je DeCave-account is gewijzigd",
+    "heading": "Je DeCave-e-mailadres is gewijzigd",
+    "changedText": "Het e-mailadres van je DeCave-account is gewijzigd in {{newEmail}}.",
+    "changed": "Het e-mailadres van je account is gewijzigd in <strong>{{newEmail}}</strong>.",
+    "notYou": "Heb je dit niet zelf gedaan? Log in bij DeCave, wijzig je wachtwoord en log andere apparaten uit via {{settingsPath}}."
+  }
+}

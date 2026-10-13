@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { localeForLanguage, preferredTimeOptions } from "../app/locale";
+import { Trans, useTranslation } from "react-i18next";
+import { i18next } from "../i18n";
+import { formatDate as formatDateStyle } from "../i18n/format";
+import { serverErrorOr } from "../safety/server-error";
+
+// t() for the helpers below that run outside the component.
+const adminT = i18next.getFixedT(null, ["admin"]);
 
 type TrustSafetyDashboardProps = {
   request: (path: string, init?: RequestInit) => Promise<Response>;
@@ -126,24 +132,25 @@ const statusOptions = [
   "closed",
 ];
 const urgencyOptions = ["critical", "high", "medium", "low", "spam_invalid"];
+const actionOptions = ["no_action_taken", "warning", "restrict", "suspend", "unsuspend"] as const;
 
 function label(value: string): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (letter: string) => letter.toUpperCase());
 }
 
-function actionLabel(value: string): string {
-  return value === "no_action_taken" ? "No action taken" : label(value);
+type EnumGroup = "status" | "urgency" | "target" | "category" | "context" | "action";
+
+/** A server value (status, urgency, target type...) by name; values the catalog doesn't list keep their spelled-out name. */
+function enumLabel(group: EnumGroup, value: string): string {
+  const key = `admin.trustSafety.enum.${group}.${value}`;
+  return i18next.exists(key) ? (i18next.t as unknown as (key: string) => string)(key) : label(value);
 }
 
 function formatDate(value: string | null | undefined): string {
-  if (!value) return "Not recorded";
+  if (!value) return adminT("admin.trustSafety.notRecorded");
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(localeForLanguage(), {
-    dateStyle: "medium",
-    timeStyle: "short",
-    ...preferredTimeOptions(),
-  }).format(date);
+  return formatDateStyle(date, "dateTime");
 }
 
 function formatBytes(value: number): string {
@@ -159,7 +166,7 @@ function formatBytes(value: number): string {
 }
 
 function publicId(value: string | null | undefined): string {
-  return value || "Not captured";
+  return value || adminT("admin.trustSafety.notCaptured");
 }
 
 export function TrustSafetyDashboard({
@@ -168,6 +175,7 @@ export function TrustSafetyDashboard({
   ownerReauthExpiresAt,
   onOpenPrivilegedUnlock,
 }: TrustSafetyDashboardProps) {
+  const { t } = useTranslation(["admin"]);
   const [overview, setOverview] = useState<SafetyOverview | null>(null);
   const [reports, setReports] = useState<SafetyReport[]>([]);
   const [selected, setSelected] = useState<SafetyReport | null>(null);
@@ -215,15 +223,16 @@ export function TrustSafetyDashboard({
       const reportData = (await reportsResponse.json().catch(() => ({}))) as {
         reports?: SafetyReport[];
         error?: string;
+        code?: string;
       };
       if (!overviewResponse.ok || !reportsResponse.ok) {
-        setNotice(reportData.error || "Could not load the Trust & Safety queue.");
+        setNotice(serverErrorOr(reportData, t("admin.trustSafety.loadFailed")));
         return;
       }
       setOverview(overviewData);
       setReports(Array.isArray(reportData.reports) ? reportData.reports : []);
     } catch {
-      setNotice("Could not connect to DeCave.");
+      setNotice(t("admin.trustSafety.connectFailed"));
     } finally {
       setBusy(false);
     }
@@ -234,9 +243,12 @@ export function TrustSafetyDashboard({
     setDetailError("");
     try {
       const response = await request(`/api/admin/trust-safety/cases/${encodeURIComponent(report.caseId)}`);
-      const data = (await response.json().catch(() => ({}))) as Partial<SafetyCaseDetail> & { error?: string };
+      const data = (await response.json().catch(() => ({}))) as Partial<SafetyCaseDetail> & {
+        error?: string;
+        code?: string;
+      };
       if (!response.ok) {
-        setDetailError(data.error || "Could not load the case details.");
+        setDetailError(serverErrorOr(data, t("admin.trustSafety.detailFailed")));
         return;
       }
       const detail: SafetyCaseDetail = {
@@ -254,7 +266,7 @@ export function TrustSafetyDashboard({
         setUrgency(detailedReport.urgency);
       }
     } catch {
-      setDetailError("Could not connect to the case detail service.");
+      setDetailError(t("admin.trustSafety.detailConnectFailed"));
     } finally {
       setDetailBusy(false);
     }
@@ -287,15 +299,15 @@ export function TrustSafetyDashboard({
         headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify({ status }),
       });
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      const data = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
       if (!response.ok) {
-        setNotice(data.error || "Could not update status.");
+        setNotice(serverErrorOr(data, t("admin.trustSafety.statusFailed")));
         return;
       }
-      setNotice("Report status updated.");
+      setNotice(t("admin.trustSafety.statusSaved"));
       await refreshSelected(report);
     } catch {
-      setNotice("Could not update status.");
+      setNotice(t("admin.trustSafety.statusFailed"));
     } finally {
       setBusy(false);
     }
@@ -311,15 +323,15 @@ export function TrustSafetyDashboard({
         headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify({ urgency }),
       });
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      const data = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
       if (!response.ok) {
-        setNotice(data.error || "Could not update urgency.");
+        setNotice(serverErrorOr(data, t("admin.trustSafety.urgencyFailed")));
         return;
       }
-      setNotice("Urgency updated and recorded.");
+      setNotice(t("admin.trustSafety.urgencySaved"));
       await refreshSelected(report);
     } catch {
-      setNotice("Could not update urgency.");
+      setNotice(t("admin.trustSafety.urgencyFailed"));
     } finally {
       setBusy(false);
     }
@@ -335,16 +347,16 @@ export function TrustSafetyDashboard({
         headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify({ note }),
       });
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      const data = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
       if (!response.ok) {
-        setNotice(data.error || "Could not add note.");
+        setNotice(serverErrorOr(data, t("admin.trustSafety.noteFailed")));
         return;
       }
       setNote("");
-      setNotice("Private case note added.");
+      setNotice(t("admin.trustSafety.noteSaved"));
       await refreshSelected(report);
     } catch {
-      setNotice("Could not add note.");
+      setNotice(t("admin.trustSafety.noteFailed"));
     } finally {
       setBusy(false);
     }
@@ -353,7 +365,7 @@ export function TrustSafetyDashboard({
   const takeAction = async () => {
     if (!selected) return;
     if (!actionReason.trim()) {
-      setNotice("Enter a reason for the action before recording it.");
+      setNotice(t("admin.trustSafety.reasonRequired"));
       return;
     }
     const report = selected;
@@ -368,16 +380,16 @@ export function TrustSafetyDashboard({
           targetUserId: report.subjectUserId || undefined,
         }),
       });
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      const data = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
       if (!response.ok) {
-        setNotice(data.error || "Could not record action.");
+        setNotice(serverErrorOr(data, t("admin.trustSafety.actionFailed")));
         return;
       }
       setActionReason("");
-      setNotice("Action recorded in the case timeline.");
+      setNotice(t("admin.trustSafety.actionSaved"));
       await refreshSelected(report);
     } catch {
-      setNotice("Could not record action.");
+      setNotice(t("admin.trustSafety.actionFailed"));
     } finally {
       setBusy(false);
     }
@@ -387,18 +399,19 @@ export function TrustSafetyDashboard({
   const evidence = activeReport
     ? (caseDetail?.evidence || []).filter((item) => !item.reportId || item.reportId === activeReport.id)
     : [];
-  const reportedUserName = activeReport?.subjectUsername || activeReport?.targetUsername || "Unknown user";
+  const reportedUserName =
+    activeReport?.subjectUsername || activeReport?.targetUsername || t("admin.trustSafety.unknownUser");
 
   return (
     <section className="dc-safety-dashboard">
       <div className="dc-safety-dashboard-head">
         <div>
-          <div className="ds-kicker">OWNER ONLY</div>
-          <h2>Trust &amp; Safety</h2>
-          <p>Review reports, preserve privacy, and record every decision.</p>
+          <div className="ds-kicker">{t("admin.trustSafety.kicker")}</div>
+          <h2>{t("admin.trustSafety.title")}</h2>
+          <p>{t("admin.trustSafety.intro")}</p>
         </div>
         <button type="button" className="ds-btn ds-btn-sm" onClick={() => void load()} disabled={busy}>
-          {busy ? "Refreshing…" : "Refresh"}
+          {busy ? t("admin.trustSafety.refreshing") : t("admin.trustSafety.refresh")}
         </button>
       </div>
 
@@ -406,28 +419,28 @@ export function TrustSafetyDashboard({
         <div className="dc-safety-metrics">
           <div>
             <b>{overview.openCases}</b>
-            <span>Open cases</span>
+            <span>{t("admin.trustSafety.metrics.openCases")}</span>
           </div>
           <div className="critical">
             <b>{overview.criticalCases}</b>
-            <span>Critical</span>
+            <span>{t("admin.trustSafety.metrics.critical")}</span>
           </div>
           <div>
             <b>{overview.submittedReports}</b>
-            <span>New reports</span>
+            <span>{t("admin.trustSafety.metrics.newReports")}</span>
           </div>
           <div>
             <b>{overview.evidenceObjects}</b>
-            <span>Encrypted evidence</span>
+            <span>{t("admin.trustSafety.metrics.evidence")}</span>
           </div>
         </div>
       )}
 
       <div className="dc-safety-dashboard-filter">
         <select className="ds-input" value={filter} onChange={(event) => setFilter(event.target.value)}>
-          <option value="open">New reports</option>
-          <option value="critical">Critical queue</option>
-          <option value="all">All reports</option>
+          <option value="open">{t("admin.trustSafety.filter.open")}</option>
+          <option value="critical">{t("admin.trustSafety.filter.critical")}</option>
+          <option value="all">{t("admin.trustSafety.filter.all")}</option>
         </select>
       </div>
 
@@ -439,16 +452,22 @@ export function TrustSafetyDashboard({
 
       <div className={`dc-safety-privilege-status${privilegedAccessActive ? " active" : " locked"}`}>
         <div>
-          <strong>{privilegedAccessActive ? "Privileged actions unlocked" : "Privileged actions locked"}</strong>
+          <strong>
+            {privilegedAccessActive
+              ? t("admin.trustSafety.privilege.unlocked")
+              : t("admin.trustSafety.privilege.locked")}
+          </strong>
           <span>
             {privilegedAccessActive
-              ? `Available until ${formatDate(new Date(ownerReauthExpiresAt).toISOString())}.`
-              : "Verify with your current password and MFA to change status, add notes, or record an action."}
+              ? t("admin.trustSafety.privilege.until", {
+                  date: formatDate(new Date(ownerReauthExpiresAt).toISOString()),
+                })
+              : t("admin.trustSafety.privilege.howToUnlock")}
           </span>
         </div>
         {!privilegedAccessActive && (
           <button type="button" className="ds-btn ds-btn-sm" onClick={onOpenPrivilegedUnlock}>
-            Open owner unlock
+            {t("admin.trustSafety.privilege.open")}
           </button>
         )}
       </div>
@@ -456,7 +475,7 @@ export function TrustSafetyDashboard({
       <div className="dc-safety-dashboard-grid">
         <div className="dc-safety-report-list">
           {reports.length === 0 ? (
-            <div className="dc-safety-empty ds-empty">No reports match this queue.</div>
+            <div className="dc-safety-empty ds-empty">{t("admin.trustSafety.queueEmpty")}</div>
           ) : (
             reports.map((report) => (
               <button
@@ -468,14 +487,17 @@ export function TrustSafetyDashboard({
                 <span>
                   <strong>{report.caseNumber || report.id.slice(0, 8)}</strong>
                   <small>
-                    {report.subjectUsername || report.targetUsername || label(report.targetType)} ·{" "}
-                    {label(report.category)}
+                    {t("admin.trustSafety.rowMeta", {
+                      subject:
+                        report.subjectUsername || report.targetUsername || enumLabel("target", report.targetType),
+                      category: enumLabel("category", report.category),
+                    })}
                   </small>
                   {report.contextLabel && <small>{report.contextLabel}</small>}
                 </span>
                 <span className={`dc-safety-status ${report.urgency}`}>
-                  <b>{label(report.urgency)}</b>
-                  <small>{label(report.status)}</small>
+                  <b>{enumLabel("urgency", report.urgency)}</b>
+                  <small>{enumLabel("status", report.status)}</small>
                 </span>
               </button>
             ))
@@ -486,9 +508,15 @@ export function TrustSafetyDashboard({
           <div className="dc-safety-case-card">
             <div className="dc-safety-case-head">
               <div>
-                <div className="ds-kicker">CASE {activeReport.caseNumber || activeReport.caseId.slice(0, 8)}</div>
+                <div className="ds-kicker">
+                  {t("admin.trustSafety.caseKicker", {
+                    id: activeReport.caseNumber || activeReport.caseId.slice(0, 8),
+                  })}
+                </div>
                 <h3>{reportedUserName}</h3>
-                <span className="dc-safety-case-subtitle">Reported {label(activeReport.targetType)}</span>
+                <span className="dc-safety-case-subtitle">
+                  {t("admin.trustSafety.reportedTarget", { target: enumLabel("target", activeReport.targetType) })}
+                </span>
               </div>
               <button
                 type="button"
@@ -498,7 +526,7 @@ export function TrustSafetyDashboard({
                   setCaseDetail(null);
                 }}
               >
-                Close
+                {t("admin.trustSafety.close")}
               </button>
             </div>
 
@@ -506,104 +534,128 @@ export function TrustSafetyDashboard({
 
             <div className="dc-safety-detail-grid">
               <div className="dc-safety-detail-field">
-                <span>Reported user</span>
+                <span>{t("admin.trustSafety.field.reportedUser")}</span>
                 <strong>{reportedUserName}</strong>
                 <code>{publicId(activeReport.subjectUserId || activeReport.targetIdSnapshot)}</code>
               </div>
               <div className="dc-safety-detail-field">
-                <span>Reported target</span>
-                <strong>{label(activeReport.targetType)}</strong>
+                <span>{t("admin.trustSafety.field.reportedTarget")}</span>
+                <strong>{enumLabel("target", activeReport.targetType)}</strong>
                 <code>{activeReport.targetIdSnapshot || activeReport.targetId}</code>
               </div>
               <div className="dc-safety-detail-field">
-                <span>Context</span>
-                <strong>{activeReport.contextLabel || label(activeReport.contextType || "unknown")}</strong>
-                <code>{activeReport.contextId || "Not captured"}</code>
+                <span>{t("admin.trustSafety.field.context")}</span>
+                <strong>
+                  {activeReport.contextLabel || enumLabel("context", activeReport.contextType || "unknown")}
+                </strong>
+                <code>{activeReport.contextId || t("admin.trustSafety.notCaptured")}</code>
               </div>
               <div className="dc-safety-detail-field">
-                <span>Submitted</span>
+                <span>{t("admin.trustSafety.field.submitted")}</span>
                 <strong>{formatDate(activeReport.submittedAt || activeReport.createdAt)}</strong>
                 <small>
-                  {activeReport.hubId != null ? `Hub ${activeReport.hubId}` : "No Hub reference"}
-                  {activeReport.roomId != null ? ` · Room ${activeReport.roomId}` : ""}
+                  {activeReport.hubId != null
+                    ? activeReport.roomId != null
+                      ? t("admin.trustSafety.field.hubRoom", { hub: activeReport.hubId, room: activeReport.roomId })
+                      : t("admin.trustSafety.field.hub", { hub: activeReport.hubId })
+                    : activeReport.roomId != null
+                      ? t("admin.trustSafety.field.noHubRoom", { room: activeReport.roomId })
+                      : t("admin.trustSafety.field.noHub")}
                 </small>
               </div>
             </div>
 
             <div className="dc-safety-detail-block">
               <header>
-                <strong>Reporter description</strong>
-                <span>{label(activeReport.category)}</span>
+                <strong>{t("admin.trustSafety.description.title")}</strong>
+                <span>{enumLabel("category", activeReport.category)}</span>
               </header>
-              <p>{activeReport.description || "No description was provided by the reporter."}</p>
+              <p>{activeReport.description || t("admin.trustSafety.description.empty")}</p>
             </div>
 
             <div className="dc-safety-detail-block">
               <header>
-                <strong>Reported message</strong>
-                <span>{detailBusy ? "Loading…" : activeReport.reportedContent ? "Available" : "Not available"}</span>
+                <strong>{t("admin.trustSafety.message.title")}</strong>
+                <span>
+                  {detailBusy
+                    ? t("admin.trustSafety.message.loading")
+                    : activeReport.reportedContent
+                      ? t("admin.trustSafety.message.available")
+                      : t("admin.trustSafety.message.notAvailable")}
+                </span>
               </header>
               {detailBusy ? (
-                <p className="dc-safety-detail-muted">Loading the captured target and case history…</p>
+                <p className="dc-safety-detail-muted">{t("admin.trustSafety.message.loadingHistory")}</p>
               ) : activeReport.reportedContent ? (
                 <div className="dc-safety-message-preview">
                   <div className="dc-safety-message-meta">
                     <strong>{activeReport.reportedContent.authorUsername}</strong>
                     <span>
-                      {formatDate(activeReport.reportedContent.createdAt)}
-                      {activeReport.reportedContent.editedAt ? " · edited" : ""}
+                      {activeReport.reportedContent.editedAt
+                        ? t("admin.trustSafety.message.editedAt", {
+                            date: formatDate(activeReport.reportedContent.createdAt),
+                          })
+                        : formatDate(activeReport.reportedContent.createdAt)}
                     </span>
                   </div>
-                  <blockquote>{activeReport.reportedContent.text || "No text was captured."}</blockquote>
+                  <blockquote>{activeReport.reportedContent.text || t("admin.trustSafety.message.noText")}</blockquote>
                   {activeReport.reportedContent.attachment && (
                     <div className="dc-safety-attachment">
                       <strong>{activeReport.reportedContent.attachment.name}</strong>
                       <span>
-                        {activeReport.reportedContent.attachment.mimeType || "Attachment"} ·{" "}
-                        {formatBytes(activeReport.reportedContent.attachment.size)}
+                        {t("admin.trustSafety.message.attachmentMeta", {
+                          type:
+                            activeReport.reportedContent.attachment.mimeType ||
+                            t("admin.trustSafety.message.attachment"),
+                          size: formatBytes(activeReport.reportedContent.attachment.size),
+                        })}
                       </span>
                     </div>
                   )}
                   <small>
-                    Message ID: <code>{activeReport.reportedContent.id}</code>
+                    <Trans
+                      t={t}
+                      i18nKey="admin.trustSafety.message.id"
+                      values={{ id: activeReport.reportedContent.id }}
+                      components={{ code: <code /> }}
+                    />
                   </small>
                 </div>
               ) : evidence.length > 0 ? (
-                <p className="dc-safety-detail-muted">
-                  Encrypted evidence is attached. Plaintext is available only through approved Trust &amp; Safety key
-                  custody.
-                </p>
+                <p className="dc-safety-detail-muted">{t("admin.trustSafety.message.encryptedOnly")}</p>
               ) : (
-                <p className="dc-safety-detail-muted">
-                  No message copy is stored for this report. Message content is available only when the reporter submits
-                  evidence.
-                </p>
+                <p className="dc-safety-detail-muted">{t("admin.trustSafety.message.noCopy")}</p>
               )}
             </div>
 
             <div className="dc-safety-detail-block">
               <header>
-                <strong>Evidence</strong>
-                <span>
-                  {evidence.length} object{evidence.length === 1 ? "" : "s"}
-                </span>
+                <strong>{t("admin.trustSafety.evidence.title")}</strong>
+                <span>{t("admin.trustSafety.evidence.count", { count: evidence.length })}</span>
               </header>
               {evidence.length === 0 ? (
-                <p className="dc-safety-detail-muted">No encrypted evidence was submitted with this report.</p>
+                <p className="dc-safety-detail-muted">{t("admin.trustSafety.evidence.empty")}</p>
               ) : (
                 <div className="dc-safety-evidence-list">
                   {evidence.map((item) => (
                     <div className="dc-safety-evidence-item" key={item.id}>
                       <div>
-                        <strong>{label(item.evidenceType)}</strong>
+                        <strong>{enumLabel("target", item.evidenceType)}</strong>
                         <span>
-                          {formatBytes(item.ciphertextSize)} · {formatDate(item.createdAt)}
+                          {t("admin.trustSafety.evidence.meta", {
+                            size: formatBytes(item.ciphertextSize),
+                            date: formatDate(item.createdAt),
+                          })}
                         </span>
                       </div>
                       <small>
-                        Key {item.keyId} · package {item.packageVersion} · encryption {item.encryptionVersion}
+                        {t("admin.trustSafety.evidence.versions", {
+                          keyId: item.keyId,
+                          packageVersion: item.packageVersion,
+                          encryptionVersion: item.encryptionVersion,
+                        })}
                       </small>
-                      <code>SHA-256 {item.ciphertextSha256}</code>
+                      <code>{t("admin.trustSafety.evidence.hash", { hash: item.ciphertextSha256 })}</code>
                     </div>
                   ))}
                 </div>
@@ -612,28 +664,32 @@ export function TrustSafetyDashboard({
 
             <div className="dc-safety-detail-block">
               <header>
-                <strong>Action history</strong>
-                <span>
-                  {caseDetail?.actions.length || 0} action{caseDetail?.actions.length === 1 ? "" : "s"}
-                </span>
+                <strong>{t("admin.trustSafety.actions.title")}</strong>
+                <span>{t("admin.trustSafety.actions.count", { count: caseDetail?.actions.length || 0 })}</span>
               </header>
               {!caseDetail || caseDetail.actions.length === 0 ? (
-                <p className="dc-safety-detail-muted">No enforcement action recorded.</p>
+                <p className="dc-safety-detail-muted">{t("admin.trustSafety.actions.empty")}</p>
               ) : (
                 <div className="dc-safety-timeline">
                   {caseDetail.actions.map((item) => (
                     <div className="dc-safety-timeline-item" key={item.id}>
                       <div>
-                        <strong>{actionLabel(item.actionType)}</strong>
+                        <strong>{enumLabel("action", item.actionType)}</strong>
                         <span>{formatDate(item.createdAt)}</span>
                       </div>
-                      <p>{item.reason || "No reason recorded."}</p>
+                      <p>{item.reason || t("admin.trustSafety.actions.noReason")}</p>
                       <small>
-                        Target: {publicId(item.targetUserId)} · By{" "}
-                        {item.createdByUsername || publicId(item.createdByUserId)}
+                        {t("admin.trustSafety.actions.byline", {
+                          target: publicId(item.targetUserId),
+                          by: item.createdByUsername || publicId(item.createdByUserId),
+                        })}
                       </small>
-                      {item.expiresAt && <small>Expires: {formatDate(item.expiresAt)}</small>}
-                      {item.reversedAt && <small>Reversed: {formatDate(item.reversedAt)}</small>}
+                      {item.expiresAt && (
+                        <small>{t("admin.trustSafety.actions.expires", { date: formatDate(item.expiresAt) })}</small>
+                      )}
+                      {item.reversedAt && (
+                        <small>{t("admin.trustSafety.actions.reversed", { date: formatDate(item.reversedAt) })}</small>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -642,23 +698,23 @@ export function TrustSafetyDashboard({
 
             <div className="dc-safety-detail-block">
               <header>
-                <strong>Private case notes</strong>
-                <span>
-                  {caseDetail?.notes.length || 0} note{caseDetail?.notes.length === 1 ? "" : "s"}
-                </span>
+                <strong>{t("admin.trustSafety.notes.title")}</strong>
+                <span>{t("admin.trustSafety.notes.count", { count: caseDetail?.notes.length || 0 })}</span>
               </header>
               {!caseDetail || caseDetail.notes.length === 0 ? (
-                <p className="dc-safety-detail-muted">No private notes recorded.</p>
+                <p className="dc-safety-detail-muted">{t("admin.trustSafety.notes.empty")}</p>
               ) : (
                 <div className="dc-safety-timeline">
                   {caseDetail.notes.map((item) => (
                     <div className="dc-safety-timeline-item" key={item.id}>
                       <div>
-                        <strong>{item.authorUsername || "Owner"}</strong>
+                        <strong>{item.authorUsername || t("admin.trustSafety.notes.owner")}</strong>
                         <span>{formatDate(item.createdAt)}</span>
                       </div>
                       <p>{item.note}</p>
-                      {item.authorUserId && <small>Owner ID: {item.authorUserId}</small>}
+                      {item.authorUserId && (
+                        <small>{t("admin.trustSafety.notes.ownerId", { id: item.authorUserId })}</small>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -667,11 +723,11 @@ export function TrustSafetyDashboard({
 
             <div className="dc-safety-admin-controls">
               <label>
-                Status
+                {t("admin.trustSafety.controls.status")}
                 <select className="ds-input" value={status} onChange={(event) => setStatus(event.target.value)}>
                   {statusOptions.map((value) => (
                     <option key={value} value={value}>
-                      {label(value)}
+                      {enumLabel("status", value)}
                     </option>
                   ))}
                 </select>
@@ -682,15 +738,15 @@ export function TrustSafetyDashboard({
                 onClick={() => void updateStatus()}
                 disabled={busy || !privilegedAccessActive}
               >
-                Save status
+                {t("admin.trustSafety.controls.saveStatus")}
               </button>
 
               <label>
-                Urgency
+                {t("admin.trustSafety.controls.urgency")}
                 <select className="ds-input" value={urgency} onChange={(event) => setUrgency(event.target.value)}>
                   {urgencyOptions.map((value) => (
                     <option key={value} value={value}>
-                      {label(value)}
+                      {enumLabel("urgency", value)}
                     </option>
                   ))}
                 </select>
@@ -701,11 +757,11 @@ export function TrustSafetyDashboard({
                 onClick={() => void updateUrgency()}
                 disabled={busy || !privilegedAccessActive}
               >
-                Save urgency
+                {t("admin.trustSafety.controls.saveUrgency")}
               </button>
 
               <label>
-                Private note
+                {t("admin.trustSafety.controls.note")}
                 <textarea
                   className="ds-input"
                   value={note}
@@ -719,24 +775,24 @@ export function TrustSafetyDashboard({
                 onClick={() => void addNote()}
                 disabled={busy || !privilegedAccessActive || !note.trim()}
               >
-                Add note
+                {t("admin.trustSafety.controls.addNote")}
               </button>
 
               <label>
-                Action
+                {t("admin.trustSafety.controls.action")}
                 <select className="ds-input" value={actionType} onChange={(event) => setActionType(event.target.value)}>
-                  <option value="no_action_taken">No action taken</option>
-                  <option value="warning">Warning</option>
-                  <option value="restrict">Restrict</option>
-                  <option value="suspend">Suspend</option>
-                  <option value="unsuspend">Unsuspend</option>
+                  {actionOptions.map((value) => (
+                    <option key={value} value={value}>
+                      {t(`admin.trustSafety.enum.action.${value}`)}
+                    </option>
+                  ))}
                 </select>
               </label>
               <textarea
                 className="ds-input"
                 value={actionReason}
                 onChange={(event) => setActionReason(event.target.value.slice(0, 1000))}
-                placeholder="Reason for action"
+                placeholder={t("admin.trustSafety.controls.reasonPlaceholder")}
                 rows={3}
               />
               <button
@@ -745,7 +801,7 @@ export function TrustSafetyDashboard({
                 onClick={() => void takeAction()}
                 disabled={busy || !privilegedAccessActive}
               >
-                Record action
+                {t("admin.trustSafety.controls.recordAction")}
               </button>
             </div>
           </div>

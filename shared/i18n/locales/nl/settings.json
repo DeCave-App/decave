@@ -1,0 +1,1636 @@
+{
+  "groups": {
+    "you": "Jij",
+    "session": "In sessie",
+    "app": "App"
+  },
+  "tabs": {
+    "setup": {
+      "label": "Je setup",
+      "description": "Dingen die je moet regelen, elk met een oplossing in één klik",
+      "keywords": "controle check problemen oplossen aanbevolen aandacht checkup fix"
+    },
+    "profile": {
+      "label": "Profiel en status",
+      "description": "Foto, banner, weergavenaam, voornaamwoorden, bio en status",
+      "keywords": "avatar foto afbeelding banner header bio over status aangepast weergavenaam bijnaam voornaamwoorden accentkleur voorbeeld stille aanwezigheid"
+    },
+    "account": {
+      "label": "Account en apparaten",
+      "description": "Gebruikersnaam, e-mail, wachtwoord, tweestapsverificatie, waar je bent ingelogd en je gegevens",
+      "keywords": "gebruikersnaam e-mail email wachtwoord tweestaps tweestapsverificatie 2fa mfa authenticator totp back-upcodes herstelcodes sessies apparaten ingelogd laatst actief uitloggen inlogmeldingen nieuw apparaat login exporteren downloaden gegevens avg gdpr verwijderen uitschakelen account decave id"
+    },
+    "privacy": {
+      "label": "Privacy en versleuteling",
+      "description": "Versleutelde berichten, vriendschapsverzoeken, geblokkeerde accounts en streamen",
+      "keywords": "versleuteling versleuteld encryptie e2ee sleutel herstelcode dm directe berichten privéberichten alleen vrienden vriendschapsverzoeken blokkeren geblokkeerd deblokkeren typindicator stream voorbeeld streamermodus automatisch rapporten trust safety leeftijd"
+    },
+    "connections": {
+      "label": "Koppelingen",
+      "description": "Steam-, Twitch- en FACEIT-accounts gekoppeld aan DeCave",
+      "keywords": "steam twitch faceit koppelen gekoppeld verbinden account integratie tonen op profiel"
+    },
+    "gaming": {
+      "label": "Gaming en overlay",
+      "description": "Je gameactiviteit, de in-game overlay en toetsencombinaties",
+      "keywords": "game spelen rich presence epic detecteren uitgesloten games wie kan zien zichtbaarheid overlay sneltoetsen toetsencombinaties keybinds hotkeys push to talk dempen onhoorbaar maken"
+    },
+    "voice": {
+      "label": "Spraak & video",
+      "description": "Microfoon, speakers, camera en volume per persoon",
+      "keywords": "microfoon mic invoer speaker headset uitvoer volume speakers testen camera webcam video voorbeeld push to talk ruisonderdrukking echo echoreductie gain versterking gevoeligheid drempel per persoon gebruikersvolume diagnose spraak voice"
+    },
+    "notifications": {
+      "label": "Meldingen en geluiden",
+      "description": "Meldingen, berichtvoorbeelden, stille uren, geluiden en gedempte Hubs",
+      "keywords": "desktop meldingen vermeldingen dm's groepen vriendschapsverzoeken stille uren schema nacht niet storen dempen gedempt hubs kanalen kamers alle berichten niets per hub per kanaal voorinstelling toestemming geluid thema bericht verstuurd ontvangen spraak voice deelnemen verlaten"
+    },
+    "chat": {
+      "label": "Chat",
+      "description": "Berichten versturen, gifs en emotes, emoji en spoilers",
+      "keywords": "enter versturen ctrl nieuwe regel gif emote geanimeerd automatisch afspelen hover emoji groot spoiler spellingcontrole spelling invoerveld"
+    },
+    "appearance": {
+      "label": "Weergave en toegankelijkheid",
+      "description": "Skin, licht en donker, tekstgrootte, beweging en leesbaarheid",
+      "keywords": "thema skin donker licht modus systeem automatisch volgen tekstgrootte schaal zoom lettertype beweging animatie verminderen compact ruim dichtheid contrast hoog links onderstrepen alt-tekst afbeeldingsbeschrijving toegankelijkheid"
+    },
+    "language": {
+      "label": "Taal en regio",
+      "description": "Taal, en hoe datums en tijden worden geschreven",
+      "keywords": "taal vertaling datum tijd notatie 12-uurs 24-uurs klok regio locale"
+    },
+    "app": {
+      "label": "App en info",
+      "description": "Opstarten, systeemvak, desktop-updates, support en wat er nieuw is",
+      "keywords": "opstarten starten met windows macos inloggen autostart systeemvak menubalk updates desktop versie help bug melden contact e-mail over wat is er nieuw patch notes changelog platform"
+    }
+  },
+  "anchors": {
+    "avatar": {
+      "label": "Profielfoto",
+      "keywords": "avatar afbeelding"
+    },
+    "banner": {
+      "label": "Banner"
+    },
+    "displayName": {
+      "label": "Weergavenaam",
+      "keywords": "bijnaam voornaamwoorden"
+    },
+    "status": {
+      "label": "Status",
+      "keywords": "online inactief afwezig niet storen onzichtbaar persoonlijke status"
+    },
+    "bio": {
+      "label": "Bio",
+      "keywords": "over mij"
+    },
+    "accent": {
+      "label": "Profielaccent",
+      "keywords": "kleur"
+    },
+    "quietPresence": {
+      "label": "Stille aanwezigheid",
+      "keywords": "intentie onderbrekingen verloop"
+    },
+    "username": {
+      "label": "Gebruikersnaam"
+    },
+    "email": {
+      "label": "E-mail"
+    },
+    "password": {
+      "label": "Wachtwoord"
+    },
+    "decaveId": {
+      "label": "Jouw DeCave-ID",
+      "keywords": "delen vriend"
+    },
+    "twoFactor": {
+      "label": "Tweestapsverificatie",
+      "keywords": "2fa mfa authenticator totp back-upcodes herstelcodes"
+    },
+    "signInAlerts": {
+      "label": "Inlogmeldingen"
+    },
+    "sessions": {
+      "label": "Waar je bent ingelogd",
+      "keywords": "sessies apparaten uitloggen"
+    },
+    "yourData": {
+      "label": "Je gegevens",
+      "keywords": "exporteren downloaden avg gdpr"
+    },
+    "deleteAccount": {
+      "label": "Account uitschakelen of verwijderen",
+      "keywords": "verwijderen sluiten"
+    },
+    "encryption": {
+      "label": "Versleutelde berichten",
+      "keywords": "e2ee sleutel herstelcode ontgrendelen resetten"
+    },
+    "keyDevices": {
+      "label": "Apparaten met je sleutel"
+    },
+    "friendRequests": {
+      "label": "Vriendschapsverzoeken"
+    },
+    "directMessages": {
+      "label": "Directe berichten",
+      "keywords": "dm alleen vrienden"
+    },
+    "blocked": {
+      "label": "Geblokkeerde accounts",
+      "keywords": "blokkeren deblokkeren"
+    },
+    "streamPrivacy": {
+      "label": "Streamprivacy",
+      "keywords": "stream voorbeeld streamermodus opname"
+    },
+    "typing": {
+      "label": "Typindicatoren"
+    },
+    "reports": {
+      "label": "Je rapporten",
+      "keywords": "trust safety leeftijd"
+    },
+    "steam": {
+      "label": "Steam"
+    },
+    "twitch": {
+      "label": "Twitch"
+    },
+    "faceit": {
+      "label": "FACEIT"
+    },
+    "activityVisibility": {
+      "label": "Wie je game kan zien"
+    },
+    "automaticActivity": {
+      "label": "Automatische activiteit",
+      "keywords": "games detecteren rich presence epic"
+    },
+    "excludedGames": {
+      "label": "Uitgesloten games"
+    },
+    "overlay": {
+      "label": "In-game overlay",
+      "keywords": "overlay grootte spraak voice avatars"
+    },
+    "keybinds": {
+      "label": "Toetsencombinaties",
+      "keywords": "globale sneltoetsen toetsencombinaties hotkeys keybinds dempen onhoorbaar maken"
+    },
+    "pushToTalk": {
+      "label": "Push to Talk",
+      "keywords": "ptt toets ingedrukt houden"
+    },
+    "shortcuts": {
+      "label": "Alle sneltoetsen",
+      "keywords": "toetsenbord hotkeys"
+    },
+    "devices": {
+      "label": "Apparaten",
+      "keywords": "microfoon mic invoer speaker headset"
+    },
+    "inputMode": {
+      "label": "Invoermodus",
+      "keywords": "spraakactiviteit spraakactivering push to talk"
+    },
+    "inputVolume": {
+      "label": "Invoervolume"
+    },
+    "noiseSuppression": {
+      "label": "Ruisonderdrukking",
+      "keywords": "clearvoice achtergrondgeluid ruis"
+    },
+    "voiceProcessing": {
+      "label": "Spraakverwerking",
+      "keywords": "echoreductie echo-onderdrukking automatische versterking gain"
+    },
+    "output": {
+      "label": "Uitvoer",
+      "keywords": "uitvoervolume speakers testen"
+    },
+    "camera": {
+      "label": "Camera",
+      "keywords": "webcam video voorbeeld"
+    },
+    "micTest": {
+      "label": "Mictest"
+    },
+    "peopleVolume": {
+      "label": "Mensen die je hebt aangepast",
+      "keywords": "per persoon gebruikersvolume"
+    },
+    "notificationPreset": {
+      "label": "Meldingsvoorinstelling"
+    },
+    "desktopNotifications": {
+      "label": "Desktopmeldingen",
+      "keywords": "meldingen vermeldingen dm's groepen toestemming"
+    },
+    "messagePreviews": {
+      "label": "Berichtvoorbeelden"
+    },
+    "quietHours": {
+      "label": "Stille uren",
+      "keywords": "schema nacht niet storen"
+    },
+    "soundTheme": {
+      "label": "Geluiden",
+      "keywords": "geluidsthema bericht verstuurd ontvangen spraak deelnemen verlaten"
+    },
+    "mutedPlaces": {
+      "label": "Gedempte Hubs en kanalen",
+      "keywords": "dempen dempen opheffen niveau"
+    },
+    "sendKey": {
+      "label": "Berichten versturen met",
+      "keywords": "enter ctrl nieuwe regel"
+    },
+    "animate": {
+      "label": "Geanimeerde gifs en emotes",
+      "keywords": "automatisch afspelen hover"
+    },
+    "largeEmoji": {
+      "label": "Grote emoji"
+    },
+    "spoilers": {
+      "label": "Spoilers"
+    },
+    "spellcheck": {
+      "label": "Spellingcontrole",
+      "keywords": "spelling"
+    },
+    "skin": {
+      "label": "Skin",
+      "keywords": "thema"
+    },
+    "themeMode": {
+      "label": "Licht en donker",
+      "keywords": "thema donker licht modus systeem automatisch"
+    },
+    "textSize": {
+      "label": "Tekst- en interfacegrootte",
+      "keywords": "schaal zoom lettertype"
+    },
+    "readability": {
+      "label": "Beweging en leesbaarheid",
+      "keywords": "animatie verminderen compact ruim dichtheid contrast links onderstrepen alt-tekst afbeeldingsbeschrijving"
+    },
+    "appLanguage": {
+      "label": "Taal"
+    },
+    "dateStyle": {
+      "label": "Datumstijl"
+    },
+    "timeFormat": {
+      "label": "Tijdnotatie",
+      "keywords": "12-uurs 24-uurs klok"
+    },
+    "startup": {
+      "label": "Starten met je computer",
+      "keywords": "opstarten inloggen autostart"
+    },
+    "tray": {
+      "label": "Minimaliseren naar systeemvak",
+      "keywords": "menubalk sluiten tray"
+    },
+    "updates": {
+      "label": "Updates desktop-app",
+      "keywords": "versie herstarten"
+    },
+    "support": {
+      "label": "Help",
+      "keywords": "bug melden contact support"
+    },
+    "whatsNew": {
+      "label": "Wat is er nieuw",
+      "keywords": "patch notes changelog"
+    }
+  },
+  "toast": {
+    "saved": "Opgeslagen",
+    "undone": "Wijziging ongedaan gemaakt",
+    "undo": "Ongedaan maken"
+  },
+  "field": {
+    "couldntSave": "Opslaan mislukt",
+    "retry": "Opnieuw",
+    "on": "AAN",
+    "off": "UIT"
+  },
+  "window": {
+    "title": "Instellingen",
+    "signedInAs": "Ingelogd als",
+    "closeTitle": "Instellingen sluiten (Esc)",
+    "close": "Instellingen sluiten",
+    "sections": "Instellingssecties",
+    "search": "Instellingen zoeken",
+    "clearSearch": "Zoekopdracht in instellingen wissen",
+    "clear": "Wissen",
+    "matchingSettings": "Gevonden instellingen",
+    "setupBadge_one": "{{count}} ding om te checken",
+    "setupBadge_other": "{{count}} dingen om te checken",
+    "noMatches": "Geen instellingen gevonden voor “{{query}}”.",
+    "moreInDesktop": "Meer opties in de desktop-app",
+    "downloadDesktop": "Desktop-app downloaden"
+  },
+  "profile": {
+    "photoTitle": "Profiel",
+    "photoHelp": "PNG, JPEG of WebP · maximaal 2 MB",
+    "savingDots": "Opslaan…",
+    "saving": "Opslaan…",
+    "changePhoto": "Foto wijzigen",
+    "remove": "Verwijderen",
+    "bannerTitle": "Banner en naam",
+    "changeBanner": "Banner wijzigen",
+    "addBanner": "Banner toevoegen",
+    "bannerHelp": "PNG, JPEG of WebP · max. 3 MB · 3:1 ziet er het best uit",
+    "displayName": "Weergavenaam",
+    "displayNameHelp": "Op je profiel getoond in plaats van je gebruikersnaam. Laat leeg om {{username}} te gebruiken.",
+    "pronouns": "Voornaamwoorden",
+    "pronounsPlaceholder": "bijv. zij/haar, hij/hem, hen/die",
+    "pronounsHelp": "Optioneel. Getoond naast je naam op je profiel.",
+    "previewCaption": "Voorbeeld · hoe anderen je profiel zien",
+    "presenceTitle": "Profiel en aanwezigheid",
+    "status": "Status",
+    "statuses": {
+      "online": "Online",
+      "idle": "Inactief",
+      "dnd": "Niet storen",
+      "invisible": "Onzichtbaar"
+    },
+    "customStatus": "Persoonlijke status",
+    "customStatusPlaceholder": "Vanavond ranked grinden",
+    "bio": "Bio",
+    "accent": "Profielaccent",
+    "accentHelp": "Het profielaccent kleurt de ring om je avatar en de highlights op je profiel. Wijzigingen zie je meteen en worden automatisch opgeslagen."
+  },
+  "quietPresence": {
+    "kicker": "Stille aanwezigheid",
+    "title": "Deel je intentie, houd de controle",
+    "mapping": "Aanwezigheid gebruikt de bestaande status {{status}} en meldingsvoorinstelling {{preset}}.",
+    "saveError": "Stille aanwezigheid kon niet op dit apparaat worden opgeslagen.",
+    "intent": "Intentie",
+    "intentLabel": "Aanwezigheidsintentie",
+    "intents": {
+      "available": "Beschikbaar",
+      "playing": "Aan het gamen",
+      "watching": "Aan het kijken",
+      "planning": "Aan het plannen",
+      "quiet": "Stil"
+    },
+    "expires": "Verloopt",
+    "expiryLabel": "Verloop van aanwezigheid",
+    "expiry": {
+      "none": "Tot ik het wijzig",
+      "hour": "1 uur",
+      "fourHours": "4 uur",
+      "today": "Tot einde van de dag"
+    },
+    "interrupts": "Onderbrekingen",
+    "interrupt": {
+      "urgentMentions": "Dringende vermeldingen",
+      "ordinaryJoins": "Gewone deelnames",
+      "soundboardEvents": "Soundboard-gebeurtenissen",
+      "recommendations": "Aanbevelingen"
+    },
+    "note": "Lokaal opgeslagen door de integratie. Beschikbaarheid in Squad Finder volgt deze intentie; dringende vermeldingen worden apart geregeld."
+  },
+  "account": {
+    "detailsTitle": "Accountgegevens",
+    "username": "Gebruikersnaam",
+    "usernameAgain": "Kan weer worden gewijzigd op {{date}}",
+    "usernameRule": "Kan eens per 30 dagen worden gewijzigd",
+    "edit": "Bewerken",
+    "email": "E-mail",
+    "verified": "Geverifieerd",
+    "verificationRequired": "Verificatie vereist",
+    "noEmail": "Geen e-mail toegevoegd",
+    "hiddenByStreamerMode": "Verborgen door Streamermodus",
+    "notAdded": "Niet toegevoegd",
+    "password": "Wachtwoord",
+    "passwordHelp": "Als je je wachtwoord wijzigt, worden alle actieve sessies uitgelogd.",
+    "localVerification": "Lokale e-mailverificatielink openen",
+    "decaveIdTitle": "Jouw DeCave-ID",
+    "decaveIdHelp": "Deel deze unieke ID met iemand die je vertrouwt, zodat diegene je een vriendschapsverzoek kan sturen. Je online/offline-status is pas voor diegene zichtbaar nadat jullie vrienden zijn geworden.",
+    "copyDecaveId": "DeCave-ID kopiëren",
+    "twoFactorTitle": "Tweestapsverificatie",
+    "loginAlerts": "Mail me over nieuwe logins",
+    "loginAlertsHelp": "Als er een nieuw apparaat, nieuwe app of nieuw land inlogt op je account, mailen we {{email}} met een knop \"Dit was ik niet\".",
+    "yourVerifiedAddress": "je geverifieerde adres",
+    "loginAlertsNeedEmail": "Voeg een e-mailadres toe en verifieer het om inlogmeldingen te krijgen.",
+    "sessionsTitle": "Waar je bent ingelogd",
+    "yourDataTitle": "Je gegevens",
+    "dangerTitle": "Account uitschakelen of verwijderen",
+    "disable": "Account uitschakelen",
+    "delete": "Account verwijderen"
+  },
+  "sessions": {
+    "none": "Er zijn geen actieve sessies teruggegeven. Vernieuw om het opnieuw te proberen.",
+    "unknownDevice": "Onbekend apparaat",
+    "thisDevice": "Dit apparaat",
+    "activeNow": "Nu actief",
+    "active": "Actief {{when}}",
+    "notUsedSince": "Niet gebruikt sinds {{date}}",
+    "notRecorded": "Laatste activiteit nog niet vastgelegd",
+    "signedIn": "Ingelogd {{signedIn}} · Blijft ingelogd tot {{until}}",
+    "signingOut": "Uitloggen…",
+    "signOut": "Uitloggen",
+    "refresh": "Vernieuwen",
+    "signOutAll_one": "Alle {{count}} apparaten uitloggen",
+    "signOutAll_other": "Alle {{count}} apparaten uitloggen",
+    "help": "Alle apparaten uitloggen geldt ook voor dit apparaat. Herken je een apparaat niet? Log het uit, wijzig dan je wachtwoord en zet tweestapsverificatie aan."
+  },
+  "yourData": {
+    "title": "Mijn gegevens downloaden",
+    "description": "Je profiel, instellingen, vrienden, Hubs, blokkeringen, logins en de berichten die je hebt geschreven, als JSON-bestand.",
+    "preparing": "Voorbereiden…",
+    "download": "Downloaden",
+    "downloaded": "Je gegevens zijn gedownload.",
+    "prepareRetry": "Kan je gegevens niet voorbereiden. Probeer het opnieuw.",
+    "prepareFailed": "Kan je gegevens niet voorbereiden."
+  },
+  "twoFactor": {
+    "title": "Tweestapsverificatie",
+    "checking": "Controleren…",
+    "on_one": "Aan · nog {{count}} back-upcode",
+    "on_other": "Aan · nog {{count}} back-upcodes",
+    "off": "Uit · Vraagt om een code uit een authenticator-app als je inlogt op een nieuw apparaat.",
+    "turnOn": "Aanzetten",
+    "newCodes": "Nieuwe back-upcodes",
+    "turnOff": "Uitzetten",
+    "runningOut": "Je back-upcodes raken op. Maak een nieuwe set zodat je niet buitengesloten raakt.",
+    "installApp": "Installeer een authenticator-app (Google Authenticator, Microsoft Authenticator, 1Password, Authy…) en bevestig daarna je wachtwoord om te beginnen.",
+    "cancel": "Annuleren",
+    "continue": "Doorgaan",
+    "qrAlt": "QR-code voor je authenticator-app",
+    "scan": "Scan deze code met je authenticator-app.",
+    "cantScan": "Lukt scannen niet? Voer in plaats daarvan deze sleutel in:",
+    "typeCode": "Typ de 6-cijferige code die de app toont.",
+    "sixDigit": "6-cijferige code",
+    "turnOnTwoFactor": "2FA aanzetten",
+    "saveCodesNow": "Bewaar deze back-upcodes nu.",
+    "saveCodesDetail": "Elke code werkt één keer als je je telefoon kwijtraakt. Je ziet ze niet opnieuw.",
+    "copied": "Gekopieerd",
+    "copy": "Kopiëren",
+    "downloadTxt": ".txt downloaden",
+    "savedThem": "Ik heb ze bewaard",
+    "fileHeader": "DeCave-back-upcodes\nElke code werkt één keer. Bewaar ze op een veilige plek.",
+    "disableWarning": "Als je tweestapsverificatie uitzet, is je account makkelijker over te nemen. Bevestig dat jij het bent.",
+    "regenerateWarning": "Je oude back-upcodes werken niet meer zodra je nieuwe maakt. Bevestig dat jij het bent.",
+    "turnOffTwoFactor": "2FA uitzetten",
+    "makeNewCodes": "Nieuwe codes maken",
+    "codeLabel": "Authenticator- of back-upcode",
+    "currentPassword": "Huidig wachtwoord",
+    "error": "Er ging iets mis.",
+    "errorRetry": "Er ging iets mis. Probeer het opnieuw."
+  },
+  "owner": {
+    "title": "Platformeigenaar",
+    "intro": "MFA is vereist wanneer een ingeschreven platformeigenaar inlogt. Bevoorrechte acties voor eigenaarbeheer vereisen ook een nieuwe controle met wachtwoord + MFA.",
+    "mfaEnabled": "✓ Eigenaar-MFA ingeschakeld",
+    "currentPassword": "Huidig wachtwoord",
+    "pleaseWait": "Even geduld…",
+    "setUpMfa": "Eigenaar-MFA instellen",
+    "addSecret": "Voeg dit geheim toe aan je authenticator-app:",
+    "sixDigit": "6-cijferige authenticatorcode",
+    "enableMfa": "Eigenaar-MFA inschakelen",
+    "unlockTitle": "Bevoorrechte eigenaaracties ontgrendelen",
+    "codePlaceholder": "Authenticator- of back-upcode",
+    "unlock": "10 minuten ontgrendelen",
+    "replaceMfa": "Eigenaar-MFA vervangen",
+    "replaceHelp": "Voor het vervangen van MFA zijn je huidige wachtwoord en een authenticator- of back-upcode nodig. Een actieve eigenaar-ontgrendeling kan als factorbewijs dienen.",
+    "ownersTitle": "Platformeigenaren",
+    "demote": "Degraderen",
+    "promotePlaceholder": "Promoveren via DeCave-ID, gebruikersnaam of geverifieerd e-mailadres",
+    "promote": "Platformeigenaar promoveren",
+    "regenerate": "Mijn back-upcodes opnieuw genereren",
+    "saveCodes": "Bewaar deze back-upcodes nu offline.",
+    "codesHelp": "Elke code werkt één keer. Een nieuwe set maakt de oude set ongeldig."
+  },
+  "encryption": {
+    "intro": "Privéberichten en groepschats zijn end-to-end versleuteld zodra iedereen in het gesprek een actuele versie van DeCave gebruikt: alleen de mensen in het gesprek kunnen ze lezen, DeCave niet. Je apparaten delen één sleutel, die elke maand verandert. Bewaar je herstelcode op een veilige plek: zonder die code of een ander ingelogd apparaat kan versleutelde geschiedenis niet worden hersteld.",
+    "statusLabel": "Status:",
+    "status": {
+      "ready": "Dit apparaat kan end-to-end versleutelde berichten lezen en versturen.",
+      "locked": "Vergrendeld: keur dit apparaat goed vanaf een ander apparaat, of voer je herstelcode in.",
+      "error": "Niet beschikbaar: {{error}}",
+      "starting": "Starten…"
+    },
+    "keyId": "Sleutel-ID:",
+    "unlock": "Ontgrendelen op dit apparaat",
+    "newCode": "Nieuwe herstelcode maken",
+    "newCodeFailed": "Kan geen nieuwe herstelcode maken.",
+    "reset": "Versleutelingssleutel resetten",
+    "historyTitle": "Oude versleutelde berichten leesbaar houden",
+    "historyHelp": "Hoe korter, hoe minder van je verleden een gestolen apparaat of herstelcode kan lezen. Oudere versleutelde berichten worden onleesbaar op al je apparaten. De apparaten van de ander volgen hun eigen instelling.",
+    "historyConfirm": "Versleutelde berichten ouder dan {{when}} worden onleesbaar op al je apparaten. Dit kan niet ongedaan worden gemaakt. Doorgaan?",
+    "historyFailed": "Kan de instelling niet opslaan.",
+    "history": {
+      "always": "Altijd",
+      "year": "1 jaar",
+      "days_one": "{{count}} dag",
+      "days_other": "{{count}} dagen"
+    }
+  },
+  "privacy": {
+    "encryptionTitle": "Versleutelde berichten",
+    "safetyTitle": "Trust & safety",
+    "reportsTitle": "Je rapporten",
+    "reportsHelp": "Bekijk de rapporten die je naar het veiligheidsteam van DeCave hebt gestuurd en wat ermee is gebeurd.",
+    "openReports": "Mijn rapporten openen",
+    "ageSetting": "Leeftijdsinstelling",
+    "age": {
+      "adult": "Volwassenenervaring",
+      "teen": "Veiligheidsmodus voor tieners",
+      "unknown": "Niet bevestigd"
+    },
+    "friendRequestsTitle": "Vriendschapsverzoeken",
+    "friendRequestsLabel": "Wie je een vriendschapsverzoek mag sturen",
+    "friendRequestPolicy": {
+      "everyone": "Iedereen",
+      "friends_of_friends": "Vrienden van vrienden",
+      "none": "Niemand"
+    },
+    "friendRequestsHelp": "DeCave dwingt dit af wanneer een verzoek wordt verstuurd; het wordt niet alleen in de interface verborgen.",
+    "dmTitle": "Directe berichten",
+    "dmOnlyFriends": "Alleen vrienden kunnen je berichten sturen",
+    "dmHelp": "DeCave bezorgt geen privéberichten of groepsuitnodigingen van mensen die niet je vrienden zijn, en nooit van mensen die je hebt geblokkeerd. Bepaal wie je vriend kan worden via Vriendschapsverzoeken hierboven.",
+    "blockedTitle": "Geblokkeerde accounts",
+    "streamTitle": "Streamprivacy",
+    "streamPreviews": "Streamvoorbeelden toestaan",
+    "streamPreviewsHelp": "Mensen in het spraakkanaal zien misschien een klein voorbeeld voordat ze op Bekijken klikken.",
+    "streamerMode": "Streamermodus",
+    "streamerModeHelp": "Persoonlijke accountgegevens maskeren en DeCave-desktopvensters beschermen tegen normale capture-API's.",
+    "autoStreamer": "Streamermodus aanzetten als ik stream",
+    "autoStreamerHelp": "Gaat vanzelf aan als er een uitzendapp open is, en weer uit als je die sluit.",
+    "autoStreamerUpdate": "Werk de DeCave-desktop-app bij om dit te gebruiken. Hiervoor heb je de nieuwste versie nodig.",
+    "autoStreamerLive": "Streamermodus staat nu aan omdat {{apps}} draait.",
+    "captureWeb": "Bescherming tegen vensteropname is beschikbaar in de DeCave-desktop-app voor Windows en macOS. Gevoelige waarden worden in deze interface nog steeds gemaskeerd.",
+    "presenceTitle": "Aanwezigheidsprivacy",
+    "typing": "Typindicatoren versturen",
+    "typingHelp": "Als dit uit staat, zien mensen in Hub-tekstkanalen niet dat je aan het typen bent."
+  },
+  "blocked": {
+    "title": "Geblokkeerde accounts",
+    "titleCount": "Geblokkeerde accounts · {{count}}",
+    "help": "Geblokkeerde mensen kunnen je geen berichten of vriendschapsverzoeken sturen en je niet aan groepen toevoegen. Ze krijgen niet te horen dat je ze hebt geblokkeerd.",
+    "loading": "Laden…",
+    "none": "Je hebt niemand geblokkeerd.",
+    "find": "Geblokkeerd account zoeken",
+    "blockedOn": "Geblokkeerd {{date}}",
+    "unblocking": "Deblokkeren…",
+    "unblock": "Deblokkeren",
+    "loadFailed": "Kan je geblokkeerde accounts niet laden.",
+    "unblockFailed": "Kan {{name}} niet deblokkeren. Probeer het opnieuw."
+  },
+  "connections": {
+    "title": "Gekoppelde accounts",
+    "intro": "Accounts die je aan DeCave koppelt. Elk account doet alleen wat hier staat beschreven.",
+    "loading": "Laden…",
+    "loadFailed": "Kan je koppelingen niet laden.",
+    "retry": "Opnieuw",
+    "connected": "Gekoppeld als {{name}}",
+    "notConnected": "Niet gekoppeld",
+    "connect": "Koppelen",
+    "connecting": "Openen…",
+    "disconnect": "Ontkoppelen",
+    "showOnProfile": "Tonen op mijn profiel",
+    "actionFailed": "Dat werkte niet. Probeer het opnieuw.",
+    "finishInBrowser": "Rond het inloggen af in het browservenster en kom dan hier terug.",
+    "providers": {
+      "steam": {
+        "name": "Steam",
+        "use": "Toont de game die je speelt als er op deze computer geen game wordt gedetecteerd. Je Steam-wachtwoord voer je alleen in op Steam."
+      },
+      "twitch": {
+        "name": "Twitch",
+        "use": "Geeft je abonneerollen in Hubs die Twitch-abonnees belonen."
+      },
+      "faceit": {
+        "name": "FACEIT",
+        "use": "Toont je FACEIT-level en ELO op ranglijsten en in Hubs die FACEIT-badges gebruiken."
+      }
+    },
+    "steamPresence": "Steam-status gebruiken",
+    "steamPresenceHelp": "Gebruik je gekoppelde Steam-account als er geen lokale game wordt gedetecteerd",
+    "steamPlaying": "Speelt {{game}}",
+    "steamIdle": "Nu geen openbare Steam-gameactiviteit",
+    "checkActivity": "Activiteit nu controleren"
+  },
+  "gaming": {
+    "visibilityTitle": "Wie je game kan zien",
+    "visibilityLabel": "Wie de game kan zien die je speelt",
+    "visibility": {
+      "everyone": {
+        "label": "Iedereen",
+        "detail": "Iedereen die je profiel kan zien"
+      },
+      "friends": {
+        "label": "Vrienden",
+        "detail": "Alleen mensen in je vriendenlijst"
+      },
+      "nobody": {
+        "label": "Niemand",
+        "detail": "Houd het voor jezelf"
+      }
+    },
+    "visibilityHelp": "DeCave dwingt dit af voor iedereen. Je eigen game zie je hier altijd.",
+    "automaticTitle": "Automatische activiteit",
+    "noActivity": "Geen activiteit",
+    "detectedSource": "gedetecteerd",
+    "automaticSource": "Automatisch · {{source}}",
+    "automaticFor": "Automatisch · {{source}} · Speelt al {{elapsed}}",
+    "noAutomatic": "Geen automatische gameactiviteit gedetecteerd",
+    "live": "LIVE",
+    "publish": "Automatische activiteit tonen",
+    "publishHelp": "Gedetecteerde games op je DeCave-profiel tonen",
+    "detect": "Games op deze computer detecteren",
+    "detectHelp": "Controleert actieve apps op dit apparaat en koppelt je Steam- en Epic-games. Alleen de gamenaam verlaat je computer.",
+    "detected": "Gedetecteerd {{store}}: {{game}}",
+    "detectedFor": "Gedetecteerd {{store}}: {{game}} · Speelt al {{elapsed}}",
+    "noneDetected": "Er wordt nu geen actieve Steam- of Epic-game gedetecteerd.",
+    "excluded": "Uitgesloten games",
+    "excludedPlaceholder": "Game één, Game twee",
+    "excludedHelp": "Exacte gamenamen, gescheiden door komma's. Detectie blijft lokaal; uitgesloten titels worden niet getoond.",
+    "overlayTitle": "In-game overlay",
+    "overlay": "In-game spraakoverlay",
+    "overlayHelp": "Toon compacte avatars van spraakdeelnemers over games en markeer wie er praat.",
+    "overlaySize": "Overlaygrootte",
+    "overlaySizeUpdate": "Werk de DeCave-desktop-app bij om de grootte te wijzigen en de nieuwe compacte overlay te krijgen.",
+    "overlaySizeHelp": "Hoe groot de spraaklabels over je game zijn. Het voorbeeld laat ongeveer zien hoe ze eruitzien.",
+    "overlaySample": "Squad-spraak · {{count}}",
+    "keybindsTitle": "Toetsencombinaties",
+    "keybindsHelp": "Deze sneltoetsen werken ook als een game de focus heeft. Gebruik minstens één modificatietoets zoals Ctrl, Alt of Shift.",
+    "keybindsWeb": "Push to Talk werkt als DeCave de focus heeft. Globale sneltoetsen voor dempen en onhoorbaar maken hebben de DeCave-desktop-app nodig, omdat een browsertabblad geen toetsen hoort als een game de focus heeft.",
+    "keybind": {
+      "toggleMute": {
+        "label": "Dempen aan/uit",
+        "detail": "Je microfoon dempen of weer aanzetten."
+      },
+      "toggleDeafen": {
+        "label": "Onhoorbaar maken aan/uit",
+        "detail": "Inkomende spraak en je microfoon tegelijk dempen."
+      }
+    },
+    "pressShortcut": "Druk op sneltoets…",
+    "pushToTalk": "Push to Talk",
+    "pushToTalkHelp": "Houd deze toets ingedrukt om te zenden.",
+    "pushToTalkOff": "Gebruikt als Spraak & video op Push to Talk staat.",
+    "pressKey": "Druk op een toets…",
+    "noKey": "Geen toets ingesteld",
+    "keybindHint": "Klik op een sneltoets en druk dan op de nieuwe toetscombinatie.",
+    "resetDefaults": "Standaard herstellen",
+    "sameShortcut": "Deze acties kunnen niet dezelfde sneltoets gebruiken.",
+    "shortcutsTitle": "Alle sneltoetsen"
+  },
+  "shortcuts": {
+    "anywhere": "Overal",
+    "search": "Zoek en spring naar een Hub, kanaal of persoon",
+    "inbox": "Je inbox openen",
+    "escape": "Het geopende menu, dialoogvenster of Instellingen sluiten",
+    "voice": "Spraak",
+    "pushToTalk": "Ingedrukt houden om te praten (Push to Talk)",
+    "mute": "Microfoon dempen of dempen opheffen (desktop-app, werkt in games)",
+    "deafen": "Onhoorbaar maken of opheffen (desktop-app, werkt in games)",
+    "sidebar": "Hub-zijbalk (eigenaren en beheerders)",
+    "moveUp": "Het geselecteerde kanaal omhoog verplaatsen binnen het vak",
+    "moveDown": "Het geselecteerde kanaal omlaag verplaatsen binnen het vak",
+    "forum": "Een forumpost schrijven",
+    "bold": "Vet",
+    "italic": "Cursief",
+    "link": "Link toevoegen",
+    "publish": "Publiceren"
+  },
+  "voice": {
+    "kicker": "Spraak & audio",
+    "headline": "Geluid dat goed voelt",
+    "intro": "Kies je apparaten, stel de microfoon af en bepaal hoe DeCave je stem verwerkt.",
+    "db": "{{value}} dB",
+    "mic": {
+      "starting": "Microfoon starten…",
+      "unavailable": "Microfoon niet beschikbaar",
+      "testLive": "Mictest live",
+      "live": "Microfoon live",
+      "off": "Microfoon uit"
+    },
+    "devices": {
+      "title": "Apparaten",
+      "help": "Waar je stem vandaan komt en waar het geluid naartoe gaat",
+      "input": "Invoerapparaat",
+      "defaultInput": "Standaardmicrofoon",
+      "microphoneNumbered": "Microfoon {{number}}",
+      "output": "Uitvoerapparaat",
+      "defaultOutput": "Standaarduitvoer",
+      "outputNumbered": "Uitvoer {{number}}"
+    },
+    "level": {
+      "title": "Invoerniveau",
+      "live": "Live microfoonniveau",
+      "afterSuppression": "Je microfoon na ruisonderdrukking, en de activeringsdrempel",
+      "withThreshold": "Live microfoonniveau en activeringsdrempel",
+      "threshold": "Drempel {{value}} dB",
+      "thresholdTitle": "Activeringsdrempel"
+    },
+    "diagnostics": "Technische audiometingen tonen",
+    "metrics": {
+      "transmit": "Zenden {{value}} dB",
+      "rms": "RMS {{value}}",
+      "activity": "Activiteit {{value}}%",
+      "post": "Na {{value}} dB",
+      "raw": "Ruw {{value}} dB",
+      "floor": "Ruisvloer {{value}} dB",
+      "vad": "VAD {{value}}%"
+    },
+    "activation": {
+      "title": "Spraakactiviteit",
+      "help": "Stel de gate af terwijl je je live invoerniveau bekijkt",
+      "auto": {
+        "label": "Automatisch",
+        "detail": "DeCave past zich aan je omgeving aan"
+      },
+      "manual": {
+        "label": "Handmatig",
+        "detail": "Jij stelt de activeringsdrempel in"
+      },
+      "threshold": "Activeringsdrempel",
+      "thresholdHelp": "Verschuif de markering hierboven tot achtergrondgeluid wordt tegengehouden"
+    },
+    "inputVolume": {
+      "title": "Invoervolume",
+      "help": "Je microfoonniveau versterken of verlagen"
+    },
+    "mode": {
+      "title": "Invoermodus",
+      "help": "Kies spraakactiviteit of houd een toets ingedrukt om te praten",
+      "activation": "Spraakactiviteit",
+      "activationHelp": "Je microfoon gaat open als je praat",
+      "pushToTalk": "Push to Talk",
+      "pushToTalkHelp": "Alleen zenden terwijl je gekozen toets ingedrukt is",
+      "key": "Push to Talk-toets: {{key}}.",
+      "noKey": "Er is nog geen Push to Talk-toets ingesteld.",
+      "changeKey": "Toets wijzigen"
+    },
+    "noise": {
+      "title": "Ruisonderdrukking",
+      "help": "Filter toetsenbord-, ventilator- en achtergrondgeluid voordat je stem wordt verstuurd",
+      "unavailable": "Niet beschikbaar",
+      "unsupported": "Niet ondersteund door deze browser",
+      "modes": {
+        "off": {
+          "label": "Uit",
+          "subtitle": "Ruwe microfoon",
+          "description": "Geen verwerking"
+        },
+        "strong": {
+          "label": "Standaard",
+          "subtitle": "Ingebouwd filter",
+          "description": "Ruisonderdrukking gericht op gaming die op elk apparaat werkt"
+        },
+        "ai": {
+          "label": "DeCave ClearVoice",
+          "subtitle": "Ruisonderdrukking door DeCave",
+          "description": "Lokale AI-verwerking voor een helderdere stem in lawaaiige omgevingen"
+        },
+        "deepfilter": {
+          "label": "DeepFilterNet",
+          "subtitle": "Diepe ruisfiltering",
+          "description": "Sterkste lokale AI-filtering voor toetsenborden, klikken en luide ruimtes"
+        }
+      }
+    },
+    "processing": {
+      "title": "Spraakverwerking",
+      "help": "Extra verwerking door je browser",
+      "echo": "Echoreductie",
+      "echoHelp": "Voorkom dat geluid uit je speakers terugkomt in je microfoon",
+      "gain": "Automatische versterking",
+      "gainHelp": "Houd je stem op een gelijkmatiger volume"
+    },
+    "output": {
+      "title": "Uitvoer",
+      "help": "Hoe hard anderen klinken, en een snelle check of het geluid je speakers of headset bereikt",
+      "volume": "Uitvoervolume",
+      "volumeHelp": "Geldt voor iedereen in spraak. Volumes per persoon komen hier bovenop.",
+      "playing": "Afspelen…",
+      "test": "Speakers testen",
+      "testFailed": "Kan het testgeluid niet afspelen op dit apparaat."
+    },
+    "camera": {
+      "title": "Camera",
+      "help": "Gebruikt als je je camera aanzet in een spraakkanaal",
+      "preview": "Cameravoorbeeld",
+      "previewOff": "Voorbeeld staat uit",
+      "default": "Standaardcamera",
+      "numbered": "Camera {{number}}",
+      "stop": "Voorbeeld stoppen",
+      "start": "Voorbeeld starten",
+      "openFailed": "DeCave kon die camera niet openen. Controleer of geen andere app hem gebruikt en of cameratoegang is toegestaan."
+    },
+    "people": {
+      "title": "Mensen die je hebt aangepast",
+      "help": "Klik met de rechtermuisknop op iemand in een spraakkanaal om diegene harder of zachter te zetten",
+      "empty": "Iedereen staat op normaal volume.",
+      "muted": "Gedempt voor jou",
+      "volumeFor": "Volume voor {{name}}",
+      "reset": "Resetten",
+      "resetAll": "Iedereen resetten",
+      "unknown": "Iemand die je in spraak hebt gehoord"
+    },
+    "liveNote": "Spraakwijzigingen gelden meteen en worden op dit apparaat opgeslagen.",
+    "micTest": {
+      "title": "Mictest",
+      "help": "Hoor hoe je microfoon klinkt met je huidige verwerking.",
+      "stop": "Test stoppen",
+      "start": "Microfoon testen"
+    }
+  },
+  "notifications": {
+    "title": "Meldingen",
+    "preset": "Meldingsvoorinstelling",
+    "presetHelp": "Kies een logische basis en pas daarna hieronder afzonderlijke schakelaars aan.",
+    "presets": {
+      "all": "Alle activiteit",
+      "mentions": "Alleen @mentions",
+      "quiet": "Stil"
+    },
+    "desktop": "Desktopmeldingen",
+    "desktopHelp": "Pop-upmeldingen terwijl DeCave op de achtergrond draait",
+    "kinds": {
+      "friendRequests": "Vriendschapsverzoeken",
+      "dms": "Privéberichten",
+      "groups": "Groepsberichten",
+      "mentions": "Vermeldingen"
+    },
+    "permissionDesktop": "Toestemming van {{platform}} vereist",
+    "permissionBrowser": "Browsertoestemming vereist",
+    "permissionDesktopHelp": "Sta DeCave-meldingen toe in de instellingen van {{platform}} om meldingen te krijgen terwijl DeCave op de achtergrond draait.",
+    "permissionBrowserHelp": "Sta meldingen voor app.de-cave.com toe in je browser om meldingen te krijgen terwijl dit tabblad op de achtergrond staat.",
+    "requestPermission": "Toestemmingsverzoek openen",
+    "previewsTitle": "Berichtvoorbeelden",
+    "previewsHelp": "Kies hoeveel van de inhoud van privéberichten DeCave toont in desktop- en in-app-meldingen.",
+    "previews": {
+      "full": {
+        "label": "Volledig voorbeeld",
+        "detail": "Afzender en berichttekst tonen."
+      },
+      "sender": {
+        "label": "Alleen afzender",
+        "detail": "Tonen wie het stuurde, maar de berichttekst verbergen."
+      },
+      "hidden": {
+        "label": "Verborgen",
+        "detail": "Alleen een algemene DeCave-melding tonen."
+      }
+    },
+    "quiet": {
+      "sectionTitle": "Stille uren",
+      "title": "Stille uren",
+      "now": "Nu stil. Meldingen en meldingsgeluiden zijn gepauzeerd.",
+      "daily": "Elke dag van {{start}} tot {{end}}.",
+      "help": "Pauzeer meldingen en meldingsgeluiden elke dag op hetzelfde tijdstip.",
+      "from": "Van",
+      "until": "Tot",
+      "allowMentions": "Toch melden bij privéberichten en vermeldingen"
+    },
+    "soundsTitle": "Geluiden",
+    "theme": "Geluidsthema",
+    "themeHelp": "Kies hoe de interfacegeluiden van DeCave klinken. Uit schakelt interfacegeluiden uit zonder desktopmeldingen te wijzigen.",
+    "themes": {
+      "off": {
+        "label": "Uit",
+        "detail": "Stille interface"
+      },
+      "soft": {
+        "label": "Zacht",
+        "detail": "Subtiel en strak"
+      },
+      "pulse": {
+        "label": "Pulse",
+        "detail": "Modern en energiek"
+      },
+      "arcade": {
+        "label": "Arcade",
+        "detail": "Retrogaming"
+      }
+    },
+    "events": {
+      "send": {
+        "label": "Bericht verstuurd",
+        "detail": "Als je een bericht verstuurt"
+      },
+      "receive": {
+        "label": "Bericht ontvangen",
+        "detail": "Inkomende DM's en kanaalberichten"
+      },
+      "voiceJoin": {
+        "label": "Deelname aan spraak",
+        "detail": "Iemand neemt deel aan spraak"
+      },
+      "voiceLeave": {
+        "label": "Spraak verlaten",
+        "detail": "Iemand verlaat spraak"
+      },
+      "friendRequest": {
+        "label": "Vriendschapsverzoek",
+        "detail": "Nieuw vriendschapsverzoek"
+      },
+      "mention": {
+        "label": "Vermelding",
+        "detail": "Als iemand je vermeldt"
+      },
+      "mute": {
+        "label": "Dempen",
+        "detail": "Microfoon gedempt"
+      },
+      "unmute": {
+        "label": "Dempen opheffen",
+        "detail": "Microfoon niet meer gedempt"
+      },
+      "deafen": {
+        "label": "Onhoorbaar maken",
+        "detail": "Inkomend spraakgeluid uitgezet"
+      },
+      "undeafen": {
+        "label": "Onhoorbaar opheffen",
+        "detail": "Inkomend spraakgeluid hersteld"
+      },
+      "screenShare": {
+        "label": "Scherm delen",
+        "detail": "Scherm delen starten of stoppen"
+      }
+    },
+    "variants": {
+      "default": "Standaard",
+      "bright": "Helder",
+      "deep": "Diep",
+      "digital": "Digitaal",
+      "glass": "Glas",
+      "warm": "Warm",
+      "chime": "Klokje",
+      "minimal": "Minimaal"
+    },
+    "soundFor": "Geluid voor {{event}}",
+    "enableSound": "Geluid voor {{event}} inschakelen",
+    "preview": "Voorbeeld",
+    "placesTitle": "Gedempte Hubs en kanalen",
+    "mutedTitle": "Gedempte Hubs en kanalen",
+    "mutedCount_one": "Gedempte Hubs en kanalen · {{count}}",
+    "mutedCount_other": "Gedempte Hubs en kanalen · {{count}}",
+    "mutedHelp": "Gedempte Hubs en kanalen sturen geen meldingen of geluiden. Je kunt ze nog steeds openen en lezen. Ongelezen-badges worden altijd getoond.",
+    "noneMuted": "Er is niets gedempt. Klik met de rechtermuisknop op een Hub in de bovenbalk, of gebruik de bel op Hub Home of in een kanaal om iets te dempen.",
+    "mutedUntil": "Gedempt tot {{when}}",
+    "mutedForever": "Gedempt tot je het weer aanzet",
+    "roomIn": "Gedempt kanaal in {{hub}}",
+    "unmute": "Dempen opheffen",
+    "levelFor": "Meldingen voor {{name}}",
+    "levelForRoom": "Meldingen voor #{{name}}",
+    "sameAsHub": "Zelfde als Hub ({{level}})",
+    "levels": {
+      "all": "Alle berichten",
+      "mentions": "Alleen @mentions",
+      "nothing": "Niets"
+    },
+    "otherHubs_one": "Andere Hubs ({{count}})",
+    "otherHubs_other": "Andere Hubs ({{count}})",
+    "levelsHelp": "Alle berichten: een melding voor elk nieuw bericht. Alleen @mentions: als iemand jou of @everyone vermeldt. Niets: geen geluiden of pop-ups. Ongelezen-badges worden altijd getoond.",
+    "roomsDifferent_one": "{{count}} kanaal anders ingesteld",
+    "roomsDifferent_other": "{{count}} kanalen anders ingesteld",
+    "hideRooms": "Kanalen verbergen",
+    "showRooms_one": "Kanalen anders instellen ({{count}})",
+    "showRooms_other": "Kanalen anders instellen ({{count}})"
+  },
+  "chat": {
+    "sendTitle": "Berichten versturen met",
+    "send": {
+      "enter": {
+        "label": "Enter",
+        "detail": "Shift+Enter begint een nieuwe regel"
+      },
+      "ctrlEnter": {
+        "label": "Ctrl+Enter",
+        "detail": "Enter begint een nieuwe regel",
+        "labelMac": "Cmd+Enter",
+        "detailMac": "Enter begint een nieuwe regel"
+      }
+    },
+    "animateTitle": "Geanimeerde gifs en emotes",
+    "animate": {
+      "always": {
+        "label": "Automatisch afspelen",
+        "detail": "Gifs en emotes bewegen zodra ze in beeld zijn"
+      },
+      "hover": {
+        "label": "Afspelen bij hover",
+        "detail": "Ze staan stil tot je ernaar wijst"
+      }
+    },
+    "messagesTitle": "Berichten",
+    "largeEmoji": "Grote emoji",
+    "largeEmojiHelp": "Emoji groter tonen als een bericht uit één tot drie emoji bestaat",
+    "spellcheck": "Spellingcontrole",
+    "spellcheckHelp": "Verkeerd gespelde woorden onderstrepen terwijl je een bericht schrijft",
+    "spoilersTitle": "Spoilers",
+    "spoilers": {
+      "click": {
+        "label": "Tonen bij klikken",
+        "detail": "Verborgen tot je erop klikt"
+      },
+      "always": {
+        "label": "Altijd tonen",
+        "detail": "Spoilers in forumposts worden meteen getoond"
+      }
+    }
+  },
+  "keyDevices": {
+    "title": "Apparaten met je sleutel",
+    "help": "Deze ingelogde apparaten kunnen je versleutelde berichten lezen. Je account heeft één sleutel die ze allemaal delen. Als je een apparaat verwijdert, wordt het uitgelogd en schakelt je account over op een nieuwe sleutel die dat apparaat nooit krijgt: het kan geen nieuwe berichten lezen.",
+    "loading": "Laden…",
+    "none": "Geen andere apparaten hebben je sleutel.",
+    "unknownDevice": "Onbekend apparaat",
+    "thisDevice": "Dit apparaat",
+    "added": "Toegevoegd {{date}}",
+    "lastUsed": "Laatst gebruikt {{date}}",
+    "lastUsedUnknown": "Laatste gebruik nog niet vastgelegd",
+    "remove": "Verwijderen",
+    "removing": "Verwijderen…",
+    "confirm": "{{device}} verwijderen? Het wordt uitgelogd en je account schakelt over op een nieuwe versleutelingssleutel die dit apparaat nooit krijgt.",
+    "removed": "{{device}} is uitgelogd. Je account schakelt over op een nieuwe sleutel.",
+    "failed": "Kan je apparaten niet bijwerken. Probeer het opnieuw."
+  },
+  "checkup": {
+    "allSet": "Alles is in orde",
+    "allSetHelp": "Er hoeft nu niets te gebeuren.",
+    "dismiss": "Negeren",
+    "dismissed": "Genegeerd",
+    "severity": {
+      "high": "Belangrijk",
+      "medium": "Aanbevolen",
+      "low": "Handig"
+    },
+    "items": {
+      "twoFactor": {
+        "title": "Tweestapsverificatie staat uit",
+        "description": "Vraag om een code uit een authenticator-app als iemand inlogt op een nieuw apparaat, zodat een gestolen wachtwoord niet genoeg is.",
+        "fix": "2FA aanzetten"
+      },
+      "recoveryCode": {
+        "title": "Bewaar je herstelcode",
+        "description": "Zonder je herstelcode of een ander ingelogd apparaat kunnen je versleutelde berichten niet worden hersteld.",
+        "fix": "Versleutelde berichten openen"
+      },
+      "pttKey": {
+        "title": "Push to Talk heeft geen toets",
+        "description": "Push to Talk is geselecteerd, maar er is geen toets ingesteld, dus niemand kan je horen.",
+        "fix": "Kies een toets"
+      },
+      "notificationsBlocked": {
+        "title": "Desktopmeldingen zijn geblokkeerd",
+        "description": "Desktopmeldingen staan aan in DeCave, maar je browser of systeem toont ze niet.",
+        "fix": "Meldingen toestaan"
+      },
+      "micTest": {
+        "title": "Test je microfoon",
+        "description": "Je hebt je microfoon op dit apparaat nog niet getest. Hoor hoe je klinkt voordat je deelneemt aan spraak.",
+        "fix": "Microfoon testen"
+      },
+      "updateReady": {
+        "title": "Er is een desktop-update klaar",
+        "description": "De nieuwe versie is gedownload. Herstart DeCave om de update af te ronden.",
+        "fix": "Herstarten voor update"
+      },
+      "avatar": {
+        "title": "Voeg een profielfoto toe",
+        "description": "Met een foto herkennen vrienden je makkelijker in Hubs, spraak en berichten.",
+        "fix": "Foto toevoegen"
+      }
+    }
+  },
+  "appearance": {
+    "skinTitle": "Skin",
+    "skinSystemNote": "Je volgt de lichte en donkere modus van je computer. Kies de twee skins hieronder bij Licht en donker; de skin die je hier kiest wordt gebruikt als je terugschakelt.",
+    "skins": {
+      "nebula": {
+        "name": "Nebula Pulse",
+        "detail": "Elektrisch violet · cyaan gloed"
+      },
+      "arctic": {
+        "name": "Arctic Flux",
+        "detail": "IJsblauw · grafiet"
+      },
+      "crimson": {
+        "name": "Crimson Glass",
+        "detail": "Dieprood · gepolijst rookglas"
+      },
+      "royal": {
+        "name": "Royal Violet",
+        "detail": "Rijk paars · lichtgevend glas"
+      },
+      "pearl": {
+        "name": "Pearl Glass",
+        "detail": "Witzilver · rookkristal"
+      },
+      "obsidian": {
+        "name": "Obsidian Glass",
+        "detail": "Puur zwart · gunmetal glas"
+      },
+      "verdant": {
+        "name": "Verdant Raid",
+        "detail": "Smaragdgroen · tactisch glas"
+      },
+      "bright": {
+        "name": "Bright Grey",
+        "detail": "Lichtgrijs · strak licht met hoog contrast"
+      }
+    },
+    "themeTitle": "Licht en donker",
+    "theme": {
+      "label": "Thema",
+      "manual": "Kies een skin",
+      "manualHelp": "Altijd de skin gebruiken die je hierboven kiest",
+      "system": "Mijn computer volgen",
+      "systemHelp": "Automatisch wisselen tussen een lichte en een donkere skin",
+      "lightSkin": "Skin voor lichte modus",
+      "darkSkin": "Skin voor donkere modus",
+      "nowDark": "Je computer staat nu in donkere modus.",
+      "nowLight": "Je computer staat nu in lichte modus."
+    },
+    "accessibilityTitle": "Toegankelijkheid",
+    "size": {
+      "title": "Tekst- en interfacegrootte",
+      "help": "Vergroot of verklein tekst, bediening, panelen en ruimte in de interface van DeCave tegelijk.",
+      "label": "Tekst- en interfacegrootte van DeCave",
+      "smaller": "Kleiner",
+      "default": "Standaard",
+      "larger": "Groter",
+      "extraLarge": "Extra groot",
+      "preview": "Voorbeeld: Pa's wijze lynx bezag vroom het fikse aquaduct."
+    },
+    "readabilityTitle": "Beweging en leesbaarheid",
+    "motion": {
+      "label": "Beweging",
+      "systemReduced": "Je computer vraagt om minder beweging",
+      "systemFull": "Je computer staat animaties toe",
+      "system": {
+        "label": "Mijn computer volgen"
+      },
+      "reduce": {
+        "label": "Minder beweging",
+        "detail": "Animaties en vloeiend scrollen uitzetten"
+      },
+      "full": {
+        "label": "Volledige beweging",
+        "detail": "Alle animaties behouden"
+      }
+    },
+    "density": {
+      "label": "Berichtdichtheid",
+      "cozy": {
+        "label": "Ruim",
+        "detail": "Ruime berichten met grote avatars"
+      },
+      "compact": {
+        "label": "Compact",
+        "detail": "Meer berichten op het scherm"
+      }
+    },
+    "contrast": "Hoog contrast",
+    "contrastHelp": "Sterkere randen, helderdere secundaire tekst en duidelijkere focusringen.",
+    "underline": "Links altijd onderstrepen",
+    "underlineHelp": "Maak links in berichten goed zichtbaar zonder alleen op kleur te vertrouwen.",
+    "altText": "Afbeeldingsbeschrijvingen tonen",
+    "altTextHelp": "De titel van gifs en stickers eronder tonen."
+  },
+  "language": {
+    "title": "Datums en tijden",
+    "englishForNow": "De menu's en knoppen van DeCave zijn voorlopig in het Engels. Deze keuzes bepalen hoe datums en tijden overal in de app worden geschreven.",
+    "language": "Taal",
+    "matchSystem": "Mijn systeem volgen",
+    "beta": "{{name}} (bèta)",
+    "languageHelp": "De taal waarin de menu's en knoppen van DeCave worden getoond.",
+    "dateStyle": "Datumstijl",
+    "dateStyleHelp": "Maandnamen en de volgorde van dag, maand en jaar.",
+    "timeFormat": "Tijdnotatie",
+    "timeFormats": {
+      "system": "Systeemstandaard",
+      "12h": "12-uurs",
+      "24h": "24-uurs"
+    },
+    "timeFormatHelp": "Berichttijden worden meteen bijgewerkt en volgen deze voorkeur.",
+    "preview": "Voorbeeld · {{time}}"
+  },
+  "app": {
+    "systemTitle": "Systeem",
+    "yourComputer": "je computer",
+    "startup": "DeCave starten als {{platform}} start",
+    "startupHelp": "DeCave automatisch openen nadat je bent ingelogd op {{platform}}.",
+    "tray": "Minimaliseren naar systeemvak bij sluiten",
+    "trayHelp": "Klikken op X verbergt DeCave. Gebruik het systeemvakmenu om opnieuw te openen of volledig af te sluiten.",
+    "trayMac": "Blijven draaien in de menubalk na sluiten",
+    "trayMacHelp": "Het venster sluiten verbergt DeCave. Gebruik het menubalkpictogram om opnieuw te openen of af te sluiten.",
+    "updatesTitle": "Updates",
+    "updates": "Updates desktop-app",
+    "installedVersion": "Geïnstalleerde versie",
+    "downloadPercent": "Update downloaden {{percent}} procent",
+    "progress": "{{done}} van {{total}}",
+    "progressSpeed": "{{done}} van {{total}} · {{speed}}/s",
+    "checking": "Controleren…",
+    "checkNow": "Nu controleren",
+    "restarting": "Herstarten…",
+    "restart": "Herstarten voor update",
+    "helpTitle": "Help"
+  },
+  "support": {
+    "bug": "Bug rapporteren",
+    "bugHelp": "Je appversie en apparaat worden voor je ingevuld.",
+    "bugTemplate": "Wat gebeurde er?\n\nWat verwachtte je dat er zou gebeuren?\n\nStappen om het opnieuw te laten gebeuren:\n1.\n2.\n3.",
+    "contact": "Contact opnemen met support",
+    "contactHelp": "Vragen over je account of je Hubs. We antwoorden per e-mail.",
+    "helpTemplate": "Hoe kunnen we helpen?",
+    "copiedTemplate": "Gekopieerd. Plak het in een e-mail aan {{email}}.",
+    "copiesTemplate": "{{detail}} Kopieert een kant-en-klare e-mail om te plakken.",
+    "whatsNew": "Wat is er nieuw",
+    "whatsNewHelp": "Lees de nieuwste patch notes in DeCave Official.",
+    "whatsNewJoin": "Word lid van DeCave Official om patch notes te lezen.",
+    "about": {
+      "app": "App",
+      "version": "Versie",
+      "platform": "Platform",
+      "service": "Service",
+      "email": "E-mail",
+      "legal": "Juridisch"
+    },
+    "privacy": "Privacybeleid",
+    "terms": "Servicevoorwaarden",
+    "copied": "Gekopieerd",
+    "copyDetails": "Gegevens kopiëren voor support"
+  },
+  "mobile": {
+    "profile": {
+      "couldNotUpdateStatus": "Kan status niet bijwerken.",
+      "profileUpdated": "Profiel bijgewerkt.",
+      "couldNotUpdateProfile": "Kan profiel niet bijwerken.",
+      "yourAccount": "JE ACCOUNT",
+      "profileBanner": "Profielbanner",
+      "statusLabel": "Status: {{label}}",
+      "memberSinceMembersince": "Lid sinds {{memberSince}}",
+      "customStatusStatustextEdit": "Persoonlijke status: {{statusText}}. Bewerken",
+      "setACustomStatus": "Persoonlijke status instellen",
+      "id": "ID",
+      "decaveIdCopied": "DeCave-ID gekopieerd",
+      "profileDetails": "PROFIELGEGEVENS",
+      "notSetShowsUsername": "Niet ingesteld (toont {{username}})",
+      "notSet": "Niet ingesteld",
+      "profile": "PROFIEL",
+      "editLabel": "{{label}} bewerken",
+      "status": {
+        "onlineDetail": "Beschikbaar",
+        "idleDetail": "Even weg",
+        "dndDetail": "Minder onderbrekingen",
+        "invisibleDetail": "Offline lijken"
+      },
+      "fields": {
+        "statusTextPlaceholder": "Waar ben je mee bezig?",
+        "displayNamePlaceholder": "Hoe je naam voor anderen wordt getoond",
+        "pronounsPlaceholder": "bijv. zij/haar, hij/hem, hen/die",
+        "statusTextEdit": "Persoonlijke status bewerken",
+        "displayNameEdit": "Weergavenaam bewerken",
+        "pronounsEdit": "Voornaamwoorden bewerken"
+      }
+    },
+    "settings": {
+      "logOut": "Uitloggen?",
+      "youLlNeedToSign": "Je moet dan opnieuw inloggen op dit apparaat.",
+      "couldnTLoadYourAccount": "Kan je accountinstellingen niet laden. Wijzigingen worden op deze telefoon opgeslagen.",
+      "couldNotLoadYourHubs": "Kan je Hubs niet laden.",
+      "couldnTSyncToYour": "Kan niet synchroniseren met je account. Je keuzes worden op deze telefoon opgeslagen.",
+      "useA24HourTime": "Gebruik een 24-uurstijd zoals 22:00.",
+      "decaveMicrophoneAccess": "Microfoontoegang voor DeCave",
+      "decaveNeedsYourMicrophoneSo": "DeCave heeft je microfoon nodig zodat je kunt praten in spraakkanalen.",
+      "allow": "Toestaan",
+      "notNow": "Niet nu",
+      "microphonePermissionIsNotEnabled": "Microfoontoestemming is niet ingeschakeld.",
+      "microphoneIsReady": "Microfoon is klaar.",
+      "decaveCouldNotOpenThe": "DeCave kon de microfoon niet openen.",
+      "decaveControlCenter": "DECAVE-BEDIENINGSCENTRUM",
+      "accountAndSecurity": "Account en beveiliging",
+      "yourAccount": "Je account",
+      "accountEmailPassword": "Account, e-mail, wachtwoord",
+      "accountSettings": "ACCOUNTINSTELLINGEN",
+      "accountSecurity": "Account en beveiliging",
+      "passwordAccountAccessDisableOr": "Wachtwoord, accounttoegang, uitschakelen of verwijderen",
+      "appearance": "Weergave",
+      "themeSkinAndVisualPreferences": "Thema, skin en visuele voorkeuren",
+      "devicesSessions": "Apparaten en sessies",
+      "reviewAndLogOutActive": "Actieve apparaten bekijken en uitloggen",
+      "privacySafety": "Privacy en veiligheid",
+      "friendRequestsActivityAndBlocked": "Vriendschapsverzoeken, activiteit en geblokkeerde accounts",
+      "myReports": "Mijn rapporten",
+      "trackReportsAndSafetyCases": "Volg rapporten en veiligheidszaken die je hebt ingediend",
+      "scanQrCode": "QR-code scannen",
+      "signInToDecaveOn": "Inloggen bij DeCave op web of desktop",
+      "appSettings": "APPINSTELLINGEN",
+      "voiceAudio": "Spraak & audio",
+      "microphoneProcessingAndScreenShare": "Microfoonverwerking en kwaliteit van scherm delen",
+      "notificationsPrivacy": "Meldingen en privacy",
+      "alertsSoundsMentionsAndPreview": "Meldingen, geluiden, vermeldingen en voorbeeldprivacy",
+      "on": "Aan",
+      "support": "SUPPORT",
+      "helpFeedback": "Help en feedback",
+      "contactDecaveSupport": "Contact opnemen met DeCave-support",
+      "whatDecaveCollectsAndHow": "Wat DeCave verzamelt en hoe het wordt gebruikt",
+      "theRulesForUsingDecave": "De regels voor het gebruik van DeCave",
+      "aboutDecave": "Over DeCave",
+      "mobileAppAndServiceInformation": "Informatie over de mobiele app en de service",
+      "clearComfortableVoice": "Helder en prettig geluid",
+      "alertsWithoutOversharing": "Meldingen zonder te veel te delen",
+      "tuneMicrophoneProcessingAndHow": "Stel de microfoonverwerking af en hoe gesprekken zich op dit apparaat gedragen.",
+      "chooseWhatCanNotifyYou": "Kies wat je meldingen mag sturen en hoeveel berichtinhoud buiten DeCave zichtbaar is.",
+      "privacyNotifications": "PRIVACY EN MELDINGEN",
+      "deviceNotifications": "Apparaatmeldingen",
+      "controlMessageAlertsShownBy": "Bepaal welke berichtmeldingen dit apparaat toont.",
+      "checking": "CONTROLEREN",
+      "allowed": "TOEGESTAAN",
+      "blocked": "GEBLOKKEERD",
+      "enableNotifications": "Meldingen inschakelen",
+      "masterSwitchForDecaveMessage": "Hoofdschakelaar voor DeCave-berichtmeldingen.",
+      "notificationSounds": "Meldingsgeluiden",
+      "playASoundWhenDecave": "Een geluid afspelen als DeCave een berichtmelding toont.",
+      "notifyWhenAFriendSends": "Melden als een vriend je een privébericht stuurt.",
+      "groupChats": "Groepschats",
+      "notifyWhenSomebodyPostsIn": "Melden als iemand post in een van je groepschats.",
+      "hubMessages": "Hub-berichten",
+      "notifyForHubTextMessages": "Melden voor tekstberichten in Hubs als dat kanaal niet open is.",
+      "notifyForYournameAndEveryone": "Melden bij vermeldingen van @jouwnaam en @everyone.",
+      "notificationPreview": "Meldingsvoorbeeld",
+      "chooseHowMuchPrivateContent": "Kies hoeveel privé-inhoud buiten DeCave zichtbaar mag zijn.",
+      "resetNotificationSettings": "Meldingsinstellingen resetten",
+      "quietHours": "STILLE UREN",
+      "silenceNotificationsOnAllYour": "Meldingen 's nachts op al je apparaten stilzetten.",
+      "quietHoursStartTime": "Begintijd stille uren",
+      "quietHoursEndTime": "Eindtijd stille uren",
+      "use24HourTimeTimes": "Gebruik 24-uursnotatie. Tijden volgen de tijdzone van deze telefoon.",
+      "importantMessagesStillComeThrough": "Belangrijke berichten komen tijdens stille uren nog steeds door.",
+      "hubs": "HUBS",
+      "chooseWhatEachHubCan": "Kies waarover elke Hub je mag melden. Alleen @mentions is de standaard.",
+      "youHavenTJoinedAny": "Je bent nog geen lid van een Hub.",
+      "voiceAudio2": "SPRAAK & AUDIO",
+      "voiceConnection": "Spraakverbinding",
+      "connectedToAVoiceRoom": "Verbonden met een spraakkanaal.",
+      "notConnectedToAVoice": "Niet verbonden met een spraakkanaal.",
+      "offline": "OFFLINE",
+      "reduceSteadyBackgroundNoiseBefore": "Constant achtergrondgeluid verminderen voordat je stem wordt verstuurd.",
+      "reduceSpeakerEchoFeedingBack": "Echo van speakers die terugkomt in je microfoon verminderen.",
+      "letWebrtcAutomaticallyBalanceMicrophone": "Laat WebRTC het microfoonvolume automatisch in balans houden.",
+      "joinVoiceMuted": "Gedempt deelnemen aan spraak",
+      "startEveryNewVoiceRoom": "Neem gedempt deel aan elk nieuw spraakkanaal tot je kiest om te praten.",
+      "screenShareQuality": "Kwaliteit scherm delen",
+      "resolutionRequestedWhenYouStart": "Resolutie die wordt gevraagd als je je mobiele scherm begint te delen.",
+      "captureProcessingChangesApplyNext": "Wijzigingen in opnameverwerking gelden de volgende keer dat de microfoon opengaat.",
+      "checkingMicrophone": "Microfoon controleren…",
+      "checkMicrophone": "Microfoon controleren",
+      "resetVoiceSettings": "Spraakinstellingen resetten",
+      "senderMessageText": "Afzender + berichttekst",
+      "hideTheMessageText": "Berichttekst verbergen",
+      "genericDecaveAlertOnly": "Alleen algemene DeCave-melding",
+      "quality": {
+        "balanced": "Gebalanceerd",
+        "full": "Volledig",
+        "saver": "Zuinig"
+      }
+    },
+    "accountSecurity": {
+      "couldNotLoadTwoFactor": "Kan instellingen voor tweestapsverificatie niet laden.",
+      "couldNotLoadThisSetting": "Kan deze instelling niet laden.",
+      "enterYourCurrentPassword": "Voer je huidige wachtwoord in.",
+      "couldNotStartSetup": "Kan instellen niet starten.",
+      "enterThe6DigitCode": "Voer de 6-cijferige code uit je authenticator-app in.",
+      "twoFactorSignInIs": "Tweestapsverificatie staat aan.",
+      "thatCodeDidnTWork": "Die code werkte niet. Probeer het opnieuw.",
+      "enterYourPasswordAndA": "Voer je wachtwoord en een code uit je authenticator-app in.",
+      "twoFactorSignInIs2": "Tweestapsverificatie staat uit.",
+      "newRecoveryCodesAreReady": "Nieuwe back-upcodes zijn klaar. Je oude codes werken niet meer.",
+      "decaveRecoveryCodes": "DeCave-back-upcodes",
+      "noAuthenticatorAppOpenedCopy": "Er is geen authenticator-app geopend. Kopieer de sleutel en voeg hem handmatig toe.",
+      "couldNotSaveThisSetting": "Kan deze instelling niet opslaan.",
+      "thisPhoneHasNoSpace": "Deze telefoon heeft geen ruimte om het bestand op te slaan.",
+      "couldNotDownloadYourData": "Kan je gegevens niet downloaden.",
+      "enterTheNewEmailAnd": "Voer het nieuwe e-mailadres en je huidige wachtwoord in.",
+      "verificationEmailSentOpenIt": "Verificatie-e-mail verstuurd. Open hem om je nieuwe adres te verifiëren.",
+      "enterYourCurrentPasswordUse": "Voer je huidige wachtwoord in, gebruik minstens 10 tekens en zorg dat de nieuwe wachtwoorden overeenkomen.",
+      "couldNotChangePassword": "Kan wachtwoord niet wijzigen.",
+      "enterYourCurrentPasswordTo": "Voer je huidige wachtwoord in om door te gaan.",
+      "settings": "INSTELLINGEN",
+      "emailAddress": "E-MAILADRES",
+      "addAnEmailForRecovery": "Voeg een e-mailadres toe voor herstel en accountbescherming.",
+      "newEmailAddress": "Nieuw e-mailadres",
+      "emailAddress2": "E-mailadres",
+      "changeVerifyEmail": "E-mail wijzigen / verifiëren",
+      "addEmail": "E-mail toevoegen",
+      "changePassword": "WACHTWOORD WIJZIGEN",
+      "changingYourPasswordSignsOut": "Als je je wachtwoord wijzigt, worden alle actieve DeCave-sessies uitgelogd.",
+      "twoFactorSignIn": "TWEESTAPSVERIFICATIE",
+      "twoFactorSignInIs3": "Tweestapsverificatie staat aan",
+      "askForACodeFrom": "Vraag bij elke login om een code uit een authenticator-app.",
+      "youReRunningOutOf": "Je back-upcodes raken op. Maak nieuwe zodat je niet buitengesloten raakt.",
+      "firstConfirmItSYou": "Bevestig eerst dat jij het bent.",
+      "n1AddDecaveToYour": "1. Voeg DeCave toe aan je authenticator-app. Tik op de knop hieronder of kopieer deze sleutel naar de app.",
+      "copyKey": "Sleutel kopiëren",
+      "openInAuthenticatorApp": "Openen in authenticator-app",
+      "n2EnterThe6Digit": "2. Voer de 6-cijferige code in die de app toont.",
+      "toTurnOffTwoFactor": "Voer je wachtwoord en een code uit je authenticator-app in om tweestapsverificatie uit te zetten.",
+      "toMakeNewRecoveryCodes": "Voer je wachtwoord en een code uit je authenticator-app in om nieuwe back-upcodes te maken. Je oude codes werken dan niet meer.",
+      "authenticatorCode": "Authenticatorcode",
+      "saveTheseRecoveryCodesSomewhere": "Bewaar deze back-upcodes op een veilige plek. Elke code werkt één keer als je je telefoon kwijtraakt. Je ziet ze niet opnieuw.",
+      "signInAlerts": "INLOGMELDINGEN",
+      "whenANewDeviceApp": "Als er een nieuw apparaat, nieuwe app of nieuw land inlogt, mailen we je met een knop 'Dit was ik niet'.",
+      "addAnEmailAddressAbove": "Voeg hierboven een e-mailadres toe om deze meldingen te krijgen.",
+      "yourData": "JE GEGEVENS",
+      "preparingYourFile": "Je bestand voorbereiden…",
+      "getACopyOfYour": "Ontvang een kopie van je account, profiel en berichten als bestand.",
+      "accountState": "ACCOUNTSTATUS",
+      "disableAccount": "Account uitschakelen",
+      "endsActiveSessionsYourNext": "Beëindigt actieve sessies. Je volgende geslaagde login activeert het account weer.",
+      "deleteAccount": "Account verwijderen",
+      "schedulesDeletionAfter30Days": "Plant verwijdering over 30 dagen in. Log voor die tijd in om te annuleren.",
+      "yourAccountWillBeScheduled": "Je account wordt over 30 dagen verwijderd. Log voor die tijd in om dit te annuleren.",
+      "yourAccountAndActiveSessions": "Je account en actieve sessies worden uitgeschakeld. Door opnieuw in te loggen activeer je het weer.",
+      "recoveryCodesFor": "DeCave-back-upcodes voor {{name}}",
+      "yourAccount": "je account",
+      "downloadFailed": "Download mislukt ({{status}})",
+      "couldNotUpdateEmail": "Kan e-mail niet bijwerken.",
+      "passwordChangedSignIn": "Wachtwoord gewijzigd. Log opnieuw in met je nieuwe wachtwoord.",
+      "accountDisabled": "Je DeCave-account is uitgeschakeld.",
+      "deletionScheduledFor": "Accountverwijdering ingepland op {{date}}.",
+      "deletionScheduled": "Accountverwijdering ingepland.",
+      "turnedOn": "Aangezet op {{date}}. {{codes}}",
+      "recoveryCodesLeft_one": "Nog {{count}} back-upcode.",
+      "recoveryCodesLeft_other": "Nog {{count}} back-upcodes.",
+      "keyCopied": "Sleutel gekopieerd.",
+      "recoveryCodesCopied": "Back-upcodes gekopieerd.",
+      "couldNotDisableAccount": "Kan account niet uitschakelen.",
+      "couldNotDeleteAccount": "Kan account niet verwijderen."
+    },
+    "appearance": {
+      "appearance": "WEERGAVE",
+      "skins": "Skins",
+      "mode": "MODUS",
+      "dark": "Donker",
+      "light": "Licht",
+      "inLightModeASkin": "In lichte modus bepaalt een skin de accentkleur; donkere modus gebruikt de volledige look.",
+      "chooseAVisualStylePreview": "Kies een visuele stijl, bekijk hem hier en tik op Skin opslaan. DeCave herstart met de nieuwe look en je keuze wordt op dit apparaat opgeslagen.",
+      "skinSaved": "Skin opgeslagen",
+      "saveSkin": "Skin opslaan"
+    },
+    "devices": {
+      "couldNotLoadActiveSessions": "Kan actieve sessies niet laden.",
+      "logOutAllSessions": "Alle sessies uitloggen?",
+      "thisSignsYourAccountOut": "Hiermee wordt je account uitgelogd op mobiele apparaten, browsers en desktops.",
+      "logOutAll": "Alles uitloggen",
+      "couldNotLogOutAll": "Kan niet alle sessies uitloggen",
+      "tryAgain": "Probeer het opnieuw.",
+      "logOutThisDevice": "Dit apparaat uitloggen?",
+      "logOutThisSession": "Deze sessie uitloggen?",
+      "endTheDevicelabelSession": "De sessie op {{deviceLabel}} beëindigen?",
+      "couldNotLogOutSession": "Kan sessie niet uitloggen",
+      "mobileMayStaySignedIn": "Mobiel kan ingelogd blijven samen met één web- of desktopclient. Web en desktop vervangen elkaar.",
+      "scanQrLogin": "QR-login scannen",
+      "signInOnWebOr": "Log in op web of desktop met deze mobiele sessie.",
+      "noActiveSessionsWereReturned": "Er zijn geen actieve sessies teruggegeven.",
+      "thisDevice": "DIT APPARAAT",
+      "logOutDevicelabel": "{{deviceLabel}} uitloggen",
+      "logOutAllActiveSessions": "Alle actieve sessies uitloggen",
+      "endEveryDecaveLoginFor": "Beëindig elke DeCave-login van dit account.",
+      "activity": {
+        "activeNow": "Nu actief",
+        "notUsedSince": "Niet gebruikt sinds {{date}}",
+        "notUsedRecently": "Niet recent gebruikt",
+        "minutesAgo_one": "{{count}} minuut geleden actief",
+        "minutesAgo_other": "{{count}} minuten geleden actief",
+        "hoursAgo_one": "{{count}} uur geleden actief",
+        "hoursAgo_other": "{{count}} uur geleden actief",
+        "daysAgo_one": "{{count}} dag geleden actief",
+        "daysAgo_other": "{{count}} dagen geleden actief"
+      },
+      "allSessionsSignedOut": "Alle DeCave-sessies zijn uitgelogd.",
+      "thisDeviceLoggedOut": "Dit apparaat is uitgelogd.",
+      "clientSignedIn": "{{client}} · Ingelogd {{date}}",
+      "expires": "Verloopt {{date}}"
+    },
+    "privacy": {
+      "couldNotLoadYourPrivacy": "Kan je privacy-instellingen niet laden.",
+      "couldNotLoadBlockedAccounts": "Kan geblokkeerde accounts niet laden.",
+      "unblockUsername": "{{username}} deblokkeren?",
+      "theyLlBeAbleTo": "Diegene kan je dan weer zien en contact met je opnemen. Je kunt diegene altijd opnieuw blokkeren.",
+      "couldNotUnblockThisAccount": "Kan dit account niet deblokkeren.",
+      "friendRequests": "VRIENDSCHAPSVERZOEKEN",
+      "whoCanSendYouFriend": "Wie je vriendschapsverzoeken kan sturen",
+      "activity": "ACTIVITEIT",
+      "messages": "BERICHTEN",
+      "onlyFriendsCanMessageYou": "Alleen vrienden kunnen je berichten sturen. DeCave bezorgt geen privéberichten van mensen die niet je vrienden zijn.",
+      "encryptedMessages": "VERSLEUTELDE BERICHTEN",
+      "blockedAccounts": "GEBLOKKEERDE ACCOUNTS",
+      "unblockUsername2": "{{username}} deblokkeren",
+      "blockedOn": "Geblokkeerd {{date}}",
+      "requests": {
+        "everyone": "Iedereen",
+        "everyoneDetail": "Iedereen kan je een vriendschapsverzoek sturen.",
+        "friendsOfFriends": "Vrienden van vrienden",
+        "friendsOfFriendsDetail": "Alleen mensen met wie je een vriend deelt.",
+        "none": "Niemand",
+        "noneDetail": "Niemand kan je nieuwe verzoeken sturen."
+      },
+      "activityOptions": {
+        "everyone": "Iedereen",
+        "friends": "Vrienden",
+        "nobody": "Niemand"
+      }
+    },
+    "skins": {
+      "neon": {
+        "name": "Neon Lounge",
+        "description": "Bijna zwart met violette gloed en cyaan highlights."
+      },
+      "nebula": {
+        "description": "De standaard van DeCave in violet en cyaan."
+      },
+      "arctic": {
+        "description": "Koel blauw glas met ijzige highlights."
+      },
+      "crimson": {
+        "description": "Donker grafiet met warme karmijnrode gloed."
+      },
+      "royal": {
+        "description": "Dieppaars met heldere koninklijke accenten."
+      },
+      "pearl": {
+        "description": "Zacht leisteenglas met parelachtige highlights."
+      },
+      "obsidian": {
+        "description": "Bijna zwart glas met een strakke zilveren rand."
+      }
+    }
+  },
+  "linkPage": {
+    "closeTab": "Je kunt dit tabblad sluiten en teruggaan naar DeCave.",
+    "openDeCave": "DeCave openen in deze browser",
+    "steam": {
+      "expiredTitle": "Steam-link verlopen",
+      "expired": "Start de Steam-koppeling opnieuw vanuit DeCave.",
+      "signInTitle": "Log in om de Steam-koppeling af te ronden",
+      "signIn": "Steam is niet gekoppeld. Open DeCave in deze browser, log in op hetzelfde account dat de koppeling startte en start de Steam-koppeling opnieuw via Instellingen → Activiteit.",
+      "failedTitle": "Steam-verificatie mislukt",
+      "failed": "Steam gaf geen geldig identiteitsantwoord terug.",
+      "takenTitle": "Steam-account al gekoppeld",
+      "taken": "Dat Steam-account is gekoppeld aan een ander DeCave-account.",
+      "linkedTitle": "Steam gekoppeld",
+      "linked": "Je Steam-account is nu gekoppeld aan DeCave."
+    },
+    "twitch": {
+      "expiredTitle": "Twitch-link verlopen",
+      "expired": "Start het koppelen van Twitch opnieuw vanuit de Hub.",
+      "cancelledTitle": "Twitch niet gekoppeld",
+      "cancelled": "Je hebt de Twitch-login geannuleerd. Er is niets gekoppeld.",
+      "signInTitle": "Log in om de Twitch-koppeling af te ronden",
+      "signIn": "Twitch is niet gekoppeld. Open DeCave in deze browser, log in op hetzelfde account dat de koppeling startte en koppel Twitch opnieuw.",
+      "failedTitle": "Twitch-verificatie mislukt",
+      "failed": "Twitch heeft de login niet bevestigd.",
+      "takenTitle": "Twitch-account al gekoppeld",
+      "taken": "Dat Twitch-account is gekoppeld aan een ander DeCave-account.",
+      "linkedTitle": "Twitch gekoppeld",
+      "linked": "Je Twitch-account {{account}} is nu gekoppeld aan DeCave."
+    },
+    "faceit": {
+      "expiredTitle": "FACEIT-link verlopen",
+      "expired": "Start het koppelen van FACEIT opnieuw vanaf de ranglijst.",
+      "cancelledTitle": "FACEIT niet gekoppeld",
+      "cancelled": "Je hebt de FACEIT-login geannuleerd. Er is niets gekoppeld.",
+      "signInTitle": "Log in om de FACEIT-koppeling af te ronden",
+      "signIn": "FACEIT is niet gekoppeld. Open DeCave in deze browser, log in op hetzelfde account dat de koppeling startte en koppel FACEIT opnieuw vanaf de ranglijst.",
+      "failedTitle": "FACEIT-verificatie mislukt",
+      "failed": "FACEIT heeft de login niet bevestigd. Probeer het opnieuw.",
+      "takenTitle": "FACEIT-account al gekoppeld",
+      "taken": "Dat FACEIT-account is gekoppeld aan een ander DeCave-account.",
+      "linkedTitle": "FACEIT gekoppeld",
+      "linked": "Je FACEIT-account {{account}} is nu gekoppeld aan DeCave."
+    }
+  },
+  "accountExport": {
+    "failed": "De export kon niet worden voltooid. Probeer de download opnieuw.",
+    "unfinished": "De export is niet voltooid. Probeer de download opnieuw."
+  },
+  "sessionDevice": {
+    "apps": {
+      "browser": "Webbrowser",
+      "mobileApp": "Mobiele app",
+      "desktopApp": "Desktop-app",
+      "legacy": "Oude sessie"
+    },
+    "appOnOs": "{{app}} op {{os}}",
+    "withPlace": "{{name}} · {{place}}"
+  }
+}

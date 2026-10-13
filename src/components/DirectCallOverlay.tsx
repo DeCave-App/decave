@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { CallVerificationMark } from "../e2ee/DmEncryptionUi";
 import { callDescriptionAuth, checkCallDescription, clearCallVerdict } from "../e2ee/call-verification";
 import { DESKTOP_VOICE_JOIN_TIMEOUT_MS } from "../voice/desktop-voice-reliability";
 import { hasUsableRelayIceServers } from "../../shared/rtc-relay";
-import { CALL_RELAY_UNAVAILABLE_MESSAGE } from "../app/voice";
+import { callRelayUnavailableMessage } from "../app/voice";
 import {
   applyVoiceCodecPreferences,
   applyVoiceSenderParameters,
@@ -14,6 +15,7 @@ import { isRelayIceCandidate } from "../voice/relay-policy";
 import { Icon } from "./Icon";
 import "./DirectCallOverlay.css";
 import type { RealtimeFrame, RealtimeSendWindow } from "../realtime/connection";
+import { realtimeErrorMessage } from "../i18n/apiError";
 
 type Phase = "idle" | "ringing" | "incoming" | "connecting" | "connected";
 type Peer = { connectionId: string; userId?: string; username?: string };
@@ -74,6 +76,7 @@ function CallIcon({ name }: { name: "mic" | "micOff" | "volume" | "video" | "vid
 }
 
 export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlayChange }: DirectCallOverlayProps) {
+  const { t } = useTranslation(["dm"]);
   const [phase, setPhase] = useState<Phase>("idle");
   const [video, setVideo] = useState(false);
   const [peer, setPeer] = useState<Peer | null>(null);
@@ -130,7 +133,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
       if (phaseRef.current !== "ringing" && phaseRef.current !== "connecting") return;
       send({ type: "DM_CALL_END" });
       reset(true);
-      setError("The call could not connect in time. Check your connection and try again.");
+      setError(t("dm.call.timeout"));
     }, DESKTOP_VOICE_JOIN_TIMEOUT_MS);
   };
 
@@ -183,14 +186,14 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
   const loadIce = async (): Promise<boolean> => {
     try {
       const iceServers = await loadIceServers();
-      if (!hasUsableRelayIceServers(iceServers)) throw new Error(CALL_RELAY_UNAVAILABLE_MESSAGE);
+      if (!hasUsableRelayIceServers(iceServers)) throw new Error(callRelayUnavailableMessage());
       iceRef.current = iceServers;
       return true;
     } catch (cause) {
       // Calls are relay-only; never fall back to a direct connection that would expose IPs.
       console.warn("Direct call relay unavailable", cause);
       iceRef.current = [];
-      setError(CALL_RELAY_UNAVAILABLE_MESSAGE);
+      setError(t("dm.call.relayUnavailable"));
       return false;
     }
   };
@@ -260,14 +263,14 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
       ownedAudioTrackRef.current = null;
       if (microphoneLease) microphoneLease.release();
       console.error("Direct call media error", cause);
-      setError(withVideo ? "Microphone/camera permission is required." : "Microphone permission is required.");
+      setError(withVideo ? t("dm.call.cameraMicPermission") : t("dm.call.micPermission"));
       return null;
     }
   };
 
   const ensurePc = (participant: Peer) => {
     if (pcRef.current) return pcRef.current;
-    if (!hasUsableRelayIceServers(iceRef.current)) throw new Error(CALL_RELAY_UNAVAILABLE_MESSAGE);
+    if (!hasUsableRelayIceServers(iceRef.current)) throw new Error(callRelayUnavailableMessage());
     // Relay-only: peers never exchange host/srflx candidates, so neither side
     // learns the other's IP address.
     const pc = new RTCPeerConnection({ iceServers: iceRef.current, iceTransportPolicy: "relay" });
@@ -314,7 +317,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
         setCallPhase("connected");
         setError("");
       } else if (pc.connectionState === "failed") {
-        setError("The direct call connection failed.");
+        setError(t("dm.call.connectionFailed"));
       }
     };
     return pc;
@@ -342,15 +345,15 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
     try {
       if (!(await loadIce())) return;
       if (!(await ensureMedia(withVideo))) return;
-      setCallPeer({ connectionId: "", userId: targetUserId, username: username || "Friend" });
+      setCallPeer({ connectionId: "", userId: targetUserId, username: username || t("dm.call.friend") });
       outgoingRef.current = true;
       setCallVideo(withVideo);
       setCallPhase("ringing");
       armCallTimeout();
       if (!send({ type: "DM_CALL_START", targetUserId, video: withVideo }))
-        throw new Error("Realtime is not connected.");
+        throw new Error(t("dm.call.realtimeOffline"));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The call could not start.");
+      setError(cause instanceof Error ? cause.message : t("dm.call.startFailed"));
       reset(true, true);
     }
   };
@@ -365,7 +368,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
       armCallTimeout();
       send({ type: "DM_CALL_ACCEPT" });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The call could not be accepted.");
+      setError(cause instanceof Error ? cause.message : t("dm.call.acceptFailed"));
       send({ type: "DM_CALL_DECLINE" });
       reset(true, true);
     }
@@ -414,7 +417,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
       sendLocalDescription(participant, peerConnection);
     } catch (cause) {
       console.error("Direct call camera upgrade failed", cause);
-      setError("Camera permission is required to switch to video.");
+      setError(t("dm.call.cameraPermission"));
     }
   };
 
@@ -440,10 +443,10 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
       if (sender) {
         void sender.replaceTrack(next ? null : track).catch(() => {
           setMuted(!next);
-          setError("The direct-call microphone could not be muted separately from Hub voice.");
+          setError(t("dm.call.muteSeparatelyFailed"));
         });
       } else {
-        setError("The direct-call microphone could not be muted separately from Hub voice.");
+        setError(t("dm.call.muteSeparatelyFailed"));
         return;
       }
     } else if (track) {
@@ -455,7 +458,9 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
   useEffect(() => {
     const startListener = (raw: Event) => {
       const detail = (raw as CustomEvent<{ targetUserId?: string; username?: string; video?: boolean }>).detail;
-      if (detail?.targetUserId) void start(detail.targetUserId, detail.username || "Friend", detail.video === true);
+      if (detail?.targetUserId) {
+        void start(detail.targetUserId, detail.username || t("dm.call.friend"), detail.video === true);
+      }
     };
     const realtimeListener = (raw: Event) => {
       const data = (raw as CustomEvent<RealtimeFrame>).detail;
@@ -519,9 +524,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
           );
           if (verdict === "rejected") {
             send({ type: "DM_CALL_END" });
-            setError(
-              "This call couldn't be verified as end-to-end encrypted, so it wasn't connected. Both of you need an up-to-date DeCave that can read encrypted messages.",
-            );
+            setError(t("dm.call.verificationFailed"));
             reset(true, true);
             return;
           }
@@ -539,7 +542,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
           }
         })().catch(() => {
           remoteDescriptionPendingRef.current = false;
-          setError("Direct-call negotiation failed.");
+          setError(t("dm.call.negotiationFailed"));
         });
         return;
       }
@@ -558,7 +561,7 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
       }
       if (data.type === "DM_CALL_ERROR") {
         if (data.peer) setCallPeer(data.peer as Peer);
-        setError(typeof data.message === "string" ? data.message : "Direct call failed.");
+        setError(realtimeErrorMessage(data, t("dm.call.failed")));
         reset(true, true);
         return;
       }
@@ -619,18 +622,18 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
   );
 
   if (phase === "idle" && !error) return null;
-  const peerName = peer?.username || "Friend";
+  const peerName = peer?.username || t("dm.call.friend");
   const live = phase === "connected" || phase === "connecting";
   const status =
     phase === "incoming"
-      ? "Incoming call"
+      ? t("dm.call.incoming")
       : phase === "ringing"
-        ? "Ringing…"
+        ? t("dm.call.ringing")
         : phase === "connecting"
-          ? `Connecting… · ${formatDuration(durationSeconds)}`
+          ? t("dm.call.connecting", { duration: formatDuration(durationSeconds) })
           : phase === "connected"
             ? formatDuration(durationSeconds)
-            : error || "Call ended";
+            : error || t("dm.call.ended");
   if (minimized && live)
     return (
       <button type="button" className="direct-call-mini" onClick={() => setMinimized(false)}>
@@ -639,9 +642,9 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
         </span>
         <span className="direct-call-mini-copy">
           <strong>{peerName}</strong>
-          <small>{formatDuration(durationSeconds)} · Click to resume</small>
+          <small>{t("dm.call.resume", { duration: formatDuration(durationSeconds) })}</small>
         </span>
-        <span className="direct-call-mini-live" aria-label="Call live" />
+        <span className="direct-call-mini-live" aria-label={t("dm.call.live")} />
       </button>
     );
   return (
@@ -655,21 +658,21 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
         className="direct-call-card"
         role="dialog"
         aria-modal="true"
-        aria-label={`${video ? "Video" : "Voice"} call with ${peerName}`}
+        aria-label={video ? t("dm.call.videoWith", { name: peerName }) : t("dm.call.voiceWith", { name: peerName })}
         onClick={(event: ReactMouseEvent<HTMLDivElement>) => event.stopPropagation()}
       >
         {live && (
           <button
             type="button"
             className="ds-btn ds-btn-ghost ds-icon-btn ds-btn-sm direct-call-minimize"
-            title="Minimize call"
-            aria-label="Minimize call"
+            title={t("dm.call.minimize")}
+            aria-label={t("dm.call.minimize")}
             onClick={() => setMinimized(true)}
           >
             <Icon name="minimize" />
           </button>
         )}
-        <span className="ds-kicker">{video ? "Video call" : "Voice call"}</span>
+        <span className="ds-kicker">{video ? t("dm.call.videoCall") : t("dm.call.voiceCall")}</span>
         <h2 className="direct-call-title">
           {peerName}
           {live && <CallVerificationMark connectionId="direct-call" />}
@@ -692,16 +695,16 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
             <>
               <button
                 className="direct-call-round danger"
-                title="Decline call"
-                aria-label="Decline call"
+                title={t("dm.call.decline")}
+                aria-label={t("dm.call.decline")}
                 onClick={decline}
               >
                 <CallIcon name="end" />
               </button>
               <button
                 className="direct-call-round accept"
-                title="Accept call"
-                aria-label="Accept call"
+                title={t("dm.call.accept")}
+                aria-label={t("dm.call.accept")}
                 onClick={() => void accept()}
               >
                 <CallIcon name={video ? "video" : "phone"} />
@@ -711,8 +714,8 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
             <>
               <button
                 className={`direct-call-round ${muted ? "active" : ""}`}
-                title={muted ? "Turn microphone on" : "Mute microphone"}
-                aria-label={muted ? "Unmute" : "Mute"}
+                title={muted ? t("dm.call.micOn") : t("dm.call.micOff")}
+                aria-label={muted ? t("dm.call.unmute") : t("dm.call.mute")}
                 onClick={toggleMicrophone}
               >
                 <CallIcon name={muted ? "micOff" : "mic"} />
@@ -720,8 +723,8 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
               <span className="direct-call-control-wrap">
                 <button
                   className="direct-call-round"
-                  title="Adjust call volume"
-                  aria-label="Adjust call volume"
+                  title={t("dm.call.volume")}
+                  aria-label={t("dm.call.volume")}
                   onClick={() => setVolumeOpen((value) => !value)}
                 >
                   <CallIcon name="volume" />
@@ -742,8 +745,8 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
               {phase === "connected" && !video && (
                 <button
                   className="direct-call-round"
-                  title="Switch to video call"
-                  aria-label="Switch to video call"
+                  title={t("dm.call.switchToVideo")}
+                  aria-label={t("dm.call.switchToVideo")}
                   onClick={() => void upgradeToVideo()}
                 >
                   <CallIcon name="video" />
@@ -752,20 +755,25 @@ export function DirectCallOverlay({ loadIceServers, acquireMicrophone, onOverlay
               {video && (
                 <button
                   className={`direct-call-round ${!camera ? "active" : ""}`}
-                  title={camera ? "Turn camera off" : "Turn camera on"}
-                  aria-label={camera ? "Turn camera off" : "Turn camera on"}
+                  title={camera ? t("dm.call.cameraOff") : t("dm.call.cameraOn")}
+                  aria-label={camera ? t("dm.call.cameraOff") : t("dm.call.cameraOn")}
                   onClick={() => void toggleCamera()}
                 >
                   <CallIcon name={camera ? "video" : "videoOff"} />
                 </button>
               )}
-              <button className="direct-call-round danger" title="End call" aria-label="End call" onClick={end}>
+              <button
+                className="direct-call-round danger"
+                title={t("dm.call.end")}
+                aria-label={t("dm.call.end")}
+                onClick={end}
+              >
                 <CallIcon name="end" />
               </button>
             </>
           ) : (
             <button type="button" className="ds-btn" onClick={end}>
-              {error ? "Close" : "Cancel call"}
+              {error ? t("dm.call.close") : t("dm.call.cancel")}
             </button>
           )}
         </div>

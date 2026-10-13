@@ -1,0 +1,43 @@
+{
+  "tray": {
+    "open": "Otwórz DeCave",
+    "toggleMute": "Wycisz / włącz mikrofon",
+    "toggleDeafen": "Wyłącz / włącz dźwięk",
+    "quit": "Zamknij DeCave"
+  },
+  "window": {
+    "streamTitle": "Stream DeCave"
+  },
+  "update": {
+    "checkFailed": "DeCave nie może sprawdzić dostępności aktualizacji. Sprawdź połączenie i spróbuj ponownie.",
+    "publisherUnverified": "Automatyczne aktualizacje są wyłączone, bo nie udało się zweryfikować wydawcy zainstalowanej wersji dla Windows.",
+    "installFailed": "DeCave nie może dokończyć aktualizacji. Spróbuj ponownie później."
+  },
+  "keybinds": {
+    "mustDiffer": "Skróty wyciszenia mikrofonu i wyłączenia dźwięku muszą być różne.",
+    "inUse": "Jeden z tych skrótów jest już używany przez Windows lub inną aplikację."
+  },
+  "picker": {
+    "windowTitle": "Wybierz, co udostępnić · DeCave",
+    "title": "Wybierz, co udostępnić",
+    "subtitle": "Wybierz ekran lub okno aplikacji do udostępniania ekranu w DeCave.",
+    "cancel": "Anuluj",
+    "entireScreen": "Cały ekran",
+    "window": "Okno",
+    "noPreview": "Brak podglądu"
+  },
+  "turnstile": {
+    "windowTitle": "Weryfikacja bezpieczeństwa DeCave",
+    "invalidToken": "Weryfikacja bezpieczeństwa zwróciła nieprawidłowy token.",
+    "unsupportedAction": "Nieobsługiwana akcja weryfikacji bezpieczeństwa.",
+    "replaced": "Weryfikacja bezpieczeństwa została zastąpiona nowym żądaniem.",
+    "timedOut": "Upłynął limit czasu weryfikacji bezpieczeństwa.",
+    "loadFailed": "Nie udało się wczytać weryfikacji bezpieczeństwa."
+  },
+  "overlay": {
+    "voice": "Głos",
+    "unknown": "Nieznany",
+    "muted": "Wyciszony",
+    "deafened": "Dźwięk wyłączony"
+  }
+}

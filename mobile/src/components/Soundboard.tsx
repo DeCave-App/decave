@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { createAudioPlayer } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
@@ -51,6 +52,7 @@ export function SoundboardListener() {
 
 /** Bottom sheet listing the Hub's sounds; tapping one plays it for the room. */
 export function SoundboardSheet({ visible, hubId, onClose }: { visible: boolean; hubId: number; onClose: () => void }) {
+  const { t } = useTranslation(["common", "forum", "hub", "voice"]);
   const { token } = useSession();
   const { send } = useRealtime();
   const [sounds, setSounds] = useState<SoundboardSound[]>([]);
@@ -65,11 +67,11 @@ export function SoundboardSheet({ visible, hubId, onClose }: { visible: boolean;
       const picked = await DocumentPicker.getDocumentAsync({ type: "audio/*", copyToCacheDirectory: true });
       if (picked.canceled || !picked.assets?.[0]) return;
       const file = picked.assets[0];
-      if (file.size && file.size > 1536 * 1024) throw new Error("Sounds must be 1.5 MB or smaller.");
+      if (file.size && file.size > 1536 * 1024) throw new Error(t("voice.mobile.soundboard.tooLarge"));
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
       const mime =
         ext === "mp3" ? "audio/mpeg" : ext === "wav" ? "audio/wav" : ext === "ogg" ? "audio/ogg" : ext === "m4a" || ext === "mp4" ? "audio/mp4" : ext === "webm" ? "audio/webm" : "";
-      if (!mime) throw new Error("Choose an MP3, WAV, OGG, M4A or WebM file.");
+      if (!mime) throw new Error(t("voice.mobile.soundboard.badType"));
       setUploading(true);
       const base64 = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
       const name = file.name.replace(/\.[^.]+$/, "").slice(0, 32) || "Sound";
@@ -78,10 +80,10 @@ export function SoundboardSheet({ visible, hubId, onClose }: { visible: boolean;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hubId, name, dataUrl: `data:${mime};base64,${base64}` }),
       }, token);
-      setNotice(`Added ${name}.`);
+      setNotice(t("voice.mobile.soundboard.added", { name }));
       setReloadKey((value) => value + 1);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Couldn't upload that sound.");
+      setNotice(error instanceof Error ? error.message : t("voice.mobile.soundboard.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -97,7 +99,7 @@ export function SoundboardSheet({ visible, hubId, onClose }: { visible: boolean;
         if (!cancelled) setSounds(data.sounds);
       })
       .catch((error) => {
-        if (!cancelled) setNotice(error instanceof Error ? error.message : "Could not load sounds.");
+        if (!cancelled) setNotice(error instanceof Error ? error.message : t("voice.mobile.soundboard.loadFailed"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -108,8 +110,8 @@ export function SoundboardSheet({ visible, hubId, onClose }: { visible: boolean;
   }, [visible, token, hubId, reloadKey]);
 
   const play = (sound: SoundboardSound) => {
-    if (send({ type: "VOICE_SOUNDBOARD_PLAY", soundId: sound.id })) setNotice(`Played ${sound.name}.`);
-    else setNotice("Realtime is reconnecting. Try again in a moment.");
+    if (send({ type: "VOICE_SOUNDBOARD_PLAY", soundId: sound.id })) setNotice(t("voice.mobile.soundboard.played", { name: sound.name }));
+    else setNotice(t("forum.view.reconnecting"));
   };
 
   return (
@@ -119,12 +121,12 @@ export function SoundboardSheet({ visible, hubId, onClose }: { visible: boolean;
           <View style={styles.grabber} />
           <View style={styles.head}>
             <Ionicons name="musical-notes" size={18} color={colors.cyan} />
-            <Text style={styles.title}>Soundboard</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Add a sound" hitSlop={8} disabled={uploading} onPress={() => void upload()} style={styles.add}>
+            <Text style={styles.title}>{t("hub.voiceControls.soundboard")}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("voice.mobile.soundboard.addLabel")} hitSlop={8} disabled={uploading} onPress={() => void upload()} style={styles.add}>
               {uploading ? <ActivityIndicator size="small" color={colors.cyan} /> : <Ionicons name="add" size={18} color={colors.cyan} />}
-              <Text style={styles.addText}>Add</Text>
+              <Text style={styles.addText}>{t("common.actions.add")}</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={onClose}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")} hitSlop={10} onPress={onClose}>
               <Ionicons name="close" size={22} color={colors.muted} />
             </Pressable>
           </View>
@@ -132,14 +134,14 @@ export function SoundboardSheet({ visible, hubId, onClose }: { visible: boolean;
           {loading ? (
             <ActivityIndicator color={colors.cyan} style={{ marginVertical: 30 }} />
           ) : sounds.length === 0 ? (
-            <Text style={styles.empty}>This Hub has no sounds yet. Tap Add to upload an MP3, WAV or M4A up to 1.5 MB.</Text>
+            <Text style={styles.empty}>{t("voice.mobile.soundboard.empty")}</Text>
           ) : (
             <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.grid}>
               {sounds.map((sound) => (
                 <Pressable
                   key={sound.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`Play ${sound.name}`}
+                  accessibilityLabel={t("hub.voiceStage.playSound", { name: sound.name })}
                   onPress={() => play(sound)}
                   style={({ pressed }) => [styles.sound, pressed && styles.soundPressed]}
                 >

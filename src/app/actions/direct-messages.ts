@@ -17,8 +17,12 @@ import type {
 } from "../types";
 import { HTTP_URL } from "../env";
 import { localeForLanguage, preferredTimeOptions } from "../locale";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
+import { e2eeErrorText } from "../../e2ee/errorText.ts";
 import { HISTORY_PAGE_SIZE } from "../constants";
-import { DM_ATTACHMENT_PREFIX, dmPreviewText } from "../message-payloads";
+import { DM_ATTACHMENT_PREFIX } from "../message-payloads";
+import { dmPreviewLabels, translatedDmPreview } from "../../i18n/dmPreview.ts";
 import type { NewConversationState } from "../state/new-conversation";
 import { mergeConversationHistory, type PendingSocialMessage } from "./social-message-recovery";
 import {
@@ -197,11 +201,11 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
         setDmPreferences((current) => ({ ...current, [userId]: previous }));
-        setDmError(data.error || "Could not update this conversation.");
+        setDmError(apiErrorMessage(data, "client.dm.updateConversation"));
       }
     } catch {
       setDmPreferences((current) => ({ ...current, [userId]: previous }));
-      setDmError("Could not update this conversation.");
+      setDmError(i18next.t("errors.client.dm.updateConversation"));
     }
   };
 
@@ -220,9 +224,9 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     }
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    if (date.toDateString() === yesterday.toDateString()) return i18next.t("chat.actions.dm.yesterday");
     const days = Math.max(1, Math.floor(age / 86400000));
-    if (days < 7) return `${days}d ago`;
+    if (days < 7) return i18next.t("chat.actions.dm.daysAgo", { count: days });
     return date.toLocaleDateString(localeForLanguage(), { month: "short", day: "numeric" });
   };
 
@@ -260,8 +264,8 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
           ...conversation,
           latestMessage:
             previews[index].e2ee === "encrypted" || !conversation.latestEnvelope
-              ? dmPreviewText(previews[index].text)
-              : "🔒 Encrypted message",
+              ? translatedDmPreview(previews[index].text)
+              : dmPreviewLabels.encrypted(),
         })),
       );
     } catch (error) {
@@ -327,7 +331,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       if (loadGeneration !== groupHistoryLoadGenerationRef.current || activeGroupChatRef.current?.id !== group.id)
         return;
       if (!response.ok || !data.group) {
-        setGroupError(data.error || "Could not open group chat.");
+        setGroupError(apiErrorMessage(data, "client.dm.openGroup"));
         return;
       }
       setActiveGroupChat(data.group);
@@ -347,7 +351,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       if (loadGeneration !== groupHistoryLoadGenerationRef.current || activeGroupChatRef.current?.id !== group.id)
         return;
       console.error("Could not load group chat:", error);
-      setGroupError("Could not open group chat.");
+      setGroupError(i18next.t("errors.client.dm.openGroup"));
     }
   };
 
@@ -361,13 +365,13 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     try {
       frame = await groupSocketFrame(group, text, groupReplyingTo?.id ?? null);
     } catch (error) {
-      setGroupError(error instanceof Error ? error.message : "Could not encrypt this message.");
+      setGroupError(e2eeErrorText(error, i18next.t("chat.actions.dm.encryptFailed")));
       return;
     }
     const clientMessageId = frame.clientMessageId;
     if (typeof clientMessageId !== "string") {
       discardGroupSend(clientMessageId);
-      setGroupError("Could not prepare this message to send. Please try again.");
+      setGroupError(i18next.t("chat.actions.dm.prepareFailed"));
       return;
     }
     const pending: PendingSocialMessage = {
@@ -393,7 +397,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     const group = activeGroupChatRef.current;
     if (!group) return;
     const canDelete = message.fromUserId === currentUser?.id || group.ownerUserId === currentUser?.id;
-    if (!canDelete || !window.confirm("Delete this message? This cannot be undone.")) return;
+    if (!canDelete || !window.confirm(i18next.t("chat.actions.dm.confirmDeleteMessage"))) return;
     setGroupError("");
     try {
       const response = await authorizedFetch(
@@ -402,14 +406,14 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       );
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
-        setGroupError(data.error || "Could not delete message.");
+        setGroupError(apiErrorMessage(data, "client.message.delete"));
         return;
       }
       setGroupMessages((current) => current.filter((item) => item.id !== message.id));
       void loadGroupChats();
     } catch (error) {
       console.error("Could not delete group message:", error);
-      setGroupError("Could not delete message.");
+      setGroupError(i18next.t("errors.client.message.delete"));
     }
   };
 
@@ -445,7 +449,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.group) {
-        setGroupError(data.error || "Could not create group chat.");
+        setGroupError(apiErrorMessage(data, "client.dm.createGroup"));
         return;
       }
       setShowNewConversation(false);
@@ -453,7 +457,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       await openGroupChat(data.group);
     } catch (error) {
       console.error("Could not create group chat:", error);
-      setGroupError("Could not create group chat.");
+      setGroupError(i18next.t("errors.client.dm.createGroup"));
     } finally {
       setGroupCreating(false);
     }
@@ -471,14 +475,14 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as { group?: GroupChat; error?: string };
       if (!response.ok || !data.group) {
-        setGroupError(data.error || "Could not add member.");
+        setGroupError(apiErrorMessage(data, "client.dm.addMember"));
         return;
       }
       setActiveGroupChat(data.group);
       activeGroupChatRef.current = data.group;
       await loadGroupChats();
     } catch {
-      setGroupError("Could not add member.");
+      setGroupError(i18next.t("errors.client.dm.addMember"));
     }
   };
 
@@ -497,7 +501,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
         deleted?: boolean;
       };
       if (!response.ok) {
-        setGroupError(data.error || "Could not remove member.");
+        setGroupError(apiErrorMessage(data, "client.dm.removeMember"));
         return;
       }
       if (member.id === currentUser?.id || data.deleted) {
@@ -511,14 +515,14 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       }
       await loadGroupChats();
     } catch {
-      setGroupError("Could not remove member.");
+      setGroupError(i18next.t("errors.client.dm.removeMember"));
     }
   };
 
   const deleteActiveGroup = async () => {
     const group = activeGroupChatRef.current;
     if (!group || group.ownerUserId !== currentUser?.id) return;
-    if (!window.confirm(`Delete “${group.name}” for everyone? This cannot be undone.`)) return;
+    if (!window.confirm(i18next.t("chat.actions.dm.confirmDeleteGroup", { name: group.name }))) return;
     setGroupError("");
     try {
       const response = await authorizedFetch(`${HTTP_URL}/api/groups/${encodeURIComponent(group.id)}`, {
@@ -526,7 +530,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
-        setGroupError(data.error || "Could not delete group.");
+        setGroupError(apiErrorMessage(data, "client.dm.deleteGroup"));
         return;
       }
       setShowGroupMembers(false);
@@ -535,7 +539,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       setGroupMessages([]);
       await Promise.all([loadGroupChats(), loadServers()]);
     } catch {
-      setGroupError("Could not delete group.");
+      setGroupError(i18next.t("errors.client.dm.deleteGroup"));
     }
   };
 
@@ -549,13 +553,13 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     try {
       frame = await dmSocketFrame(target.id, text, dmReplyingTo?.id ?? null);
     } catch (error) {
-      setDmError(error instanceof Error ? error.message : "Could not encrypt this message.");
+      setDmError(e2eeErrorText(error, i18next.t("chat.actions.dm.encryptFailed")));
       return;
     }
     const clientMessageId = frame.clientMessageId;
     if (typeof clientMessageId !== "string") {
       discardDmSend(clientMessageId);
-      setDmError("Could not prepare this message to send. Please try again.");
+      setDmError(i18next.t("chat.actions.dm.prepareFailed"));
       return;
     }
     const pending: PendingSocialMessage = {
@@ -609,7 +613,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       });
       const data = (await response.json()) as { attachment?: AttachmentMeta; error?: string };
       if (!response.ok || !data.attachment) {
-        setDmError(data.error || "Could not upload attachment.");
+        setDmError(apiErrorMessage(data, "client.message.uploadAttachment"));
         return;
       }
       const attachment: AttachmentMeta = encrypted
@@ -625,7 +629,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       const frame = await dmSocketFrame(target.id, text, dmReplyingTo?.id ?? null);
       if (!sendSocket(frame)) {
         discardDmSend(frame.clientMessageId);
-        setDmError("Realtime is reconnecting. Try the attachment again in a moment.");
+        setDmError(i18next.t("chat.actions.message.attachmentReconnecting"));
         return;
       }
       setDmReplyingTo(null);
@@ -635,10 +639,10 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     } catch (error) {
       setDmError(
         error instanceof DOMException && error.name === "AbortError"
-          ? "Upload canceled. You can retry the same file."
+          ? i18next.t("chat.actions.message.uploadCanceledRetry")
           : error instanceof Error
             ? error.message
-            : "Could not upload attachment.",
+            : i18next.t("errors.client.message.uploadAttachment"),
       );
     } finally {
       setDmAttachmentBusy(false);
@@ -651,7 +655,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     dmAttachmentAbortRef.current?.abort();
     dmAttachmentAbortRef.current = null;
     setDmAttachmentBusy(false);
-    setDmError("Upload canceled. You can retry the same file.");
+    setDmError(i18next.t("chat.actions.message.uploadCanceledRetry"));
   };
 
   const sendDmReaction = async (message: DirectMessage, emoji: string) => {
@@ -678,7 +682,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       let { response, data } = await send(false);
       if (data.code === "DM_E2EE_STALE_KEY") ({ response, data } = await send(true));
       if (!response.ok || !data.message) {
-        setDmError(data.error || "Could not update reaction.");
+        setDmError(apiErrorMessage(data, "client.message.reaction"));
         return;
       }
       const updated = await dmE2ee.open(data.message, peerId);
@@ -686,8 +690,8 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     } catch (error) {
       setDmError(
         error instanceof Error && error.name === "DmE2eeUnavailableError"
-          ? error.message
-          : "Could not update reaction.",
+          ? e2eeErrorText(error, error.message)
+          : i18next.t("errors.client.message.reaction"),
       );
     }
   };
@@ -728,7 +732,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       if (data.code === "DM_E2EE_STALE_KEY" || data.code === "DM_E2EE_REQUIRED")
         ({ response, data } = await send(true));
       if (!response.ok || !data.message) {
-        setDmError(data.error || "Could not edit message.");
+        setDmError(apiErrorMessage(data, "client.message.edit"));
         return;
       }
       const edited = await dmE2ee.open(data.message, target.id);
@@ -737,7 +741,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       setDmEditingText("");
       void loadDmConversations();
     } catch (error) {
-      setDmError(error instanceof Error ? error.message : "Could not edit message.");
+      setDmError(e2eeErrorText(error, i18next.t("errors.client.message.edit")));
     }
   };
 
@@ -750,14 +754,14 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as ApiError;
       if (!response.ok) {
-        setDmError(data.error || "Could not delete message.");
+        setDmError(apiErrorMessage(data, "client.message.delete"));
         return;
       }
       setDmMessages((current) => current.filter((item) => item.id !== message.id));
       setDmDeleteConfirm(null);
       void loadDmConversations();
     } catch {
-      setDmError("Could not delete message.");
+      setDmError(i18next.t("errors.client.message.delete"));
     }
   };
 
@@ -770,7 +774,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as ApiError;
       if (!response.ok) {
-        setDmError(data.error || "Could not delete conversation.");
+        setDmError(apiErrorMessage(data, "client.dm.deleteConversation"));
         return;
       }
       setDmConversationDeleteConfirm(null);
@@ -779,7 +783,7 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
       activeDmUserRef.current = null;
       await loadDmConversations();
     } catch {
-      setDmError("Could not delete conversation.");
+      setDmError(i18next.t("errors.client.dm.deleteConversation"));
     }
   };
 

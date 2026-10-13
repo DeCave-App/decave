@@ -1,5 +1,6 @@
 // Top bar: DeCave brand, Hub switcher, the active Hub and the account menu button.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import decaveMark from "../../assets/decave-mark-reference.png";
 import type { HubTemplateId } from "../../../shared/hub-templates";
@@ -10,6 +11,10 @@ import { HTTP_URL } from "../env";
 import { presenceLabel, presenceColor, presenceGlow } from "../user-display";
 import { UserAvatar } from "../components/UserAvatar";
 import type { ContextMenuActions } from "../actions/context-menus";
+import { hubRoleName, hubRoleTitle } from "./roleLabels";
+
+// The DeCave wordmark is a brand and is never translated.
+const WORDMARK = { start: "De", accent: "C", end: "ave" } as const;
 
 type Props = {
   currentUser: AccountUser;
@@ -74,6 +79,7 @@ export function AppTopBar({
   primaryHubsActive,
   contextMenus,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { openUserContextMenu, openResourceContextMenu } = contextMenus;
   return (
     <header
@@ -106,7 +112,7 @@ export function AppTopBar({
             whiteSpace: "nowrap",
           }}
         >
-          <span style={{ color: "var(--ds-text)" }}>De</span>
+          <span style={{ color: "var(--ds-text)" }}>{WORDMARK.start}</span>
           <span
             style={{
               color: "var(--ds-accent)",
@@ -116,9 +122,9 @@ export function AppTopBar({
               WebkitTextFillColor: "transparent",
             }}
           >
-            C
+            {WORDMARK.accent}
           </span>
-          <span style={{ color: "var(--ds-text)" }}>ave</span>
+          <span style={{ color: "var(--ds-text)" }}>{WORDMARK.end}</span>
         </span>
       </div>
 
@@ -132,7 +138,7 @@ export function AppTopBar({
             iconUrl: server.iconUrl ? `${HTTP_URL}${server.iconUrl}` : null,
             accent: server.accent,
             iconRing: server.iconRing,
-            role: server.myRole,
+            role: server.myRole ? hubRoleName(server.myRole) : null,
             muted: mutedHubIds.includes(server.id),
             unread: textRoomIds.reduce((total, channelId) => total + (roomUnread[channelId] ?? 0), 0),
             mentions: textRoomIds.reduce((total, channelId) => total + (roomMentions[channelId] ?? 0), 0),
@@ -174,7 +180,7 @@ export function AppTopBar({
             whiteSpace: "nowrap",
           }}
         >
-          ACTIVE HUB
+          {t("common.topBar.activeHub")}
         </span>
         <strong
           style={{
@@ -202,14 +208,14 @@ export function AppTopBar({
               setCommandPaletteIndex(0);
               setShowInbox(false);
             }}
-            title="Search and quick switch (Ctrl+K)"
-            aria-label="Search and quick switch"
+            title={t("common.topBar.searchTitle")}
+            aria-label={t("common.commandPalette.label")}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
               <path d="m16 16 4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
-            <span>Search</span>
+            <span>{t("common.actions.search")}</span>
           </button>
           <button
             type="button"
@@ -218,8 +224,8 @@ export function AppTopBar({
               setShowInbox(true);
               setShowCommandPalette(false);
             }}
-            title="Inbox (Ctrl+Shift+I)"
-            aria-label={`Inbox${inboxTotal ? `, ${inboxTotal} unread` : ""}`}
+            title={t("common.topBar.inboxTitle")}
+            aria-label={inboxTotal ? t("common.topBar.inboxUnread", { count: inboxTotal }) : t("common.topBar.inbox")}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -239,12 +245,12 @@ export function AppTopBar({
           <button
             type="button"
             className="dc-top-squad-status"
-            title={`Squad search running · ${squadCurrent.game}`}
+            title={t("common.topBar.squadRunning", { game: squadCurrent.game })}
             onClick={openSquadFinderWorkspace}
           >
             <i aria-hidden="true" />
             <span>
-              <strong>Squad search</strong>
+              <strong>{t("common.topBar.squadSearch")}</strong>
               <small>{squadCurrent.game}</small>
             </span>
           </button>
@@ -278,7 +284,7 @@ export function AppTopBar({
               source: "top-profile",
             })
           }
-          title="Your profile"
+          title={t("common.topBar.profile")}
           style={{
             minWidth: "172px",
             maxWidth: "220px",
@@ -341,15 +347,9 @@ export function AppTopBar({
                 letterSpacing: ".02em",
                 fontWeight: 800,
               }}
-              title={
-                currentServer.myRole
-                  ? currentServer.myRole.charAt(0).toUpperCase() + currentServer.myRole.slice(1)
-                  : "Member"
-              }
+              title={currentServer.myRole ? hubRoleTitle(currentServer.myRole) : t("common.roles.member")}
             >
-              {currentServer.myRole
-                ? currentServer.myRole.charAt(0).toUpperCase() + currentServer.myRole.slice(1)
-                : "Member"}
+              {currentServer.myRole ? hubRoleTitle(currentServer.myRole) : t("common.roles.member")}
             </small>
           </span>
           <span className="vadrion-top-user-chevron" aria-hidden="true">

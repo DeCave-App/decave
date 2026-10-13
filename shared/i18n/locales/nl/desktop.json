@@ -1,0 +1,43 @@
+{
+  "tray": {
+    "open": "DeCave openen",
+    "toggleMute": "Dempen / dempen opheffen",
+    "toggleDeafen": "Onhoorbaar maken / opheffen",
+    "quit": "DeCave afsluiten"
+  },
+  "window": {
+    "streamTitle": "DeCave-stream"
+  },
+  "update": {
+    "checkFailed": "DeCave kon niet op updates controleren. Controleer je verbinding en probeer het opnieuw.",
+    "publisherUnverified": "Automatische updates zijn uitgeschakeld omdat de geïnstalleerde Windows-uitgever niet kon worden geverifieerd.",
+    "installFailed": "DeCave kon de update niet voltooien. Probeer het later opnieuw."
+  },
+  "keybinds": {
+    "mustDiffer": "De sneltoetsen voor dempen en onhoorbaar maken moeten verschillen.",
+    "inUse": "Een van die sneltoetsen wordt al gebruikt door Windows of een andere app."
+  },
+  "picker": {
+    "windowTitle": "Kies wat je wilt delen · DeCave",
+    "title": "Kies wat je wilt delen",
+    "subtitle": "Kies een scherm of app-venster om te delen via DeCave.",
+    "cancel": "Annuleren",
+    "entireScreen": "Volledig scherm",
+    "window": "Venster",
+    "noPreview": "Geen voorbeeld"
+  },
+  "turnstile": {
+    "windowTitle": "DeCave-beveiligingscontrole",
+    "invalidToken": "De beveiligingscontrole gaf een ongeldig token terug.",
+    "unsupportedAction": "Niet-ondersteunde actie voor beveiligingscontrole.",
+    "replaced": "De beveiligingscontrole is vervangen door een nieuw verzoek.",
+    "timedOut": "Er is een time-out opgetreden bij de beveiligingscontrole.",
+    "loadFailed": "De beveiligingscontrole kon niet worden geladen."
+  },
+  "overlay": {
+    "voice": "Spraak",
+    "unknown": "Onbekend",
+    "muted": "Gedempt",
+    "deafened": "Onhoorbaar"
+  }
+}

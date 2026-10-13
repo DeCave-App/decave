@@ -3,6 +3,8 @@
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import type { Channel, Server, SquadSearch, GroupChat } from "../types";
 import { HTTP_URL } from "../env";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import { authorizedFetch } from "../http";
 
 export type SquadRoomActionsDeps = {
@@ -86,7 +88,7 @@ export function createSquadRoomActions(deps: SquadRoomActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.group || !data.hubId || !data.channelId) {
-        setSquadNotice(data.error || "Could not join that squad.");
+        setSquadNotice(apiErrorMessage(data, "client.squad.join"));
         return;
       }
       setSquadCurrent(null);
@@ -106,7 +108,7 @@ export function createSquadRoomActions(deps: SquadRoomActionsDeps) {
         }, 0);
       }
     } catch {
-      setSquadNotice("Could not join that squad.");
+      setSquadNotice(i18next.t("errors.client.squad.join"));
     } finally {
       setSquadBusy(false);
     }
@@ -114,22 +116,21 @@ export function createSquadRoomActions(deps: SquadRoomActionsDeps) {
 
   const leaveCurrentSquadRoom = async () => {
     if (!currentServer.isSquad) return;
-    if (!window.confirm(`Leave ${currentServer.name}? The temporary room is deleted after the last member leaves.`))
-      return;
+    if (!window.confirm(i18next.t("hub.actions.squad.confirmLeave", { name: currentServer.name }))) return;
     try {
       const response = await authorizedFetch(`${HTTP_URL}/api/squad-finder/rooms/${currentServer.id}/leave`, {
         method: "POST",
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
-        window.alert(data.error || "Could not leave the squad room.");
+        window.alert(apiErrorMessage(data, "client.squad.leave"));
         return;
       }
       if (voiceChannelId === currentChannel.id) leaveVoice();
       await loadServers();
       voiceCall.setVoiceChatOpen(false);
     } catch {
-      window.alert("Could not connect to DeCave.");
+      window.alert(i18next.t("errors.client.connect"));
     }
   };
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   createDecisionCardId,
   toExistingEventPayload,
@@ -25,6 +26,7 @@ export type DecisionCardComposerProps = {
 
 /** Creates a decision card by calling existing poll/event actions through typed payloads. */
 export function DecisionCardComposer({ onCreatePoll, onCreateEvent, onCreated, onCancel }: DecisionCardComposerProps) {
+  const { t } = useTranslation(["chat"]);
   const [kind, setKind] = useState<DecisionCardKind>("poll");
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState(["", ""]);
@@ -52,14 +54,14 @@ export function DecisionCardComposer({ onCreatePoll, onCreateEvent, onCreated, o
         if (eventPayload) {
           const eventResult = await onCreateEvent(eventPayload, metadataBase);
           if (!eventResult || typeof eventResult.eventId !== "string" || !eventResult.eventId.trim())
-            throw new Error("The linked event could not be created.");
+            throw new Error(t("chat.session.composer.eventFailed"));
           eventId = eventResult.eventId.trim().slice(0, 160);
         }
       }
       const metadata: DecisionCardMetadata = { ...metadataBase, eventId };
       const result = await onCreatePoll({ question: cleanQuestion, options: cleanOptions }, metadata);
       if (!result || typeof result.sourceMessageId !== "string" || !result.sourceMessageId.trim())
-        throw new Error("The decision poll could not be created.");
+        throw new Error(t("chat.session.composer.pollFailed"));
       onCreated?.({
         id: cardId,
         kind,
@@ -77,7 +79,7 @@ export function DecisionCardComposer({ onCreatePoll, onCreateEvent, onCreated, o
       setDeadlineAt("");
       setLinkEvent(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create this decision card.");
+      setError(cause instanceof Error ? cause.message : t("chat.session.composer.createFailed"));
     } finally {
       setBusy(false);
     }
@@ -85,36 +87,37 @@ export function DecisionCardComposer({ onCreatePoll, onCreateEvent, onCreated, o
   return (
     <section className="dc-session-form" aria-labelledby="decision-card-composer-title">
       <div>
-        <span className="dc-session-kicker">SHARED DECISION</span>
-        <h2 id="decision-card-composer-title">Ask the room</h2>
+        <span className="dc-session-kicker">{t("chat.session.composer.kicker")}</span>
+        <h2 id="decision-card-composer-title">{t("chat.session.composer.title")}</h2>
       </div>
       <div className="dc-session-form-grid">
         <label>
-          Card type
+          {t("chat.session.composer.cardType")}
           <select value={kind} onChange={(event) => setKind(event.target.value as DecisionCardKind)}>
-            <option value="poll">Poll</option>
-            <option value="availability">Availability</option>
-            <option value="choose-game">Choose a game</option>
+            <option value="poll">{t("chat.session.composer.kindPoll")}</option>
+            <option value="availability">{t("chat.session.composer.kindAvailability")}</option>
+            <option value="choose-game">{t("chat.session.composer.kindChooseGame")}</option>
           </select>
         </label>
         <label>
-          Deadline <span className="dc-session-note">optional</span>
+          {t("chat.session.composer.deadline")}{" "}
+          <span className="dc-session-note">{t("chat.session.composer.optional")}</span>
           <input type="datetime-local" value={deadlineAt} onChange={(event) => setDeadlineAt(event.target.value)} />
         </label>
       </div>
       <label>
-        Question
+        {t("chat.session.composer.question")}
         <input
           value={question}
           maxLength={180}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder="What should we play?"
+          placeholder={t("chat.session.composer.questionPlaceholder")}
         />
       </label>
       <div className="dc-session-form-grid">
         {options.map((option, index) => (
           <label key={index}>
-            Option {index + 1}
+            {t("chat.session.composer.option", { number: index + 1 })}
             <input
               value={option}
               maxLength={100}
@@ -129,7 +132,7 @@ export function DecisionCardComposer({ onCreatePoll, onCreateEvent, onCreated, o
       </div>
       {options.length < 8 && (
         <button type="button" onClick={() => setOptions((current) => [...current, ""])}>
-          Add option
+          {t("chat.session.composer.addOption")}
         </button>
       )}
       {onCreateEvent && (
@@ -140,7 +143,7 @@ export function DecisionCardComposer({ onCreatePoll, onCreateEvent, onCreated, o
             disabled={!deadlineAt}
             onChange={(event) => setLinkEvent(event.target.checked)}
           />
-          Link an event at the deadline
+          {t("chat.session.composer.linkEvent")}
         </label>
       )}
       {error && <p role="alert">{error}</p>}
@@ -151,11 +154,11 @@ export function DecisionCardComposer({ onCreatePoll, onCreateEvent, onCreated, o
           disabled={busy || !question.trim() || options.filter((option) => option.trim()).length < 2}
           onClick={() => void submit()}
         >
-          {busy ? "Posting…" : "Post decision"}
+          {busy ? t("chat.session.composer.posting") : t("chat.session.composer.post")}
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel}>
-            Cancel
+            {t("chat.session.cancel")}
           </button>
         )}
       </div>

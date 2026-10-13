@@ -1,7 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/Icon";
+import { apiErrorMessage, type ApiErrorBody } from "../../i18n/apiError";
 import "./pins.css";
-import { pinPreview } from "./pinPreview";
+import { pinPreview, type PinLabel } from "./pinPreview";
 
 export { pinPreview };
 
@@ -42,6 +44,9 @@ export function PinnedMessagesPanel({
   onUnpin,
   onClose,
 }: Props) {
+  const { t } = useTranslation(["hub"]);
+  const pinLabel: PinLabel = (kind, detail) =>
+    detail === undefined ? t(`hub.pins.kinds.${kind}`) : t(`hub.pins.kindsWithDetail.${kind}`, { detail });
   const [pins, setPins] = useState<PinnedMessage[] | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
@@ -57,14 +62,16 @@ export function PinnedMessagesPanel({
           credentials: "include",
           cache: "no-store",
         });
-        const data = (await response.json().catch(() => ({}))) as { pins?: PinnedMessage[]; error?: string };
+        const data = (await response.json().catch(() => ({}))) as { pins?: PinnedMessage[] } & ApiErrorBody;
         if (cancelled) return;
-        if (!response.ok) throw new Error(data.error || "Could not load pinned messages.");
+        if (!response.ok) {
+          throw new Error(data.code || data.error ? apiErrorMessage(data, "common.unknown") : t("hub.pins.loadFailed"));
+        }
         setPins(Array.isArray(data.pins) ? data.pins : []);
       } catch (err) {
         if (!cancelled) {
           setPins([]);
-          setError(err instanceof Error ? err.message : "Could not load pinned messages.");
+          setError(err instanceof Error ? err.message : t("hub.pins.loadFailed"));
         }
       }
     })();
@@ -94,15 +101,17 @@ export function PinnedMessagesPanel({
       >
         <header className="ds-page-header">
           <div className="ds-page-header-copy">
-            <span className="ds-kicker">Pinned messages{pins && pins.length ? ` · ${pins.length}` : ""}</span>
+            <span className="ds-kicker">
+              {pins && pins.length ? t("hub.pins.titleWithCount", { n: pins.length }) : t("hub.pins.title")}
+            </span>
             <h2 id="pins-title">#{roomName}</h2>
           </div>
           <div className="ds-page-header-actions">
             <button
               type="button"
               className="ds-btn ds-btn-ghost ds-icon-btn"
-              aria-label="Close"
-              title="Close"
+              aria-label={t("hub.pins.close")}
+              title={t("hub.pins.close")}
               onClick={onClose}
             >
               <Icon name="close" />
@@ -110,7 +119,7 @@ export function PinnedMessagesPanel({
           </div>
         </header>
         <div className="pinned-message-list ds-list">
-          {pins === null && <p className="pins-status">Loading…</p>}
+          {pins === null && <p className="pins-status">{t("hub.pins.loading")}</p>}
           {error && (
             <p className="pins-status pins-error" role="alert">
               {error}
@@ -121,12 +130,8 @@ export function PinnedMessagesPanel({
               <span className="ds-empty-icon">
                 <Icon name="pin" />
               </span>
-              <h3>No pinned messages yet</h3>
-              <p>
-                {canUnpin
-                  ? "Pin an important message from its menu so everyone can find it here."
-                  : "Admins can pin important messages so everyone can find them here."}
-              </p>
+              <h3>{t("hub.pins.empty")}</h3>
+              <p>{canUnpin ? t("hub.pins.emptyCanPin") : t("hub.pins.emptyMember")}</p>
             </div>
           )}
           {pins?.map((message) => (
@@ -136,7 +141,7 @@ export function PinnedMessagesPanel({
                 <strong className="ds-row-title">
                   {message.username} <small className="ds-row-meta">{formatTime(message.timestamp)}</small>
                 </strong>
-                <span className="ds-row-sub pins-text">{pinPreview(message, expanded === message.id)}</span>
+                <span className="ds-row-sub pins-text">{pinPreview(message, expanded === message.id, pinLabel)}</span>
               </div>
               <div className="pins-actions">
                 {loadedIds.has(message.id) ? (
@@ -144,9 +149,9 @@ export function PinnedMessagesPanel({
                     type="button"
                     className="ds-btn ds-btn-sm"
                     onClick={() => onJump(message.id)}
-                    title="Show this message in the room"
+                    title={t("hub.pins.jumpTitle")}
                   >
-                    Jump
+                    {t("hub.pins.jump")}
                   </button>
                 ) : (
                   message.text.length > 280 && (
@@ -156,7 +161,7 @@ export function PinnedMessagesPanel({
                       aria-expanded={expanded === message.id}
                       onClick={() => setExpanded(expanded === message.id ? "" : message.id)}
                     >
-                      {expanded === message.id ? "Less" : "Read all"}
+                      {expanded === message.id ? t("hub.pins.less") : t("hub.pins.readAll")}
                     </button>
                   )
                 )}
@@ -167,7 +172,7 @@ export function PinnedMessagesPanel({
                     disabled={busy === message.id}
                     onClick={() => void unpin(message)}
                   >
-                    {busy === message.id ? "Unpinning…" : "Unpin"}
+                    {busy === message.id ? t("hub.pins.unpinning") : t("hub.pins.unpin")}
                   </button>
                 )}
               </div>

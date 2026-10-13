@@ -2,7 +2,9 @@
 import { BOT_LIMITS } from "./types.ts";
 import type { BotRule } from "./types.ts";
 import { cronMinuteGap, parseCron } from "./cron.ts";
-import { compileBotPattern } from "./regex-vm.ts";
+import { compileBotPattern, type BotRegexProblem } from "./regex-vm.ts";
+import englishBots from "../i18n/locales/en/bots.json" with { type: "json" };
+import { englishText, type TextParams } from "../i18n/english.ts";
 
 export type BotRuleContext = {
   channelIds: Set<string>;
@@ -12,7 +14,8 @@ export type BotRuleContext = {
   builtInCommands: Set<string>;
 };
 
-export type BotRuleError = { path: string; message: string };
+/** `message` is English; `code` (bots.validation.*) and `params` let clients translate it. */
+export type BotRuleError = { path: string; message: string; code?: string; params?: Record<string, string | number> };
 
 export type ValidateRuleResult = { ok: true; rule: BotRule } | { ok: false; errors: BotRuleError[] };
 
@@ -34,14 +37,22 @@ const isStr = (v: unknown): v is string => typeof v === "string";
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const join = (base: string, key: string) => (base ? `${base}.${key}` : key);
 
+type IdKind = "role" | "voiceRoom" | "channel" | "rule";
+
+/** Adds an error with its catalog code (bots.validation.*) and the English message. */
+function fail(errors: Errors, path: string, code: string, params?: TextParams) {
+  const message = englishText(englishBots.validation, code, params);
+  errors.push({ path, message, code: `bots.validation.${code}`, ...(params ? { params } : {}) });
+}
+
 // Rejects keys outside `allowed`; returns false when the value is not an object.
 function checkObject(v: unknown, path: string, allowed: string[], errors: Errors): v is Obj {
   if (!isObj(v)) {
-    errors.push({ path, message: "Must be an object." });
+    fail(errors, path, "notObject");
     return false;
   }
   for (const key of Object.keys(v)) {
-    if (!allowed.includes(key)) errors.push({ path: join(path, key), message: "Unknown field." });
+    if (!allowed.includes(key)) fail(errors, join(path, key), "unknownField");
   }
   return true;
 }
@@ -50,11 +61,11 @@ function str(o: Obj, key: string, path: string, errors: Errors, max: number = MA
   const v = o[key];
   if (v === undefined && optional) return false;
   if (!isStr(v) || v.length === 0) {
-    errors.push({ path: join(path, key), message: "Must be a non-empty string." });
+    fail(errors, join(path, key), "nonEmptyString");
     return false;
   }
   if (v.length > max) {
-    errors.push({ path: join(path, key), message: `Must be at most ${max} characters.` });
+    fail(errors, join(path, key), "maxLength", { max });
     return false;
   }
   return true;
@@ -62,35 +73,35 @@ function str(o: Obj, key: string, path: string, errors: Errors, max: number = MA
 
 function bool(o: Obj, key: string, path: string, errors: Errors, optional = false) {
   if (o[key] === undefined && optional) return;
-  if (typeof o[key] !== "boolean") errors.push({ path: join(path, key), message: "Must be true or false." });
+  if (typeof o[key] !== "boolean") fail(errors, join(path, key), "boolean");
 }
 
 function num(o: Obj, key: string, path: string, errors: Errors, min: number, max: number, optional = false) {
   const v = o[key];
   if (v === undefined && optional) return;
   if (!isNum(v) || v < min || v > max) {
-    errors.push({ path: join(path, key), message: `Must be a number from ${min} to ${max}.` });
+    fail(errors, join(path, key), "numberRange", { min, max });
   }
 }
 
 function oneOf(o: Obj, key: string, path: string, errors: Errors, values: string[]) {
   if (!isStr(o[key]) || !values.includes(o[key])) {
-    errors.push({ path: join(path, key), message: `Must be one of: ${values.join(", ")}.` });
+    fail(errors, join(path, key), "oneOf", { values: values.join(", ") });
   }
 }
 
 function time(o: Obj, key: string, path: string, errors: Errors) {
   if (!isStr(o[key]) || !TIME.test(o[key])) {
-    errors.push({ path: join(path, key), message: "Must be a time like 09:30." });
+    fail(errors, join(path, key), "time");
   }
 }
 
-function id(o: Obj, key: string, path: string, errors: Errors, known: Set<string>, what: string) {
+function id(o: Obj, key: string, path: string, errors: Errors, known: Set<string>, what: IdKind) {
   const v = o[key];
   if (!isStr(v) || v.length === 0) {
-    errors.push({ path: join(path, key), message: `Must be a ${what} id.` });
+    fail(errors, join(path, key), `idRequired.${what}`);
   } else if (!known.has(v)) {
-    errors.push({ path: join(path, key), message: `Unknown ${what} in this hub.` });
+    fail(errors, join(path, key), `unknownId.${what}`);
   }
 }
 
@@ -98,7 +109,7 @@ function varValue(o: Obj, path: string, errors: Errors, optional: boolean) {
   const v = o.value;
   if (v === undefined && optional) return;
   if (!(isStr(v) && v.length <= MAX_TEXT) && !isNum(v)) {
-    errors.push({ path: join(path, "value"), message: "Must be a number or short text." });
+    fail(errors, join(path, "value"), "numberOrText");
   }
 }
 
@@ -106,13 +117,18 @@ function varValue(o: Obj, path: string, errors: Errors, optional: boolean) {
 // whitelist grammar and run by a linear-time VM (see regex-vm.ts). Checked on
 // save and again before matching.
 export function unsafeRegexReason(pattern: string): string | null {
+  return unsafeRegexProblem(pattern)?.error ?? null;
+}
+
+/** unsafeRegexReason() with its bots.validation code and params, or null for a safe pattern. */
+export function unsafeRegexProblem(pattern: string): BotRegexProblem | null {
   const compiled = compileBotPattern(pattern);
-  return "error" in compiled ? compiled.error : null;
+  return "error" in compiled ? compiled : null;
 }
 
 function validateTrigger(t: unknown, path: string, ctx: BotRuleContext, errors: Errors) {
   if (!isObj(t)) {
-    errors.push({ path, message: "Must be an object." });
+    fail(errors, path, "notObject");
     return;
   }
   const f = (...extra: string[]) => checkObject(t, path, ["type", ...extra], errors);
@@ -120,19 +136,19 @@ function validateTrigger(t: unknown, path: string, ctx: BotRuleContext, errors: 
     case "command": {
       if (!f("name", "options")) return;
       if (!isStr(t.name) || !COMMAND_NAME.test(t.name)) {
-        errors.push({ path: join(path, "name"), message: "Use 1-32 lowercase letters, digits or dashes." });
+        fail(errors, join(path, "name"), "commandName");
       } else if (ctx.builtInCommands.has(t.name)) {
-        errors.push({ path: join(path, "name"), message: "This name is already used by a built-in command." });
+        fail(errors, join(path, "name"), "builtInCommand");
       }
       if (!Array.isArray(t.options)) {
-        errors.push({ path: join(path, "options"), message: "Must be a list." });
+        fail(errors, join(path, "options"), "list");
         return;
       }
       t.options.forEach((opt, i) => {
         const p = `${path}.options[${i}]`;
         if (!checkObject(opt, p, ["name", "type", "required", "choices"], errors)) return;
         if (!isStr(opt.name) || !COMMAND_NAME.test(opt.name)) {
-          errors.push({ path: join(p, "name"), message: "Use 1-32 lowercase letters, digits or dashes." });
+          fail(errors, join(p, "name"), "commandName");
         }
         oneOf(opt, "type", p, errors, OPTION_TYPES);
         bool(opt, "required", p, errors);
@@ -141,7 +157,7 @@ function validateTrigger(t: unknown, path: string, ctx: BotRuleContext, errors: 
             Array.isArray(opt.choices) &&
             opt.choices.length <= 25 &&
             opt.choices.every((c) => isStr(c) && c.length > 0 && c.length <= 100);
-          if (!ok) errors.push({ path: join(p, "choices"), message: "Must be up to 25 short texts." });
+          if (!ok) fail(errors, join(p, "choices"), "choices");
         }
       });
       return;
@@ -157,11 +173,11 @@ function validateTrigger(t: unknown, path: string, ctx: BotRuleContext, errors: 
           new RegExp(pattern);
         } catch {
           valid = false;
-          errors.push({ path: join(path, "pattern"), message: "Not a valid regular expression." });
+          fail(errors, join(path, "pattern"), "invalidRegex");
         }
         if (valid) {
-          const problem = unsafeRegexReason(pattern);
-          if (problem) errors.push({ path: join(path, "pattern"), message: problem });
+          const problem = unsafeRegexProblem(pattern);
+          if (problem) fail(errors, join(path, "pattern"), problem.code, problem.params);
         }
       }
       bool(t, "caseSensitive", path, errors);
@@ -193,22 +209,19 @@ function validateTrigger(t: unknown, path: string, ctx: BotRuleContext, errors: 
     case "voiceJoin":
     case "voiceLeave":
       if (!f("roomId")) return;
-      if (t.roomId !== undefined) id(t, "roomId", path, errors, ctx.voiceRoomIds, "voice room");
+      if (t.roomId !== undefined) id(t, "roomId", path, errors, ctx.voiceRoomIds, "voiceRoom");
       return;
     case "schedule": {
       if (!f("every", "daily", "weekly", "cron", "timezone")) return;
       str(t, "timezone", path, errors, 64);
       const modes = ["every", "daily", "weekly", "cron"].filter((k) => t[k] !== undefined);
       if (modes.length !== 1) {
-        errors.push({ path, message: "Set exactly one of every, daily, weekly or cron." });
+        fail(errors, path, "scheduleOneMode");
         return;
       }
       if (t.every !== undefined) {
         if (!isNum(t.every) || !Number.isInteger(t.every) || t.every < BOT_LIMITS.minScheduleMinutes) {
-          errors.push({
-            path: join(path, "every"),
-            message: `Schedules must run at least every ${BOT_LIMITS.minScheduleMinutes} minutes.`,
-          });
+          fail(errors, join(path, "every"), "scheduleMinimum", { minutes: BOT_LIMITS.minScheduleMinutes });
         }
       } else if (t.daily !== undefined) {
         time(t, "daily", path, errors);
@@ -222,25 +235,21 @@ function validateTrigger(t: unknown, path: string, ctx: BotRuleContext, errors: 
         str(t, "cron", path, errors, 100);
         if (isStr(t.cron)) {
           const cron = parseCron(t.cron);
-          if (!cron)
-            errors.push({ path: join(path, "cron"), message: "Cron must be 5 fields: minute hour day month weekday." });
+          if (!cron) fail(errors, join(path, "cron"), "cronFields");
           else if (cronMinuteGap(cron) < BOT_LIMITS.minScheduleMinutes)
-            errors.push({
-              path: join(path, "cron"),
-              message: `Schedules must run at least every ${BOT_LIMITS.minScheduleMinutes} minutes.`,
-            });
+            fail(errors, join(path, "cron"), "scheduleMinimum", { minutes: BOT_LIMITS.minScheduleMinutes });
         }
       }
       return;
     }
     default:
-      errors.push({ path: join(path, "type"), message: "Unknown trigger type." });
+      fail(errors, join(path, "type"), "unknownTrigger");
   }
 }
 
 function validateCondition(c: unknown, path: string, ctx: BotRuleContext, errors: Errors) {
   if (!isObj(c)) {
-    errors.push({ path, message: "Must be an object." });
+    fail(errors, path, "notObject");
     return;
   }
   const f = (...extra: string[]) => checkObject(c, path, ["type", ...extra], errors);
@@ -279,11 +288,11 @@ function validateCondition(c: unknown, path: string, ctx: BotRuleContext, errors
         Array.isArray(c.days) &&
         c.days.length > 0 &&
         c.days.every((d) => isNum(d) && Number.isInteger(d) && d >= 0 && d <= 6);
-      if (!ok) errors.push({ path: join(path, "days"), message: "Must be a list of days from 0 to 6." });
+      if (!ok) fail(errors, join(path, "days"), "weekdays");
       return;
     }
     default:
-      errors.push({ path: join(path, "type"), message: "Unknown condition type." });
+      fail(errors, join(path, "type"), "unknownCondition");
   }
 }
 
@@ -292,17 +301,17 @@ function validateCard(card: unknown, path: string, errors: Errors) {
   str(card, "title", path, errors, 256, true);
   str(card, "text", path, errors, MAX_TEXT, true);
   if (card.color !== undefined && !(isStr(card.color) && /^#[0-9a-fA-F]{6}$/.test(card.color))) {
-    errors.push({ path: join(path, "color"), message: "Must be a colour like #aabbcc." });
+    fail(errors, join(path, "color"), "color");
   }
   if (
     card.imageUrl !== undefined &&
     !(isStr(card.imageUrl) && card.imageUrl.length <= 2048 && /^https:\/\//.test(card.imageUrl))
   ) {
-    errors.push({ path: join(path, "imageUrl"), message: "Must be an https link." });
+    fail(errors, join(path, "imageUrl"), "httpsLink");
   }
   if (card.fields !== undefined) {
     if (!Array.isArray(card.fields) || card.fields.length > 25) {
-      errors.push({ path: join(path, "fields"), message: "Must be a list of at most 25 fields." });
+      fail(errors, join(path, "fields"), "cardFields");
     } else {
       card.fields.forEach((fl, i) => {
         const p = `${path}.fields[${i}]`;
@@ -313,12 +322,12 @@ function validateCard(card: unknown, path: string, errors: Errors) {
     }
   }
   if (card.buttons !== undefined && card.select !== undefined) {
-    errors.push({ path, message: "A card can have buttons or a select menu, not both." });
+    fail(errors, path, "buttonsOrSelect");
     return;
   }
   if (card.buttons !== undefined) {
     if (!Array.isArray(card.buttons) || card.buttons.length > BOT_LIMITS.cardMaxButtons) {
-      errors.push({ path: join(path, "buttons"), message: `At most ${BOT_LIMITS.cardMaxButtons} buttons.` });
+      fail(errors, join(path, "buttons"), "maxButtons", { max: BOT_LIMITS.cardMaxButtons });
     } else {
       card.buttons.forEach((b, i) => {
         const p = `${path}.buttons[${i}]`;
@@ -335,7 +344,7 @@ function validateCard(card: unknown, path: string, errors: Errors) {
     str(card.select, "customId", p, errors, 100);
     const opts = card.select.options;
     if (!Array.isArray(opts) || opts.length === 0 || opts.length > 25) {
-      errors.push({ path: join(p, "options"), message: "Must be a list of 1 to 25 options." });
+      fail(errors, join(p, "options"), "selectOptions");
     } else {
       opts.forEach((o, i) => {
         const op = `${p}.options[${i}]`;
@@ -349,7 +358,7 @@ function validateCard(card: unknown, path: string, errors: Errors) {
 
 function validateAction(a: unknown, path: string, ctx: BotRuleContext, errors: Errors) {
   if (!isObj(a)) {
-    errors.push({ path, message: "Must be an object." });
+    fail(errors, path, "notObject");
     return;
   }
   const f = (...extra: string[]) => checkObject(a, path, ["type", ...extra], errors);
@@ -399,7 +408,7 @@ function validateAction(a: unknown, path: string, ctx: BotRuleContext, errors: E
       str(a, "formId", path, errors, 100);
       str(a, "title", path, errors, 45);
       if (!Array.isArray(a.fields) || a.fields.length === 0 || a.fields.length > BOT_LIMITS.formMaxFields) {
-        errors.push({ path: join(path, "fields"), message: `A form needs 1 to ${BOT_LIMITS.formMaxFields} fields.` });
+        fail(errors, join(path, "fields"), "formFields", { max: BOT_LIMITS.formMaxFields });
         return;
       }
       a.fields.forEach((fl, i) => {
@@ -420,7 +429,7 @@ function validateAction(a: unknown, path: string, ctx: BotRuleContext, errors: E
         a.options.length >= 2 &&
         a.options.length <= 10 &&
         a.options.every((o) => isStr(o) && o.length > 0 && o.length <= 100);
-      if (!ok) errors.push({ path: join(path, "options"), message: "Needs 2 to 10 short options." });
+      if (!ok) fail(errors, join(path, "options"), "pollOptions");
       return;
     }
     case "createEvent":
@@ -444,10 +453,7 @@ function validateAction(a: unknown, path: string, ctx: BotRuleContext, errors: E
     case "wait":
       if (f("minutes")) {
         if (!isNum(a.minutes) || a.minutes < 1 || a.minutes > BOT_LIMITS.maxWaitMinutes) {
-          errors.push({
-            path: join(path, "minutes"),
-            message: `Wait must be between 1 and ${BOT_LIMITS.maxWaitMinutes} minutes (7 days).`,
-          });
+          fail(errors, join(path, "minutes"), "waitRange", { max: BOT_LIMITS.maxWaitMinutes });
         }
       }
       return;
@@ -457,24 +463,24 @@ function validateAction(a: unknown, path: string, ctx: BotRuleContext, errors: E
     case "webhook":
       if (!f("url", "method", "body")) return;
       if (!isStr(a.url) || a.url.length > 2048 || !/^https:\/\//i.test(a.url)) {
-        errors.push({ path: join(path, "url"), message: "Webhook URLs must start with https://." });
+        fail(errors, join(path, "url"), "webhookHttps");
       }
       oneOf(a, "method", path, errors, ["GET", "POST"]);
       str(a, "body", path, errors, MAX_TEXT, true);
       return;
     default:
-      errors.push({ path: join(path, "type"), message: "Unknown action type." });
+      fail(errors, join(path, "type"), "unknownAction");
   }
 }
 
 function validateActions(list: unknown, path: string, ctx: BotRuleContext, errors: Errors, required: boolean) {
   if (!Array.isArray(list)) {
-    errors.push({ path, message: "Must be a list of actions." });
+    fail(errors, path, "actionList");
     return;
   }
-  if (required && list.length === 0) errors.push({ path, message: "Needs at least one action." });
+  if (required && list.length === 0) fail(errors, path, "actionRequired");
   if (list.length > BOT_LIMITS.actionsPerRule) {
-    errors.push({ path, message: `At most ${BOT_LIMITS.actionsPerRule} actions per rule.` });
+    fail(errors, path, "maxActions", { max: BOT_LIMITS.actionsPerRule });
     return;
   }
   list.forEach((a, i) => validateAction(a, `${path}[${i}]`, ctx, errors));
@@ -484,17 +490,17 @@ function validateIdList(
   list: unknown,
   path: string,
   known: Set<string>,
-  what: string,
+  what: IdKind,
   allowWild: boolean,
   errors: Errors,
 ) {
   if (!Array.isArray(list)) {
-    errors.push({ path, message: "Must be a list." });
+    fail(errors, path, "list");
     return;
   }
   list.forEach((v, i) => {
     if (!isStr(v) || !((allowWild && v === "*") || known.has(v))) {
-      errors.push({ path: `${path}[${i}]`, message: `Unknown ${what} in this hub.` });
+      fail(errors, `${path}[${i}]`, `unknownId.${what}`);
     }
   });
 }
@@ -503,7 +509,7 @@ export function validateRule(input: unknown, ctx: BotRuleContext): ValidateRuleR
   const errors: Errors = [];
   const top = ["v", "trigger", "scope", "cooldown", "when", "then", "else", "allowBotTriggers"];
   if (checkObject(input, "", top, errors)) {
-    if (input.v !== 1) errors.push({ path: "v", message: "Unsupported rule version." });
+    if (input.v !== 1) fail(errors, "v", "ruleVersion");
     validateTrigger(input.trigger, "trigger", ctx, errors);
 
     if (checkObject(input.scope, "scope", ["channels", "roles"], errors)) {
@@ -519,7 +525,7 @@ export function validateRule(input: unknown, ctx: BotRuleContext): ValidateRuleR
         const list = input.when[key];
         if (list === undefined) continue;
         if (!Array.isArray(list) || list.length > 20) {
-          errors.push({ path: `when.${key}`, message: "Must be a list of at most 20 conditions." });
+          fail(errors, `when.${key}`, "conditionList");
           continue;
         }
         list.forEach((c, i) => validateCondition(c, `when.${key}[${i}]`, ctx, errors));

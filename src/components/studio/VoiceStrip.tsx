@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 export type StudioVoiceParticipant = {
   id: string;
   name: string;
@@ -40,22 +42,21 @@ export function VoiceStrip({
   onLeave,
   onOpenDetails,
 }: VoiceStripProps) {
+  const { t } = useTranslation(["social"]);
   const stateLabel =
     connectionState === "connected"
-      ? "Connected"
+      ? t("social.studio.voice.connected")
       : connectionState === "reconnecting"
-        ? "Reconnecting"
+        ? t("social.studio.voice.reconnecting")
         : connectionState === "connecting"
-          ? "Joining"
-          : "Disconnected";
+          ? t("social.studio.voice.joining")
+          : t("social.studio.voice.disconnected");
   const contextContent = (
     <>
       <i aria-hidden="true" />
       <span>
         <strong>{stateLabel}</strong>
-        <small>
-          {roomName} · {participantCount} {participantCount === 1 ? "person" : "people"}
-        </small>
+        <small>{t("social.studio.voice.people", { room: roomName, count: participantCount })}</small>
       </span>
     </>
   );
@@ -66,14 +67,14 @@ export function VoiceStrip({
           type="button"
           className="dc-studio-voice-context"
           onClick={onOpenDetails}
-          aria-label={`Open voice details for ${roomName}`}
+          aria-label={t("social.studio.voice.details", { room: roomName })}
         >
           {contextContent}
         </button>
       ) : (
         <div className="dc-studio-voice-context">{contextContent}</div>
       )}
-      <div className="dc-studio-voice-participants" aria-label="Voice participants">
+      <div className="dc-studio-voice-participants" aria-label={t("social.studio.voice.participants")}>
         {participants.slice(0, 4).map((participant) =>
           participant.avatarUrl ? (
             <img
@@ -95,7 +96,7 @@ export function VoiceStrip({
       </div>
       <div className="dc-studio-voice-actions">
         <button type="button" className={muted ? "is-active" : undefined} aria-pressed={muted} onClick={onToggleMute}>
-          {muted ? "Unmute" : "Mute"}
+          {muted ? t("social.studio.voice.unmute") : t("social.studio.voice.mute")}
         </button>
         <button
           type="button"
@@ -103,10 +104,10 @@ export function VoiceStrip({
           aria-pressed={deafened}
           onClick={onToggleDeafen}
         >
-          {deafened ? "Undeafen" : "Deafen"}
+          {deafened ? t("social.studio.voice.undeafen") : t("social.studio.voice.deafen")}
         </button>
         <button type="button" className="is-leave" onClick={onLeave}>
-          Leave
+          {t("social.studio.voice.leave")}
         </button>
       </div>
     </footer>

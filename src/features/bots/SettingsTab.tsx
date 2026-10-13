@@ -1,5 +1,6 @@
 // The Settings tab: name, avatar, colour, allowed rooms, capabilities, on/off, export and delete.
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { TypeToConfirmDialog } from "../shared/TypeToConfirmDialog";
 import type { BotsApi, BuilderBot } from "./api";
 import { CAPABILITY_LABELS, type BotCapability, type HubRef } from "./model.ts";
@@ -12,10 +13,7 @@ type Props = {
   onDeleted: () => void;
 };
 
-const CAPABILITIES = (Object.keys(CAPABILITY_LABELS) as BotCapability[]).map((id) => ({
-  id,
-  ...CAPABILITY_LABELS[id],
-}));
+const CAPABILITIES = Object.keys(CAPABILITY_LABELS) as BotCapability[];
 
 function download(name: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -28,6 +26,7 @@ function download(name: string, data: unknown) {
 }
 
 export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props) {
+  const { t } = useTranslation(["bots"]);
   const [name, setName] = useState(bot.name);
   const [description, setDescription] = useState(bot.description);
   const [avatar, setAvatar] = useState(bot.avatarEmoji ?? "");
@@ -49,7 +48,7 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
     try {
       onChanged(await api.update(bot.id, patch));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not save.");
+      setError(caught instanceof Error ? caught.message : t("bots.settings.saveFailed"));
     } finally {
       setBusy("");
     }
@@ -79,14 +78,14 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
       <section className="dcx-card">
         <div className="dcx-row">
           <div className="dcx-row-copy">
-            <strong>Bot is on</strong>
-            <small>When off, none of its rules run. Drafts are kept.</small>
+            <strong>{t("bots.settings.on")}</strong>
+            <small>{t("bots.settings.onHint")}</small>
           </div>
           <div className="dcx-row-control">
             <label className="dcx-switch">
               <input
                 type="checkbox"
-                aria-label="Bot is on"
+                aria-label={t("bots.settings.on")}
                 checked={bot.enabled}
                 disabled={busy === "enabled"}
                 onChange={(e) => void update({ enabled: e.target.checked }, "enabled")}
@@ -101,7 +100,7 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
         <div className="bb-fields">
           <div className="bb-field">
             <label className="bb-field-label" htmlFor="bb-set-name">
-              Name
+              {t("bots.settings.name")}
             </label>
             <input
               id="bb-set-name"
@@ -113,7 +112,7 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
           </div>
           <div className="bb-field">
             <label className="bb-field-label" htmlFor="bb-set-avatar">
-              Avatar emoji
+              {t("bots.settings.avatar")}
             </label>
             <input
               id="bb-set-avatar"
@@ -125,7 +124,7 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
           </div>
           <div className="bb-field">
             <label className="bb-field-label" htmlFor="bb-set-color">
-              Colour
+              {t("bots.settings.colour")}
             </label>
             <input
               id="bb-set-color"
@@ -137,7 +136,7 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
           </div>
           <div className="bb-field wide">
             <label className="bb-field-label" htmlFor="bb-set-desc">
-              Description
+              {t("bots.settings.description")}
             </label>
             <input
               id="bb-set-desc"
@@ -165,15 +164,15 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
               )
             }
           >
-            Save
+            {t("bots.settings.save")}
           </button>
         </div>
       </section>
 
       <section className="dcx-card">
         <div className="dcx-card-head">
-          <h4>Allowed rooms</h4>
-          <p>The bot only acts in these rooms. None picked means every room.</p>
+          <h4>{t("bots.settings.rooms")}</h4>
+          <p>{t("bots.settings.roomsHint")}</p>
         </div>
         <div className="bb-chips">
           {textRooms.map((room) => {
@@ -196,10 +195,10 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
 
       <section className="dcx-card">
         <div className="dcx-card-head">
-          <h4>Capabilities</h4>
-          <p>What the bot may do. Actions it isn't allowed show an error in Activity.</p>
+          <h4>{t("bots.settings.capabilities")}</h4>
+          <p>{t("bots.settings.capabilitiesHint")}</p>
         </div>
-        {CAPABILITIES.map((cap) => (
+        {CAPABILITIES.map((id) => ({ id, ...CAPABILITY_LABELS[id] })).map((cap) => (
           <div className="dcx-row" key={cap.id}>
             <div className="dcx-row-copy">
               <strong>{cap.label}</strong>
@@ -224,8 +223,8 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
       <section className="dcx-card">
         <div className="dcx-row">
           <div className="dcx-row-copy">
-            <strong>Export</strong>
-            <small>A file with the bot and its rules. Rooms and roles are saved by name.</small>
+            <strong>{t("bots.settings.export")}</strong>
+            <small>{t("bots.settings.exportHint")}</small>
           </div>
           <div className="dcx-row-control">
             <button
@@ -235,22 +234,22 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
                 try {
                   download(bot.name, await api.exportBot(bot.id));
                 } catch (caught) {
-                  setError(caught instanceof Error ? caught.message : "Could not export.");
+                  setError(caught instanceof Error ? caught.message : t("bots.settings.exportFailed"));
                 }
               }}
             >
-              Export
+              {t("bots.settings.export")}
             </button>
           </div>
         </div>
         <div className="dcx-row">
           <div className="dcx-row-copy">
-            <strong>Delete bot</strong>
-            <small>Removes the bot, its rules and its activity.</small>
+            <strong>{t("bots.settings.delete")}</strong>
+            <small>{t("bots.settings.deleteHint")}</small>
           </div>
           <div className="dcx-row-control">
             <button type="button" className="dcx-btn dcx-btn-sm dcx-btn-danger" onClick={() => setConfirmDelete(true)}>
-              Delete
+              {t("bots.ruleCard.delete")}
             </button>
           </div>
         </div>
@@ -258,10 +257,10 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
 
       {confirmDelete && (
         <TypeToConfirmDialog
-          title={`Delete ${bot.name}?`}
-          description="The bot stops at once and its rules and activity are removed."
+          title={t("bots.settings.deleteTitle", { name: bot.name })}
+          description={t("bots.settings.deleteDescription")}
           confirmText={bot.name}
-          actionLabel="Delete bot"
+          actionLabel={t("bots.settings.delete")}
           busy={busy === "delete"}
           onCancel={() => setConfirmDelete(false)}
           onConfirm={async () => {
@@ -271,7 +270,7 @@ export function SettingsTab({ api, bot, textRooms, onChanged, onDeleted }: Props
               setConfirmDelete(false);
               onDeleted();
             } catch (caught) {
-              setError(caught instanceof Error ? caught.message : "Could not delete.");
+              setError(caught instanceof Error ? caught.message : t("bots.settings.deleteFailed"));
             } finally {
               setBusy("");
             }

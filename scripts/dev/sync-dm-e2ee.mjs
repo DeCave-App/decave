@@ -8,7 +8,13 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const target = path.join(root, "mobile/src/lib/e2ee");
 fs.mkdirSync(target, { recursive: true });
-for (const name of ["dm-e2ee.ts", "dm-e2ee-format.ts", "dm-e2ee-session.ts", "dm-e2ee-sending.ts"]) {
+for (const name of [
+  "dm-e2ee.ts",
+  "dm-e2ee-format.ts",
+  "dm-e2ee-session.ts",
+  "dm-e2ee-sending.ts",
+  "dm-message-preview.ts",
+]) {
   fs.copyFileSync(path.join(root, "shared", name), path.join(target, name));
   console.log(`copied shared/${name} -> mobile/src/lib/e2ee/${name}`);
 }

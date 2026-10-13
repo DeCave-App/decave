@@ -1,0 +1,53 @@
+{
+  "hidden": {
+    "hubMessage": "Nova mensagem em um Hub",
+    "directMessage": "Você tem uma nova mensagem"
+  },
+  "sender": {
+    "hubMessage": "{{sender}} enviou uma mensagem",
+    "directMessage": "{{sender}} te enviou uma mensagem",
+    "inRoom": "{{sender}} em {{where}}",
+    "someone": "Alguém",
+    "unknownDirect": "Nova mensagem"
+  },
+  "preview": {
+    "gif": "Enviou um GIF",
+    "attachment": "Enviou um anexo",
+    "encrypted": "Enviou uma mensagem criptografada para você"
+  },
+  "mobile": {
+    "hiddenMention": "Mencionaram você no DeCave.",
+    "hiddenMessage": "Você recebeu uma nova mensagem.",
+    "groupChat": "Chat em grupo",
+    "hubMessage": "Mensagem do Hub",
+    "sentMessage": "{{sender}} enviou uma mensagem.",
+    "mentionedIn": "Mencionou você em {{place}}.",
+    "mentioned": "Mencionou você.",
+    "sentPrivate": "Enviou uma mensagem privada para você.",
+    "withSender": "{{sender}}: {{text}}",
+    "unknownUser": "Usuário do DeCave",
+    "hubRoom": "Sala do Hub",
+    "encryptedMessage": "🔒 Mensagem criptografada",
+    "channels": {
+      "messages": {
+        "name": "Mensagens",
+        "description": "Mensagens diretas, chats em grupo e alertas de mensagens dos Hubs"
+      },
+      "silent": {
+        "name": "Mensagens (silenciosas)",
+        "description": "Alertas silenciosos de mensagens do DeCave"
+      }
+    },
+    "primer": {
+      "title": "Fique por dentro",
+      "message": "Receba notificações de DMs, menções, pedidos de amizade e quando um Squad estiver pronto para você. Você pode ajustar isso nas Configurações.",
+      "allow": "Ativar"
+    },
+    "squad": {
+      "title": "Squad disponível",
+      "body_one": "{{count}}/4 jogadores estão prontos para {{game}}.",
+      "body_many": "{{count}}/4 jogadores estão prontos para {{game}}.",
+      "body_other": "{{count}}/4 jogadores estão prontos para {{game}}."
+    }
+  }
+}

@@ -1,5 +1,7 @@
 /** Small, failure-tolerant local storage primitives used by session features. */
 
+import { i18next } from "../i18n/index.ts";
+
 export type LocalStorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export type LocalStorageOperationResult<T = void> = {
@@ -27,12 +29,12 @@ export function readLocalJsonResult<T>(
   key: string,
   fallback: T,
 ): LocalStorageOperationResult<T> {
-  if (!storage) return { ok: false, value: fallback, error: "Local storage is unavailable on this device." };
+  if (!storage) return { ok: false, value: fallback, error: i18next.t("chat.session.storage.unavailable") };
   try {
     const value = storage.getItem(key);
     return { ok: true, value: value === null ? fallback : (JSON.parse(value) as T) };
   } catch {
-    return { ok: false, value: fallback, error: "Saved local data could not be read; using a safe empty state." };
+    return { ok: false, value: fallback, error: i18next.t("chat.session.storage.readFailed") };
   }
 }
 
@@ -45,13 +47,13 @@ export function writeLocalJsonResult(
   key: string,
   value: unknown,
 ): LocalStorageOperationResult {
-  if (!storage) return { ok: false, error: "Local storage is unavailable on this device; your change was not saved." };
+  if (!storage) return { ok: false, error: i18next.t("chat.session.storage.unavailableNotSaved") };
   try {
     storage.setItem(key, JSON.stringify(value));
     return { ok: true };
   } catch {
     // Quota errors and blocked storage must not break joining or messaging.
-    return { ok: false, error: "Local storage rejected this change; your current session remains usable." };
+    return { ok: false, error: i18next.t("chat.session.storage.writeRejected") };
   }
 }
 
@@ -63,12 +65,12 @@ export function removeLocalValueResult(
   storage: LocalStorageLike | null | undefined,
   key: string,
 ): LocalStorageOperationResult {
-  if (!storage) return { ok: false, error: "Local storage is unavailable on this device; saved data was kept." };
+  if (!storage) return { ok: false, error: i18next.t("chat.session.storage.unavailableKept") };
   try {
     storage.removeItem(key);
     return { ok: true };
   } catch {
-    return { ok: false, error: "Local storage rejected clearing this data; nothing was removed." };
+    return { ok: false, error: i18next.t("chat.session.storage.clearRejected") };
   }
 }
 

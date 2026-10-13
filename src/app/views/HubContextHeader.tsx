@@ -1,6 +1,7 @@
 // Header of the open Hub room: the room's action buttons (search, pins, chat, menu)
 // and, on narrow windows, the Hub/room switcher. No breadcrumb or status line.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import type { Channel, Server, ChatMessage } from "../types";
 import { HubRoomHeaderActions } from "./HubRoomHeaderActions";
@@ -52,6 +53,7 @@ export function HubContextHeader({
   roomMuted,
   toggleRoomMute,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { voiceChatOpen, setVoiceChatOpen } = voiceCall;
   const { setShowMessageSearch, setShowPinnedMessages } = hubPanels;
   const hasRoomActions = !streamerOverviewActive && !hubHomeActive;
@@ -63,18 +65,18 @@ export function HubContextHeader({
       data-room-actions={hasRoomActions ? "true" : "false"}
       aria-label={
         streamerOverviewActive
-          ? `Hubs · ${currentServer.name} · Overview`
+          ? t("hub.header.labelOverview", { hub: currentServer.name })
           : hubHomeActive
-            ? `Hubs · ${currentServer.name} · Hub Home`
-            : `Hubs · ${currentServer.name} · ${currentChannel.name}`
+            ? t("hub.header.labelHome", { hub: currentServer.name })
+            : t("hub.header.labelRoom", { hub: currentServer.name, room: currentChannel.name })
       }
     >
       <div className="dc-compact-workspace-picker" data-compact-workspace-picker="true">
         <label className="dc-compact-picker-field">
-          <span>Hub</span>
+          <span>{t("hub.header.hubPicker")}</span>
           <select
             className="dc-compact-hub-picker"
-            aria-label="Switch Hub"
+            aria-label={t("hub.header.switchHub")}
             value={selectedServer}
             onChange={(event) => changeServer(Number(event.target.value))}
           >
@@ -86,18 +88,19 @@ export function HubContextHeader({
           </select>
         </label>
         <label className="dc-compact-picker-field">
-          <span>Room</span>
+          <span>{t("hub.header.roomPicker")}</span>
           <select
             className="dc-compact-channel-picker"
             data-compact-channel-picker="true"
-            aria-label={`Switch room in${currentServer.name}`}
+            aria-label={t("hub.header.switchRoom", { hub: currentServer.name })}
             value={selectedChannel}
             onChange={(event) => changeChannel(Number(event.target.value))}
           >
             {currentServer.channels.length > 0 ? (
               currentServer.channels.map((channel) => (
                 <option key={channel.id} value={channel.id}>
-                  {channel.type === "voice" ? "V" : channel.type === "forum" ? "▤" : "#"} {channel.name}
+                  {channel.type === "voice" ? t("hub.header.voicePrefix") : channel.type === "forum" ? "▤" : "#"}{" "}
+                  {channel.name}
                 </option>
               ))
             ) : (

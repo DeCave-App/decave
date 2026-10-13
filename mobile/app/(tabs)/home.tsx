@@ -25,6 +25,9 @@ import type {
   SocialState,
 } from "@/src/types";
 import { decryptConversationPreviews } from "@/src/lib/e2ee/client";
+import { useTranslation } from "react-i18next";
+import { i18next } from "@/src/i18n";
+import { dateLocale } from "@/src/lib/date-locale";
 
 function relativeTime(value: string): string {
   const timestamp = Date.parse(value);
@@ -32,16 +35,16 @@ function relativeTime(value: string): string {
 
   const diff = Math.max(0, Date.now() - timestamp);
   const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return i18next.t("common.mobile.time.now");
+  if (minutes < 60) return i18next.t("common.mobile.time.minutes", { count: minutes });
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) return i18next.t("common.mobile.time.hours", { count: hours });
 
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
+  if (days < 7) return i18next.t("common.mobile.time.days", { count: days });
 
-  return new Date(timestamp).toLocaleDateString(undefined, {
+  return new Date(timestamp).toLocaleDateString(dateLocale(), {
     month: "short",
     day: "numeric",
   });
@@ -54,6 +57,7 @@ function assetUrl(value: string | null | undefined): string | null {
 }
 
 export default function HomeScreen() {
+  const { t } = useTranslation(["common"]);
   const { user, token } = useSession();
   const { connectionState, lastEvent } = useRealtime();
   const {
@@ -146,9 +150,9 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.brand}>
             <View style={styles.brandCopy}>
-              <Text style={styles.eyebrow}>DECAVE</Text>
+              <Text style={styles.eyebrow}>{t("common.mobile.home.decave")}</Text>
               <Text style={styles.greeting} numberOfLines={1}>
-                Hey, {user?.username || "there"}
+                {user?.username ? t("common.mobile.home.heyUsername", { username: user.username }) : t("common.mobile.home.heyThere")}
               </Text>
               <View style={styles.connectionRow}>
                 <View
@@ -160,8 +164,8 @@ export default function HomeScreen() {
                 />
                 <Text style={styles.connectionText}>
                   {connectionState === "connected"
-                    ? "Connected"
-                    : "Reconnecting"}
+                    ? t("common.connection.connected")
+                    : t("common.mobile.home.reconnecting")}
                 </Text>
               </View>
             </View>
@@ -183,21 +187,21 @@ export default function HomeScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.voiceTitle}>
                 {voiceRecoveryState === "failed"
-                  ? "Voice needs attention"
+                  ? t("common.mobile.home.voiceNeedsAttention")
                   : voiceRecoveryState === "reconnecting"
-                    ? "Recovering voice"
-                    : "Voice connected"}
+                    ? t("common.mobile.home.recoveringVoice")
+                    : t("common.mobile.home.voiceConnected")}
               </Text>
               <Text style={styles.voiceText}>
                 {voiceRecoveryState === "reconnecting"
-                  ? `Rejoining (attempt ${voiceRecoveryAttempt || 1}/3)…`
+                  ? t("common.mobile.home.rejoiningAttemptVoicerecoveryattempt3", { voiceRecoveryAttempt: voiceRecoveryAttempt || 1 })
                   : voiceRecoveryState === "failed"
-                    ? "Tap to retry when realtime is connected."
-                    : `Room ${voiceChannelId} · ${voiceStatus}`}
+                    ? t("common.mobile.home.tapToRetryWhenRealtime")
+                    : t("common.mobile.home.roomVoicechannelidVoicestatus", { voiceChannelId, voiceStatus: t(`common.mobile.home.voiceStatus.${voiceStatus}`) })}
               </Text>
             </View>
             <Text style={styles.voiceReturn}>
-              {voiceChannelId !== null ? "Return" : "Retry"}
+              {voiceChannelId !== null ? t("common.mobile.home.return") : t("common.actions.retry")}
             </Text>
           </Pressable>
         )}
@@ -206,8 +210,8 @@ export default function HomeScreen() {
         <HomeNowCards hubs={hubs} participants={participants} friends={social.friends} myUserId={user?.id} />
 
         <SectionHeader
-          title="Friends online"
-          action={onlineFriends.length > 0 ? "See all" : undefined}
+          title={t("common.mobile.home.friendsOnline")}
+          action={onlineFriends.length > 0 ? t("common.mobile.home.seeAll") : undefined}
           onAction={() => router.push("/friends")}
         />
 
@@ -219,7 +223,7 @@ export default function HomeScreen() {
               color={colors.faint}
             />
             <Text style={styles.compactEmptyText}>
-              Your friends are quiet right now.
+              {t("common.mobile.home.yourFriendsAreQuietRight")}
             </Text>
           </View>
         ) : (
@@ -235,8 +239,8 @@ export default function HomeScreen() {
         )}
 
         <SectionHeader
-          title="Recent messages"
-          action={recentDms.length > 0 ? "Open DMs" : undefined}
+          title={t("common.mobile.home.recentMessages")}
+          action={recentDms.length > 0 ? t("common.mobile.home.openDms") : undefined}
           onAction={() => router.push("/dms")}
         />
 
@@ -250,9 +254,9 @@ export default function HomeScreen() {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.emptyTitle}>No recent conversations</Text>
+              <Text style={styles.emptyTitle}>{t("common.mobile.home.noRecentConversations")}</Text>
               <Text style={styles.emptyText}>
-                Start a DM from your Friends tab.
+                {t("common.mobile.home.startADmFromYour")}
               </Text>
             </View>
           </View>
@@ -296,7 +300,7 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                   <Text style={styles.dmPreview} numberOfLines={1}>
-                    {conversation.latestMessage || "Open conversation"}
+                    {conversation.latestMessage || t("common.mobile.home.openConversation")}
                   </Text>
                 </View>
 
@@ -311,8 +315,8 @@ export default function HomeScreen() {
         )}
 
         <SectionHeader
-          title="Your Hubs"
-          action={hubs.length > 0 ? "All Hubs" : undefined}
+          title={t("common.commandPalette.groupHubs")}
+          action={hubs.length > 0 ? t("common.mobile.home.allHubs") : undefined}
           onAction={() => router.push("/hubs")}
         />
 
@@ -322,16 +326,16 @@ export default function HomeScreen() {
               <Ionicons name="grid-outline" size={23} color={colors.violet} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.emptyTitle}>No Hubs yet</Text>
+              <Text style={styles.emptyTitle}>{t("common.mobile.home.noHubsYet")}</Text>
               <Text style={styles.emptyText}>
-                Create one or discover a public community when you're ready.
+                {t("common.mobile.home.createOneOrDiscoverA")}
               </Text>
             </View>
             <Pressable accessibilityRole="button"
               style={styles.smallPrimary}
               onPress={() => router.push("/hubs")}
             >
-              <Text style={styles.smallPrimaryText}>Explore</Text>
+              <Text style={styles.smallPrimaryText}>{t("common.mobile.home.explore")}</Text>
             </Pressable>
           </View>
         ) : (
@@ -395,6 +399,7 @@ function FriendBubble({ friend }: { friend: AccountUser }) {
 }
 
 function HubRow({ hub }: { hub: Hub }) {
+  const { t } = useTranslation(["common"]);
   return (
     <Pressable accessibilityRole="button"
       style={({ pressed }) => [
@@ -415,7 +420,7 @@ function HubRow({ hub }: { hub: Hub }) {
           )}
         </View>
         <Text style={styles.hubMeta} numberOfLines={1}>
-          {hub.onlineCount ?? 0} online · {hub.memberCount ?? 0} members
+          {t("common.mobile.home.onlinecountOnlineMembercountMembers", { onlineCount: hub.onlineCount ?? 0, memberCount: hub.memberCount ?? 0 })}
         </Text>
       </View>
 

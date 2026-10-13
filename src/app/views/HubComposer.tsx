@@ -1,11 +1,13 @@
 // Message composer for Hub rooms: attachments, replies, emoji, GIFs, polls and events.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import { ComposerPlusMenu } from "../../features/hub-sidebar/ComposerPlusMenu";
 import type { Channel, ComposerTarget, Server } from "../types";
 import type { ComposerState } from "../state/composer";
 import type { HubChatActions } from "../actions/hub-chat";
 import { HTTP_URL } from "../env";
+import { useChatPrefs } from "../../features/settings/chatPrefs";
 import { BotCommandSuggestions, commandInsertText, useBotCommands } from "../../features/bot-cards";
 
 type Props = {
@@ -39,6 +41,8 @@ export function HubComposer({
   composer,
   hubChat,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
+  const chatPrefs = useChatPrefs();
   const {
     uploadAttachment,
     cancelAttachmentUpload,
@@ -77,18 +81,19 @@ export function HubComposer({
         <div className="attachment-composer-state">
           {attachmentBusy ? (
             <>
-              <span>Uploading attachment…</span>
+              <span>{t("chat.composer.uploading")}</span>
               <button type="button" onClick={cancelAttachmentUpload}>
-                Cancel
+                {t("common.actions.cancel")}
               </button>
             </>
           ) : pendingAttachment ? (
             <>
               <span>
-                📎 <strong>{pendingAttachment.name}</strong> · {(pendingAttachment.size / 1024 / 1024).toFixed(2)} MB
+                📎 <strong>{pendingAttachment.name}</strong> ·{" "}
+                {t("chat.composer.sizeMb", { size: (pendingAttachment.size / 1024 / 1024).toFixed(2) })}
               </span>
               <button type="button" onClick={() => setPendingAttachment(null)}>
-                Remove
+                {t("common.actions.remove")}
               </button>
             </>
           ) : (
@@ -96,7 +101,7 @@ export function HubComposer({
               <span className="attachment-error">{attachmentError}</span>
               {attachmentRetryFileRef.current && (
                 <button type="button" onClick={() => void uploadAttachment(attachmentRetryFileRef.current!)}>
-                  Retry upload
+                  {t("chat.composer.retryUpload")}
                 </button>
               )}
             </>
@@ -124,8 +129,8 @@ export function HubComposer({
               setShowComposerPlusMenu((value) => !value);
             }}
             disabled={!canPostInCurrentHub || attachmentBusy || connectionStatus !== "Connected"}
-            title="Add to message"
-            aria-label="Add to message"
+            title={t("chat.composer.addToMessage")}
+            aria-label={t("chat.composer.addToMessage")}
           >
             <svg className="dc-composer-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -141,22 +146,22 @@ export function HubComposer({
                 {
                   id: "upload",
                   icon: "paperclip",
-                  label: "Upload a file",
-                  hint: "Images, video or documents",
+                  label: t("chat.roomHero.uploadFile"),
+                  hint: t("chat.composer.uploadHint"),
                   onSelect: () => attachmentInputRef.current?.click(),
                 },
                 {
                   id: "poll",
                   icon: "poll",
-                  label: "Create poll",
-                  hint: "Ask the room to vote",
+                  label: t("chat.roomHero.createPoll"),
+                  hint: t("chat.composer.pollHint"),
                   onSelect: () => openPollComposer("hub"),
                 },
                 {
                   id: "gif",
                   icon: "gif",
-                  label: "Send a GIF",
-                  hint: "Search the GIF library",
+                  label: t("chat.composer.sendGif"),
+                  hint: t("chat.composer.gifHint"),
                   onSelect: () => openGifPicker("hub"),
                 },
                 ...(canCreateEventsIn(currentServer.id)
@@ -164,8 +169,8 @@ export function HubComposer({
                       {
                         id: "event",
                         icon: "calendar" as const,
-                        label: "Schedule event",
-                        hint: "Add it to the Hub calendar",
+                        label: t("chat.roomHero.scheduleEvent"),
+                        hint: t("chat.composer.eventHint"),
                         onSelect: openEventComposer,
                       },
                     ]
@@ -176,13 +181,14 @@ export function HubComposer({
         </span>
         <textarea
           ref={messageInputRef}
+          spellCheck={chatPrefs.spellcheck}
           rows={1}
           placeholder={
             canPostInCurrentHub
-              ? `Message #${currentChannel.name}`
+              ? t("chat.composer.placeholder", { room: currentChannel.name })
               : currentChannel.canPost === false
-                ? `#${currentChannel.name} is read-only`
-                : "Only the Hub owner can post in this Hub"
+                ? t("chat.composer.readOnly", { room: currentChannel.name })
+                : t("chat.composer.ownerOnly")
           }
           value={messageInput}
           onChange={(event) => handleComposerChange(event.target.value)}
@@ -195,11 +201,11 @@ export function HubComposer({
           <button
             type="button"
             className="dc-dm-composer-btn gif-pill"
-            title="GIF"
+            title={t("chat.composer.gif")}
             onClick={() => openGifPicker("hub")}
             disabled={!canPostInCurrentHub}
           >
-            GIF
+            {t("chat.composer.gif")}
           </button>
           {renderGifPicker("hub")}
         </span>
@@ -212,8 +218,8 @@ export function HubComposer({
               setGifPickerTarget(null);
               setShowEmojiPicker((current) => !current);
             }}
-            title="Emoji"
-            aria-label="Emoji"
+            title={t("chat.composer.emoji")}
+            aria-label={t("chat.composer.emoji")}
             disabled={!canPostInCurrentHub}
           >
             <svg className="dc-composer-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -235,7 +241,7 @@ export function HubComposer({
             attachmentBusy ||
             connectionStatus !== "Connected"
           }
-          title="Send message"
+          title={t("chat.composer.send")}
         >
           <svg className="dc-composer-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path

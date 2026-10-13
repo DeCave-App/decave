@@ -10,8 +10,32 @@ const read = (relativePath) => fs.readFileSync(path.join(mobileRoot, relativePat
 const voiceSource = read("src/providers/VoiceProvider.tsx");
 const callsSource = read("src/providers/DirectCallProvider.tsx");
 
+// The provider slices call i18next's `t`; give them the English catalogs so
+// assertions see the text English users get.
+const englishCatalogs = Object.fromEntries(
+  fs
+    .readdirSync(path.join(mobileRoot, "../shared/i18n/locales/en"))
+    .filter((file) => file.endsWith(".json"))
+    .map((file) => [
+      file.slice(0, -".json".length),
+      JSON.parse(fs.readFileSync(path.join(mobileRoot, "../shared/i18n/locales/en", file), "utf8")),
+    ]),
+);
+const englishPlurals = new Intl.PluralRules("en");
+
+function englishT(key, options = {}) {
+  const lookup = (fullKey) =>
+    fullKey.split(".").reduce((node, part) => (node && typeof node === "object" ? node[part] : undefined), englishCatalogs);
+  const value =
+    (typeof options.count === "number" ? lookup(`${key}_${englishPlurals.select(options.count)}`) : undefined) ??
+    lookup(key) ??
+    options.defaultValue ??
+    key;
+  return String(value).replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, name) => String(options[name] ?? ""));
+}
+
 function compile(code, globals, exportedName) {
-  const context = vm.createContext({ console: { ...console, warn: () => {} }, ...globals });
+  const context = vm.createContext({ console: { ...console, warn: () => {} }, t: englishT, ...globals });
   const output = ts.transpileModule(`${code}\nglobalThis.${exportedName} = ${exportedName};`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
   }).outputText;

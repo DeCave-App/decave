@@ -1,0 +1,102 @@
+{
+  "sort": {
+    "active": "Gerade aktiv",
+    "friends": "Freunde",
+    "largest": "Größte",
+    "new": "Neu"
+  },
+  "size": {
+    "any": "Jede Größe",
+    "small": "Unter 50",
+    "medium": "50 bis 500",
+    "large": "500+"
+  },
+  "friends": {
+    "count_one": "{{count}} Freund ist hier",
+    "count_other": "{{count}} Freunde sind hier",
+    "one": "{{name}} ist hier",
+    "two": "{{first}} und {{second}} sind hier",
+    "more_one": "{{names}} und {{count}} weitere Person sind hier",
+    "more_other": "{{names}} und {{count}} weitere sind hier"
+  },
+  "open": "Öffnen",
+  "joining": "Beitreten …",
+  "join": "Beitreten",
+  "pageLabel": "Hubs entdecken",
+  "kicker": "Entdecken",
+  "title": "Finde einen Hub, der sich lohnt",
+  "stats_one": "{{count}} öffentlicher Hub · {{online}} Leute online",
+  "stats_other": "{{count}} öffentliche Hubs · {{online}} Leute online",
+  "statsVoice_one": " · {{count}} im Voice",
+  "statsVoice_other": " · {{count}} im Voice",
+  "searchPlaceholder": "Nach Hub, Kategorie oder Tag suchen",
+  "searchLabel": "Öffentliche Hubs durchsuchen",
+  "invitePlaceholder": "Hast du einen Einladungscode?",
+  "inviteLabel": "Einladungscode",
+  "useInvite": "Code einlösen",
+  "refresh": "Aktualisieren",
+  "filters": {
+    "label": "Filter",
+    "showMe": "Zeig mir",
+    "friendsInside": "Mit Freunden",
+    "activeNow": "Gerade aktiv",
+    "category": "Kategorie",
+    "all": "Alle",
+    "size": "Größe",
+    "clear": "Filter zurücksetzen"
+  },
+  "results": {
+    "all": "Alle öffentlichen Hubs",
+    "some_one": "{{shown}} von {{count}} Hub",
+    "some_other": "{{shown}} von {{count}} Hubs"
+  },
+  "sortLabel": "Hubs sortieren",
+  "loading": "Öffentliche Hubs werden geladen …",
+  "inVoice_one": "{{count}} im Voice",
+  "inVoice_other": "{{count}} im Voice",
+  "defaultCategory": "Community",
+  "noDescription": "Noch keine Beschreibung.",
+  "card": {
+    "previewLabel": "Vorschau von {{name}}",
+    "joined": "Beigetreten",
+    "membershipPrivate": "Mitgliedschaft privat",
+    "counts_one": "<b>{{online}}</b> online · {{members}} Mitglied",
+    "counts_other": "<b>{{online}}</b> online · {{members}} Mitglieder",
+    "preview": "Vorschau"
+  },
+  "empty": {
+    "noMatch": "Keine Hubs passen zu diesen Filtern",
+    "quiet": "Bei den öffentlichen Hubs ist es gerade ruhig",
+    "noMatchHint": "Probier eine andere Suche oder setz die Filter zurück.",
+    "quietHint": "Du kannst mit einem Einladungscode beitreten oder einen öffentlichen Hub erstellen. Er erscheint dann hier."
+  },
+  "preview": {
+    "loadFailed": "Dieser Hub konnte nicht geladen werden.",
+    "label": "Vorschau von {{name}}",
+    "fallbackLabel": "Hub-Vorschau",
+    "close": "Vorschau schließen",
+    "categoryPublic": "{{category}} · Öffentlich",
+    "rightNow": "Jetzt gerade",
+    "counts_one": "{{online}} online · {{members}} Mitglied",
+    "counts_other": "{{online}} online · {{members}} Mitglieder",
+    "going_one": "{{count}} dabei",
+    "going_other": "{{count}} dabei",
+    "inside": "Im Hub",
+    "loadingRooms": "Räume werden geladen …",
+    "chatRooms_one": "{{count}} Textraum",
+    "chatRooms_other": "{{count}} Texträume",
+    "forums_one": "{{count}} Forum",
+    "forums_other": "{{count}} Foren",
+    "threads_one": "{{count}} Thread",
+    "threads_other": "{{count}} Threads",
+    "voiceRooms_one": "{{count}} Sprachraum",
+    "voiceRooms_other": "{{count}} Sprachräume",
+    "moreRooms_one": "+{{count}} weiterer",
+    "moreRooms_other": "+{{count}} weitere",
+    "rules": "Regeln",
+    "moreRules_one": "+{{count}} weitere nach dem Beitritt",
+    "moreRules_other": "+{{count}} weitere nach dem Beitritt",
+    "openHub": "Hub öffnen",
+    "joinHub": "Hub beitreten"
+  }
+}

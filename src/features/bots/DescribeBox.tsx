@@ -1,5 +1,6 @@
 // "Describe it": a text box that asks the AI helper for rule drafts, with the daily counter.
 import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { BOT_LIMITS } from "../../../shared/bots/types.ts";
 
 type Props = {
@@ -10,7 +11,8 @@ type Props = {
   onSubmit: (description: string) => Promise<void>;
 };
 
-export function DescribeBox({ remaining, placeholder, compact, submitLabel = "Build it", onSubmit }: Props) {
+export function DescribeBox({ remaining, placeholder, compact, submitLabel, onSubmit }: Props) {
+  const { t } = useTranslation(["bots"]);
   const id = useId();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -31,7 +33,7 @@ export function DescribeBox({ remaining, placeholder, compact, submitLabel = "Bu
       }}
     >
       <label htmlFor={id} className="dcx-sr-only">
-        Describe what the bot should do
+        {t("bots.describe.label")}
       </label>
       <textarea
         id={id}
@@ -45,10 +47,10 @@ export function DescribeBox({ remaining, placeholder, compact, submitLabel = "Bu
       />
       <span className="bb-describe-foot">
         <small className="bb-hint" aria-live="polite">
-          {remaining} of {BOT_LIMITS.aiPerDay} left today
+          {t("bots.describe.remaining", { remaining, total: BOT_LIMITS.aiPerDay })}
         </small>
         <button type="submit" className="dcx-btn dcx-btn-sm dcx-btn-primary" disabled={!text.trim() || busy || out}>
-          {busy ? "Building…" : submitLabel}
+          {busy ? t("bots.describe.building") : (submitLabel ?? t("bots.describe.submit"))}
         </button>
       </span>
     </form>

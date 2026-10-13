@@ -1,0 +1,41 @@
+{
+  "common": {
+    "greeting": "Ciao {{username}},",
+    "settingsPath": "Impostazioni > Account e sicurezza"
+  },
+  "verify": {
+    "subject": "Verifica la tua email DeCave",
+    "text": "Ciao {{username}}, verifica la tua email DeCave: {{link}}",
+    "heading": "Verifica la tua email DeCave",
+    "body": "Conferma questo indirizzo email per attivare il tuo account.",
+    "button": "Verifica email",
+    "expiry": "Questo link scade tra 24 ore."
+  },
+  "reset": {
+    "subject": "Reimposta la tua password DeCave",
+    "text": "Ciao {{username}}, reimposta la tua password DeCave: {{link}}",
+    "heading": "Reimposta la tua password DeCave",
+    "body": "Se hai richiesto di reimpostare la password, usa il pulsante qui sotto.",
+    "button": "Reimposta password",
+    "expiry": "Questo link scade tra 30 minuti."
+  },
+  "signInAlert": {
+    "subject": "Nuovo accesso al tuo account DeCave",
+    "heading": "Nuovo accesso a DeCave",
+    "usedOnText": "Il tuo account DeCave è appena stato usato per accedere su: {{device}}",
+    "time": "Ora: {{when}}",
+    "usedOn": "Il tuo account è appena stato usato per accedere su:",
+    "ifYou": "Se eri tu, non devi fare nulla.",
+    "notYouText": "Se non eri tu, proteggi subito il tuo account (disconnette tutti i dispositivi e invia un link per reimpostare la password): {{link}}",
+    "turnOffText": "Puoi disattivare queste email in {{settingsPath}}.",
+    "button": "Non ero io",
+    "footer": "Così disconnetti tutti i dispositivi e ricevi via email un link per reimpostare la password. Il link vale 7 giorni. Disattiva queste email in {{settingsPath}}."
+  },
+  "emailChanged": {
+    "subject": "L'indirizzo email del tuo account DeCave è stato cambiato",
+    "heading": "Il tuo indirizzo email DeCave è cambiato",
+    "changedText": "L'indirizzo email del tuo account DeCave è stato cambiato in {{newEmail}}.",
+    "changed": "L'indirizzo email del tuo account è stato cambiato in <strong>{{newEmail}}</strong>.",
+    "notYou": "Se non hai fatto tu questa modifica, accedi a DeCave, cambia la password e disconnetti gli altri dispositivi in {{settingsPath}}."
+  }
+}

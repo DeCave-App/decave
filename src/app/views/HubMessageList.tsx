@@ -1,5 +1,6 @@
 // Message list of a Hub text room.
 
+import { useTranslation } from "react-i18next";
 import { BotBadge } from "../../features/bot-cards";
 import { messageBotFields } from "../../../shared/bots/card-view";
 import type { MouseEvent as ReactMouseEvent, Dispatch, SetStateAction, MutableRefObject } from "react";
@@ -17,7 +18,7 @@ import type {
   UserContextTarget,
 } from "../types";
 import { HTTP_URL } from "../env";
-import { formatTimestamp } from "../locale";
+import { formatTimestamp } from "../../i18n/format";
 import { memberRoleIcons } from "../user-display";
 import { UserAvatar } from "../components/UserAvatar";
 import type { ComposerState } from "../state/composer";
@@ -63,6 +64,7 @@ export function HubMessageList({
   hubChat,
   messageRendering,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { downloadLegacyAttachment, renderHubMessageBody, replyPreviewText, scrollToMessage } = messageRendering;
   const {
     uploadAttachment,
@@ -116,7 +118,7 @@ export function HubMessageList({
                     role: item.role,
                   });
                 }}
-                title={`Right-click ${item.username}`}
+                title={t("chat.messages.rightClickUser", { name: item.username })}
               >
                 <UserAvatar className="message-avatar" username={item.username} avatarUrl={item.avatarUrl} />
               </div>
@@ -156,10 +158,12 @@ export function HubMessageList({
                   const replyTarget = messages.find((candidate) => candidate.id === item.replyToId);
                   return (
                     <button type="button" className="chat-reply-ref" onClick={() => scrollToMessage(item.replyToId!)}>
-                      ↳ Reply to{" "}
                       {replyTarget
-                        ? `${messageBotFields(replyTarget).bot?.name ?? replyTarget.username}: ${replyPreviewText(replyTarget.text)}`
-                        : "message"}
+                        ? t("chat.messages.replyTo", {
+                            name: messageBotFields(replyTarget).bot?.name ?? replyTarget.username,
+                            preview: replyPreviewText(replyTarget.text),
+                          })
+                        : t("chat.messages.replyToMessage")}
                     </button>
                   );
                 })()}
@@ -182,9 +186,11 @@ export function HubMessageList({
                     onClick={() => void downloadLegacyAttachment(item.attachment!)}
                   >
                     <span>
-                      {item.attachment.mimeType.startsWith("image/") ? "Image" : "Video"} · {item.attachment.name}
+                      {item.attachment.mimeType.startsWith("image/")
+                        ? t("chat.messages.imageAttachment", { name: item.attachment.name })
+                        : t("chat.messages.videoAttachment", { name: item.attachment.name })}
                     </span>
-                    <small>Tap to download</small>
+                    <small>{t("chat.messages.tapToDownload")}</small>
                   </button>
                 )}
               {item.attachment &&
@@ -199,11 +205,15 @@ export function HubMessageList({
                     <span>
                       <strong>{item.attachment.name}</strong>
                       <small>
-                        {(item.attachment.size / 1024 / 1024).toFixed(item.attachment.size > 1024 * 1024 ? 1 : 2)} MB ·{" "}
-                        {item.attachment.mimeType || "File"}
+                        {t("chat.messages.attachmentMeta", {
+                          size: (item.attachment.size / 1024 / 1024).toFixed(
+                            item.attachment.size > 1024 * 1024 ? 1 : 2,
+                          ),
+                          type: item.attachment.mimeType || t("chat.messages.file"),
+                        })}
                       </small>
                     </span>
-                    <b>Download</b>
+                    <b>{t("chat.messages.download")}</b>
                   </button>
                 )}
               <div className="chat-message-reactions">
@@ -222,14 +232,14 @@ export function HubMessageList({
                       </button>
                     ),
                 )}
-                {item.pinned && <span className="chat-pinned">PINNED</span>}
+                {item.pinned && <span className="chat-pinned">{t("chat.messages.pinned")}</span>}
               </div>
 
               <div className="chat-message-hover-actions" style={{ display: undefined }}>
                 <div className="message-reaction-picker-anchor">
                   <button
                     type="button"
-                    title="Add reaction"
+                    title={t("chat.messages.addReaction")}
                     className="reaction-action-button"
                     onClick={(event) => toggleMessageReactionPicker(item.id, event)}
                   >
@@ -241,8 +251,8 @@ export function HubMessageList({
 
                 <button
                   type="button"
-                  title="Reply"
-                  aria-label="Reply"
+                  title={t("chat.messages.reply")}
+                  aria-label={t("chat.messages.reply")}
                   onClick={() => {
                     setEditingMessage(null);
                     setReplyingTo(item);
@@ -268,11 +278,11 @@ export function HubMessageList({
                         roomId: currentChannel.id,
                         evidenceType: item.attachment ? "attachment" : "message",
                         evidenceText: item.text || item.attachment?.name || "",
-                        evidenceLabel: `${author?.name ?? item.username}'s message`,
+                        evidenceLabel: t("chat.report.messageEvidence", { name: author?.name ?? item.username }),
                       })
                     }
-                    title="Report"
-                    aria-label="Report message"
+                    title={t("common.actions.report")}
+                    aria-label={t("chat.messages.reportMessage")}
                   >
                     <Icon name="flag" />
                   </button>
@@ -280,7 +290,12 @@ export function HubMessageList({
 
                 {/* A bot's message is not the publisher's own message to edit. */}
                 {item.userId === currentUser.id && !author && (
-                  <button type="button" title="Edit" aria-label="Edit message" onClick={() => startEditMessage(item)}>
+                  <button
+                    type="button"
+                    title={t("common.actions.edit")}
+                    aria-label={t("chat.messages.editMessage")}
+                    onClick={() => startEditMessage(item)}
+                  >
                     <Icon name="edit" />
                   </button>
                 )}
@@ -288,8 +303,8 @@ export function HubMessageList({
                 {(currentServer.myRole === "owner" || currentServer.myRole === "admin") && (
                   <button
                     type="button"
-                    title={item.pinned ? "Unpin" : "Pin"}
-                    aria-label={item.pinned ? "Unpin message" : "Pin message"}
+                    title={item.pinned ? t("chat.messages.unpin") : t("chat.messages.pin")}
+                    aria-label={item.pinned ? t("chat.messages.unpinMessage") : t("chat.messages.pinMessage")}
                     aria-pressed={item.pinned}
                     onClick={() => void togglePinMessage(item)}
                   >
@@ -302,9 +317,11 @@ export function HubMessageList({
                     type="button"
                     onClick={() => void deleteMessage(item)}
                     title={
-                      item.userId === currentUser.id && !author ? "Delete your message" : "Delete message as moderator"
+                      item.userId === currentUser.id && !author
+                        ? t("chat.messages.deleteOwn")
+                        : t("chat.messages.deleteAsModerator")
                     }
-                    aria-label="Delete message"
+                    aria-label={t("chat.messages.deleteMessage")}
                     className="danger"
                   >
                     <Icon name="trash" />
@@ -321,18 +338,18 @@ export function HubMessageList({
           <div key={item.localId} className={`chat-message dc-outbox-row is-${item.status}`} aria-live="polite">
             <UserAvatar
               className="message-avatar"
-              username={currentUser?.username ?? "You"}
+              username={currentUser?.username ?? t("chat.messages.you")}
               avatarUrl={currentUser?.avatarUrl}
             />
             <div className="chat-message-content">
               <div className="chat-message-header">
-                <strong>{currentUser?.username ?? "You"}</strong>
+                <strong>{currentUser?.username ?? t("chat.messages.you")}</strong>
                 <span className="dc-outbox-state">
                   {item.status === "sending"
-                    ? "Sending…"
+                    ? t("common.status.sending")
                     : item.status === "queued"
-                      ? "Waiting for connection…"
-                      : "Couldn't send"}
+                      ? t("chat.messages.waitingForConnection")
+                      : t("chat.messages.couldNotSend")}
                 </span>
               </div>
               {item.text && <div className="chat-message-text">{item.text}</div>}
@@ -345,7 +362,7 @@ export function HubMessageList({
                 <div className="dc-outbox-actions">
                   {item.error && <small>{item.error}</small>}
                   <button type="button" className="ds-btn ds-btn-sm" onClick={() => sendOutboxItem(item)}>
-                    Retry
+                    {t("common.actions.retry")}
                   </button>
                   <button
                     type="button"
@@ -356,14 +373,14 @@ export function HubMessageList({
                       setOutbox((current) => removeItem(current, item.localId));
                     }}
                   >
-                    Edit
+                    {t("common.actions.edit")}
                   </button>
                   <button
                     type="button"
                     className="ds-btn ds-btn-sm ds-btn-ghost"
                     onClick={() => setOutbox((current) => removeItem(current, item.localId))}
                   >
-                    Delete
+                    {t("common.actions.delete")}
                   </button>
                 </div>
               )}

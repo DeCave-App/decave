@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { colors } from "@/src/theme";
 
 /**
@@ -6,11 +7,12 @@ import { colors } from "@/src/theme";
  * so it is clear which message the actions apply to.
  */
 export function MessagePreview({ author, text, mine }: { author: string; text: string; mine?: boolean }) {
-  const body = text.trim() || "Attachment";
+  const { t } = useTranslation(["chat"]);
+  const body = text.trim() || t("chat.actions.attachment.fallbackType");
   return (
-    <View style={[styles.bubble, mine && styles.mine]} accessible accessibilityLabel={mine ? `Your message: ${body}` : `Message from ${author}: ${body}`}>
+    <View style={[styles.bubble, mine && styles.mine]} accessible accessibilityLabel={mine ? t("chat.mobile.preview.mine", { body }) : t("chat.mobile.preview.from", { author, body })}>
       <Text style={styles.author} numberOfLines={1}>
-        {mine ? "You" : author}
+        {mine ? t("chat.messages.you") : author}
       </Text>
       <Text style={styles.text} numberOfLines={5}>
         {body}

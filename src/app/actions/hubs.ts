@@ -3,7 +3,7 @@
 
 import type { Dispatch, SetStateAction, MutableRefObject, DragEvent as ReactDragEvent } from "react";
 import type { HubTemplateId } from "../../../shared/hub-templates";
-import { validateHubMediaDimensions } from "../../../shared/hub-media-specs";
+import { hubMediaDimensionMessage } from "../../features/manage-hub/hubMediaText";
 import { measureImageFile } from "../../features/manage-hub/measureImage";
 import { extractDiscordTemplateCode, type DiscordImportPreview } from "../../../shared/discord-template";
 import type {
@@ -25,6 +25,8 @@ import type {
   DeleteChannelResult,
 } from "../types";
 import { HTTP_URL, HUB_SHARE_ROUTE_PREFIX } from "../env";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import type { HubPanelsState } from "../state/hub-panels";
 
 export type HubActionsDeps = {
@@ -321,7 +323,7 @@ export function createHubActions(deps: HubActionsDeps) {
 
     const name = newServerName.trim();
     if (!name) {
-      setServerCreateError("Enter a hub name.");
+      setServerCreateError(i18next.t("hub.actions.create.nameMissing"));
       return;
     }
 
@@ -341,7 +343,7 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const data = (await response.json()) as Server & ApiError;
       if (!response.ok) {
-        setServerCreateError(data.error || "Could not create hub.");
+        setServerCreateError(apiErrorMessage(data, "client.hub.create"));
         return;
       }
 
@@ -382,7 +384,7 @@ export function createHubActions(deps: HubActionsDeps) {
       }
     } catch (error) {
       console.error("Could not create server:", error);
-      setServerCreateError("Could not connect to DeCave.");
+      setServerCreateError(i18next.t("errors.client.connect"));
     } finally {
       setCreatingServer(false);
     }
@@ -391,7 +393,7 @@ export function createHubActions(deps: HubActionsDeps) {
   const loadDiscordTemplate = async (value: string) => {
     const code = extractDiscordTemplateCode(value);
     if (!code) {
-      setDiscordImportError("Enter a supported Discord Server Template URL.");
+      setDiscordImportError(i18next.t("hub.actions.import.templateUrlInvalid"));
       setDiscordImportPreview(null);
       return;
     }
@@ -401,14 +403,14 @@ export function createHubActions(deps: HubActionsDeps) {
       const response = await authorizedFetch(`${HTTP_URL}/api/discord/templates/${encodeURIComponent(code)}`);
       const data = (await response.json()) as DiscordImportPreview & ApiError;
       if (!response.ok) {
-        setDiscordImportError(data.error || "Discord template could not be retrieved.");
+        setDiscordImportError(apiErrorMessage(data, "client.hub.templateFetch"));
         setDiscordImportPreview(null);
         return;
       }
       setDiscordImportPreview(data);
     } catch (error) {
       console.error("Could not load Discord template:", error);
-      setDiscordImportError("Could not connect to DeCave to preview this template.");
+      setDiscordImportError(i18next.t("hub.actions.import.previewOffline"));
       setDiscordImportPreview(null);
     } finally {
       setDiscordImportBusy(false);
@@ -423,7 +425,7 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const data = (await response.json()) as Server & ApiError;
       if (!response.ok) {
-        setDiscoverError(data.error || "Could not join hub.");
+        setDiscoverError(apiErrorMessage(data, "client.hub.join"));
         return;
       }
 
@@ -447,13 +449,13 @@ export function createHubActions(deps: HubActionsDeps) {
       }
     } catch (error) {
       console.error("Could not join public server:", error);
-      setDiscoverError("Could not connect to DeCave.");
+      setDiscoverError(i18next.t("errors.client.connect"));
     }
   };
 
   const joinHubFromShareLink = async (code: string) => {
     if (!currentUser || !code) return;
-    setHubShareNotice("Opening shared Hub...");
+    setHubShareNotice(i18next.t("hub.actions.share.opening"));
     try {
       const response = await authorizedFetch(
         `${HTTP_URL}/api/invites/${encodeURIComponent(code)}/join` /* DECAVE_PARITY_INVITE_ROUTE */,
@@ -461,7 +463,7 @@ export function createHubActions(deps: HubActionsDeps) {
       );
       const data = (await response.json().catch(() => ({}))) as Server & ApiError;
       if (!response.ok || !data.id) {
-        setHubShareNotice(data.error || "This one-time Hub invite could not be used.");
+        setHubShareNotice(apiErrorMessage(data, "client.hub.shareInviteInvalid"));
         setPendingHubShareCode("");
         return;
       }
@@ -490,17 +492,17 @@ export function createHubActions(deps: HubActionsDeps) {
       }
 
       setPendingHubShareCode("");
-      setHubShareNotice(`Opened ${data.name}.`);
+      setHubShareNotice(i18next.t("hub.actions.share.opened", { name: data.name }));
       window.history.replaceState(null, "", "/");
     } catch {
-      setHubShareNotice("Could not connect to this shared Hub.");
+      setHubShareNotice(i18next.t("hub.actions.share.offline"));
       setPendingHubShareCode("");
     }
   };
 
   const leaveServer = async () => {
     if (currentServer.myRole === "owner") return;
-    const confirmed = window.confirm(`Leave server "${currentServer.name}"?`);
+    const confirmed = window.confirm(i18next.t("hub.actions.leave.confirm", { name: currentServer.name }));
     if (!confirmed) return;
 
     try {
@@ -509,7 +511,7 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const data = (await response.json()) as LeaveServerResult & ApiError;
       if (!response.ok) {
-        window.alert(data.error || "Could not leave hub.");
+        window.alert(apiErrorMessage(data, "client.hub.leave"));
         return;
       }
 
@@ -542,14 +544,14 @@ export function createHubActions(deps: HubActionsDeps) {
       }
     } catch (error) {
       console.error("Could not leave server:", error);
-      window.alert("Could not connect to DeCave.");
+      window.alert(i18next.t("errors.client.connect"));
     }
   };
 
   const createChannel = async (extra: { forumTags?: string[] } = {}) => {
     const name = newChannelName.trim();
     if (!name) {
-      setChannelCreateError("Enter a room name.");
+      setChannelCreateError(i18next.t("hub.actions.room.nameMissing"));
       return;
     }
 
@@ -574,7 +576,7 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const data = (await response.json()) as Channel & ApiError;
       if (!response.ok) {
-        setChannelCreateError(data.error || "Could not create room.");
+        setChannelCreateError(apiErrorMessage(data, "client.hub.createRoom"));
         return;
       }
 
@@ -592,7 +594,7 @@ export function createHubActions(deps: HubActionsDeps) {
       changeChannel(data.id);
     } catch (error) {
       console.error("Could not create channel:", error);
-      setChannelCreateError("Could not connect to DeCave.");
+      setChannelCreateError(i18next.t("errors.client.connect"));
     }
   };
 
@@ -620,14 +622,14 @@ export function createHubActions(deps: HubActionsDeps) {
       const response = await authorizedFetch(`${HTTP_URL}/api/servers/${serverId}/members`);
       const data = (await response.json()) as ServerMemberView[] & ApiError;
       if (!response.ok) {
-        setServerManageError(data.error || "Could not load members.");
+        setServerManageError(apiErrorMessage(data, "client.hub.loadMembers"));
         setServerMembers([]);
         return;
       }
       setServerMembers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Could not load hub members:", error);
-      setServerManageError("Could not load hub members.");
+      setServerManageError(i18next.t("hub.actions.members.loadFailed"));
     } finally {
       setMembersLoading(false);
     }
@@ -666,14 +668,14 @@ export function createHubActions(deps: HubActionsDeps) {
       const data = (await response.json()) as
         { visibility?: ServerVisibility; users?: ServerAccessUser[]; error?: string } | ApiError;
       if (!response.ok) {
-        setServerManageError(data.error || "Could not load friends who can be added.");
+        setServerManageError(apiErrorMessage(data, "client.hub.loadAddableFriends"));
         setServerAccessUsers([]);
         return;
       }
       setServerAccessUsers("users" in data && Array.isArray(data.users) ? data.users : []);
     } catch (error) {
       console.error("Could not load addable Hub friends:", error);
-      setServerManageError("Could not load friends who can be added.");
+      setServerManageError(i18next.t("errors.client.hub.loadAddableFriends"));
       setServerAccessUsers([]);
     } finally {
       setAccessLoading(false);
@@ -682,19 +684,25 @@ export function createHubActions(deps: HubActionsDeps) {
 
   const uploadHubMedia = async (kind: "icon" | "banner" | "header" | "chat-background", file: File) => {
     const limit = kind === "icon" ? 3 * 1024 * 1024 : 8 * 1024 * 1024;
-    const label =
-      kind === "icon" ? "Icon" : kind === "banner" ? "Banner" : kind === "header" ? "Header image" : "Chat background";
     if (file.size > limit) {
-      setHubMediaError(`${label} is too large.`);
+      setHubMediaError(
+        kind === "icon"
+          ? i18next.t("hub.actions.media.iconTooLarge")
+          : kind === "banner"
+            ? i18next.t("hub.actions.media.bannerTooLarge")
+            : kind === "header"
+              ? i18next.t("hub.actions.media.headerTooLarge")
+              : i18next.t("hub.actions.media.chatBackgroundTooLarge"),
+      );
       return;
     }
     if (!file.type.startsWith("image/")) {
-      setHubMediaError("Choose an image file.");
+      setHubMediaError(i18next.t("hub.actions.media.notImage"));
       return;
     }
     if (kind !== "icon") {
       const dims = await measureImageFile(file);
-      const dimensionError = validateHubMediaDimensions(kind, dims?.width ?? NaN, dims?.height ?? NaN);
+      const dimensionError = hubMediaDimensionMessage(kind, dims?.width ?? NaN, dims?.height ?? NaN);
       if (dimensionError) {
         setHubMediaError(dimensionError);
         return;
@@ -710,21 +718,32 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const data = (await response.json()) as ApiError;
       if (!response.ok) {
-        setHubMediaError(data.error || "Could not upload Hub image.");
+        setHubMediaError(apiErrorMessage(data, "client.hub.uploadMedia"));
         return;
       }
       await loadServers();
       if (kind === "chat-background") setManageUseChatBackground(true);
     } catch {
-      setHubMediaError("Could not upload Hub image.");
+      setHubMediaError(i18next.t("errors.client.hub.uploadMedia"));
     } finally {
       setHubMediaBusy(false);
     }
   };
 
   const removeHubMedia = async (kind: "banner" | "header" | "chat-background") => {
-    const label = kind === "banner" ? "sidebar banner" : kind === "header" ? "header image" : "chat background";
-    if (!window.confirm(`Remove the ${label}? This deletes the image from this Hub.`)) return;
+    const confirmText =
+      kind === "banner"
+        ? i18next.t("hub.actions.media.confirmRemoveBanner")
+        : kind === "header"
+          ? i18next.t("hub.actions.media.confirmRemoveHeader")
+          : i18next.t("hub.actions.media.confirmRemoveChatBackground");
+    const failureKey =
+      kind === "banner"
+        ? "client.hub.removeBanner"
+        : kind === "header"
+          ? "client.hub.removeHeader"
+          : "client.hub.removeChatBackground";
+    if (!window.confirm(confirmText)) return;
     setHubMediaBusy(true);
     setHubMediaError("");
     try {
@@ -733,14 +752,14 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as ApiError;
-        setHubMediaError(data.error || `Could not remove the ${label}.`);
+        setHubMediaError(apiErrorMessage(data, failureKey));
         return;
       }
       if (kind === "banner") setManageUseBannerBackground(false);
       else if (kind === "chat-background") setManageUseChatBackground(false);
       await loadServers();
     } catch {
-      setHubMediaError(`Could not remove the ${label}.`);
+      setHubMediaError(apiErrorMessage(null, failureKey));
     } finally {
       setHubMediaBusy(false);
     }
@@ -751,7 +770,7 @@ export function createHubActions(deps: HubActionsDeps) {
       const assetsResponse = await authorizedFetch(`${HTTP_URL}/api/servers/${serverId}/assets`);
       if (assetsResponse.ok) setHubAssets((await assetsResponse.json()) as HubAsset[]);
     } catch {
-      setServerManageError("Could not load Hub apps and media.");
+      setServerManageError(i18next.t("hub.actions.media.loadFeaturesFailed"));
     }
   };
 
@@ -766,7 +785,12 @@ export function createHubActions(deps: HubActionsDeps) {
     try {
       asked =
         typeof window.prompt === "function" && !window.decaveDesktop?.isDesktop
-          ? window.prompt(`${kind === "emote" ? "Emote" : "Sticker"} name`, suggested)
+          ? window.prompt(
+              kind === "emote"
+                ? i18next.t("hub.actions.assets.emoteNamePrompt")
+                : i18next.t("hub.actions.assets.stickerNamePrompt"),
+              suggested,
+            )
           : suggested;
     } catch {
       asked = suggested;
@@ -786,17 +810,24 @@ export function createHubActions(deps: HubActionsDeps) {
         body: file,
       });
       const data = (await response.json()) as ApiError;
-      if (!response.ok) setServerManageError(data.error || "Could not upload custom media.");
+      if (!response.ok) setServerManageError(apiErrorMessage(data, "client.hub.uploadAsset"));
       else await loadHubFeatures();
     } catch {
-      setServerManageError("Could not upload custom media.");
+      setServerManageError(i18next.t("errors.client.hub.uploadAsset"));
     } finally {
       setHubFeatureBusy(false);
     }
   };
 
   const deleteHubAsset = async (asset: HubAsset) => {
-    if (!window.confirm(`Delete ${asset.kind} “${asset.name}”?`)) return;
+    if (
+      !window.confirm(
+        asset.kind === "emote"
+          ? i18next.t("hub.actions.assets.confirmDeleteEmote", { name: asset.name })
+          : i18next.t("hub.actions.assets.confirmDeleteSticker", { name: asset.name }),
+      )
+    )
+      return;
     await authorizedFetch(`${HTTP_URL}/api/servers/${currentServer.id}/assets/${encodeURIComponent(asset.id)}`, {
       method: "DELETE",
     });
@@ -812,7 +843,7 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const data = (await response.json()) as ApiError & { serverId?: number; channelId?: number };
       if (!response.ok) {
-        setDiscoverError(data.error || "Invite could not be used.");
+        setDiscoverError(apiErrorMessage(data, "client.hub.inviteInvalid"));
         return;
       }
       setInviteJoinCode("");
@@ -824,7 +855,7 @@ export function createHubActions(deps: HubActionsDeps) {
       }
       if (data.channelId) changeChannel(data.channelId);
     } catch {
-      setDiscoverError("Could not use invite.");
+      setDiscoverError(i18next.t("hub.actions.invite.useFailed"));
     }
   };
 
@@ -840,12 +871,12 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const data = (await response.json()) as { code?: string; error?: string };
       if (!response.ok || !data.code) {
-        setServerManageError(data.error || "Could not create one-time Hub invite link.");
+        setServerManageError(apiErrorMessage(data, "client.hub.createInviteLink"));
         return;
       }
       setHubInviteCode(data.code);
     } catch {
-      setServerManageError("Could not create one-time Hub invite link.");
+      setServerManageError(i18next.t("errors.client.hub.createInviteLink"));
     } finally {
       setHubShareBusy(false);
     }
@@ -877,7 +908,7 @@ export function createHubActions(deps: HubActionsDeps) {
     );
     if (!response.ok) {
       const data = (await response.json()) as ApiError;
-      setServerManageError(data.error || "Could not assign custom role.");
+      setServerManageError(apiErrorMessage(data, "client.hub.assignRole"));
       return;
     }
     await loadServerMembers(currentServer.id);
@@ -893,7 +924,16 @@ export function createHubActions(deps: HubActionsDeps) {
   };
 
   const moderateHubMember = async (member: ServerMemberView, action: "kick" | "ban" | "timeout") => {
-    if (!window.confirm(`${action.toUpperCase()} ${member.username}?`)) return;
+    if (
+      !window.confirm(
+        action === "kick"
+          ? i18next.t("hub.actions.moderation.confirmKick", { username: member.username })
+          : action === "ban"
+            ? i18next.t("hub.actions.moderation.confirmBan", { username: member.username })
+            : i18next.t("hub.actions.moderation.confirmTimeout", { username: member.username }),
+      )
+    )
+      return;
     const path = action === "timeout" ? `timeout` : action;
     const response = await authorizedFetch(
       `${HTTP_URL}/api/servers/${currentServer.id}/members/${member.userId}/${path}`,
@@ -905,7 +945,12 @@ export function createHubActions(deps: HubActionsDeps) {
     );
     if (!response.ok) {
       const data = (await response.json()) as ApiError;
-      setServerManageError(data.error || `Could not ${action} user.`);
+      setServerManageError(
+        apiErrorMessage(
+          data,
+          action === "kick" ? "client.hub.kick" : action === "ban" ? "client.hub.ban" : "client.hub.timeout",
+        ),
+      );
       return;
     }
     await loadServerMembers(currentServer.id);
@@ -915,7 +960,7 @@ export function createHubActions(deps: HubActionsDeps) {
   const saveManageHub = async (keepOpen = false) => {
     const name = manageServerName.trim();
     if (!name) {
-      setServerManageError("Enter a Hub name.");
+      setServerManageError(i18next.t("hub.actions.settings.nameMissing"));
       return;
     }
 
@@ -928,7 +973,7 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const renameData = (await renameResponse.json()) as ApiError;
       if (!renameResponse.ok) {
-        setServerManageError(renameData.error || "Could not save Hub identity.");
+        setServerManageError(apiErrorMessage(renameData, "client.hub.saveIdentity"));
         return;
       }
 
@@ -940,7 +985,7 @@ export function createHubActions(deps: HubActionsDeps) {
         });
         const visibilityData = (await visibilityResponse.json()) as ApiError;
         if (!visibilityResponse.ok) {
-          setServerManageError(visibilityData.error || "Could not change Hub privacy.");
+          setServerManageError(apiErrorMessage(visibilityData, "client.hub.changePrivacy"));
           return;
         }
       }
@@ -965,7 +1010,7 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const settingsData = (await settingsResponse.json()) as ApiError;
       if (!settingsResponse.ok) {
-        setServerManageError(settingsData.error || "Could not save Hub settings.");
+        setServerManageError(apiErrorMessage(settingsData, "client.hub.saveSettings"));
         return;
       }
 
@@ -974,7 +1019,7 @@ export function createHubActions(deps: HubActionsDeps) {
       if (!keepOpen) setShowManageServer(false);
     } catch (error) {
       console.error("Could not save Hub settings:", error);
-      setServerManageError("Could not connect to DeCave.");
+      setServerManageError(i18next.t("errors.client.connect"));
     }
   };
 
@@ -988,7 +1033,7 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const data = (await response.json()) as ApiError;
       if (!response.ok) {
-        setServerManageError(data.error || "Could not grant hub access.");
+        setServerManageError(apiErrorMessage(data, "client.hub.grantAccess"));
         return;
       }
       await loadServerAccess(currentServer.id);
@@ -996,14 +1041,19 @@ export function createHubActions(deps: HubActionsDeps) {
       await loadServers();
     } catch (error) {
       console.error("Could not grant hub access:", error);
-      setServerManageError("Could not connect to DeCave.");
+      setServerManageError(i18next.t("errors.client.connect"));
     }
   };
 
   const removeHubMemberDirectly = async (member: ServerMemberView) => {
     if (!canManageCurrentServer || member.role === "owner" || member.userId === currentUser?.id) return;
     if (currentServer.myRole === "admin" && member.role !== "member") return;
-    if (!window.confirm(`Remove ${member.username} from "${currentServer.name}"?`)) return;
+    if (
+      !window.confirm(
+        i18next.t("hub.actions.members.confirmRemove", { username: member.username, hub: currentServer.name }),
+      )
+    )
+      return;
 
     setServerManageError("");
     try {
@@ -1013,12 +1063,12 @@ export function createHubActions(deps: HubActionsDeps) {
       );
       const data = (await response.json()) as ApiError;
       if (!response.ok) {
-        setServerManageError(data.error || "Could not remove Hub member.");
+        setServerManageError(apiErrorMessage(data, "client.hub.removeMember"));
         return;
       }
       await Promise.all([loadServerMembers(currentServer.id), loadServerAccess(currentServer.id), loadServers()]);
     } catch {
-      setServerManageError("Could not connect to DeCave.");
+      setServerManageError(i18next.t("errors.client.connect"));
     }
   };
 
@@ -1056,15 +1106,12 @@ export function createHubActions(deps: HubActionsDeps) {
 
   const deleteServer = async (confirmedInDialog = false) => {
     if (!isCurrentServerOwner) {
-      setServerManageError("Only the hub owner can delete this server.");
+      setServerManageError(i18next.t("hub.actions.delete.ownerOnly"));
       return;
     }
 
     const confirmed =
-      confirmedInDialog ||
-      window.confirm(
-        `Delete server "${currentServer.name}"?\n\nThis also deletes all of its rooms and saved messages.`,
-      );
+      confirmedInDialog || window.confirm(i18next.t("hub.actions.delete.confirm", { name: currentServer.name }));
     if (!confirmed) return;
 
     setServerManageError("");
@@ -1072,7 +1119,7 @@ export function createHubActions(deps: HubActionsDeps) {
       const response = await authorizedFetch(`${HTTP_URL}/api/servers/${currentServer.id}`, { method: "DELETE" });
       const data = (await response.json()) as DeleteServerResult & ApiError;
       if (!response.ok) {
-        setServerManageError(data.error || "Could not delete hub.");
+        setServerManageError(apiErrorMessage(data, "client.hub.delete"));
         return;
       }
 
@@ -1087,7 +1134,7 @@ export function createHubActions(deps: HubActionsDeps) {
       if (data.fallbackChannelId > 0) void loadMessages(data.fallbackChannelId);
     } catch (error) {
       console.error("Could not delete server:", error);
-      setServerManageError("Could not connect to DeCave.");
+      setServerManageError(i18next.t("errors.client.connect"));
     }
   };
 
@@ -1101,7 +1148,7 @@ export function createHubActions(deps: HubActionsDeps) {
       });
       const data = (await response.json()) as ApiError;
       if (!response.ok) {
-        setServerManageError(data.error || "Could not change member role.");
+        setServerManageError(apiErrorMessage(data, "client.hub.changeRole"));
         return;
       }
       await loadServerMembers(currentServer.id);
@@ -1109,7 +1156,7 @@ export function createHubActions(deps: HubActionsDeps) {
       await loadServers();
     } catch (error) {
       console.error("Could not change member role:", error);
-      setServerManageError("Could not connect to DeCave.");
+      setServerManageError(i18next.t("errors.client.connect"));
     }
   };
 
@@ -1137,29 +1184,38 @@ export function createHubActions(deps: HubActionsDeps) {
         const response = await authorizedFetch(`${HTTP_URL}/api/channels/${roomId}/access`);
         const data = (await response.json()) as { private?: boolean; memberIds?: string[]; error?: string };
         if (!response.ok) {
-          setChannelManageError(data.error || "Could not load room access.");
+          setChannelManageError(apiErrorMessage(data, "client.hub.loadRoomAccess"));
           return;
         }
         setManageChannelPrivate(data.private === true);
         setManageChannelMemberIds(Array.isArray(data.memberIds) ? data.memberIds : []);
       } catch {
-        setChannelManageError("Could not load room access.");
+        setChannelManageError(i18next.t("errors.client.hub.loadRoomAccess"));
       }
     })();
   };
 
   const renameChannel = async (
-    extra: { forumTags?: string[]; userLimit?: number; postPolicy?: string; postRoleIds?: string[] } = {},
+    extra: {
+      forumTags?: string[];
+      userLimit?: number;
+      postPolicy?: string;
+      postRoleIds?: string[];
+      /** '#rrggbb', null = Hub accent; undefined leaves it unchanged. */
+      accent?: string | null;
+      /** A new background image, null to remove it; undefined leaves it unchanged. */
+      background?: File | null;
+    } = {},
   ) => {
     const name = manageChannelName.trim();
     const roomId = manageChannelId || currentChannel.id;
     const hubId = manageChannelServerId || currentServer.id;
     if (!name) {
-      setChannelManageError("Enter a room name.");
+      setChannelManageError(i18next.t("hub.actions.room.nameMissing"));
       return;
     }
     if (!roomId) {
-      setChannelManageError("Room could not be identified. Reopen Room Settings and try again.");
+      setChannelManageError(i18next.t("hub.actions.room.unidentified"));
       return;
     }
 
@@ -1182,12 +1238,30 @@ export function createHubActions(deps: HubActionsDeps) {
           ...(extra.postPolicy !== undefined
             ? { postPolicy: extra.postPolicy, postRoleIds: extra.postRoleIds ?? [] }
             : {}),
+          ...(extra.accent !== undefined ? { accent: extra.accent } : {}),
         }),
       });
       const data = (await response.json()) as ApiError & { private?: boolean; icon?: string; name?: string };
       if (!response.ok) {
-        setChannelManageError(data.error || "Could not save room settings.");
+        setChannelManageError(apiErrorMessage(data, "client.hub.saveRoom"));
         return;
+      }
+      if (extra.background !== undefined) {
+        const upload = await authorizedFetch(`${HTTP_URL}/api/channels/${roomId}/media/background`, {
+          method: extra.background ? "POST" : "DELETE",
+          ...(extra.background
+            ? {
+                headers: { "Content-Type": "application/octet-stream", "X-File-Type": extra.background.type },
+                body: extra.background,
+              }
+            : {}),
+        });
+        if (!upload.ok) {
+          const failed = (await upload.json().catch(() => ({}))) as ApiError;
+          setChannelManageError(apiErrorMessage(failed, "client.hub.roomBackground"));
+          await loadServers();
+          return;
+        }
       }
 
       // Reflect the privacy change immediately, then refresh from the server.
@@ -1209,6 +1283,7 @@ export function createHubActions(deps: HubActionsDeps) {
                         forumPostPolicy: manageForumPostPolicy,
                         forumPostRoleIds: manageForumPostPolicy === "roles" ? manageForumPostRoleIds : [],
                         forumPostMemberIds: manageForumPostPolicy === "members" ? manageForumPostMemberIds : [],
+                        ...(extra.accent !== undefined ? { accent: extra.accent } : {}),
                       },
                 ),
               },
@@ -1218,7 +1293,7 @@ export function createHubActions(deps: HubActionsDeps) {
       setShowManageChannel(false);
     } catch (error) {
       console.error("Could not save room settings:", error);
-      setChannelManageError("Could not connect to DeCave.");
+      setChannelManageError(i18next.t("errors.client.connect"));
     }
   };
 
@@ -1255,11 +1330,13 @@ export function createHubActions(deps: HubActionsDeps) {
         body: JSON.stringify({ orderedIds: ordered.map((channel) => channel.id) }),
       });
       if (!response.ok)
-        throw new Error(((await response.json().catch(() => ({}))) as ApiError).error || "Could not reorder rooms.");
+        throw new Error(
+          apiErrorMessage((await response.json().catch(() => ({}))) as ApiError, "client.hub.reorderRooms"),
+        );
       await loadServers();
     } catch (error) {
       // F10: surface reorder failures next to the room list (was hidden in the room-settings modal state).
-      setRoomReorderError(error instanceof Error ? error.message : "Could not reorder rooms.");
+      setRoomReorderError(error instanceof Error ? error.message : i18next.t("errors.client.hub.reorderRooms"));
       await loadServers();
     }
   };
@@ -1316,9 +1393,7 @@ export function createHubActions(deps: HubActionsDeps) {
     const roomId = manageChannelId || currentChannel.id;
     const confirmed =
       confirmedInDialog ||
-      window.confirm(
-        `Delete room "${manageChannelName || currentChannel.name}"?\n\nSaved messages in this room will also be deleted.`,
-      );
+      window.confirm(i18next.t("hub.actions.room.confirmDelete", { name: manageChannelName || currentChannel.name }));
     if (!confirmed) return;
 
     setChannelManageError("");
@@ -1326,7 +1401,7 @@ export function createHubActions(deps: HubActionsDeps) {
       const response = await authorizedFetch(`${HTTP_URL}/api/channels/${roomId}`, { method: "DELETE" });
       const data = (await response.json()) as DeleteChannelResult & ApiError;
       if (!response.ok) {
-        setChannelManageError(data.error || "Could not delete room.");
+        setChannelManageError(apiErrorMessage(data, "client.hub.deleteRoom"));
         return;
       }
 
@@ -1340,7 +1415,7 @@ export function createHubActions(deps: HubActionsDeps) {
       void loadMessages(data.fallbackChannelId);
     } catch (error) {
       console.error("Could not delete channel:", error);
-      setChannelManageError("Could not connect to DeCave.");
+      setChannelManageError(i18next.t("errors.client.connect"));
     }
   };
 

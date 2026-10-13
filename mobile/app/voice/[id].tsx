@@ -20,8 +20,10 @@ import { RTCView } from "react-native-webrtc";
 import { impactHaptic, tapHaptic } from "@/src/lib/haptics";
 import { SoundboardSheet } from "@/src/components/Soundboard";
 import { useSpeakerRoute } from "@/src/hooks/useSpeakerRoute";
+import { useTranslation } from "react-i18next";
 
 export default function VoiceRoomScreen() {
+  const { t } = useTranslation(["voice", "common"]);
   const params = useLocalSearchParams<{
     id: string;
     hubId?: string;
@@ -33,7 +35,7 @@ export default function VoiceRoomScreen() {
   const roomName =
     typeof params.name === "string" && params.name
       ? decodeURIComponent(params.name)
-      : "Voice Room";
+      : t("voice.mobile.room.roomFallback");
 
   const { user, token } = useSession();
   const { connectionState, connectionId, lastEvent } = useRealtime();
@@ -151,14 +153,14 @@ export default function VoiceRoomScreen() {
 
   const leaveSquadRoom = () => {
     if (!token || !params.hubId) return;
-    Alert.alert("Leave squad room?", "You will leave this squad's voice and messages.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Leave", style: "destructive", onPress: () => void (async () => {
+    Alert.alert(t("voice.mobile.room.leaveSquadRoom"), t("voice.mobile.room.youWillLeaveThisSquad"), [
+      { text: t("common.actions.cancel"), style: "cancel" },
+      { text: t("common.actions.leave"), style: "destructive", onPress: () => void (async () => {
         try {
           await apiJson(`/api/squad-finder/rooms/${encodeURIComponent(String(params.hubId))}/leave`, { method: "POST" }, token);
           if (connected) leaveVoice();
           router.replace("/hubs");
-        } catch (error) { Alert.alert("Could not leave", error instanceof Error ? error.message : "Please try again."); }
+        } catch (error) { Alert.alert(t("voice.mobile.room.couldNotLeave"), error instanceof Error ? error.message : t("voice.mobile.room.pleaseTryAgain")); }
       }) },
     ]);
   };
@@ -205,12 +207,12 @@ export default function VoiceRoomScreen() {
 
   const confirmKick = (participant: VoiceParticipant) => {
     Alert.alert(
-      "Disconnect from Voice Room?",
-      `Remove ${participant.username} from this Voice Room?`,
+      t("voice.mobile.room.disconnectFromVoiceRoom"),
+      t("voice.mobile.room.removeUsernameFromThisVoice", { username: participant.username }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.actions.cancel"), style: "cancel" },
         {
-          text: "Disconnect",
+          text: t("voice.mobile.room.disconnect"),
           style: "destructive",
           onPress: () => {
             moderateParticipant(participant.connectionId, "kick");
@@ -224,7 +226,7 @@ export default function VoiceRoomScreen() {
   return (
     <Screen>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back"
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")}
           style={styles.headerButton}
           onPress={() => router.back()}
           hitSlop={8}
@@ -237,7 +239,7 @@ export default function VoiceRoomScreen() {
         </View>
 
         <View style={styles.headerCopy}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>VOICE ROOM</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("voice.mobile.room.voiceRoom")}</Text>
           <Text style={styles.title} numberOfLines={1} maxFontSizeMultiplier={1.4}>
             {roomName}
           </Text>
@@ -248,7 +250,7 @@ export default function VoiceRoomScreen() {
               color={colors.faint}
             />
             <Text style={styles.encryptionLabel} numberOfLines={1} maxFontSizeMultiplier={1.3}>
-              Encrypted{pingMs != null ? ` · ${pingMs} ms` : ""}
+              {pingMs != null ? t("voice.mobile.room.encryptedPing", { ping: pingMs }) : t("voice.mobile.room.encrypted")}
             </Text>
             {pingMs != null && (
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: pingMs < 120 ? colors.green : pingMs < 250 ? colors.yellow : colors.red }} />
@@ -260,7 +262,7 @@ export default function VoiceRoomScreen() {
           style={styles.headerButton}
           onPress={openRoomChat}
           hitSlop={8}
-          accessibilityLabel="Open room chat"
+          accessibilityLabel={t("voice.mobile.room.openRoomChat")}
         >
           <Ionicons name="chatbubble-ellipses-outline" size={19} color={colors.cyan} />
           {chatUnread > 0 && (
@@ -271,7 +273,7 @@ export default function VoiceRoomScreen() {
         </Pressable>
 
         {isSquadRoom && (
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={leaveSquadRoom} hitSlop={8} accessibilityLabel="Leave squad room">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={leaveSquadRoom} hitSlop={8} accessibilityLabel={t("voice.mobile.room.leaveSquadRoom2")}>
             <Ionicons name="exit-outline" size={19} color={colors.red} />
           </Pressable>
         )}
@@ -297,7 +299,7 @@ export default function VoiceRoomScreen() {
               joining && styles.stateTextJoining,
             ]}
           >
-            {connected ? "LIVE" : joining ? "JOINING" : "OFFLINE"}
+            {connected ? t("voice.lobby.live") : joining ? t("voice.mobile.room.joining") : t("voice.mobile.room.offline")}
           </Text>
         </View>
       </View>
@@ -312,9 +314,9 @@ export default function VoiceRoomScreen() {
               <ActivityIndicator color={colors.cyan} size="small" />
             </View>
             <View style={styles.statusCopy}>
-              <Text style={styles.statusTitle}>Joining voice</Text>
+              <Text style={styles.statusTitle}>{t("voice.mobile.room.joiningVoice")}</Text>
               <Text style={styles.statusText}>
-                Opening your microphone and waiting for the room confirmation…
+                {t("voice.mobile.room.openingYourMicrophoneAndWaiting")}
               </Text>
             </View>
           </View>
@@ -329,17 +331,17 @@ export default function VoiceRoomScreen() {
             />
             <View style={{ flex: 1 }}>
               <Text style={styles.warningTitle}>
-                {recoveryState === "failed" ? "Voice needs attention" : "Recovering voice"}
+                {recoveryState === "failed" ? t("common.mobile.home.voiceNeedsAttention") : t("common.mobile.home.recoveringVoice")}
               </Text>
               <Text style={styles.warningText}>
                 {recoveryState === "failed"
-                  ? "The room could not recover automatically. Retry when realtime is connected."
-                  : `Rejoining this room${recoveryAttempt ? ` (attempt ${recoveryAttempt}/3)` : ""}…`}
+                  ? t("voice.mobile.room.theRoomCouldNotRecover")
+                  : recoveryAttempt ? t("voice.mobile.room.rejoiningAttempt", { attempt: recoveryAttempt }) : t("voice.mobile.room.rejoining")}
               </Text>
             </View>
             {recoveryState === "failed" && realtimeReady && (
               <Pressable accessibilityRole="button" style={styles.retry} onPress={retryJoin}>
-                <Text style={styles.retryText}>Retry</Text>
+                <Text style={styles.retryText}>{t("common.actions.retry")}</Text>
               </Pressable>
             )}
           </View>
@@ -353,9 +355,9 @@ export default function VoiceRoomScreen() {
               color={colors.yellow}
             />
             <View style={{ flex: 1 }}>
-              <Text style={styles.warningTitle}>Realtime is reconnecting</Text>
+              <Text style={styles.warningTitle}>{t("voice.mobile.room.realtimeIsReconnecting")}</Text>
               <Text style={styles.warningText}>
-                Voice will become available when DeCave reconnects.
+                {t("voice.mobile.room.voiceWillBecomeAvailableWhen")}
               </Text>
             </View>
           </View>
@@ -369,12 +371,12 @@ export default function VoiceRoomScreen() {
               color={colors.red}
             />
             <View style={styles.errorCopy}>
-              <Text style={styles.errorTitle}>Voice connection</Text>
+              <Text style={styles.errorTitle}>{t("voice.mobile.room.voiceConnection")}</Text>
               <Text style={styles.errorText}>{voiceError}</Text>
             </View>
             {!connected && !joining && realtimeReady && (
               <Pressable accessibilityRole="button" style={styles.retry} onPress={retryJoin}>
-                <Text style={styles.retryText}>Retry</Text>
+                <Text style={styles.retryText}>{t("common.actions.retry")}</Text>
               </Pressable>
             )}
           </View>
@@ -388,7 +390,7 @@ export default function VoiceRoomScreen() {
               color={colors.red}
             />
             <View style={styles.errorCopy}>
-              <Text style={styles.errorTitle}>Screen sharing</Text>
+              <Text style={styles.errorTitle}>{t("voice.mobile.room.screenSharing")}</Text>
               <Text style={styles.errorText}>{screenShareError}</Text>
             </View>
           </View>
@@ -396,21 +398,21 @@ export default function VoiceRoomScreen() {
 
         <View style={styles.peopleHeading}>
           <View>
-            <Text maxFontSizeMultiplier={1.3} style={styles.sectionKicker}>PEOPLE</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.sectionKicker}>{t("voice.mobile.room.people")}</Text>
             <Text style={styles.sectionTitle}>
               {roomParticipants.length === 1
-                ? "1 connected"
-                : `${roomParticipants.length} connected`}
+                ? t("voice.mobile.room.n1Connected")
+                : t("voice.mobile.room.countConnected", { count: roomParticipants.length })}
             </Text>
             {connected && !speakingAvailable && roomParticipants.length > 1 && (
-              <Text style={styles.activityHint}>Voice activity meter unavailable on this device</Text>
+              <Text style={styles.activityHint}>{t("voice.mobile.room.voiceActivityMeterUnavailableOn")}</Text>
             )}
           </View>
 
           {connected && (
             <View style={styles.connectedPill}>
               <View style={styles.connectedPillDot} />
-              <Text maxFontSizeMultiplier={1.3} style={styles.connectedPillText}>In room</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.connectedPillText}>{t("voice.mobile.room.inRoom")}</Text>
             </View>
           )}
         </View>
@@ -425,14 +427,14 @@ export default function VoiceRoomScreen() {
               />
             </View>
             <Text style={styles.emptyTitle}>
-              {connected ? "You’re first here" : "No one is connected"}
+              {connected ? t("voice.mobile.room.youReFirstHere") : t("voice.mobile.room.noOneIsConnected")}
             </Text>
             <Text style={styles.emptyText}>
               {connected
-                ? "Stay here and your friends can join you."
+                ? t("voice.mobile.room.stayHereAndYourFriends")
                 : joining
-                  ? "Your room membership is being confirmed."
-                  : "Join the room to start talking."}
+                  ? t("voice.mobile.room.yourRoomMembershipIsBeing")
+                  : t("voice.mobile.room.joinTheRoomToStart")}
             </Text>
           </View>
         ) : (
@@ -460,7 +462,7 @@ export default function VoiceRoomScreen() {
                   ]}
                   onPress={() => setSelectedParticipant(participant)}
                   accessibilityRole="button"
-                  accessibilityLabel={`${participant.username}${speakingUserIds.includes(participant.userId) ? ", speaking" : ""}`}
+                  accessibilityLabel={speakingUserIds.includes(participant.userId) ? t("voice.mobile.room.speaking", { username: participant.username }) : participant.username}
                 >
                   <Avatar
                     username={participant.username}
@@ -476,27 +478,27 @@ export default function VoiceRoomScreen() {
                       <CallVerificationMark connectionId={participant.connectionId} />
                       {isSelf && (
                         <View style={styles.youChip}>
-                          <Text style={styles.youChipText}>YOU</Text>
+                          <Text style={styles.youChipText}>{t("voice.mobile.room.you")}</Text>
                         </View>
                       )}
                     </View>
 
                     <Text style={styles.personMeta}>
                       {speakingUserIds.includes(participant.userId)
-                        ? "Speaking"
+                        ? t("voice.mobile.room.speaking")
                         : localMuted
-                        ? "Muted by you"
+                        ? t("voice.mobile.room.mutedByYou")
                         : participant.serverMuted
-                          ? "Server muted"
+                          ? t("voice.mobile.room.serverMuted")
                           : participant.serverDeafened
-                            ? "Server deafened"
+                            ? t("voice.mobile.room.serverDeafened")
                             : participant.deafened
-                              ? "Deafened"
+                              ? t("voice.mobile.room.deafened")
                               : participant.muted
-                                ? "Muted"
+                                ? t("voice.mobile.room.muted")
                                 : participant.screenSharing
-                                  ? "Sharing screen"
-                                  : "Connected"}
+                                  ? t("common.admin.overview.metrics.sharing")
+                                  : t("common.connection.connected")}
                     </Text>
                   </View>
 
@@ -530,7 +532,7 @@ export default function VoiceRoomScreen() {
             })}
 
             <Text style={styles.holdHint}>
-              Tap a person for volume and voice actions.
+              {t("voice.mobile.room.tapAPersonForVolume")}
             </Text>
           </View>
         )}
@@ -539,11 +541,11 @@ export default function VoiceRoomScreen() {
           <View style={styles.videoSection}>
             <View style={styles.peopleHeading}>
               <View>
-                <Text maxFontSizeMultiplier={1.3} style={styles.sectionKicker}>LIVE</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.sectionKicker}>{t("voice.lobby.live")}</Text>
                 <Text style={styles.sectionTitle}>
                   {visibleVideos.length === 1
-                    ? "1 shared stream"
-                    : `${visibleVideos.length} shared streams`}
+                    ? t("voice.mobile.room.n1SharedStream")
+                    : t("voice.mobile.room.countSharedStreams", { count: visibleVideos.length })}
                 </Text>
               </View>
             </View>
@@ -561,7 +563,7 @@ export default function VoiceRoomScreen() {
                     style={styles.videoCard}
                     onPress={() => setExpandedVideo(video.connectionId)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Expand ${video.username}'s stream`}
+                    accessibilityLabel={t("voice.mobile.room.expandUsernameSStream", { username: video.username })}
                   >
                     <RTCView
                       streamURL={video.stream.toURL()}
@@ -582,8 +584,8 @@ export default function VoiceRoomScreen() {
                       </View>
                       <Text style={styles.videoMeta}>
                         {participant?.screenSharing
-                          ? "Screen share · tap to expand"
-                          : "Video · tap to expand"}
+                          ? t("voice.mobile.room.screenShareTapToExpand")
+                          : t("voice.mobile.room.videoTapToExpand")}
                       </Text>
                     </View>
                   </Pressable>
@@ -604,12 +606,12 @@ export default function VoiceRoomScreen() {
                 />
               </View>
               <View style={styles.settingsHeadingCopy}>
-                <Text style={styles.settingsTitle}>Voice controls</Text>
+                <Text style={styles.settingsTitle}>{t("voice.mobile.room.voiceControls")}</Text>
                 <Text style={styles.settingsHelp}>
-                  Quick settings for this device.
+                  {t("voice.mobile.room.quickSettingsForThisDevice")}
                 </Text>
               </View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Close"
+              <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")}
                 style={styles.settingsClose}
                 onPress={() => setSettingsOpen(false)}
               >
@@ -618,38 +620,38 @@ export default function VoiceRoomScreen() {
             </View>
 
             <InlineToggle
-              title="Noise suppression"
+              title={t("voice.mobile.room.noiseSuppression")}
               value={settings.noiseSuppression}
               onValueChange={(value) =>
                 updateSettings({ noiseSuppression: value })
               }
             />
             <InlineToggle
-              title="Echo cancellation"
+              title={t("voice.mobile.room.echoCancellation")}
               value={settings.echoCancellation}
               onValueChange={(value) =>
                 updateSettings({ echoCancellation: value })
               }
             />
             <InlineToggle
-              title="Automatic gain"
+              title={t("voice.mobile.room.automaticGain")}
               value={settings.autoGainControl}
               onValueChange={(value) =>
                 updateSettings({ autoGainControl: value })
               }
             />
             <InlineToggle
-              title="Join new rooms muted"
+              title={t("voice.mobile.room.joinNewRoomsMuted")}
               value={settings.joinMuted}
               onValueChange={(value) =>
                 updateSettings({ joinMuted: value })
               }
             />
 
-            <Text style={styles.qualityLabel}>SCREEN SHARE QUALITY</Text>
+            <Text style={styles.qualityLabel}>{t("voice.mobile.room.screenShareQuality")}</Text>
             <View style={styles.qualityRow}>
               <QualityButton
-                label="Saver"
+                label={t("voice.mobile.room.saver")}
                 value="dataSaver"
                 selected={settings.screenShareQuality}
                 onSelect={(value) =>
@@ -657,7 +659,7 @@ export default function VoiceRoomScreen() {
                 }
               />
               <QualityButton
-                label="Balanced"
+                label={t("voice.mobile.room.balanced")}
                 value="balanced"
                 selected={settings.screenShareQuality}
                 onSelect={(value) =>
@@ -665,7 +667,7 @@ export default function VoiceRoomScreen() {
                 }
               />
               <QualityButton
-                label="Full"
+                label={t("voice.mobile.room.full")}
                 value="full"
                 selected={settings.screenShareQuality}
                 onSelect={(value) =>
@@ -685,15 +687,14 @@ export default function VoiceRoomScreen() {
               </View>
             )}
             <Text style={styles.captureHint}>
-              Screen quality applies on the next share. Microphone processing
-              changes are applied to this call when the runtime supports them.
+              {t("voice.mobile.room.screenQualityAppliesOnThe")}
             </Text>
 
             <Pressable accessibilityRole="button"
               style={styles.fullSettingsButton}
               onPress={() => router.push("/settings")}
             >
-              <Text style={styles.fullSettingsText}>Open full settings</Text>
+              <Text style={styles.fullSettingsText}>{t("voice.mobile.room.openFullSettings")}</Text>
               <Ionicons
                 name="chevron-forward"
                 size={15}
@@ -706,7 +707,7 @@ export default function VoiceRoomScreen() {
 
       {moreOpen && connected && (
         <Pressable accessibilityRole="button"
-          accessibilityLabel="Close menu"
+          accessibilityLabel={t("voice.mobile.room.closeMenu")}
           style={StyleSheet.absoluteFill}
           onPress={() => setMoreOpen(false)}
         />
@@ -715,7 +716,7 @@ export default function VoiceRoomScreen() {
         <View style={styles.moreMenu}>
           <MoreItem
             icon={screenSharing ? "stop-circle-outline" : "desktop-outline"}
-            label={screenSharing ? "Stop sharing screen" : "Share screen"}
+            label={screenSharing ? t("voice.mobile.room.stopSharingScreen") : t("voice.mobile.room.shareScreen")}
             onPress={() => {
               setMoreOpen(false);
               if (screenSharing) stopScreenShare();
@@ -723,11 +724,11 @@ export default function VoiceRoomScreen() {
             }}
           />
           {!!Number(params.hubId) && (
-            <MoreItem icon="musical-notes-outline" label="Soundboard" onPress={() => { setMoreOpen(false); setSoundboardOpen(true); }} />
+            <MoreItem icon="musical-notes-outline" label={t("voice.mobile.room.soundboard")} onPress={() => { setMoreOpen(false); setSoundboardOpen(true); }} />
           )}
           <MoreItem
             icon="options-outline"
-            label={settingsOpen ? "Hide voice settings" : "Voice settings"}
+            label={settingsOpen ? t("voice.mobile.room.hideVoiceSettings") : t("voice.mobile.room.voiceSettings")}
             onPress={() => { setMoreOpen(false); setSettingsOpen((current) => !current); }}
           />
         </View>
@@ -742,7 +743,7 @@ export default function VoiceRoomScreen() {
                   ? "mic-off-outline"
                   : "mic-outline"
               }
-              label={serverMuted ? "Locked" : muted ? "Unmute" : "Mute"}
+              label={serverMuted ? t("voice.mobile.room.locked") : muted ? t("voice.mobile.room.unmute") : t("voice.mobile.room.mute")}
               active={muted || serverMuted}
               danger={muted || serverMuted}
               disabled={serverMuted}
@@ -757,10 +758,10 @@ export default function VoiceRoomScreen() {
               }
               label={
                 serverDeafened
-                  ? "Locked"
+                  ? t("voice.mobile.room.locked")
                   : deafened
-                    ? "Hear"
-                    : "Deafen"
+                    ? t("voice.mobile.room.hear")
+                    : t("common.profileMenu.deafen")
               }
               active={deafened || serverDeafened}
               danger={deafened || serverDeafened}
@@ -771,7 +772,7 @@ export default function VoiceRoomScreen() {
             {speakerRoute.available && (
               <VoiceControl
                 icon={speakerRoute.external ? "bluetooth-outline" : speakerRoute.speakerOn ? "volume-high-outline" : "phone-portrait-outline"}
-                label={speakerRoute.external ? speakerRoute.outputName || "Headphones" : speakerRoute.speakerOn ? "Speaker" : "Phone"}
+                label={speakerRoute.external ? speakerRoute.outputName || t("voice.mobile.room.headphones") : speakerRoute.speakerOn ? t("voice.mobile.room.speaker") : t("voice.mobile.room.phone")}
                 active={speakerRoute.speakerOn}
                 disabled={speakerRoute.external}
                 onPress={() => { tapHaptic(); speakerRoute.toggleSpeaker(); }}
@@ -780,7 +781,7 @@ export default function VoiceRoomScreen() {
 
             <VoiceControl
               icon="videocam-outline"
-              label={cameraSharing ? "Camera off" : "Camera"}
+              label={cameraSharing ? t("voice.mobile.room.cameraOff") : t("voice.mobile.room.camera")}
               active={cameraSharing}
               onPress={() => {
                 if (cameraSharing) stopCamera();
@@ -790,14 +791,14 @@ export default function VoiceRoomScreen() {
 
             <VoiceControl
               icon="ellipsis-horizontal"
-              label="More"
+              label={t("voice.mobile.room.more")}
               active={moreOpen || screenSharing || settingsOpen}
               onPress={() => { tapHaptic(); setMoreOpen((current) => !current); }}
             />
 
             <VoiceControl
               icon="call-outline"
-              label="Leave"
+              label={t("common.actions.leave")}
               danger
               onPress={() => {
                 impactHaptic();
@@ -826,10 +827,10 @@ export default function VoiceRoomScreen() {
             )}
             <Text style={styles.joinText}>
               {joining
-                ? "Joining voice…"
+                ? t("voice.mobile.room.joiningVoice2")
                 : realtimeReady
-                  ? "Join voice"
-                  : "Waiting for realtime…"}
+                  ? t("voice.mobile.room.joinVoice")
+                  : t("voice.mobile.room.waitingForRealtime")}
             </Text>
           </Pressable>
         )}
@@ -865,10 +866,10 @@ export default function VoiceRoomScreen() {
                         ? `${selectedParticipant.role
                             .charAt(0)
                             .toUpperCase()}${selectedParticipant.role.slice(1)}`
-                        : "Voice member"}
+                        : t("voice.mobile.room.voiceMember")}
                     </Text>
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel="Close"
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")}
                     style={styles.sheetCloseButton}
                     onPress={closePersonSheet}
                   >
@@ -884,16 +885,16 @@ export default function VoiceRoomScreen() {
                   <>
                     <ActionButton
                       icon="chatbubble-outline"
-                      label="Message"
-                      detail="Open a direct conversation"
+                      label={t("voice.mobile.room.message")}
+                      detail={t("voice.mobile.room.openADirectConversation")}
                       onPress={() =>
                         openDirectMessage(selectedParticipant)
                       }
                     />
                     <ActionButton
                       icon="flag-outline"
-                      label="Report user"
-                      detail="Send a private Trust & Safety report"
+                      label={t("voice.mobile.room.reportUser")}
+                      detail={t("voice.mobile.room.sendAPrivateTrustSafety")}
                       onPress={() => {
                         const participant = selectedParticipant;
                         closePersonSheet();
@@ -920,10 +921,10 @@ export default function VoiceRoomScreen() {
                         locallyMutedUserIds.includes(
                           selectedParticipant.userId,
                         )
-                          ? "Unmute for me"
-                          : "Mute for me"
+                          ? t("voice.mobile.room.unmuteForMe")
+                          : t("voice.mobile.room.muteForMe")
                       }
-                      detail="Only changes what you hear on this device"
+                      detail={t("voice.mobile.room.onlyChangesWhatYouHear")}
                       onPress={() => {
                         toggleLocalUserMute(
                           selectedParticipant.userId,
@@ -940,7 +941,7 @@ export default function VoiceRoomScreen() {
 
                 {canModerate(selectedParticipant) && (
                   <View style={styles.moderationBlock}>
-                    <Text style={styles.moderationTitle}>MODERATION</Text>
+                    <Text style={styles.moderationTitle}>{t("voice.mobile.room.moderation")}</Text>
 
                     <ActionButton
                       icon={
@@ -950,10 +951,10 @@ export default function VoiceRoomScreen() {
                       }
                       label={
                         selectedParticipant.serverMuted
-                          ? "Remove server mute"
-                          : "Server mute"
+                          ? t("voice.mobile.room.removeServerMute")
+                          : t("voice.mobile.room.serverMute")
                       }
-                      detail="Control whether this person can transmit audio"
+                      detail={t("voice.mobile.room.controlWhetherThisPersonCan")}
                       onPress={() => {
                         moderateParticipant(
                           selectedParticipant.connectionId,
@@ -973,10 +974,10 @@ export default function VoiceRoomScreen() {
                       }
                       label={
                         selectedParticipant.serverDeafened
-                          ? "Remove server deafen"
-                          : "Server deafen"
+                          ? t("voice.mobile.room.removeServerDeafen")
+                          : t("voice.mobile.room.serverDeafen")
                       }
-                      detail="Prevent this person from hearing the room"
+                      detail={t("voice.mobile.room.preventThisPersonFromHearing")}
                       onPress={() => {
                         moderateParticipant(
                           selectedParticipant.connectionId,
@@ -990,8 +991,8 @@ export default function VoiceRoomScreen() {
 
                     <ActionButton
                       icon="call-outline"
-                      label="Disconnect from room"
-                      detail="Remove this person from the current Voice Room"
+                      label={t("voice.mobile.room.disconnectFromRoom")}
+                      detail={t("voice.mobile.room.removeThisPersonFromThe")}
                       danger
                       onPress={() => confirmKick(selectedParticipant)}
                     />
@@ -1010,7 +1011,7 @@ export default function VoiceRoomScreen() {
             return video ? <RTCView streamURL={video.stream.toURL()} style={{ flex: 1 }} objectFit="contain" mirror={false} /> : null;
           })()}
           <Pressable accessibilityRole="button"
-            accessibilityLabel="Close stream"
+            accessibilityLabel={t("voice.mobile.room.closeStream")}
             onPress={() => setExpandedVideo(null)}
             style={{ position: "absolute", top: 54, left: 16, width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.16)" }}
           >

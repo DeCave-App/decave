@@ -1,8 +1,10 @@
 import { Redirect, Tabs } from "expo-router";
 import { useSession } from "@/src/providers/SessionProvider";
 import { LoungeShell } from "@/src/components/LoungeShell";
+import { useTranslation } from "react-i18next";
 
 export default function TabLayout() {
+  const { t } = useTranslation(["common"]);
   const { user, loading } = useSession();
 
   if (loading) {
@@ -24,12 +26,12 @@ export default function TabLayout() {
           sceneStyle: { backgroundColor: "transparent" },
         }}
       >
-        <Tabs.Screen name="home" options={{ title: "Home" }} />
-        <Tabs.Screen name="dms" options={{ title: "DMs" }} />
+        <Tabs.Screen name="home" options={{ title: t("common.rail.homeTitle") }} />
+        <Tabs.Screen name="dms" options={{ title: t("common.rail.dms") }} />
         <Tabs.Screen name="hubs" options={{ title: "Hubs" }} />
-        <Tabs.Screen name="friends" options={{ title: "Friends" }} />
-        <Tabs.Screen name="squad-finder" options={{ title: "Squad" }} />
-        <Tabs.Screen name="profile" options={{ title: "Me" }} />
+        <Tabs.Screen name="friends" options={{ title: t("common.bottomBar.friends") }} />
+        <Tabs.Screen name="squad-finder" options={{ title: t("common.rail.squad") }} />
+        <Tabs.Screen name="profile" options={{ title: t("common.mobile.tabs.me") }} />
       </Tabs>
     </LoungeShell>
   );

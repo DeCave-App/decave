@@ -47,18 +47,9 @@ export const DEFAULT_DISCOVER_FILTERS: DiscoverFilters = {
   sort: "active",
 };
 
-export const DISCOVER_SORT_LABELS: Record<DiscoverSort, string> = {
-  active: "Active now",
-  friends: "Friends",
-  largest: "Largest",
-  new: "New",
-};
-export const DISCOVER_SIZE_LABELS: Record<DiscoverSize, string> = {
-  any: "Any size",
-  small: "Under 50",
-  medium: "50 to 500",
-  large: "500+",
-};
+// Labels: discover.sort.<sort> and discover.size.<size>.
+export const DISCOVER_SORTS: readonly DiscoverSort[] = ["active", "friends", "largest", "new"];
+export const DISCOVER_SIZES: readonly DiscoverSize[] = ["any", "small", "medium", "large"];
 
 const n = (value: number | null | undefined) =>
   typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -146,15 +137,32 @@ export function hasActiveFilters(filters: DiscoverFilters): boolean {
   );
 }
 
-/** "Mara and Jun are here", "Mara, Jun and 3 more are here". */
-export function friendsLine(hub: DiscoverHub): string {
+/** Which friends are in a Hub: a count, one or two names, or up to two names and how many more. */
+export type FriendsSummary =
+  | { kind: "count"; count: number }
+  | { kind: "one"; name: string }
+  | { kind: "two"; first: string; second: string }
+  | { kind: "more"; names: string[]; rest: number };
+
+export function friendsSummary(hub: DiscoverHub): FriendsSummary | null {
   const total = n(hub.friendsInside);
-  if (total === 0) return "";
+  if (total === 0) return null;
   const names = (hub.friendNames ?? []).filter(Boolean).slice(0, 2);
-  if (!names.length) return `${total} friend${total === 1 ? "" : "s"} here`;
+  if (!names.length) return { kind: "count", count: total };
   const rest = total - names.length;
-  if (rest <= 0) return names.length === 1 ? `${names[0]} is here` : `${names.join(" and ")} are here`;
-  return `${names.join(", ")} and ${rest} more are here`;
+  if (rest <= 0)
+    return names.length === 1 ? { kind: "one", name: names[0] } : { kind: "two", first: names[0], second: names[1] };
+  return { kind: "more", names, rest };
+}
+
+/** English line for a FriendsSummary: "Mara and Jun are here", "Mara, Jun and 3 more are here". */
+export function friendsLine(hub: DiscoverHub): string {
+  const summary = friendsSummary(hub);
+  if (!summary) return "";
+  if (summary.kind === "count") return `${summary.count} friend${summary.count === 1 ? "" : "s"} here`;
+  if (summary.kind === "one") return `${summary.name} is here`;
+  if (summary.kind === "two") return `${summary.first} and ${summary.second} are here`;
+  return `${summary.names.join(", ")} and ${summary.rest} more are here`;
 }
 
 // ---- Preview (GET /api/servers/:id/preview) ----

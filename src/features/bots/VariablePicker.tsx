@@ -1,6 +1,7 @@
 // "{ }" button next to a message field: inserts a variable at the cursor, and a
 // live preview of the message with sample values.
 import { useState, type RefObject } from "react";
+import { useTranslation } from "react-i18next";
 
 export type BotVariable = { name: string; label: string; sample: string };
 
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function VariablePicker({ variables, inputRef, value, onChange }: Props) {
+  const { t } = useTranslation(["bots"]);
   const [open, setOpen] = useState(false);
 
   const insert = (name: string) => {
@@ -34,8 +36,8 @@ export function VariablePicker({ variables, inputRef, value, onChange }: Props) 
         type="button"
         className="dcx-btn dcx-btn-sm dcx-btn-ghost bb-varpicker-btn"
         aria-expanded={open}
-        aria-label="Insert a variable"
-        title="Insert a variable"
+        aria-label={t("bots.variable.insert")}
+        title={t("bots.variable.insert")}
         onClick={() => setOpen((v) => !v)}
       >
         {"{ }"}
@@ -80,11 +82,12 @@ function previewTemplate(text: string, vars: Map<string, string>): string {
 
 /** What the message looks like with sample values, shown under template fields. */
 export function TemplatePreview({ text, variables }: { text: string; variables: BotVariable[] }) {
+  const { t } = useTranslation(["bots"]);
   if (!text.includes("{")) return null;
   const vars = new Map(variables.map((v) => [v.name, v.sample]));
   return (
-    <small className="bb-preview" aria-label="Preview">
-      Preview: {previewTemplate(text, vars)}
+    <small className="bb-preview" aria-label={t("bots.variable.previewLabel")}>
+      {t("bots.variable.preview", { text: previewTemplate(text, vars) })}
     </small>
   );
 }

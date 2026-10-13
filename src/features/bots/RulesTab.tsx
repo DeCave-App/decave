@@ -1,5 +1,6 @@
 // The Rules tab: the bot's rule cards, add / duplicate / reorder, and AI drafts.
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { BOT_LIMITS, type BotRule } from "../../../shared/bots/types.ts";
 import type { FieldEnv } from "./FieldInput";
 import { newRule, ruleLabel, variablesFor, type BotNames } from "./model.ts";
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function RulesTab({ drafts, names, hub, ai, unsupported, onGenerate }: Props) {
+  const { t } = useTranslation(["bots"]);
   const [open, setOpen] = useState<string | null>(() => drafts.rules.find((r) => r.status === "invalid")?.key ?? null);
   const [confirmDelete, setConfirmDelete] = useState<LocalRule | null>(null);
   const [error, setError] = useState("");
@@ -33,7 +35,7 @@ export function RulesTab({ drafts, names, hub, ai, unsupported, onGenerate }: Pr
     try {
       await work();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Something went wrong.");
+      setError(caught instanceof Error ? caught.message : t("bots.newBot.genericError"));
     }
   };
 
@@ -44,7 +46,7 @@ export function RulesTab({ drafts, names, hub, ai, unsupported, onGenerate }: Pr
       {error && <p className="dcx-notice dcx-notice-error">{error}</p>}
       {unsupported.length > 0 && (
         <div className="dcx-notice dcx-notice-warn">
-          <strong>The AI couldn't do all of it:</strong>
+          <strong>{t("bots.rules.unsupported")}</strong>
           <ul>
             {unsupported.map((u) => (
               <li key={u}>{u}</li>
@@ -54,8 +56,8 @@ export function RulesTab({ drafts, names, hub, ai, unsupported, onGenerate }: Pr
       )}
       {drafts.rules.length === 0 && (
         <div className="bb-empty">
-          <strong>No rules yet</strong>
-          <span>A rule says what starts it, when it applies and what the bot does.</span>
+          <strong>{t("bots.rules.emptyTitle")}</strong>
+          <span>{t("bots.rules.emptyHint")}</span>
         </div>
       )}
       {drafts.rules.map((rule, i) => {
@@ -79,7 +81,7 @@ export function RulesTab({ drafts, names, hub, ai, unsupported, onGenerate }: Pr
             onEdit={(draft) => drafts.edit(rule.key, draft)}
             onToggle={() => void run(() => drafts.toggle(rule.key))}
             onDuplicate={() => {
-              if (full) return setError(`A bot can have at most ${BOT_LIMITS.rulesPerBot} rules.`);
+              if (full) return setError(t("bots.rules.limit", { count: BOT_LIMITS.rulesPerBot }));
               setOpen(drafts.add(structuredClone(rule.draft)));
             }}
             onDelete={() => setConfirmDelete(rule)}
@@ -99,13 +101,13 @@ export function RulesTab({ drafts, names, hub, ai, unsupported, onGenerate }: Pr
           disabled={full}
           onClick={() => setOpen(drafts.add(newRule("command")))}
         >
-          Add rule
+          {t("bots.rules.add")}
         </button>
         {ai.available && (
           <DescribeBox
             compact
             remaining={ai.remaining}
-            placeholder="Or describe a rule, e.g. “give @Member when someone reacts ✅ in #rules”"
+            placeholder={t("bots.rules.describePlaceholder")}
             onSubmit={async (description) => {
               const result = await onGenerate(description);
               let last: string | null = null;
@@ -117,12 +119,11 @@ export function RulesTab({ drafts, names, hub, ai, unsupported, onGenerate }: Pr
       </div>
 
       {confirmDelete && (
-        <div className="bb-confirm" role="alertdialog" aria-label="Delete rule">
+        <div className="bb-confirm" role="alertdialog" aria-label={t("bots.rules.deleteLabel")}>
           <span>
-            Delete {ruleLabel(drafts.rules.indexOf(confirmDelete))}?{" "}
             {confirmDelete.published
-              ? "It keeps running until you publish."
-              : "It was never published, so it's removed now."}
+              ? t("bots.rules.deletePublished", { label: ruleLabel(drafts.rules.indexOf(confirmDelete)) })
+              : t("bots.rules.deleteDraft", { label: ruleLabel(drafts.rules.indexOf(confirmDelete)) })}
           </span>
           <button
             type="button"
@@ -133,10 +134,10 @@ export function RulesTab({ drafts, names, hub, ai, unsupported, onGenerate }: Pr
               void run(() => drafts.remove(target.key));
             }}
           >
-            Delete
+            {t("bots.ruleCard.delete")}
           </button>
           <button type="button" className="dcx-btn dcx-btn-sm" onClick={() => setConfirmDelete(null)}>
-            Cancel
+            {t("bots.rules.cancel")}
           </button>
         </div>
       )}

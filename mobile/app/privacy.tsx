@@ -15,22 +15,23 @@ import { useSession } from "@/src/providers/SessionProvider";
 import { DmEncryptionSettings } from "@/src/providers/DmE2eeProvider";
 import { useDmE2ee } from "@/src/lib/e2ee/client";
 import { colors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
+import { dateLocale } from "@/src/lib/date-locale";
 
 type BlockedAccount = { userId: string; username: string; createdAt: string };
 
-const friendRequestOptions: Array<[FriendRequestPolicy, string, string]> = [
-  ["everyone", "Everyone", "Anyone can send you a friend request."],
-  ["friends_of_friends", "Friends of friends", "Only people who share a friend with you."],
-  ["none", "No one", "Nobody can send you new requests."],
-];
-
-const activityOptions: Array<[ActivityVisibility, string]> = [
-  ["everyone", "Everyone"],
-  ["friends", "Friends"],
-  ["nobody", "Nobody"],
-];
-
 export default function PrivacyScreen() {
+  const { t } = useTranslation(["settings", "common"]);
+  const friendRequestOptions: Array<[FriendRequestPolicy, string, string]> = [
+    ["everyone", t("settings.mobile.privacy.requests.everyone"), t("settings.mobile.privacy.requests.everyoneDetail")],
+    ["friends_of_friends", t("settings.mobile.privacy.requests.friendsOfFriends"), t("settings.mobile.privacy.requests.friendsOfFriendsDetail")],
+    ["none", t("settings.mobile.privacy.requests.none"), t("settings.mobile.privacy.requests.noneDetail")],
+  ];
+  const activityOptions: Array<[ActivityVisibility, string]> = [
+    ["everyone", t("settings.mobile.privacy.activityOptions.everyone")],
+    ["friends", t("settings.mobile.privacy.activityOptions.friends")],
+    ["nobody", t("settings.mobile.privacy.activityOptions.nobody")],
+  ];
   const dmE2eeAvailable = useDmE2ee().available;
   const { token } = useSession();
   const [friendPolicy, setFriendPolicy] = useState<FriendRequestPolicy | null>(null);
@@ -54,12 +55,12 @@ export default function PrivacyScreen() {
       setFriendPolicy(prefs.value.friendRequestPolicy ?? "everyone");
       setActivity(prefs.value.activityVisibility ?? "everyone");
     } else {
-      setError(prefs.reason instanceof Error ? prefs.reason.message : "Could not load your privacy settings.");
+      setError(prefs.reason instanceof Error ? prefs.reason.message : t("settings.mobile.privacy.couldNotLoadYourPrivacy"));
     }
     if (blockData.status === "fulfilled") {
       setBlocks(Array.isArray(blockData.value.blocks) ? blockData.value.blocks : []);
     } else {
-      setBlocksError(blockData.reason instanceof Error ? blockData.reason.message : "Could not load blocked accounts.");
+      setBlocksError(blockData.reason instanceof Error ? blockData.reason.message : t("settings.mobile.privacy.couldNotLoadBlockedAccounts"));
     }
     setLoading(false);
     setRefreshing(false);
@@ -77,7 +78,7 @@ export default function PrivacyScreen() {
       setFriendPolicy(prefs.friendRequestPolicy ?? value);
     } catch (cause) {
       setFriendPolicy(previous);
-      setError(cause instanceof Error ? cause.message : "Could not save this setting.");
+      setError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotSaveThisSetting"));
     }
   };
 
@@ -91,15 +92,15 @@ export default function PrivacyScreen() {
       setActivity(prefs.activityVisibility ?? value);
     } catch (cause) {
       setActivity(previous);
-      setError(cause instanceof Error ? cause.message : "Could not save this setting.");
+      setError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotSaveThisSetting"));
     }
   };
 
   const unblock = (account: BlockedAccount) => {
-    Alert.alert(`Unblock ${account.username}?`, "They'll be able to see and contact you again. You can block them again any time.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("settings.mobile.privacy.unblockUsername", { username: account.username }), t("settings.mobile.privacy.theyLlBeAbleTo"), [
+      { text: t("common.actions.cancel"), style: "cancel" },
       {
-        text: "Unblock",
+        text: t("common.actions.unblock"),
         onPress: () => void (async () => {
           if (!token) return;
           setUnblocking(account.userId);
@@ -108,7 +109,7 @@ export default function PrivacyScreen() {
             await apiJson(`/api/safety/blocks/${encodeURIComponent(account.userId)}`, { method: "DELETE" }, token);
             setBlocks((current) => current.filter((item) => item.userId !== account.userId));
           } catch (cause) {
-            setBlocksError(cause instanceof Error ? cause.message : "Could not unblock this account.");
+            setBlocksError(cause instanceof Error ? cause.message : t("settings.mobile.privacy.couldNotUnblockThisAccount"));
           } finally {
             setUnblocking(null);
           }
@@ -120,8 +121,8 @@ export default function PrivacyScreen() {
   return (
     <Screen>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable>
-        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>SETTINGS</Text><Text style={styles.title}>Privacy & Safety</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable>
+        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("settings.mobile.accountSecurity.settings")}</Text><Text style={styles.title}>{t("settings.mobile.settings.privacySafety")}</Text></View>
         <Ionicons name="hand-left-outline" size={22} color={colors.cyan} />
       </View>
       <ScrollView keyboardDismissMode="on-drag"
@@ -132,9 +133,9 @@ export default function PrivacyScreen() {
           <>
             {!!error && <Text style={styles.error}>{error}</Text>}
 
-            <Text style={styles.section}>FRIEND REQUESTS</Text>
+            <Text style={styles.section}>{t("settings.mobile.privacy.friendRequests")}</Text>
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Who can send you friend requests</Text>
+              <Text style={styles.cardTitle}>{t("settings.mobile.privacy.whoCanSendYouFriend")}</Text>
               <View style={styles.stack}>
                 {friendRequestOptions.map(([value, label, detail]) => {
                   const active = friendPolicy === value;
@@ -151,9 +152,9 @@ export default function PrivacyScreen() {
               </View>
             </View>
 
-            <Text style={styles.section}>ACTIVITY</Text>
+            <Text style={styles.section}>{t("settings.mobile.privacy.activity")}</Text>
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Who can see the game you're playing</Text>
+              <Text style={styles.cardTitle}>{t("settings.gaming.visibilityLabel")}</Text>
               <View style={styles.segment}>
                 {activityOptions.map(([value, label]) => {
                   const active = activity === value;
@@ -166,35 +167,35 @@ export default function PrivacyScreen() {
               </View>
             </View>
 
-            <Text style={styles.section}>MESSAGES</Text>
+            <Text style={styles.section}>{t("settings.mobile.privacy.messages")}</Text>
             <View style={styles.info}>
               <Ionicons name="chatbubbles-outline" size={18} color={colors.cyan} />
-              <Text style={styles.infoText}>Only friends can message you. DeCave doesn't deliver private messages from people who aren't your friends.</Text>
+              <Text style={styles.infoText}>{t("settings.mobile.privacy.onlyFriendsCanMessageYou")}</Text>
             </View>
 
             {dmE2eeAvailable && (
               <>
-                <Text style={styles.section}>ENCRYPTED MESSAGES</Text>
+                <Text style={styles.section}>{t("settings.mobile.privacy.encryptedMessages")}</Text>
                 <View style={styles.card}>
                   <DmEncryptionSettings />
                 </View>
               </>
             )}
 
-            <Text style={styles.section}>BLOCKED ACCOUNTS</Text>
+            <Text style={styles.section}>{t("settings.mobile.privacy.blockedAccounts")}</Text>
             {!!blocksError && <Text style={styles.error}>{blocksError}</Text>}
             <View style={[styles.card, { padding: 0, overflow: "hidden" }]}>
               {blocks.length === 0 ? (
-                <Text style={styles.empty}>You haven't blocked anyone.</Text>
+                <Text style={styles.empty}>{t("settings.blocked.none")}</Text>
               ) : blocks.map((account, index) => (
                 <View key={account.userId} style={[styles.blockRow, index === blocks.length - 1 && styles.blockRowLast]}>
                   <Avatar username={account.username} size={36} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.blockName} numberOfLines={1}>{account.username}</Text>
-                    <Text style={styles.blockMeta}>Blocked {new Date(account.createdAt).toLocaleDateString()}</Text>
+                    <Text style={styles.blockMeta}>{t("settings.mobile.privacy.blockedOn", { date: new Date(account.createdAt).toLocaleDateString(dateLocale()) })}</Text>
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Unblock ${account.username}`} style={[styles.unblock, unblocking === account.userId && styles.disabled]} disabled={unblocking !== null} onPress={() => unblock(account)}>
-                    {unblocking === account.userId ? <ActivityIndicator size="small" color={colors.cyan} /> : <Text style={styles.unblockText}>Unblock</Text>}
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("settings.mobile.privacy.unblockUsername2", { username: account.username })} style={[styles.unblock, unblocking === account.userId && styles.disabled]} disabled={unblocking !== null} onPress={() => unblock(account)}>
+                    {unblocking === account.userId ? <ActivityIndicator size="small" color={colors.cyan} /> : <Text style={styles.unblockText}>{t("common.actions.unblock")}</Text>}
                   </Pressable>
                 </View>
               ))}

@@ -1,0 +1,1506 @@
+{
+  "noHubs": {
+    "kicker": "DECAVE HOME",
+    "title": "Je kunt lid worden van een Hub wanneer je er klaar voor bent",
+    "body": "Je account is klaar. Je kunt Home, Vrienden en DM's gebruiken zonder lid te worden van een Hub. Maak er zelf een of ontdek op elk moment openbare Hubs.",
+    "create": "+ Hub maken",
+    "discover": "Openbare Hubs ontdekken",
+    "friends": "Vrienden",
+    "emptyHubName": "Nog geen Hub"
+  },
+  "streamFocus": {
+    "close": "Stream sluiten",
+    "popOut": "Pop-out",
+    "fullscreen": "Volledig scherm in browser"
+  },
+  "voiceMini": {
+    "return": "Terug naar spraakkanaal",
+    "drag": "Spraakvenster verslepen",
+    "activeRoom": "Actief spraakkanaal:{{room}}"
+  },
+  "header": {
+    "switchHub": "Hub wisselen",
+    "labelOverview": "Hubs · {{hub}} · Overzicht",
+    "labelHome": "Hubs · {{hub}} · Hub Home",
+    "labelRoom": "Hubs · {{hub}} · {{room}}",
+    "hubPicker": "Hub",
+    "roomPicker": "Kanaal",
+    "switchRoom": "Kanaal wisselen in{{hub}}",
+    "voicePrefix": "S"
+  },
+  "roomActions": {
+    "leaveSquad": "Tijdelijk Squad-kanaal verlaten",
+    "leave": "↪ Verlaten",
+    "searchMessages": "Berichten zoeken",
+    "manageRoom": "Kanaal beheren",
+    "showVoiceControls": "Spraakbediening tonen",
+    "openRoomChat": "Kanaalchat openen",
+    "voiceToggle": "◉ Spraak",
+    "chatToggle": "💬 Chat",
+    "pinned": "Vastgepinde berichten",
+    "pinnedCountTitle": "Vastgepinde berichten ({{pinned}})",
+    "pinnedCountLabel": "Vastgepinde berichten, {{pinned}}",
+    "unmuteRoom": "Dempen opheffen voor #{{room}}",
+    "muteRoom": "#{{room}} dempen"
+  },
+  "onboarding": {
+    "title": "Welkom bij DeCave",
+    "lead": "Maak een Hub, word lid van een openbare community of sla deze stap over en doe het later.",
+    "skip": "Nu overslaan",
+    "search": "Hubs zoeken",
+    "loading": "Openbare Hubs laden…",
+    "noResults": "Geen openbare Hubs gevonden voor je zoekopdracht.",
+    "cardPrivate": "Ledenlijst privé · {{category}}",
+    "card_one": "{{count}} lid · {{online}} online · {{category}}",
+    "card_other": "{{count}} leden · {{online}} online · {{category}}",
+    "defaultCategory": "Gaming",
+    "joined": "Lid"
+  },
+  "contextMenu": {
+    "copyShareLink": "Deellink kopiëren",
+    "hubKind": "HUB",
+    "textRoomKind": "TEKSTKANAAL",
+    "voiceRoomKind": "SPRAAKKANAAL",
+    "forumRoomKind": "FORUMKANAAL",
+    "unmuteHub": "Hub-demping opheffen",
+    "muteHub": "Hub dempen",
+    "unmuteRoom": "Kanaaldemping opheffen",
+    "muteRoom": "Kanaal dempen",
+    "editHub": "Hub bewerken",
+    "editRoom": "Kanaal bewerken"
+  },
+  "home": {
+    "roleLabel": "Je bent {{role}}",
+    "newInForum": "Nieuw in \"{{title}}\""
+  },
+  "sidebar": {
+    "membershipPrivate": "Ledenlijst privé",
+    "official": "Officieel",
+    "private": "Privé",
+    "leave": "Hub verlaten",
+    "membersTitle": "Hub-leden",
+    "searchMembers": "Hub-leden zoeken",
+    "filterRole": "Hub-leden filteren op rol",
+    "allRoles": "Alle rollen",
+    "owners": "Eigenaren",
+    "admins": "Beheerders",
+    "moderators": "Moderators",
+    "membersFilter": "Leden",
+    "noMembers": "Geen leden gevonden met deze filters.",
+    "navigation": "Hub-navigatie",
+    "show": "Hub-zijbalk tonen",
+    "hide": "Hub-zijbalk verbergen",
+    "online_one": "{{value}} online",
+    "online_other": "{{value}} online",
+    "members_one": "{{value}} lid",
+    "members_other": "{{value}} leden",
+    "roleTitle": "Rol {{role}}",
+    "memberMeta": "{{role}} · {{presence}}",
+    "membersCount": "Leden ({{members}})",
+    "membersTooltip": "Leden · {{members}}",
+    "calendar": "Agenda",
+    "calendarUpcoming_one": "Agenda, {{count}} gepland",
+    "calendarUpcoming_other": "Agenda, {{count}} gepland",
+    "calendarCount": "Agenda ({{upcoming}})",
+    "manage": "Hub beheren",
+    "voiceRoom": "Spraakkanaal",
+    "boxes": {
+      "forums": "Forums",
+      "voice": "Spraak",
+      "rooms": "Kanalen"
+    },
+    "aria": {
+      "private": "privé",
+      "mentions_one": "{{count}} vermelding",
+      "mentions_other": "{{count}} vermeldingen",
+      "unread_one": "{{count}} ongelezen",
+      "unread_other": "{{count}} ongelezen",
+      "forum": "forum",
+      "newestThread": "nieuwste thread {{title}}",
+      "new": "nieuw",
+      "voiceRoom": "spraakkanaal",
+      "connectedCount_one": "{{count}} verbonden",
+      "connectedCount_other": "{{count}} verbonden",
+      "someoneSharing": "iemand deelt zijn of haar scherm",
+      "youAreConnected": "je bent verbonden",
+      "empty": "leeg"
+    },
+    "ownerOnlyPosting": "Alleen de Hub-eigenaar kan posten",
+    "privateRoom": "Privékanaal",
+    "forum": {
+      "new": "Nieuw",
+      "replies_one": "{{count}} antwoord",
+      "replies_other": "{{count}} antwoorden",
+      "noThreads": "Nog geen threads",
+      "openToSee": "Open om threads te zien"
+    },
+    "voice": {
+      "doubleClickToJoin": "{{name}} · dubbelklik om deel te nemen",
+      "youreHere": "Je bent hier · ",
+      "inVoice_one": "{{people}} in spraak",
+      "inVoice_other": "{{people}} in spraak",
+      "sharing": " · deelt",
+      "peopleIn": "In {{name}}",
+      "deafened": " (onhoorbaar)",
+      "muted": " (gedempt)",
+      "sharingScreen": " · deelt scherm",
+      "live": "LIVE"
+    },
+    "dismiss": "Sluiten",
+    "hubHome": "Hub Home",
+    "homeBadge_one": "{{count}} kanaal met nieuwe berichten",
+    "homeBadge_other": "{{count}} kanalen met nieuwe berichten",
+    "empty": {
+      "manager": "Deze Hub heeft nog geen kanalen.",
+      "member": "Nog geen kanalen die je kunt zien."
+    },
+    "createRoom": "Kanaal maken",
+    "createForum": "Forum maken",
+    "createVoiceRoom": "Spraakkanaal maken",
+    "createRoomIn": "Kanaal maken in {{box}}"
+  },
+  "voiceControls": {
+    "latencyTitle": "Gemeten spraaklatentie heen en terug",
+    "toggleSoundboard": "Soundboard aan/uit",
+    "cameraBackground": "Camera-achtergrond",
+    "effectOff": "Uit",
+    "effectBlur": "Vervagen",
+    "effectReplace": "Achtergrond vervangen",
+    "startCamera": "Camera starten",
+    "qualityAuto": "Auto",
+    "startSharing": "Delen starten",
+    "settings": "Spraak- en audio-instellingen",
+    "disconnectLabel": "Verbinding met spraak verbreken",
+    "disconnect": "Verbreken",
+    "label": "Spraakbediening voor {{hub}} · {{room}}",
+    "connected": "Spraak verbonden",
+    "room": "Spraakkanaal",
+    "connectingEllipsis": "Verbinden…",
+    "live": "Live",
+    "serverMutedDeafened": "Door server gedempt · Door server onhoorbaar gemaakt",
+    "serverMuted": "Door server gedempt",
+    "serverDeafened": "Door server onhoorbaar gemaakt",
+    "inputZero": "Invoervolume van microfoon is 0%",
+    "holdToTalk": "Houd {{key}} ingedrukt om te praten",
+    "connectedCount_one": "{{count}} verbonden",
+    "connectedCount_other": "{{count}} verbonden",
+    "unmute": "Dempen opheffen",
+    "mute": "Dempen",
+    "serverMutedTitle": "Een Hub-moderator heeft je via de server gedempt.",
+    "serverDeafenedTitle": "Een Hub-moderator heeft je via de server onhoorbaar gemaakt.",
+    "noiseLabel": "Ruisonderdrukking: {{mode}}. Klik om van modus te wisselen.",
+    "noiseTooltip": "Ruisonderdrukking: {{mode}} · Klik om te wisselen",
+    "soundboard": "Soundboard",
+    "cameraOff": "Camera uitzetten",
+    "cameraOn": "Camera aanzetten",
+    "cameraOffShort": "Camera uit",
+    "camera": "Camera",
+    "stopScreenShare": "Stoppen met scherm delen",
+    "shareScreen": "Scherm delen",
+    "stopSharing": "Stoppen met delen",
+    "stopShareShort": "Delen stoppen",
+    "shareScreenShort": "Scherm delen",
+    "resolution": "Resolutie en framerate",
+    "systemAudio": "Systeemaudio",
+    "systemAudioHint": "Deel het geluid van je computer met kijkers",
+    "settingsShort": "Spraakinstellingen",
+    "leave": "Spraak verlaten",
+    "connecting": "Verbinden…",
+    "switch": "Spraak wisselen",
+    "join": "Deelnemen",
+    "quality": "{{resolution}} · {{fps}} FPS"
+  },
+  "voiceStage": {
+    "uploadSound": "Geluid uploaden",
+    "deleteSound": "Geluid verwijderen",
+    "soundboardEmpty": "Upload korte MP3-, WAV-, OGG-, M4A- of WebM-geluiden voor deze Hub.",
+    "layoutLabel": "Lay-out scherm delen",
+    "layoutFocus": "Focus",
+    "layoutGrid": "Raster",
+    "fullscreen": "Volledig scherm",
+    "previewDisabled": "Voorbeeld uitgeschakeld",
+    "startWatching": "Bekijken",
+    "stopWatching": "Stoppen met kijken",
+    "participantsHint": "Deelnemers verschijnen hier zodra ze verbinden.",
+    "inVoice_one": "{{count}} in spraak",
+    "inVoice_other": "{{count}} in spraak",
+    "empty": "Leeg",
+    "soundboardTitle_one": "Soundboard · {{count}} gedeeld geluid",
+    "soundboardTitle_other": "Soundboard · {{count}} gedeelde geluiden",
+    "soundboardScope": "Beschikbaar voor elk lid in elk spraakkanaal van {{hub}}.",
+    "playSound": "{{name}} afspelen",
+    "joinToPlay": "Neem deel aan dit spraakkanaal om geluiden af te spelen",
+    "deleteSoundNamed": "{{name}} verwijderen",
+    "peopleSharing_one": "{{count}} persoon deelt",
+    "peopleSharing_other": "{{count}} mensen delen",
+    "youScreenShare": "Jij · scherm delen",
+    "youScreenShareTitle": "Jij · Scherm delen",
+    "userScreenShare": "{{name}} · scherm delen",
+    "userScreenShareTitle": "{{name}} · Scherm delen",
+    "isSharing": "{{name}} deelt zijn of haar scherm",
+    "state": "{{state}}",
+    "stateSharing": "{{state}} · Deelt scherm",
+    "deafened": "Onhoorbaar",
+    "muted": "Gedempt",
+    "speaking": "Praat",
+    "micActive": "Microfoon actief",
+    "youCamera": "Jij · Camera",
+    "userCamera": "{{name}} · Camera",
+    "connectingTo": "Verbinden met {{room}}…"
+  },
+  "import": {
+    "rollbackFailed": "De gecontroleerde import kon niet worden teruggedraaid."
+  },
+  "actions": {
+    "calendar": {
+      "memberFallback": "Hub-lid"
+    },
+    "create": {
+      "nameMissing": "Vul een Hub-naam in."
+    },
+    "import": {
+      "templateUrlInvalid": "Vul een ondersteunde URL van een Discord-serversjabloon in.",
+      "previewOffline": "Kan geen verbinding maken met DeCave om een voorbeeld van dit sjabloon te tonen."
+    },
+    "share": {
+      "opening": "Gedeelde Hub openen…",
+      "opened": "{{name}} geopend.",
+      "offline": "Kan geen verbinding maken met deze gedeelde Hub.",
+      "inviteCopied": "Eenmalige uitnodiging voor {{name}} gekopieerd."
+    },
+    "leave": {
+      "confirm": "Hub \"{{name}}\" verlaten?"
+    },
+    "room": {
+      "nameMissing": "Vul een kanaalnaam in.",
+      "unidentified": "Kanaal kon niet worden herkend. Open Kanaalinstellingen opnieuw en probeer het nog eens.",
+      "confirmDelete": "Kanaal \"{{name}}\" verwijderen?\n\nOpgeslagen berichten in dit kanaal worden ook verwijderd."
+    },
+    "members": {
+      "loadFailed": "Kan Hub-leden niet laden.",
+      "confirmRemove": "{{username}} verwijderen uit \"{{hub}}\"?"
+    },
+    "media": {
+      "iconTooLarge": "Icoon is te groot.",
+      "bannerTooLarge": "Banner is te groot.",
+      "headerTooLarge": "Headerafbeelding is te groot.",
+      "chatBackgroundTooLarge": "Chatachtergrond is te groot.",
+      "notImage": "Kies een afbeeldingsbestand.",
+      "confirmRemoveBanner": "Zijbalkbanner verwijderen? Hiermee verwijder je de afbeelding uit deze Hub.",
+      "confirmRemoveHeader": "Headerafbeelding verwijderen? Hiermee verwijder je de afbeelding uit deze Hub.",
+      "confirmRemoveChatBackground": "Chatachtergrond verwijderen? Hiermee verwijder je de afbeelding uit deze Hub.",
+      "loadFeaturesFailed": "Kan Hub-apps en media niet laden."
+    },
+    "assets": {
+      "emoteNamePrompt": "Naam van emote",
+      "stickerNamePrompt": "Naam van sticker",
+      "confirmDeleteEmote": "Emote “{{name}}” verwijderen?",
+      "confirmDeleteSticker": "Sticker “{{name}}” verwijderen?"
+    },
+    "invite": {
+      "useFailed": "Kan uitnodiging niet gebruiken."
+    },
+    "moderation": {
+      "confirmKick": "{{username}} KICKEN?",
+      "confirmBan": "{{username}} VERBANNEN?",
+      "confirmTimeout": "{{username}} TIME-OUT GEVEN?"
+    },
+    "settings": {
+      "nameMissing": "Vul een Hub-naam in."
+    },
+    "delete": {
+      "ownerOnly": "Alleen de Hub-eigenaar kan deze Hub verwijderen.",
+      "confirm": "Hub \"{{name}}\" verwijderen?\n\nHiermee worden ook alle kanalen en opgeslagen berichten verwijderd."
+    },
+    "preview": {
+      "unreadable": "Dit Hub-voorbeeld kon niet worden gelezen."
+    },
+    "browser": {
+      "invalidResponse": "Ongeldig antwoord van de Hub-browser.",
+      "offline": "Kan geen verbinding maken met de Hub-browser."
+    },
+    "squad": {
+      "confirmLeave": "{{name}} verlaten? Het tijdelijke kanaal wordt verwijderd zodra het laatste lid vertrekt.",
+      "readyTitle": "Squad klaar",
+      "readyBody_one": "{{count}}/4 spelers zijn beschikbaar voor {{game}}.",
+      "readyBody_other": "{{count}}/4 spelers zijn beschikbaar voor {{game}}.",
+      "offline": "Kan geen verbinding maken met Squad Finder.",
+      "gameNameMissing": "Typ eerst de ontbrekende gamenaam.",
+      "gameSubmitted": "Ingediend voor beoordeling. Hij verschijnt zodra een eigenaar hem goedkeurt.",
+      "gameSubmitFailed": "Kan de gamesuggestie niet indienen.",
+      "matchesFound": "Passende Squads gevonden.",
+      "searching": "Zoeken naar passende spelers…",
+      "startFailed": "Kan Squad Finder niet starten.",
+      "stopped": "Zoeken gestopt."
+    },
+    "realtime": {
+      "voiceRoomDeleted": "Dit spraakkanaal is verwijderd. Kies een ander kanaal om verder te gaan.",
+      "accessRevoked": "Je toegang tot deze Hub is ingetrokken."
+    }
+  },
+  "createHub": {
+    "iconWrongType": "Kies een PNG-, JPG-, WebP- of GIF-afbeelding.",
+    "iconTooLarge": "Icoon mag maximaal 3 MB zijn.",
+    "kicker": "Nieuwe Hub",
+    "title": "Hub maken",
+    "intro": "Geef hem een naam, kies wie lid mag worden en kies een startindeling. Jij wordt de eigenaar en je kunt alles later nog aanpassen.",
+    "close": "Sluiten",
+    "basics": "Basis",
+    "uploadIcon": "Hub-icoon uploaden",
+    "iconPreview": "Voorbeeld van Hub-icoon",
+    "nameLabel": "Hub-naam",
+    "namePlaceholder": "bijv. Vrijdagavond Squad",
+    "iconFile": "Icoon: {{name}}",
+    "removeIcon": "Verwijderen",
+    "iconHint": "Optioneel icoon: vierkante PNG, JPG, WebP of GIF tot 3 MB.",
+    "whoCanJoin": "Wie kan lid worden",
+    "visibility": {
+      "private": {
+        "title": "Privé",
+        "description": "Alleen mensen die je uitnodigt of toegang geeft, kunnen lid worden."
+      },
+      "public": {
+        "title": "Openbaar",
+        "description": "Staat in Ontdekken, zodat iedereen hem kan vinden en lid kan worden."
+      }
+    },
+    "importDiscord": "Structuur importeren uit een Discord-sjabloon",
+    "startingTemplate": "Startsjabloon",
+    "templateAria_one": "Sjabloon {{name}}: {{description}} {{count}} kanaal.",
+    "templateAria_other": "Sjabloon {{name}}: {{description}} {{count}} kanalen.",
+    "roomCount_one": "{{count}} kanaal",
+    "roomCount_other": "{{count}} kanalen",
+    "whatYouGet": "Wat je krijgt",
+    "previewStats": "{{text}} tekst-, {{voice}} spraak- en {{forum}} forumkanalen",
+    "privateRoom": "Privékanaal",
+    "enterName": "Vul een naam in om verder te gaan.",
+    "cancel": "Annuleren",
+    "creating": "Maken…",
+    "create": "Hub maken"
+  },
+  "manageHub": {
+    "nav": {
+      "overview": {
+        "label": "Overzicht",
+        "description": "Statistieken en snelle acties voor deze Hub."
+      },
+      "profile": {
+        "label": "Profiel en uiterlijk",
+        "description": "Naam, icoon, banner, thema en vindbaarheid."
+      },
+      "roles": {
+        "label": "Rollen en machtigingen",
+        "description": "Maak rollen en kies precies wat elke rol mag."
+      },
+      "members": {
+        "label": "Leden",
+        "description": "Zoek leden, wijs rollen toe en modereer."
+      },
+      "invites": {
+        "label": "Uitnodigingen",
+        "description": "Deel eenmalige uitnodigingslinks met nieuwe mensen."
+      },
+      "rooms": {
+        "label": "Kanalen",
+        "description": "Zet kanalen op volgorde en open hun instellingen."
+      },
+      "events": {
+        "label": "Evenementen",
+        "description": "De Hub-agenda en wie evenementen kan plannen."
+      },
+      "moderation": {
+        "label": "Moderatie en veiligheid",
+        "description": "Slow-modus, eigen emotes en stickers, en het auditlog."
+      },
+      "bots": {
+        "label": "Bots",
+        "description": "Bouw bots die begroeten, commands beantwoorden en rollen uitdelen."
+      },
+      "danger": {
+        "label": "Gevarenzone",
+        "description": "Onomkeerbare acties voor deze Hub."
+      }
+    },
+    "groups": {
+      "hub": "Hub",
+      "people": "Mensen",
+      "content": "Content",
+      "advanced": "Geavanceerd"
+    },
+    "unsavedChanges": "Niet-opgeslagen wijzigingen",
+    "saving": "Opslaan…",
+    "unsavedNotice": "Je hebt niet-opgeslagen wijzigingen",
+    "reset": "Herstellen",
+    "saveChanges": "Wijzigingen opslaan",
+    "sectionsLabel": "Onderdelen van Hub beheren",
+    "title": "Hub beheren",
+    "section": "Onderdeel",
+    "close": "Hub beheren sluiten",
+    "publicHub": "Openbare Hub",
+    "privateHub": "Privé-Hub",
+    "stats": {
+      "members": "Leden",
+      "online": "Online",
+      "rooms": "Kanalen",
+      "customRoles": "Eigen rollen"
+    },
+    "quickActions": "Snelle acties",
+    "createRoom": "Kanaal maken",
+    "invitePeople": "Mensen uitnodigen",
+    "editRoles": "Rollen bewerken",
+    "manageMembers": "Leden beheren",
+    "openCalendar": "Agenda openen",
+    "editProfile": "Profiel bewerken",
+    "importDiscord": {
+      "title": "Importeren uit Discord",
+      "description": "Bekijk een Discord-sjabloon voordat je de kanalen en rollen toevoegt."
+    },
+    "uploading": "Uploaden…",
+    "profile": {
+      "legend": "Profiel en uiterlijk",
+      "identity": "Identiteit",
+      "name": "Hub-naam",
+      "nameRequired": "Een Hub-naam is verplicht.",
+      "icon": "Hub-icoon",
+      "iconHint": "PNG, JPEG of WebP. Wordt direct na uploaden toegepast.",
+      "uploadIcon": "Icoon uploaden",
+      "fallbackIcon": "Emoji of letters als reserve",
+      "fallbackIconHint": "Getoond als er geen icoon is geüpload.",
+      "description": "Beschrijving",
+      "descriptionPlaceholder": "Waar gaat deze Hub over?",
+      "category": "Categorie",
+      "categoryPlaceholder": "Racing, MMO, Community",
+      "tags": "Tags",
+      "tagsPlaceholder": "racing, EU, casual"
+    },
+    "visibility": {
+      "title": "Zichtbaarheid",
+      "ownerOnly": "Alleen de Hub-eigenaar kan de zichtbaarheid wijzigen.",
+      "label": "Zichtbaarheid van Hub",
+      "public": "Openbaar",
+      "publicHint": "Iedereen kan deze Hub vinden in Ontdekken en lid worden.",
+      "private": "Privé",
+      "privateHint": "Alleen uitgenodigde mensen kunnen lid worden."
+    },
+    "appearance": {
+      "title": "Uiterlijk",
+      "theme": "Thema",
+      "themeHint": "Kleurenset die in deze hele Hub wordt gebruikt.",
+      "themes": {
+        "midnight": "Middernacht",
+        "ocean": "Oceaan",
+        "forest": "Bos",
+        "ember": "Gloed"
+      },
+      "accent": "Accentkleur",
+      "accentHint": "Gebruikt voor highlights en de ring om het icoon.",
+      "ring": "Icoonring markeren",
+      "ringHint": "Teken de accentkleur rond het Hub-icoon."
+    },
+    "media": {
+      "change": "Wijzigen",
+      "remove": "Verwijderen",
+      "show": "Tonen",
+      "banner": {
+        "current": "Huidige zijbalkbanner",
+        "none": "Geen banner",
+        "title": "Zijbalkbanner",
+        "hint": "Vult de Hub-zijbalk achter de kanaallijst. {{spec}}.",
+        "add": "Banner toevoegen",
+        "on": "Gedimd voor leesbaarheid.",
+        "off": "Voeg een banner toe om dit aan te zetten."
+      },
+      "header": {
+        "current": "Huidige headerafbeelding",
+        "none": "Geen header",
+        "title": "Headerafbeelding",
+        "hint": "Brede afbeelding bovenaan Hub Home en het Streamer-overzicht, volledig getoond. Zonder header wordt de zijbalkbanner gebruikt. {{spec}}.",
+        "add": "Header toevoegen"
+      },
+      "chat": {
+        "current": "Huidige chatachtergrond",
+        "none": "Geen foto",
+        "title": "Chatachtergrond",
+        "hint": "Achter de berichtenlijst, automatisch gedimd. {{spec}}.",
+        "add": "Foto toevoegen",
+        "on": "Getoond in elk kanaal van deze Hub.",
+        "off": "Voeg een foto toe om dit aan te zetten."
+      }
+    },
+    "invites": {
+      "title": "Eenmalige uitnodigingslink",
+      "description": "Elke link werkt één keer en verloopt na 24 uur. Gebruik hem voor mensen die nog geen vrienden van je zijn.",
+      "label": "Uitnodigingslink",
+      "generating": "Beveiligde uitnodiging maken…",
+      "placeholder": "Maak een link om te delen",
+      "copy": "Link kopiëren",
+      "generate": "Maken",
+      "another": "Nog een link maken"
+    },
+    "rooms": {
+      "empty": "Deze Hub heeft nog geen kanalen.",
+      "groups": {
+        "text": "Tekstkanalen",
+        "forum": "Forumkanalen",
+        "voice": "Spraakkanalen"
+      },
+      "private": "Privé",
+      "public": "Openbaar",
+      "moveUp": "{{name}} omhoog",
+      "moveDown": "{{name}} omlaag",
+      "settings": "Instellingen"
+    },
+    "events": {
+      "calendar": "Hub-agenda",
+      "calendarHint": "Bekijk komende evenementen en wie er komt, en plan nieuwe.",
+      "create": "Evenement maken",
+      "whoTitle": "Wie kan evenementen maken",
+      "whoDescription": "Evenementen worden in een tekstkanaal geplaatst, dus iedereen die in een tekstkanaal kan posten, kan daar evenementen plannen. Wil je beperken wie evenementen maakt? Maak kanalen dan privé op de pagina Kanalen en geef specifieke leden toegang.",
+      "noPermission": "Een aparte machtiging om evenementen te maken is nog niet beschikbaar."
+    },
+    "moderation": {
+      "legend": "Moderatie-instellingen",
+      "slowMode": "Slow-modus",
+      "slowModeHint": "Seconden die leden moeten wachten tussen berichten (0–120). Moderators en beheerders zijn uitgezonderd.",
+      "assets": "Emotes en stickers",
+      "assetsHint": "Eigen afbeeldingen die leden in deze Hub kunnen gebruiken.",
+      "uploadEmote": "Emote uploaden",
+      "uploadSticker": "Sticker uploaden",
+      "emote": "Emote",
+      "sticker": "Sticker",
+      "deleteAsset": "{{name}} verwijderen",
+      "delete": "Verwijderen",
+      "audit": "Auditlog",
+      "auditHint": "Recente wijzigingen in instellingen, rollen en leden.",
+      "refresh": "Vernieuwen",
+      "loadAudit": "Auditlog laden"
+    },
+    "botsUnavailable": "Bots zijn beschikbaar voor Hub-eigenaren en -beheerders.",
+    "danger": {
+      "title": "Deze Hub verwijderen",
+      "description": "Verwijdert de Hub, elk kanaal en alle opgeslagen berichten permanent. Dit kan niet ongedaan worden gemaakt.",
+      "delete": "Hub verwijderen",
+      "confirmTitle": "{{name}} verwijderen?",
+      "confirmDescription": "Hiermee verwijder je de Hub, al zijn kanalen en elk opgeslagen bericht permanent."
+    },
+    "members": {
+      "actions": "Acties",
+      "actionsFor": "Acties voor {{name}}",
+      "timeout": "Time-out van 10 minuten",
+      "remove": "Uit Hub verwijderen",
+      "ban": "Lid verbannen",
+      "search": "Leden zoeken",
+      "filter": "Filteren op rol",
+      "filters": {
+        "all": "Alle rollen",
+        "owner": "Eigenaar",
+        "admin": "Beheerders",
+        "member": "Leden"
+      },
+      "caption": "Hub-leden",
+      "columns": {
+        "member": "Lid",
+        "roles": "Rollen",
+        "access": "Toegangsniveau",
+        "customRole": "Eigen rol"
+      },
+      "loading": "Leden laden…",
+      "noMatch": "Geen leden gevonden met je filters.",
+      "you": " (jij)",
+      "joined": "Lid sinds {{date}}",
+      "roles": {
+        "owner": "Eigenaar",
+        "admin": "Admin",
+        "member": "Lid"
+      },
+      "accessFor": "Toegangsniveau voor {{name}}",
+      "customRoleFor": "Eigen rol voor {{name}}",
+      "noCustomRole": "Geen eigen rol",
+      "count_one": "{{shown}} van {{count}} lid",
+      "count_other": "{{shown}} van {{count}} leden",
+      "showMore_one": "Nog {{count}} tonen",
+      "showMore_other": "Nog {{count}} tonen",
+      "addFriends": "Vrienden toevoegen",
+      "addFriendsHint": "Vrienden die nog niet in deze Hub zitten, kun je direct toevoegen.",
+      "searchFriends": "Vrienden zoeken",
+      "loadingFriends": "Vrienden laden…",
+      "noFriends": "Geen vrienden beschikbaar om toe te voegen.",
+      "friendNotInHub": "Vriend · niet in deze Hub",
+      "addToHub": "Toevoegen aan Hub"
+    },
+    "roles": {
+      "groups": {
+        "general": "Algemeen",
+        "moderation": "Moderatie",
+        "voice": "Spraak"
+      },
+      "permissions": {
+        "manageRooms": {
+          "label": "Kanalen beheren",
+          "description": "Kanalen maken, bewerken, herschikken en verwijderen, inclusief toegang tot privékanalen."
+        },
+        "manageEvents": {
+          "label": "Evenementen beheren",
+          "description": "Evenementen in de Hub-agenda maken, bewerken en annuleren."
+        },
+        "manageBots": {
+          "label": "Bots beheren",
+          "description": "Hub-bots bouwen, publiceren en uitzetten. Kanalen beheren omvat dit ook."
+        },
+        "createInvites": {
+          "label": "Uitnodigingen maken",
+          "description": "Uitnodigingslinks maken voor mensen buiten de Hub."
+        },
+        "viewAudit": {
+          "label": "Auditlog bekijken",
+          "description": "Zien wie Hub-instellingen, rollen en moderatieacties heeft gewijzigd."
+        },
+        "moderateMessages": {
+          "label": "Berichten modereren",
+          "description": "Berichten en forumposts van anderen verwijderen of vastpinnen."
+        },
+        "moderateMembers": {
+          "label": "Leden modereren",
+          "description": "Leden onder beheerdersniveau een time-out geven, verwijderen en verbannen."
+        },
+        "voiceModerate": {
+          "label": "Spraak modereren",
+          "description": "Mensen in spraakkanalen dempen of hun verbinding verbreken."
+        }
+      },
+      "saveFailed": "De rol kon niet worden opgeslagen.",
+      "deleteFailed": "De rol kon niet worden verwijderd.",
+      "listLabel": "Rollen",
+      "owner": "Eigenaar",
+      "ownerHint": "Alle machtigingen",
+      "admin": "Admin",
+      "adminHint": "Alles behalve eigendom",
+      "createNew": "+ Rol maken",
+      "ownerOnly": "Alleen de Hub-eigenaar kan rollen maken of bewerken.",
+      "empty": "Deze Hub heeft nog geen eigen rollen.",
+      "editRole": "{{name}} bewerken",
+      "newRole": "Nieuwe rol",
+      "details": "Roldetails",
+      "memberCount_one": "{{count}} lid heeft deze rol. Wijs hem toe via Leden.",
+      "memberCount_other": "{{count}} leden hebben deze rol. Wijs hem toe via Leden.",
+      "name": "Naam",
+      "namePlaceholder": "Moderator",
+      "color": "Kleur",
+      "icon": "Icoon",
+      "suggestedIcons": "Voorgestelde rolicoontjes",
+      "useIcon": "{{icon}} als rolicoon gebruiken",
+      "delete": "Rol verwijderen",
+      "unsaved": "Niet-opgeslagen rolwijzigingen",
+      "create": "Rol maken",
+      "draft": "Concept nieuwe rol",
+      "save": "Rol opslaan",
+      "confirmTitle": "{{name}} verwijderen?",
+      "confirmDescription": "Leden verliezen deze rol en de bijbehorende machtigingen meteen. Forumpostregels die deze rol gebruiken, gelden dan voor niemand meer."
+    }
+  },
+  "hubHome": {
+    "countdown": {
+      "now": "Nu bezig",
+      "minutes": "Over {{minutes}} min",
+      "hours": "Over {{hours}} u {{minutes}} min",
+      "tomorrow": "Morgen",
+      "days_one": "Over {{count}} dag",
+      "days_other": "Over {{count}} dagen"
+    },
+    "saveFailed": "Kan Hub Home niet opslaan.",
+    "welcomeLabel": "Welkomstbericht",
+    "welcomePlaceholder": "Zeg hallo, leg uit waar deze Hub voor is en waar nieuwe mensen moeten beginnen.",
+    "rulesLabel": "Regels, één per regel",
+    "rulesPlaceholder": "Doe normaal. Geen intimidatie.\nClips gaan in het clipskanaal.\nMicrofoon verplicht voor ranked Squads.",
+    "rulesCount_one": "Eén regel per regel · maximaal {{count}} regel",
+    "rulesCount_other": "Eén regel per regel · maximaal {{count}} regels",
+    "liveVoice": "● Live spraak",
+    "andMore_one": " en nog {{count}}",
+    "andMore_other": " en nog {{count}}",
+    "sharingScreen": " · deelt scherm",
+    "open": "Openen",
+    "join": "Deelnemen",
+    "nextEvent": "Volgend evenement · {{when}}",
+    "going_one": "{{count}} komt",
+    "going_other": "{{count}} komen",
+    "rsvp": {
+      "going": "Je komt",
+      "maybe": "Je zei misschien",
+      "none": "Nog geen antwoord"
+    },
+    "details": "Details",
+    "quiet": {
+      "title": "Het is nu rustig",
+      "detail": "Niemand zit in spraak en er is niets gepland."
+    },
+    "scheduleEvent": "Evenement plannen",
+    "catchUp": {
+      "mentions_one": "{{count}} vermelding",
+      "mentions_other": "{{count}} vermeldingen",
+      "unread_one": "{{count}} nieuw bericht",
+      "unread_other": "{{count}} nieuwe berichten",
+      "activity": "Nieuwe activiteit",
+      "empty": "Je bent helemaal bij. Nieuwe berichten in deze Hub verschijnen hier.",
+      "titleWithCount": "Bijlezen · {{n}}"
+    },
+    "about": {
+      "manageHint": "Voeg een beschrijving toe in Hub beheren, zodat nieuwe leden weten waar deze Hub voor is.",
+      "empty": "Deze Hub heeft nog geen beschrijving."
+    },
+    "events": {
+      "empty": "Geen komende evenementen.",
+      "scheduleOne": "Plan er een"
+    },
+    "members": {
+      "hidden": "Verborgen: deze Hub houdt de ledenlijst privé.",
+      "friendsHere_one": " · {{count}} vriend hier",
+      "friendsHere_other": " · {{count}} vrienden hier"
+    },
+    "online": "{{online}} online",
+    "memberCount_one": "{{members}} lid",
+    "memberCount_other": "{{members}} leden",
+    "links": {
+      "markAllRead": "Alles gelezen",
+      "edit": "Bewerken",
+      "calendar": "Agenda",
+      "seeAll": "Alles zien"
+    },
+    "sections": {
+      "welcome": {
+        "title": "Welkomstbericht",
+        "hint": "Een korte tekst die je schrijft voor iedereen die de Hub opent."
+      },
+      "now": {
+        "title": "Nu bezig",
+        "hint": "Live spraakkanalen en het volgende evenement."
+      },
+      "catchUp": {
+        "title": "Bijlezen",
+        "hint": "Kanalen met nieuwe berichten, voor elk lid anders."
+      },
+      "about": {
+        "title": "Over",
+        "hint": "De beschrijving en tags van de Hub."
+      },
+      "rules": {
+        "title": "Regels",
+        "hint": "Eén regel per regel, automatisch genummerd."
+      },
+      "events": {
+        "title": "Komende evenementen",
+        "hint": "De volgende evenementen uit de Hub-agenda."
+      },
+      "members": {
+        "title": "Leden",
+        "hint": "Wie er is en hoeveel er online zijn."
+      }
+    },
+    "moveSectionUp": "{{section}} omhoog",
+    "moveSectionDown": "{{section}} omlaag",
+    "moveUp": "Omhoog",
+    "moveDown": "Omlaag",
+    "shown": "Zichtbaar",
+    "hidden": "Verborgen",
+    "rootLabel": "Hub Home van {{name}}",
+    "kicker": "Hub Home",
+    "membershipPrivate": "Ledenlijst privé",
+    "private": "Privé",
+    "public": "Openbaar",
+    "muted": "Gedempt",
+    "notificationsOn": "Meldingen aan",
+    "invite": "Uitnodigen",
+    "insights": {
+      "loadFailed": "Kan inzichten niet laden.",
+      "kicker": "Hub-inzichten · alleen eigenaren en beheerders",
+      "loading": "Laden…",
+      "members": "Leden",
+      "joinedThisWeek_one": "+{{count}} deze week",
+      "joinedThisWeek_other": "+{{count}} deze week",
+      "noNewMembers": "Geen nieuwe leden deze week",
+      "messagesThisWeek": "Berichten deze week",
+      "vsLastWeek": "{{change}} t.o.v. vorige week",
+      "changeNew": "Nieuw",
+      "changeSame": "Gelijk",
+      "peopleWhoTalked": "Mensen die praatten",
+      "busiestTime": "Drukste tijd",
+      "busiestHint": "Laatste 30 dagen, jouw tijd",
+      "perDay": "Berichten per dag, laatste 14 dagen",
+      "byHour": "Berichten per uur van de dag, laatste 30 dagen (jouw tijd)",
+      "barLabel_one": "{{label}}: {{count}} bericht",
+      "barLabel_other": "{{label}}: {{count}} berichten",
+      "barTip_one": "bericht · {{label}}",
+      "barTip_other": "berichten · {{label}}",
+      "rooms": "Kanalen, laatste 30 dagen",
+      "roomMessages_one": "{{count}} bericht",
+      "roomMessages_other": "{{count}} berichten",
+      "quietRoom": "#{{name}} had deze maand geen berichten. Overweeg het samen te voegen of te hernoemen.",
+      "quietRooms_one": "{{count}} kanaal had deze maand geen berichten. Overweeg het samen te voegen of te hernoemen.",
+      "quietRooms_other": "{{count}} kanalen hadden deze maand geen berichten. Overweeg ze samen te voegen of te hernoemen.",
+      "mostActive": "Meest actief, laatste 30 dagen",
+      "nobody": "Nog niemand heeft iets geschreven."
+    },
+    "customize": "Aanpassen",
+    "insightsButton": "Inzichten",
+    "joinRoom": "Deelnemen aan {{name}}",
+    "customizeTitle": "Hub Home aanpassen",
+    "customizeHint": "Kies welke onderdelen iedereen ziet en in welke volgorde. Bijlezen is voor elk lid anders.",
+    "cancel": "Annuleren",
+    "saving": "Opslaan…",
+    "save": "Opslaan",
+    "allHidden": "Elk onderdeel is verborgen. Gebruik Aanpassen om er een paar te tonen.",
+    "notSetUp": "Deze Hub heeft zijn Home nog niet ingesteld.",
+    "close": "Sluiten",
+    "setup": {
+      "title": "Stel je Hub in",
+      "progress": "{{done}} van {{total}} klaar. Alleen eigenaren en beheerders zien dit.",
+      "progressLabel": "Voortgang instellen",
+      "hide": "Verbergen",
+      "done": "Klaar",
+      "steps": {
+        "describe": {
+          "title": "Vertel waar je Hub voor is",
+          "detail": "Een korte beschrijving verschijnt in Ontdekken en op Hub Home.",
+          "action": "Beschrijving toevoegen"
+        },
+        "artwork": {
+          "title": "Voeg een icoon of banner toe",
+          "detail": "Zo herkennen mensen je Hub in de bovenbalk en in Ontdekken.",
+          "action": "Afbeelding toevoegen"
+        },
+        "welcome": {
+          "title": "Schrijf een welkomstbericht",
+          "detail": "Het eerste wat nieuwe leden lezen op Hub Home.",
+          "action": "Welkom schrijven"
+        },
+        "rules": {
+          "title": "Stel een paar regels op",
+          "detail": "Duidelijke regels maken modereren makkelijker.",
+          "action": "Regels toevoegen"
+        },
+        "rooms": {
+          "title": "Maak kanalen voor je onderwerpen",
+          "detail": "Bijvoorbeeld #lfg, #clips of #help naast #algemeen.",
+          "action": "Kanaal maken"
+        },
+        "event": {
+          "title": "Plan je eerste evenement",
+          "detail": "Game-avonden en toernooien brengen mensen terug.",
+          "action": "Evenement maken"
+        },
+        "invite": {
+          "title": "Nodig je eerste leden uit",
+          "detail": "Deel de uitnodigingslink met vrienden.",
+          "action": "Uitnodigingslink kopiëren"
+        }
+      }
+    }
+  },
+  "switcher": {
+    "mentions_one": "{{count}} vermelding",
+    "mentions_other": "{{count}} vermeldingen",
+    "unread_one": "{{count}} ongelezen",
+    "unread_other": "{{count}} ongelezen",
+    "label": "Hubs",
+    "mutedSuffix": " · gedempt",
+    "unreadSuffix_one": " · {{count}} ongelezen",
+    "unreadSuffix_other": " · {{count}} ongelezen",
+    "open": "{{name}} openen",
+    "moreHubs_one": "Nog {{count}} Hub",
+    "moreHubs_other": "Nog {{count}} Hubs",
+    "unreadMessages": "ongelezen berichten",
+    "create": "Hub maken",
+    "add": "Toevoegen",
+    "moreMenu": "Meer Hubs"
+  },
+  "voicePanel": {
+    "connecting": "Verbinden…",
+    "connected": "Spraak verbonden",
+    "connectedPing": "Spraak verbonden · {{ms}} ms",
+    "serverMuted": "Door server gedempt",
+    "unmute": "Dempen opheffen",
+    "mute": "Dempen",
+    "serverDeafened": "Door server onhoorbaar gemaakt",
+    "undeafen": "Onhoorbaar opheffen",
+    "deafen": "Onhoorbaar maken",
+    "region": "Spraakverbinding",
+    "openRoom": "Spraakkanaal openen",
+    "peopleInVoice_one": "{{count}} persoon in spraak",
+    "peopleInVoice_other": "{{count}} mensen in spraak",
+    "stopScreenSharing": "Stoppen met scherm delen",
+    "shareScreen": "Scherm delen",
+    "stopSharing": "Stoppen met delen",
+    "disconnectFromVoice": "Verbinding met spraak verbreken",
+    "disconnect": "Verbreken"
+  },
+  "composerPlus": {
+    "label": "Toevoegen aan bericht"
+  },
+  "roomSettings": {
+    "tabs": {
+      "general": "Algemeen",
+      "permissions": "Machtigingen",
+      "forum": "Forum"
+    },
+    "createTitle": "Kanaal maken",
+    "title": "Kanaalinstellingen",
+    "newRoomIn": "Nieuw kanaal in <strong>{{hub}}</strong>",
+    "untitled": "Kanaal zonder naam",
+    "close": "Kanaalinstellingen sluiten",
+    "sections": "Onderdelen kanaalinstellingen",
+    "name": "Kanaalnaam",
+    "namePlaceholder": "bijv. algemene-chat",
+    "icon": {
+      "label": "Icoon of emoji",
+      "suggested": "Voorgestelde iconen",
+      "use": "{{icon}} als icoon gebruiken",
+      "fewer": "Minder iconen",
+      "more": "Meer iconen",
+      "searchPlaceholder": "Iconen zoeken, bijv. regels, clips, cs, muziek",
+      "search": "Iconen zoeken",
+      "useNamed": "{{icon}} ({{name}}) als icoon gebruiken",
+      "noMatch": "Geen iconen gevonden. Je kunt elke emoji in het vak typen of plakken."
+    },
+    "iconGroups": {
+      "chat": "Chat",
+      "info": "Info",
+      "gaming": "Gaming",
+      "esports": "Esports",
+      "voice": "Spraak en media",
+      "creative": "Creatief",
+      "community": "Community",
+      "food": "Eten",
+      "nature": "Dieren en natuur",
+      "symbols": "Symbolen"
+    },
+    "type": {
+      "label": "Kanaaltype",
+      "fixed": "Het type kan niet worden gewijzigd nadat het kanaal is gemaakt.",
+      "setAtCreation": "Ingesteld bij het maken van het kanaal.",
+      "text": {
+        "label": "Tekst",
+        "description": "Gesprekken, links en media."
+      },
+      "voice": {
+        "label": "Spraak",
+        "description": "Praat, deel je scherm en stream."
+      },
+      "forum": {
+        "label": "Forum",
+        "description": "Georganiseerde posts met antwoorden en tags."
+      }
+    },
+    "post": {
+      "label": "Wie kan posten",
+      "hint": "Iedereen in het kanaal kan nog steeds lezen en reageren.",
+      "everyone": {
+        "label": "Iedereen",
+        "description": "Iedereen die het kanaal kan zien."
+      },
+      "staff": {
+        "label": "Alleen staf (alleen-lezen)",
+        "description": "De eigenaar, beheerders en moderators."
+      },
+      "roles": {
+        "label": "Gekozen rollen",
+        "description": "Staf plus leden met een rol die jij kiest."
+      },
+      "noRoles": "Deze Hub heeft nog geen eigen rollen."
+    },
+    "userLimit": {
+      "label": "Max. spelers",
+      "hint": "0 betekent geen limiet. De eigenaar en beheerders kunnen nog steeds deelnemen aan een vol kanaal."
+    },
+    "delete": {
+      "title": "Kanaal verwijderen",
+      "description": "Verwijdert het kanaal en al zijn opgeslagen berichten permanent.",
+      "action": "Kanaal verwijderen",
+      "confirmTitle": "Kanaal verwijderen?",
+      "confirmDescription": "Hiermee verwijder je het kanaal en elk opgeslagen bericht erin permanent. Dit kan niet ongedaan worden gemaakt.",
+      "confirmWord": "verwijderen"
+    },
+    "visibility": {
+      "label": "Zichtbaarheid kanaal",
+      "public": "Openbaar",
+      "publicHint": "Elk Hub-lid kan dit kanaal zien en eraan deelnemen.",
+      "private": "Privé",
+      "privateHint": "Alleen gekozen leden, plus de Hub-eigenaar en -beheerders."
+    },
+    "access": {
+      "title": "Toegang voor leden",
+      "selected_one": "{{count}} lid geselecteerd. Eigenaren en beheerders hebben altijd toegang.",
+      "selected_other": "{{count}} leden geselecteerd. Eigenaren en beheerders hebben altijd toegang.",
+      "search": "Leden zoeken",
+      "searchPlaceholder": "Hub-leden zoeken",
+      "you": " (jij)",
+      "ownerAlways": "Eigenaar · heeft altijd toegang",
+      "adminAlways": "Admin · heeft altijd toegang",
+      "alwaysAria": "{{name}} heeft altijd toegang",
+      "has": "Heeft toegang",
+      "none": "Geen toegang",
+      "toggleAria": "Kanaaltoegang voor {{name}}",
+      "noOthers": "Nog geen andere leden in deze Hub.",
+      "noMatch": "Geen leden gevonden voor je zoekopdracht.",
+      "forumTabHint": "Postmachtigingen voor dit forum staan op het <tab>tabblad Forum</tab>."
+    },
+    "forum": {
+      "warnings": {
+        "noRoles": "“Alleen gekozen rollen” is gekozen, maar er zijn geen rollen geselecteerd — alleen de eigenaar en beheerders kunnen posten.",
+        "emptyRoles_one": "{{names}} heeft nog geen leden, dus niemand krijgt daardoor toegang om te posten.",
+        "emptyRoles_other": "{{names}} hebben nog geen leden, dus niemand krijgt daardoor toegang om te posten.",
+        "noMembers": "“Alleen gekozen leden” is gekozen, maar er zijn geen leden geselecteerd — alleen de eigenaar en beheerders kunnen posten."
+      },
+      "guidelines": "Postrichtlijnen",
+      "guidelinesHint": "Getoond aan mensen voordat ze een post maken.",
+      "guidelinesPlaceholder": "Deel het onderwerp, de regels en wat een nuttige post moet bevatten.",
+      "policyLabel": "Wie kan posten",
+      "policyHint": "Iedereen kan nog steeds lezen en antwoorden waar ze toegang hebben.",
+      "policies": {
+        "everyone": "Iedereen in de Hub",
+        "staff": "Eigenaar, beheerders en moderators",
+        "roles": "Alleen gekozen rollen",
+        "members": "Alleen gekozen leden"
+      },
+      "rolesAllowed": "Rollen die mogen posten",
+      "roleMembers_one": "{{count}} lid",
+      "roleMembers_other": "{{count}} leden",
+      "noRoles": "Deze Hub heeft nog geen eigen rollen. Maak ze in Hub beheren → Rollen.",
+      "membersAllowed": "Leden die mogen posten",
+      "alwaysAllowed": "{{role}} · altijd toegestaan"
+    },
+    "roles": {
+      "owner": "eigenaar",
+      "admin": "admin",
+      "member": "lid"
+    },
+    "tags": {
+      "title": "Posttags",
+      "description": "Moderators bepalen welke tags mensen kunnen kiezen bij het posten. Gebruik de pijlen om de volgorde in te stellen.",
+      "new": "Nieuwe tag",
+      "placeholder": "Voeg een tag toe, bijv. Vraag",
+      "add": "Tag toevoegen",
+      "count_one": "{{count}}/{{max}} tags",
+      "count_other": "{{count}}/{{max}} tags",
+      "list": "Forumtags",
+      "moveUp": "{{tag}} omhoog",
+      "moveDown": "{{tag}} omlaag",
+      "removeTag": "{{tag}} verwijderen",
+      "remove": "Verwijderen",
+      "unsupported": "Taglijsten van moderators zijn nog niet beschikbaar op deze server. Posts kunnen nog wel vrije tags gebruiken."
+    },
+    "cancel": "Annuleren",
+    "creating": "Maken…",
+    "saving": "Opslaan…",
+    "saveChanges": "Wijzigingen opslaan",
+    "style": {
+      "tooLarge": "Kanaalachtergrond is te groot (max. 8 MB).",
+      "notImage": "Kies een afbeeldingsbestand.",
+      "title": "Stijl",
+      "hint": "Geef dit kanaal een eigen kleur en achtergrond. Leeg gebruikt die van de Hub.",
+      "previewRoom": "kanaal",
+      "previewSend": "Versturen",
+      "accent": "Accentkleur",
+      "accents": "Accentkleuren",
+      "hubAccent": "Hub-accent",
+      "swatches": {
+        "violet": "Violet",
+        "blue": "Blauw",
+        "cyan": "Cyaan",
+        "teal": "Groenblauw",
+        "green": "Groen",
+        "lime": "Limoen",
+        "yellow": "Geel",
+        "amber": "Amber",
+        "orange": "Oranje",
+        "red": "Rood",
+        "pink": "Roze",
+        "steel": "Staal"
+      },
+      "custom": "Eigen kleur",
+      "background": "Achtergrond",
+      "backgroundHint": "{{spec}}. PNG, JPG, WebP of GIF tot 8 MB.",
+      "replace": "Vervangen",
+      "upload": "Uploaden",
+      "remove": "Verwijderen"
+    }
+  },
+  "pins": {
+    "kinds": {
+      "forumPost": "Forumpost",
+      "event": "Evenement",
+      "poll": "Peiling",
+      "bot": "Botbericht",
+      "gif": "Gif",
+      "sticker": "Sticker",
+      "image": "Afbeelding",
+      "file": "Bestand",
+      "message": "Bericht"
+    },
+    "kindsWithDetail": {
+      "forumPost": "Forumpost: {{detail}}",
+      "event": "Evenement: {{detail}}",
+      "poll": "Peiling: {{detail}}",
+      "bot": "Botbericht: {{detail}}",
+      "gif": "Gif: {{detail}}",
+      "sticker": "Sticker: {{detail}}",
+      "image": "Afbeelding · {{detail}}",
+      "file": "Bestand · {{detail}}",
+      "message": "Bericht: {{detail}}"
+    },
+    "loadFailed": "Kan vastgepinde berichten niet laden.",
+    "title": "Vastgepinde berichten",
+    "titleWithCount": "Vastgepinde berichten · {{n}}",
+    "close": "Sluiten",
+    "loading": "Laden…",
+    "empty": "Nog geen vastgepinde berichten",
+    "emptyCanPin": "Pin een belangrijk bericht vast via het menu, zodat iedereen het hier kan vinden.",
+    "emptyMember": "Beheerders kunnen belangrijke berichten vastpinnen, zodat iedereen ze hier kan vinden.",
+    "jumpTitle": "Dit bericht in het kanaal tonen",
+    "jump": "Ga naar",
+    "less": "Minder",
+    "readAll": "Alles lezen",
+    "unpinning": "Losmaken…",
+    "unpin": "Losmaken"
+  },
+  "templates": {
+    "names": {
+      "blank": "Leeg",
+      "friends": "Vrienden / Hangout",
+      "gaming": "Gaming",
+      "community": "Community",
+      "creator": "Creator",
+      "esports": "Esports / Clan",
+      "development": "Development",
+      "support": "Support",
+      "project": "Project / Team",
+      "streamer": "Streamermodus · Overzicht-indeling"
+    },
+    "descriptions": {
+      "blank": "Een schoon startpunt voor je eigen Hub-structuur.",
+      "friends": "Een lichte plek voor vrienden, chat en gedeelde media.",
+      "gaming": "Kanalen om teamgenoten te vinden, clips te delen en Squads te organiseren.",
+      "community": "Een gestructureerde openbare Hub met informatie, discussies, evenementen en spraak.",
+      "creator": "Houd content, feedback, suggesties en communitychat bij elkaar.",
+      "esports": "Coördineer rosters, scrims, strategie, clips en privéwerk voor staf.",
+      "development": "Een gerichte projectplek voor bugs, releases, ideeën en teamspraak.",
+      "support": "Help gebruikers antwoorden te vinden, problemen door te geven en het supportteam te bereiken.",
+      "project": "Organiseer updates, taken, documenten, deadlines en teamkanalen.",
+      "streamer": "Creator-overzicht, communitysessies, evenementen en een Hub-banner over de volle hoogte."
+    },
+    "rooms": {
+      "general": "algemeen",
+      "generalVoice": "Algemene spraak",
+      "offTopic": "off-topic",
+      "mediaMemes": "media-memes",
+      "lounge": "Lounge",
+      "lfg": "LFG",
+      "gameDiscussion": "game-discussie",
+      "clips": "clips",
+      "screenshots": "screenshots",
+      "gamingRoom": "Gamingkanaal",
+      "squad1": "Squad 1",
+      "squad2": "Squad 2",
+      "afk": "AFK",
+      "welcome": "welkom",
+      "announcements": "aankondigingen",
+      "rules": "regels",
+      "media": "media",
+      "discussions": "discussies",
+      "events": "evenementen",
+      "communityVoice": "Communityspraak",
+      "uploads": "uploads",
+      "feedback": "feedback",
+      "suggestions": "suggesties",
+      "communityChat": "community-chat",
+      "creatorRoom": "Creatorkanaal",
+      "roster": "roster",
+      "scrims": "scrims",
+      "strategy": "strategie",
+      "staff": "staf",
+      "development": "development",
+      "bugs": "bugs",
+      "featureRequests": "feature-verzoeken",
+      "releases": "releases",
+      "showcase": "showcase",
+      "teamVoice": "Teamspraak",
+      "faq": "FAQ",
+      "help": "hulp",
+      "knownIssues": "bekende-problemen",
+      "generalDiscussion": "algemene-discussie",
+      "staffSupport": "staf-support",
+      "updates": "updates",
+      "tasks": "taken",
+      "docsFiles": "documenten",
+      "deadlines": "deadlines",
+      "teamRoom": "Teamkanaal",
+      "streamerRoom": "Streamerkanaal"
+    },
+    "categories": {
+      "general": "ALGEMEEN",
+      "voice": "SPRAAK",
+      "social": "SOCIAAL",
+      "community": "COMMUNITY",
+      "media": "MEDIA",
+      "information": "INFORMATIE",
+      "content": "CONTENT",
+      "competitive": "COMPETITIEF",
+      "staff": "STAF",
+      "development": "DEVELOPMENT",
+      "support": "SUPPORT",
+      "project": "PROJECT",
+      "streamerHub": "STREAMER-HUB",
+      "voiceRooms": "SPRAAKKANALEN"
+    }
+  },
+  "media": {
+    "banner": {
+      "hint": "Aanbevolen: {{width}}×{{height}} px, staand (minimaal {{minWidth}}×{{minHeight}})"
+    },
+    "chatBackground": {
+      "hint": "Aanbevolen: {{width}}×{{height}} px, liggend (minimaal {{minWidth}}×{{minHeight}})"
+    },
+    "header": {
+      "hint": "Aanbevolen: {{width}}×{{height}} px; elke brede afbeelding van 4:3 tot 4:1 werkt (minstens {{minWidth}} px breed)"
+    }
+  },
+  "mobile": {
+    "hubs": {
+      "couldNotLoadHubs": "Kan Hubs niet laden.",
+      "couldNotCreateHub": "Kan Hub niet maken.",
+      "couldNotJoinHub": "Kan geen lid worden van Hub.",
+      "couldNotUseThatInvite": "Kan die uitnodiging niet gebruiken.",
+      "yourCommunities": "JOUW COMMUNITY'S",
+      "roomsVoiceAndThePeople": "Kanalen, spraak en de mensen met wie je speelt.",
+      "createOrJoinAHub": "Maak een Hub of word lid",
+      "searchYourHubs": "Je Hubs zoeken",
+      "findAPublicHub": "Vind een openbare Hub",
+      "memberships": "LIDMAATSCHAPPEN",
+      "publicHubs": "OPENBARE HUBS",
+      "noMatchingHubs": "Geen Hubs gevonden",
+      "noPublicHubsRightNow": "Op dit moment geen openbare Hubs",
+      "tryAnotherNameCategoryOr": "Probeer een andere naam, categorie of tag.",
+      "createYourOwnHubOr": "Maak je eigen Hub of ontdek een openbare community.",
+      "publicCommunitiesWillAppearHere": "Openbare community's verschijnen hier zodra ze beschikbaar zijn.",
+      "joinAHub": "Lid worden van een Hub",
+      "newCommunity": "NIEUWE COMMUNITY",
+      "hubName": "HUB-NAAM",
+      "giveYourHubAName": "Geef je Hub een naam",
+      "privacy": "PRIVACY",
+      "inviteOnly": "Alleen op uitnodiging",
+      "discoverable": "Vindbaar",
+      "haveAnInvite": "HEB JE EEN UITNODIGING?",
+      "inviteCodeOrLink": "Uitnodigingscode of -link",
+      "joinWithInvite": "Lid worden via uitnodiging",
+      "joining": "Lid worden…",
+      "onlinecountOnline": "{{onlineCount}} online",
+      "categoryMembers": "{{category}} · {{count}} leden"
+    },
+    "hub": {
+      "couldNotLoadThisHub": "Kan deze Hub niet laden.",
+      "couldNotLoadHubMembers": "Kan Hub-leden niet laden.",
+      "couldNotUpdateTheHub": "Kan de Hub niet bijwerken.",
+      "couldNotLoadRoomAccess": "Kan kanaaltoegang niet laden.",
+      "couldNotSaveTheRoom": "Kan het kanaal niet opslaan.",
+      "couldNotMoveTheRoom": "Kan het kanaal niet verplaatsen.",
+      "deleteName": "{{name}} verwijderen?",
+      "messagesSavedInThisRoom": "Opgeslagen berichten in dit kanaal kunnen ook worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "couldNotDeleteTheRoom": "Kan het kanaal niet verwijderen.",
+      "tryAgain": "Opnieuw proberen",
+      "goBack": "Terug",
+      "manageThisHub": "Deze Hub beheren",
+      "editHubDetailsCreateRooms": "Bewerk Hub-gegevens, maak kanalen en beheer bestaande kanalen.",
+      "textRooms": "TEKSTKANALEN",
+      "noTextRoomsInThis": "Geen tekstkanalen in deze Hub.",
+      "forums": "FORUMS",
+      "noForumsInThisHub": "Geen forums in deze Hub.",
+      "voiceRooms": "SPRAAKKANALEN",
+      "noVoiceRoomsInThis": "Geen spraakkanalen in deze Hub.",
+      "pickARoomToStart": "Kies een kanaal om te beginnen met chatten",
+      "onlineMembers": "{{online}} online · {{count}} leden",
+      "withRole": "{{summary}} · {{role}}"
+    },
+    "hubAdmin": {
+      "hubSettingsUpdated": "Hub-instellingen bijgewerkt.",
+      "memberAdded": "Lid toegevoegd.",
+      "makeUsernameAnAdmin": "{{username}} beheerder maken?",
+      "removeAdminAccessFromUsername": "Beheerderstoegang van {{username}} intrekken?",
+      "adminsCanManageRoomsAnd": "Beheerders kunnen kanalen beheren en Hub-leden modereren.",
+      "theyWillBecomeARegular": "Diegene wordt een gewoon lid en verliest de machtigingen om de Hub te beheren.",
+      "makeAdmin": "Beheerder maken",
+      "removeAdmin": "Beheerdersrol intrekken",
+      "removeMember": "Lid verwijderen?",
+      "removeUsernameFromThisHub": "{{username}} uit deze Hub verwijderen?",
+      "thisRemovesTheMemberAnd": "Hiermee verwijder je het lid, en diegene kan pas weer lid worden als de verbanning is opgeheven.",
+      "thisActionIsRecordedIn": "Deze actie wordt vastgelegd in het auditlog van de Hub.",
+      "inviteWasCreatedButThe": "Uitnodiging is gemaakt, maar de server gaf geen link of code terug.",
+      "oneTimeInviteCreated24": "Eenmalige uitnodiging gemaakt (24 uur, één keer te gebruiken). ",
+      "theImageIsDeletedAnd": "De afbeelding wordt verwijderd en voor iedereen in deze Hub verborgen.",
+      "sidebarBannerRemoved": "Zijbalkbanner verwijderd.",
+      "chatBackgroundRemoved": "Chatachtergrond verwijderd.",
+      "photoLibraryPermissionIsRequired": "Toegang tot je fotobibliotheek is vereist.",
+      "couldNotUploadHubImage": "Kan Hub-afbeelding niet uploaden.",
+      "deleteAsset": "Bestand verwijderen?",
+      "deleteName": "{{name}} verwijderen?",
+      "deleteBot": "Bot verwijderen?",
+      "loadingHubManagement": "Hub-beheer laden…",
+      "hubControl": "HUB-BEHEER",
+      "manageName": "{{name}} beheren",
+      "hubProfileDiscovery": "HUB-PROFIEL EN VINDBAARHEID",
+      "changeHubImage": "Hub-afbeelding wijzigen",
+      "fillsTheHubSidebarBehind": "Vult de Hub-zijbalk achter de kanaallijst.",
+      "behindTheMessageListDimmed": "Achter de berichtenlijst, automatisch gedimd.",
+      "accentRrggbb": "Accent (#RRGGBB)",
+      "tagsCommaSeparatedMax6": "Tags (kommagescheiden, max. 6)",
+      "slowModeSeconds0120": "Slow-modus in seconden (0–120)",
+      "roomsPrivateAccess": "KANALEN EN PRIVÉTOEGANG",
+      "createEditReorderOrDelete": "Maak, bewerk, herschik of verwijder tekst-, spraak- en forumkanalen, stel kanaaliconen in en kies leden voor privékanalen.",
+      "botBuilder": "BOTBOUWER",
+      "turnBotsOnOrOff": "Zet bots aan of uit, bekijk hun activiteit of begin met een sjabloon. Bewerk regels op desktop of web.",
+      "invites": "UITNODIGINGEN",
+      "createOneTimeInvite": "Eenmalige uitnodiging maken",
+      "expiresAfter24HoursAnd": "Verloopt na 24 uur en kan één keer worden gebruikt.",
+      "membersCount": "LEDEN · {{count}}",
+      "usernameOrDecaveId": "Gebruikersnaam of DeCave-ID",
+      "addMember": "Lid toevoegen",
+      "changeUsernameSRoleCurrent": "Rol van {{username}} wijzigen. Huidige rol: {{role}}",
+      "removeUsername": "{{username}} verwijderen",
+      "n10mTimeout": "10 min time-out",
+      "kick": "Kicken",
+      "ban": "Verbannen",
+      "customRoles": "EIGEN ROLLEN",
+      "roleName": "Rolnaam",
+      "noExtraPermissions": "Geen extra machtigingen",
+      "emotesStickers": "EMOTES EN STICKERS",
+      "assetNameOptional": "Naam (optioneel)",
+      "noCustomAssets": "Geen eigen emotes of stickers.",
+      "deleteAsset2": "Verwijderen",
+      "hubBots": "HUB-BOTS",
+      "botName": "Botnaam",
+      "createBot": "Bot maken",
+      "copyThisTokenNowIt": "KOPIEER DIT TOKEN NU — HET WORDT MAAR ÉÉN KEER GETOOND",
+      "noHubBots": "Geen Hub-bots.",
+      "enabled": "AAN",
+      "disabled": "UIT",
+      "pauseName": "{{name}} pauzeren",
+      "resumeName": "{{name}} hervatten",
+      "deleteName2": "{{name}} verwijderen",
+      "auditLog": "AUDITLOG",
+      "system": "Systeem",
+      "saveHubSettings": "Hub-instellingen opslaan",
+      "permissions": {
+        "voiceModerate": "Spraakmoderatie",
+        "viewAudit": "Audit bekijken"
+      },
+      "loadFailed": "Kan Hub-beheer niet laden.",
+      "updateFailed": "Kan Hub niet bijwerken.",
+      "visibilityFailed": "Kan zichtbaarheid van Hub niet bijwerken.",
+      "addMemberFailed": "Kan lid niet toevoegen.",
+      "roleFailed": "Kan rol niet bijwerken.",
+      "removeMemberFailed": "Kan lid niet verwijderen.",
+      "moderation": {
+        "timeout": "Time-out 10 minuten",
+        "timeoutConfirm": "{{username}} 10 minuten time-out geven?",
+        "kickConfirm": "{{username}} kicken?",
+        "banConfirm": "{{username}} verbannen?",
+        "timeoutFailed": "Kan lid geen time-out geven.",
+        "kickFailed": "Kan lid niet kicken.",
+        "banFailed": "Kan lid niet verbannen."
+      },
+      "inviteTitle": "Word lid van {{hub}} op DeCave",
+      "inviteTitleFallback": "Word lid van mijn Hub op DeCave",
+      "inviteFailed": "Kan uitnodiging niet maken.",
+      "artworkFailed": "Kan Hub-afbeeldingen niet bijwerken.",
+      "removeBanner": "Zijbalkbanner verwijderen?",
+      "removeChatBackground": "Chatachtergrond verwijderen?",
+      "removeBannerFailed": "Kan zijbalkbanner niet verwijderen.",
+      "removeChatBackgroundFailed": "Kan chatachtergrond niet verwijderen.",
+      "iconUpdated": "Profielafbeelding van Hub bijgewerkt.",
+      "bannerUpdated": "Zijbalkbanner bijgewerkt.",
+      "chatBackgroundUpdated": "Chatachtergrond bijgewerkt.",
+      "uploadImageFailed": "Kan Hub-afbeelding niet uploaden.",
+      "createRoleFailed": "Kan eigen rol niet maken.",
+      "assignRoleFailed": "Kan eigen rol niet toewijzen.",
+      "emoteTooLarge": "Emote is te groot.",
+      "stickerTooLarge": "Sticker is te groot.",
+      "uploadEmoteFailed": "Kan emote niet uploaden.",
+      "uploadStickerFailed": "Kan sticker niet uploaden.",
+      "deleteAssetFailed": "Kan bestand niet verwijderen.",
+      "createBotFailed": "Kan Hub-bot niet maken.",
+      "updateBotFailed": "Kan bot niet bijwerken.",
+      "deleteBotFailed": "Kan bot niet verwijderen.",
+      "bannerNote": "Gedimd voor leesbaarheid.",
+      "bannerNoteEmpty": "Voeg een banner toe om dit aan te zetten.",
+      "chatNote": "Getoond in elk kanaal van deze Hub.",
+      "chatNoteEmpty": "Voeg een foto toe om dit aan te zetten.",
+      "recentEvents_one": "{{count}} recente gebeurtenis",
+      "recentEvents_other": "{{count}} recente gebeurtenissen",
+      "mediaCurrent": "Huidige {{item}}",
+      "mediaRemove": "{{item}} verwijderen",
+      "mediaShow": "{{item}} tonen"
+    },
+    "join": {
+      "couldnTUseThisInvite": "Kon deze uitnodiging niet gebruiken.",
+      "inviteDidnTWork": "Uitnodiging werkte niet",
+      "goHome": "Naar Home",
+      "joiningHub": "Lid worden van Hub…"
+    },
+    "rooms": {
+      "add": "Kanaal toevoegen",
+      "draft": "Concept",
+      "connected": "Verbonden · tik voor spraakbediening",
+      "voiceJoin": "Spraakkanaal · tik om deel te nemen",
+      "textRoom": "Tekstkanaal",
+      "edit": "{{name}} bewerken"
+    },
+    "manage": {
+      "kicker": "HUB-BEHEER",
+      "title": "{{name}} beheren",
+      "visibilityOwner": "Alleen de Hub-eigenaar kan de zichtbaarheid (openbaar/privé) wijzigen.",
+      "visibilityPublic": "Deze Hub is openbaar. Alleen de eigenaar kan de zichtbaarheid wijzigen.",
+      "visibilityPrivate": "Deze Hub is privé. Alleen de eigenaar kan de zichtbaarheid wijzigen.",
+      "rooms": "KANALEN",
+      "createRoom": "Nieuw kanaal maken",
+      "createRoomHint": "Voeg nog een tekstkanaal of spraakkanaal toe aan deze Hub.",
+      "save": "Hub-wijzigingen opslaan"
+    },
+    "roomEditor": {
+      "kickerEdit": "KANAALINSTELLINGEN",
+      "kickerNew": "NIEUW KANAAL",
+      "titleNew": "Kanaal maken",
+      "placeholder": {
+        "text": "algemeen",
+        "voice": "Gaming-spraak",
+        "forum": "gidsen"
+      },
+      "icon": "Kanaalicoon",
+      "noIcon": "Geen icoon",
+      "useIcon": "{{icon}} als kanaalicoon gebruiken",
+      "emojiPlaceholder": "Of typ een emoji",
+      "hubAccent": "Hub-accent gebruiken",
+      "swatchAccent": "Accent {{color}}",
+      "guidelines": "Forumrichtlijnen",
+      "guidelinesPlaceholder": "Wat moeten mensen hier posten?",
+      "postPolicy": "Wie kan posts starten",
+      "policyEveryone": "Iedereen",
+      "policyStaff": "Eigenaar en beheerders",
+      "policyLimitedRoles": "Posten is beperkt tot gekozen rollen. Die lijst blijft zoals hij is; kies hierboven een optie om hem te vervangen.",
+      "policyLimitedMembers": "Posten is beperkt tot gekozen leden. Die lijst blijft zoals hij is; kies hierboven een optie om hem te vervangen.",
+      "privateHint": "De eigenaar en beheerders hebben altijd toegang. Kies hieronder welke gewone Hub-leden erin mogen.",
+      "access": "KANAALTOEGANG",
+      "selected_one": "{{count}} geselecteerd",
+      "selected_other": "{{count}} geselecteerd",
+      "noMembers": "Geen gewone leden om te selecteren",
+      "noMembersHint": "Het kanaal blijft toegankelijk voor de Hub-eigenaar en -beheerders.",
+      "noMatch": "Geen leden gevonden",
+      "noMatchHint": "Probeer een andere gebruikersnaam.",
+      "save": "Kanaal opslaan",
+      "create": "Kanaal maken"
+    }
+  },
+  "hubCategories": {
+    "gaming": "Gaming",
+    "community": "Community",
+    "racing": "Racing",
+    "creative": "Creatief",
+    "music": "Muziek"
+  }
+}

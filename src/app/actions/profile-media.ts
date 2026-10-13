@@ -4,6 +4,8 @@ import type { Dispatch, SetStateAction } from "react";
 import type { AccountUser } from "../types";
 import { HTTP_URL } from "../env";
 import { MAX_PROFILE_IMAGE_BYTES } from "../constants";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import type { ProfileMediaState } from "../state/profile-media";
 
 export type ProfileMediaActionsDeps = {
@@ -21,11 +23,11 @@ export function createProfileMediaActions(deps: ProfileMediaActionsDeps) {
   const uploadProfileBanner = async (file: File) => {
     setProfileBannerError("");
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setProfileBannerError("Choose a PNG, JPEG or WebP image.");
+      setProfileBannerError(i18next.t("chat.actions.profile.imageType"));
       return;
     }
     if (file.size > 3 * 1024 * 1024) {
-      setProfileBannerError("Banner images must be 3 MB or smaller.");
+      setProfileBannerError(i18next.t("chat.actions.profile.bannerTooLarge"));
       return;
     }
     setProfileBannerBusy(true);
@@ -33,8 +35,10 @@ export function createProfileMediaActions(deps: ProfileMediaActionsDeps) {
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () =>
-          typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Could not read image."));
-        reader.onerror = () => reject(reader.error ?? new Error("Could not read image."));
+          typeof reader.result === "string"
+            ? resolve(reader.result)
+            : reject(new Error(i18next.t("chat.actions.profile.readImageFailed")));
+        reader.onerror = () => reject(reader.error ?? new Error(i18next.t("chat.actions.profile.readImageFailed")));
         reader.readAsDataURL(file);
       });
       const response = await authorizedFetch(`${HTTP_URL}/api/profile/banner`, {
@@ -44,12 +48,12 @@ export function createProfileMediaActions(deps: ProfileMediaActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as { user?: AccountUser; error?: string };
       if (!response.ok || !data.user) {
-        setProfileBannerError(data.error || "Could not save the banner.");
+        setProfileBannerError(apiErrorMessage(data, "client.profile.saveBanner"));
         return;
       }
       setCurrentUserFromResponse(data.user);
     } catch {
-      setProfileBannerError("Could not upload the banner.");
+      setProfileBannerError(i18next.t("chat.actions.profile.uploadBannerFailed"));
     } finally {
       setProfileBannerBusy(false);
     }
@@ -62,12 +66,12 @@ export function createProfileMediaActions(deps: ProfileMediaActionsDeps) {
       const response = await authorizedFetch(`${HTTP_URL}/api/profile/banner`, { method: "DELETE" });
       const data = (await response.json().catch(() => ({}))) as { user?: AccountUser; error?: string };
       if (!response.ok || !data.user) {
-        setProfileBannerError(data.error || "Could not remove the banner.");
+        setProfileBannerError(apiErrorMessage(data, "client.profile.removeBanner"));
         return;
       }
       setCurrentUserFromResponse(data.user);
     } catch {
-      setProfileBannerError("Could not remove the banner.");
+      setProfileBannerError(i18next.t("errors.client.profile.removeBanner"));
     } finally {
       setProfileBannerBusy(false);
     }
@@ -77,11 +81,11 @@ export function createProfileMediaActions(deps: ProfileMediaActionsDeps) {
     setProfileAvatarError("");
 
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setProfileAvatarError("Choose a PNG, JPEG or WebP image.");
+      setProfileAvatarError(i18next.t("chat.actions.profile.imageType"));
       return;
     }
     if (file.size > MAX_PROFILE_IMAGE_BYTES) {
-      setProfileAvatarError("Profile images must be 2 MB or smaller.");
+      setProfileAvatarError(i18next.t("chat.actions.profile.avatarTooLarge"));
       return;
     }
 
@@ -90,8 +94,10 @@ export function createProfileMediaActions(deps: ProfileMediaActionsDeps) {
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () =>
-          typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Could not read image."));
-        reader.onerror = () => reject(reader.error ?? new Error("Could not read image."));
+          typeof reader.result === "string"
+            ? resolve(reader.result)
+            : reject(new Error(i18next.t("chat.actions.profile.readImageFailed")));
+        reader.onerror = () => reject(reader.error ?? new Error(i18next.t("chat.actions.profile.readImageFailed")));
         reader.readAsDataURL(file);
       });
 
@@ -102,13 +108,13 @@ export function createProfileMediaActions(deps: ProfileMediaActionsDeps) {
       });
       const data = (await response.json()) as { user?: AccountUser; error?: string };
       if (!response.ok || !data.user) {
-        setProfileAvatarError(data.error || "Could not save profile photo.");
+        setProfileAvatarError(apiErrorMessage(data, "client.profile.saveAvatar"));
         return;
       }
       setCurrentUserFromResponse(data.user);
     } catch (error) {
       console.error("Could not upload profile photo:", error);
-      setProfileAvatarError("Could not upload profile photo.");
+      setProfileAvatarError(i18next.t("chat.actions.profile.uploadAvatarFailed"));
     } finally {
       setProfileAvatarBusy(false);
     }
@@ -123,13 +129,13 @@ export function createProfileMediaActions(deps: ProfileMediaActionsDeps) {
       });
       const data = (await response.json()) as { user?: AccountUser; error?: string };
       if (!response.ok || !data.user) {
-        setProfileAvatarError(data.error || "Could not remove profile photo.");
+        setProfileAvatarError(apiErrorMessage(data, "client.profile.removeAvatar"));
         return;
       }
       setCurrentUserFromResponse(data.user);
     } catch (error) {
       console.error("Could not remove profile photo:", error);
-      setProfileAvatarError("Could not remove profile photo.");
+      setProfileAvatarError(i18next.t("errors.client.profile.removeAvatar"));
     } finally {
       setProfileAvatarBusy(false);
     }

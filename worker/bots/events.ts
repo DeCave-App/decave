@@ -9,6 +9,7 @@
 import type { BotCommandOption, BotRule } from "../../shared/bots/types";
 import { storedHubBotCapabilities } from "../lib/hub-bots";
 import type { Env } from "../lib/env";
+import { noticeEnglish, noticeOf } from "../lib/notices";
 import { getAction, type ActionContext, type BotEvent } from "./actions/registry";
 import { dispatchBotEvent } from "./engine";
 import { botsEnabled } from "./flags";
@@ -80,8 +81,13 @@ export type CommandLookups = {
 };
 
 export function commandUsage(name: string, options: BotCommandOption[]): string {
+  return noticeEnglish("bots.server.commandUsage", { usage: commandSyntax(name, options) });
+}
+
+/** "/name <required> [optional]" */
+function commandSyntax(name: string, options: BotCommandOption[]): string {
   const parts = options.map((option) => (option.required ? `<${option.name}>` : `[${option.name}]`));
-  return `Usage: /${[name, ...parts].join(" ")}`;
+  return `/${[name, ...parts].join(" ")}`;
 }
 
 /**
@@ -93,16 +99,25 @@ export async function bindCommandOptions(
   options: BotCommandOption[],
   tokens: string[],
   lookups: CommandLookups,
-): Promise<{ ok: true; args: Record<string, string | number> } | { ok: false; reason: string }> {
+): Promise<
+  | { ok: true; args: Record<string, string | number> }
+  | { ok: false; reason: string; problem: "missing" | "invalid"; option: string }
+> {
   const args: Record<string, string | number> = {};
   for (const [index, option] of options.entries()) {
     const last = index === options.length - 1;
     const raw = last && option.type === "text" ? tokens.slice(index).join(" ") : tokens[index];
     if (raw === undefined || raw === "") {
-      if (option.required) return { ok: false, reason: `Missing ${option.name}` };
+      if (option.required)
+        return { ok: false, reason: `Missing ${option.name}`, problem: "missing", option: option.name };
       continue;
     }
-    const bad = { ok: false as const, reason: `Invalid ${option.name}` };
+    const bad = {
+      ok: false as const,
+      reason: `Invalid ${option.name}`,
+      problem: "invalid" as const,
+      option: option.name,
+    };
     switch (option.type) {
       case "text":
         args[option.name] = raw.slice(0, 500);
@@ -196,7 +211,13 @@ async function publishedCommand(db: D1Database, hubId: number, name: string): Pr
 }
 
 /** Bad command input: logs a failed run and, when the bot may post here, tells the user how to use it. */
-async function refuseCommand(env: Env, event: BotEvent, command: CommandMatch, reason: string, usage: string) {
+async function refuseCommand(
+  env: Env,
+  event: BotEvent,
+  command: CommandMatch,
+  refusal: { reason: string; problem: "missing" | "invalid"; option: string },
+  usage: { text: string; syntax: string },
+) {
   // A refusal spends the hub's run budget (over budget: dropped silently) and
   // is "skipped", not "error": member typos must never auto-pause a bot.
   if (!takeBudget(event.hubId, "runs")) return;
@@ -205,7 +226,11 @@ async function refuseCommand(env: Env, event: BotEvent, command: CommandMatch, r
     ruleId: command.ruleId,
     trigger: "command",
     status: "skipped",
-    detail: `${reason}. ${usage}`,
+    detail: `${refusal.reason}. ${usage.text}`,
+    notice: noticeOf(
+      refusal.problem === "missing" ? "bots.run.server.commandMissingOption" : "bots.run.server.commandInvalidOption",
+      { option: refusal.option, usage: usage.syntax },
+    ),
   });
   const bot = await getBot(env.DB, event.hubId, command.botId);
   if (!bot || !bot.enabled || !event.actorId) return;
@@ -222,8 +247,9 @@ async function refuseCommand(env: Env, event: BotEvent, command: CommandMatch, r
     vars: {},
     dryRun: false,
     steps: [],
+    systemNotice: noticeOf("bots.server.commandUsage", { usage: usage.syntax.replace(/[{}]/g, "") }),
   };
-  await notice.run(ctx, { type: "privateNotice", text: usage.replace(/[{}]/g, "") });
+  await notice.run(ctx, { type: "privateNotice", text: usage.text.replace(/[{}]/g, "") });
 }
 
 export type HubMessageInput = {
@@ -261,7 +287,10 @@ export async function dispatchHubMessage(env: Env, input: HubMessageInput): Prom
     };
     const bound = await bindCommandOptions(options, line.tokens, hubLookups(env.DB, input.hubId));
     if (!bound.ok) {
-      await refuseCommand(env, event, command, bound.reason, commandUsage(line.name, options));
+      await refuseCommand(env, event, command, bound, {
+        text: commandUsage(line.name, options),
+        syntax: commandSyntax(line.name, options),
+      });
       return;
     }
     event.data.args = bound.args;

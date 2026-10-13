@@ -18,6 +18,9 @@ import {
   loadNotificationSettings,
 } from "../settings-storage";
 import type { PreferencesState } from "../state/preferences";
+import { migrateSoundToggles } from "../../features/settings/soundMigration";
+import { setChatPrefs } from "../../features/settings/chatPrefs";
+import { setCheckupDismissed } from "../../features/settings/checkup/dismissed";
 
 export type SettingsSyncActionsDeps = {
   preferences: PreferencesState;
@@ -52,7 +55,6 @@ export function createSettingsSyncActions(deps: SettingsSyncActionsDeps) {
         );
       if (remote.notifications) {
         localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(remote.notifications));
-        preferences.setNotificationSettings(loadNotificationSettings());
       }
       if (
         remote.notificationPreset === "all" ||
@@ -62,7 +64,16 @@ export function createSettingsSyncActions(deps: SettingsSyncActionsDeps) {
         preferences.setNotificationPreset(remote.notificationPreset);
       if (remote.sounds) {
         localStorage.setItem(SOUND_SETTINGS_KEY, JSON.stringify(remote.sounds));
-        preferences.setSoundSettings(loadSoundSettings());
+      }
+      if (remote.notifications || remote.sounds) {
+        // A device on an older version may still send the old sound switches.
+        const migrated = migrateSoundToggles(loadNotificationSettings(), loadSoundSettings());
+        if (migrated.changed) {
+          localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(migrated.notifications));
+          localStorage.setItem(SOUND_SETTINGS_KEY, JSON.stringify(migrated.sounds));
+        }
+        preferences.setNotificationSettings(migrated.notifications);
+        preferences.setSoundSettings(migrated.sounds);
       }
       if (remote.privacy) {
         preferences.setPrivacySettings((current) => ({
@@ -74,6 +85,8 @@ export function createSettingsSyncActions(deps: SettingsSyncActionsDeps) {
         }));
       }
       if (remote.notifyLevels) preferences.setNotifyLevels(remote.notifyLevels);
+      if (remote.chat) setChatPrefs(remote.chat);
+      if (remote.checkupDismissed) setCheckupDismissed(remote.checkupDismissed);
       if (remote.mutedHubs) {
         const now = Date.now();
         const live = Object.entries(remote.mutedHubs).filter(([, until]) => until === -1 || until > now);

@@ -234,6 +234,11 @@ test("a bad option skips the run and privately shows the usage", async () => {
   assert.equal(rows.length, 1);
   assert.equal(rows[0].visible_to_user_id, "u2");
   assert.ok(rows[0].text.includes("Usage: /roll <sides> [note]"), rows[0].text);
+  // Sent with its notice code so clients show the hint in the reader's language.
+  assert.deepEqual(JSON.parse(rows[0].text.slice("__DECAVE_BOT__".length)).notice, {
+    code: "bots.server.commandUsage",
+    params: { usage: "/roll <sides> [note]" },
+  });
   const runs = await store.listRuns(db, bot.id);
   assert.equal(runs[0].status, "skipped");
   assert.match(runs[0].detail, /Invalid sides/);

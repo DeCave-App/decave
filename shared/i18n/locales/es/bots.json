@@ -1,0 +1,1182 @@
+{
+  "rule": {
+    "deleted": {
+      "room": "sala eliminada (elige otra)",
+      "voiceRoom": "sala de voz eliminada (elige otra)",
+      "role": "rol eliminado (elige otro)",
+      "rule": "regla eliminada (elige otra)"
+    },
+    "pick": {
+      "room": "(elige una sala)",
+      "voiceRoom": "(elige una sala de voz)",
+      "role": "(elige un rol)",
+      "rule": "(elige una regla)"
+    },
+    "duration": {
+      "days_one": "{{count}} día",
+      "days_many": "{{count}} días",
+      "days_other": "{{count}} días",
+      "hours_one": "{{count}} hora",
+      "hours_many": "{{count}} horas",
+      "hours_other": "{{count}} horas",
+      "minutes_one": "{{count}} minuto",
+      "minutes_many": "{{count}} minutos",
+      "minutes_other": "{{count}} minutos"
+    },
+    "schedule": {
+      "every": "cada {{duration}}",
+      "daily": "todos los días a las {{time}}",
+      "weekly": "cada {{day}} a las {{time}}",
+      "cron": "con cron \"{{cron}}\"",
+      "any": "según una programación"
+    },
+    "anyVoiceRoom": "cualquier sala de voz",
+    "sameChannel": "la misma sala",
+    "trigger": {
+      "command": "alguien usa /{{name}}",
+      "message": {
+        "contains": "un mensaje contiene \"{{pattern}}\"",
+        "startsWith": "un mensaje empieza por \"{{pattern}}\"",
+        "exact": "un mensaje es exactamente \"{{pattern}}\"",
+        "regex": "un mensaje coincide con \"{{pattern}}\""
+      },
+      "memberJoin": "alguien se une al Hub",
+      "memberLeave": "alguien sale del Hub",
+      "roleAdded": "alguien recibe {{role}}",
+      "roleRemoved": "alguien pierde {{role}}",
+      "reactionAdded": "alguien reacciona con {{emoji}}",
+      "reactionRemoved": "alguien quita una reacción {{emoji}}",
+      "component": "alguien usa el botón \"{{id}}\"",
+      "formSubmit": "alguien envía el formulario \"{{id}}\"",
+      "voiceJoin": "alguien se une a {{room}}",
+      "voiceLeave": "alguien sale de {{room}}",
+      "hubEventStart": "empieza un evento del Hub",
+      "streamLive": "el stream empieza en Twitch",
+      "streamOffline": "el stream termina en Twitch"
+    },
+    "condition": {
+      "hasRole": "tiene {{role}}",
+      "lacksRole": "no tiene {{role}}",
+      "channelIs": "está en {{room}}",
+      "channelIsNot": "no está en {{room}}",
+      "accountAge_one": "su cuenta tiene al menos {{count}} día",
+      "accountAge_many": "su cuenta tiene al menos {{count}} días",
+      "accountAge_other": "su cuenta tiene al menos {{count}} días",
+      "memberAge_one": "se unió hace al menos {{count}} día",
+      "memberAge_many": "se unió hace al menos {{count}} días",
+      "memberAge_other": "se unió hace al menos {{count}} días",
+      "chance": "{{percent}} % de probabilidad",
+      "timeOfDay": "es entre las {{from}} y las {{to}}",
+      "weekday": "es {{days}}",
+      "noDay": "no es ningún día"
+    },
+    "action": {
+      "sendMessage": "enviar {{text}} en {{room}}",
+      "reply": "responder {{text}}",
+      "editMessage": "cambiar el mensaje por {{text}}",
+      "pin": "fijar el mensaje",
+      "unpin": "dejar de fijar el mensaje",
+      "deleteTrigger": "eliminar el mensaje",
+      "react": "reaccionar con {{emoji}}",
+      "createThread": "crear el hilo {{name}}",
+      "privateNotice": "decirle en privado {{text}}",
+      "addRole": "dar {{role}}",
+      "addRoleFor": "dar {{role}} durante {{duration}}",
+      "removeRole": "quitar {{role}}",
+      "removeRoleFor": "quitar {{role}} durante {{duration}}",
+      "toggleRole": "alternar {{role}}",
+      "toggleRoleFor": "alternar {{role}} durante {{duration}}",
+      "openForm": "abrir el formulario {{title}}",
+      "startPoll": "crear la encuesta {{question}}",
+      "createEvent": "crear el evento {{title}}",
+      "setVariable": "establecer {{name}} en {{value}}",
+      "addVariable": "sumar {{value}} a {{name}}",
+      "resetVariable": "restablecer {{name}}",
+      "wait": "esperar {{duration}}",
+      "stop": "parar",
+      "runRule": "ejecutar {{rule}}",
+      "webhook": "llamar a {{method}} {{url}}"
+    },
+    "join": {
+      "and": "{{left}} y {{right}}",
+      "or": "{{left}} o {{right}}",
+      "then": "{{left}} y luego {{right}}"
+    },
+    "sentence": {
+      "when": "Cuando {{trigger}}",
+      "if": "Si {{conditions}}",
+      "ifBoth": "Si {{all}} y ({{any}})",
+      "do": "Hacer: {{actions}}",
+      "doNothing": "No hacer nada",
+      "otherwise": "Si no: {{actions}}"
+    },
+    "label": "Regla {{number}}",
+    "defaultFormField": "Respuesta"
+  },
+  "variable": {
+    "user": "Miembro",
+    "channel": "Sala",
+    "date": "Fecha de hoy",
+    "random": "Número aleatorio",
+    "text": "Texto del mensaje",
+    "textSample": "hola, qué tal",
+    "match": "Parte coincidente",
+    "matchSample": "hola",
+    "emoji": "Emoji",
+    "value": "Valor elegido",
+    "streamTitle": "Título del stream",
+    "streamTitleSample": "Grindeando ranked esta noche",
+    "streamGame": "Juego",
+    "streamUrl": "Enlace del stream",
+    "streamer": "Canal de Twitch",
+    "insert": "Insertar una variable",
+    "previewLabel": "Vista previa",
+    "preview": "Vista previa: {{text}}"
+  },
+  "capability": {
+    "send_messages": {
+      "label": "Enviar mensajes",
+      "description": "Mensajes, respuestas, reacciones, hilos y avisos privados.",
+      "phrase": "enviar mensajes"
+    },
+    "create_polls": {
+      "label": "Crear encuestas",
+      "description": "La acción Crear encuesta.",
+      "phrase": "crear encuestas"
+    },
+    "create_events": {
+      "label": "Crear eventos",
+      "description": "La acción Crear evento del Hub.",
+      "phrase": "crear eventos"
+    },
+    "manage_roles": {
+      "label": "Gestionar roles",
+      "description": "Dar, quitar y alternar roles.",
+      "phrase": "gestionar roles"
+    },
+    "manage_messages": {
+      "label": "Gestionar mensajes",
+      "description": "Fijar, dejar de fijar y eliminar mensajes.",
+      "phrase": "gestionar mensajes"
+    },
+    "webhooks": {
+      "label": "Llamar a webhooks",
+      "description": "Enviar solicitudes a URL HTTPS.",
+      "phrase": "llamar a webhooks"
+    }
+  },
+  "catalogue": {
+    "triggers": {
+      "command": {
+        "label": "Comando de barra",
+        "description": "Un miembro ejecuta /nombre en una sala.",
+        "fields": {
+          "name": {
+            "label": "Nombre del comando",
+            "hint": "De 1 a 32 letras minúsculas, dígitos o guiones, sin barra."
+          },
+          "options": {
+            "label": "Opciones",
+            "hint": "Lista de {name, type (text|number|user|role|channel|choice), required, choices?}. Se leen como {args.name}."
+          }
+        }
+      },
+      "message": {
+        "label": "Mensaje publicado",
+        "description": "Un mensaje en una sala coincide con un patrón.",
+        "fields": {
+          "mode": {
+            "label": "Coincidencia"
+          },
+          "pattern": {
+            "label": "Patrón",
+            "hint": "Regex: hasta 200 caracteres, como mucho un * o +, repeticiones solo sobre caracteres sueltos, grupos solo para opciones (a|b). Revisa los primeros 500 caracteres."
+          },
+          "caseSensitive": {
+            "label": "Distinguir mayúsculas"
+          }
+        }
+      },
+      "memberJoin": {
+        "label": "Se une un miembro",
+        "description": "Alguien se une al Hub."
+      },
+      "memberLeave": {
+        "label": "Sale un miembro",
+        "description": "Alguien sale del Hub."
+      },
+      "roleAdded": {
+        "label": "Rol añadido",
+        "description": "Un miembro recibe un rol.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          }
+        }
+      },
+      "roleRemoved": {
+        "label": "Rol quitado",
+        "description": "Un miembro pierde un rol.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          }
+        }
+      },
+      "reactionAdded": {
+        "label": "Reacción añadida",
+        "description": "Un miembro reacciona con un emoji.",
+        "fields": {
+          "emoji": {
+            "label": "Emoji"
+          },
+          "messageId": {
+            "label": "Solo en el mensaje",
+            "hint": "ID del mensaje; vacío para cualquier mensaje."
+          }
+        }
+      },
+      "reactionRemoved": {
+        "label": "Reacción quitada",
+        "description": "Un miembro quita una reacción.",
+        "fields": {
+          "emoji": {
+            "label": "Emoji"
+          },
+          "messageId": {
+            "label": "Solo en el mensaje",
+            "hint": "ID del mensaje; vacío para cualquier mensaje."
+          }
+        }
+      },
+      "component": {
+        "label": "Botón o selector usado",
+        "description": "Un miembro hace clic en un botón de una tarjeta o elige en un selector de tarjeta.",
+        "fields": {
+          "customId": {
+            "label": "ID del botón o selector",
+            "hint": "El customId definido en la tarjeta."
+          }
+        }
+      },
+      "formSubmit": {
+        "label": "Formulario enviado",
+        "description": "Un miembro envía un formulario abierto por este bot.",
+        "fields": {
+          "formId": {
+            "label": "ID del formulario",
+            "hint": "Los campos se leen como {form.fieldId}."
+          }
+        }
+      },
+      "voiceJoin": {
+        "label": "Entra en voz",
+        "description": "Un miembro se une a una sala de voz.",
+        "fields": {
+          "roomId": {
+            "label": "Sala de voz",
+            "hint": "Vacío para cualquier sala de voz."
+          }
+        }
+      },
+      "voiceLeave": {
+        "label": "Sale de voz",
+        "description": "Un miembro sale de una sala de voz.",
+        "fields": {
+          "roomId": {
+            "label": "Sala de voz",
+            "hint": "Vacío para cualquier sala de voz."
+          }
+        }
+      },
+      "schedule": {
+        "label": "Programado",
+        "description": "Se ejecuta con un temporizador, con al menos 5 minutos de separación.",
+        "fields": {
+          "schedule": {
+            "label": "Programación",
+            "hint": "Exactamente uno de every (minutos, >=5), daily (\"HH:MM\"), weekly ({day 0-6, time \"HH:MM\"}) o cron, más timezone (nombre IANA)."
+          }
+        }
+      },
+      "hubEventStart": {
+        "label": "Empieza un evento del Hub",
+        "description": "Empieza un evento programado del Hub."
+      },
+      "streamLive": {
+        "label": "El stream empieza",
+        "description": "El canal de Twitch del Hub empieza a transmitir (requiere el estado en directo automático en Ajustes del stream)."
+      },
+      "streamOffline": {
+        "label": "El stream termina",
+        "description": "El canal de Twitch del Hub deja de transmitir."
+      }
+    },
+    "conditions": {
+      "hasRole": {
+        "label": "Tiene el rol",
+        "description": "El miembro tiene un rol.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          }
+        }
+      },
+      "lacksRole": {
+        "label": "No tiene el rol",
+        "description": "El miembro no tiene un rol.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          }
+        }
+      },
+      "channelIs": {
+        "label": "La sala es",
+        "description": "El evento ocurrió en una sala.",
+        "fields": {
+          "channelId": {
+            "label": "Sala"
+          }
+        }
+      },
+      "channelIsNot": {
+        "label": "La sala no es",
+        "description": "El evento ocurrió fuera de una sala.",
+        "fields": {
+          "channelId": {
+            "label": "Sala"
+          }
+        }
+      },
+      "accountAge": {
+        "label": "Antigüedad de la cuenta",
+        "description": "La cuenta tiene al menos esta cantidad de días.",
+        "fields": {
+          "minDays": {
+            "label": "Al menos (días)"
+          }
+        }
+      },
+      "memberAge": {
+        "label": "Miembro desde hace",
+        "description": "El miembro se unió al Hub hace al menos esta cantidad de días.",
+        "fields": {
+          "minDays": {
+            "label": "Al menos (días)"
+          }
+        }
+      },
+      "variable": {
+        "label": "Variable",
+        "description": "Compara una variable guardada.",
+        "fields": {
+          "name": {
+            "label": "Variable"
+          },
+          "scope": {
+            "label": "Ámbito de la variable",
+            "hint": "user: un valor por miembro; hub: un valor compartido."
+          },
+          "op": {
+            "label": "Comparación"
+          },
+          "value": {
+            "label": "Valor"
+          }
+        }
+      },
+      "chance": {
+        "label": "Probabilidad aleatoria",
+        "description": "Se cumple este porcentaje de las veces.",
+        "fields": {
+          "percent": {
+            "label": "Porcentaje",
+            "hint": "0-100."
+          }
+        }
+      },
+      "timeOfDay": {
+        "label": "Hora del día",
+        "description": "La hora actual está dentro de un intervalo.",
+        "fields": {
+          "from": {
+            "label": "Desde",
+            "hint": "\"HH:MM\"."
+          },
+          "to": {
+            "label": "Hasta",
+            "hint": "\"HH:MM\"."
+          },
+          "timezone": {
+            "label": "Zona horaria",
+            "hint": "Nombre IANA, p. ej. Europe/Madrid."
+          }
+        }
+      },
+      "weekday": {
+        "label": "Día de la semana",
+        "description": "Hoy es uno de estos días.",
+        "fields": {
+          "days": {
+            "label": "Días",
+            "hint": "0 = domingo."
+          }
+        }
+      }
+    },
+    "actions": {
+      "sendMessage": {
+        "label": "Enviar mensaje",
+        "description": "Publica un mensaje en una sala.",
+        "fields": {
+          "channel": {
+            "label": "Sala",
+            "hint": "Un ID de sala, o \"trigger\" para la sala de la que vino el evento."
+          },
+          "text": {
+            "label": "Mensaje"
+          },
+          "card": {
+            "label": "Tarjeta",
+            "hint": "Tarjeta enriquecida opcional: título, texto, color, imageUrl, campos, hasta 5 botones y un selector."
+          }
+        }
+      },
+      "reply": {
+        "label": "Responder",
+        "description": "Responde al mensaje o comando que lo activó.",
+        "fields": {
+          "text": {
+            "label": "Mensaje"
+          },
+          "card": {
+            "label": "Tarjeta",
+            "hint": "Tarjeta enriquecida opcional: título, texto, color, imageUrl, campos, hasta 5 botones y un selector."
+          }
+        }
+      },
+      "editMessage": {
+        "label": "Editar mensaje",
+        "description": "Edita un mensaje que el bot envió antes en esta ejecución.",
+        "fields": {
+          "messageRef": {
+            "label": "Mensaje",
+            "hint": "\"trigger\" o un ID de mensaje."
+          },
+          "text": {
+            "label": "Texto nuevo"
+          }
+        }
+      },
+      "pin": {
+        "label": "Fijar mensaje",
+        "description": "Fija un mensaje.",
+        "fields": {
+          "messageRef": {
+            "label": "Mensaje",
+            "hint": "\"trigger\" o un ID de mensaje."
+          }
+        }
+      },
+      "unpin": {
+        "label": "Dejar de fijar mensaje",
+        "description": "Deja de fijar un mensaje.",
+        "fields": {
+          "messageRef": {
+            "label": "Mensaje",
+            "hint": "\"trigger\" o un ID de mensaje."
+          }
+        }
+      },
+      "deleteTrigger": {
+        "label": "Eliminar mensaje activador",
+        "description": "Elimina el mensaje que activó la regla."
+      },
+      "react": {
+        "label": "Reaccionar",
+        "description": "Añade una reacción al mensaje activador.",
+        "fields": {
+          "emoji": {
+            "label": "Emoji"
+          }
+        }
+      },
+      "createThread": {
+        "label": "Crear hilo",
+        "description": "Crea un hilo en el mensaje activador.",
+        "fields": {
+          "name": {
+            "label": "Nombre del hilo"
+          }
+        }
+      },
+      "privateNotice": {
+        "label": "Aviso privado",
+        "description": "Un mensaje que solo ve el miembro.",
+        "fields": {
+          "text": {
+            "label": "Mensaje"
+          }
+        }
+      },
+      "addRole": {
+        "label": "Dar rol",
+        "description": "Le da un rol al miembro.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          },
+          "durationMinutes": {
+            "label": "Revertir después de",
+            "hint": "Minutos. Déjalo vacío para mantenerlo."
+          }
+        }
+      },
+      "removeRole": {
+        "label": "Quitar rol",
+        "description": "Le quita un rol al miembro.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          },
+          "durationMinutes": {
+            "label": "Revertir después de",
+            "hint": "Minutos. Déjalo vacío para mantenerlo."
+          }
+        }
+      },
+      "toggleRole": {
+        "label": "Alternar rol",
+        "description": "Da el rol si no lo tiene; si no, lo quita.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          },
+          "durationMinutes": {
+            "label": "Revertir después de",
+            "hint": "Minutos. Déjalo vacío para mantenerlo."
+          }
+        }
+      },
+      "openForm": {
+        "label": "Abrir formulario",
+        "description": "Muestra un formulario al miembro (solo desde un comando, botón o selector).",
+        "fields": {
+          "formId": {
+            "label": "ID del formulario"
+          },
+          "title": {
+            "label": "Título"
+          },
+          "fields": {
+            "label": "Campos",
+            "hint": "Hasta 5 de {id, label, style (short|long), required}."
+          }
+        }
+      },
+      "startPoll": {
+        "label": "Crear encuesta",
+        "description": "Publica una encuesta en la sala.",
+        "fields": {
+          "question": {
+            "label": "Pregunta"
+          },
+          "options": {
+            "label": "Opciones",
+            "hint": "De 2 a 10 opciones."
+          }
+        }
+      },
+      "createEvent": {
+        "label": "Crear evento del Hub",
+        "description": "Programa un evento del Hub.",
+        "fields": {
+          "title": {
+            "label": "Título"
+          },
+          "startsInMinutes": {
+            "label": "Empieza en",
+            "hint": "Minutos."
+          },
+          "durationMinutes": {
+            "label": "Dura",
+            "hint": "Minutos."
+          }
+        }
+      },
+      "setVariable": {
+        "label": "Definir variable",
+        "description": "Guarda un valor.",
+        "fields": {
+          "name": {
+            "label": "Variable"
+          },
+          "scope": {
+            "label": "Ámbito de la variable",
+            "hint": "user: un valor por miembro; hub: un valor compartido."
+          },
+          "value": {
+            "label": "Valor"
+          }
+        }
+      },
+      "addVariable": {
+        "label": "Sumar a variable",
+        "description": "Suma un número a un valor guardado.",
+        "fields": {
+          "name": {
+            "label": "Variable"
+          },
+          "scope": {
+            "label": "Ámbito de la variable",
+            "hint": "user: un valor por miembro; hub: un valor compartido."
+          },
+          "value": {
+            "label": "Cantidad"
+          }
+        }
+      },
+      "resetVariable": {
+        "label": "Restablecer variable",
+        "description": "Elimina un valor guardado.",
+        "fields": {
+          "name": {
+            "label": "Variable"
+          },
+          "scope": {
+            "label": "Ámbito de la variable",
+            "hint": "user: un valor por miembro; hub: un valor compartido."
+          }
+        }
+      },
+      "wait": {
+        "label": "Esperar",
+        "description": "Hace una pausa antes de las siguientes acciones (máximo 7 días).",
+        "fields": {
+          "minutes": {
+            "label": "Esperar",
+            "hint": "Minutos, 1-10080."
+          }
+        }
+      },
+      "stop": {
+        "label": "Parar",
+        "description": "Deja de ejecutar las acciones de esta regla."
+      },
+      "runRule": {
+        "label": "Ejecutar otra regla",
+        "description": "Ejecuta otra regla de este bot.",
+        "fields": {
+          "ruleId": {
+            "label": "Regla"
+          }
+        }
+      },
+      "webhook": {
+        "label": "Llamar a webhook",
+        "description": "Llama a una URL HTTPS.",
+        "fields": {
+          "url": {
+            "label": "URL",
+            "hint": "Solo HTTPS."
+          },
+          "method": {
+            "label": "Método"
+          },
+          "body": {
+            "label": "Cuerpo"
+          }
+        }
+      }
+    }
+  },
+  "part": {
+    "triggers": "Activador",
+    "conditions": "Condición",
+    "actions": "Acción",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "remove": "Quitar"
+  },
+  "field": {
+    "keep": "Mantener",
+    "unit": "Unidad",
+    "units": {
+      "minutes": "minutos",
+      "hours": "horas",
+      "days": "días"
+    },
+    "pickRoom": "Elige una sala",
+    "sameRoom": "La misma sala",
+    "pickVoiceRoom": "Elige una sala de voz",
+    "anyVoiceRoom": "Cualquier sala de voz",
+    "pickRole": "Elige un rol",
+    "pickRule": "Elige una regla",
+    "removeChoice": "Quitar opción",
+    "addChoice": "Añadir opción",
+    "optional": " (opcional)"
+  },
+  "list": {
+    "noOptions": "Sin opciones: los miembros solo escriben el comando.",
+    "optionName": "Nombre de la opción",
+    "optionNamePlaceholder": "nombre",
+    "optionType": "Tipo de opción",
+    "optionTypes": {
+      "text": "texto",
+      "number": "número",
+      "user": "usuario",
+      "role": "rol",
+      "channel": "sala",
+      "choice": "opción"
+    },
+    "choices": "Opciones, separadas por comas",
+    "choicesPlaceholder": "rojo, verde, azul",
+    "required": "obligatorio",
+    "removeOption": "Quitar opción",
+    "addOption": "Añadir opción",
+    "fieldLabel": "Etiqueta del campo",
+    "fieldLabelPlaceholder": "Etiqueta",
+    "fieldId": "ID del campo",
+    "fieldIdPlaceholder": "id",
+    "fieldSize": "Tamaño del campo",
+    "short": "corto",
+    "long": "largo",
+    "removeField": "Quitar campo",
+    "addField": "Añadir campo",
+    "addCard": "Añadir una tarjeta",
+    "cardTitle": "Título de la tarjeta",
+    "cardTitlePlaceholder": "Título",
+    "cardColour": "Color de la tarjeta",
+    "removeCard": "Quitar tarjeta",
+    "cardText": "Texto de la tarjeta",
+    "cardTextPlaceholder": "Texto",
+    "buttonLabel": "Texto del botón",
+    "buttonId": "ID del botón",
+    "buttonIdPlaceholder": "id del botón",
+    "removeButton": "Quitar botón",
+    "addButton": "Añadir botón",
+    "buttonHint": "Un botón activa las reglas cuyo activador es “Botón o selector usado” con su ID."
+  },
+  "activity": {
+    "loadFailed": "No se pudo cargar la actividad.",
+    "errorsOnly": "Solo errores",
+    "refresh": "Actualizar",
+    "noErrors": "Ningún error en los últimos 30 días.",
+    "empty": "Aún no se ha ejecutado nada.",
+    "runs": "Ejecuciones",
+    "status": {
+      "ok": "Ejecutada",
+      "error": "Error",
+      "limited": "Límite alcanzado",
+      "skipped": "Omitida"
+    },
+    "deletedRule": "Regla eliminada",
+    "detail": "{{action}}: {{text}}"
+  },
+  "status": {
+    "off": "Apagado",
+    "unpublished": "Cambios sin publicar",
+    "live": "Activo"
+  },
+  "page": {
+    "updateFailed": "No se pudo actualizar el bot.",
+    "resumeFailed": "No se pudo reanudar el bot.",
+    "needsFixing_one": "{{count}} regla necesita corrección",
+    "needsFixing_many": "{{count}} reglas necesitan corrección",
+    "needsFixing_other": "{{count}} reglas necesitan corrección",
+    "saving": "Guardando…",
+    "unsaved": "Algunas reglas aún no están guardadas",
+    "allPublished": "Todo está publicado",
+    "published": "Publicado. El bot ya ejecuta estas reglas.",
+    "publishFailed": "No se pudo publicar.",
+    "buildFailed": "No se pudo crear eso, prueba a reformularlo",
+    "back": "← Bots",
+    "ruleCount_one": "{{count}} regla",
+    "ruleCount_many": "{{count}} reglas",
+    "ruleCount_other": "{{count}} reglas",
+    "publishTitle": "Activar los borradores",
+    "publishing": "Publicando…",
+    "publish": "Publicar",
+    "pausedNotice": "En pausa tras errores repetidos. Revisa la Actividad, corrige las reglas y reanúdalo.",
+    "resume": "Reanudar",
+    "missingCapabilities": "Estas reglas necesitan que el bot tenga permiso para <strong>{{list}}</strong>. Sin él, esas acciones fallan.",
+    "allow": "Permitir",
+    "sections": "Secciones del bot",
+    "tabs": {
+      "rules": "Reglas",
+      "test": "Probar",
+      "activity": "Actividad",
+      "settings": "Ajustes"
+    }
+  },
+  "section": {
+    "loadFailed": "No se pudieron cargar los bots.",
+    "loading": "Cargando bots…",
+    "retry": "Reintentar",
+    "title": "Bots",
+    "intro": "Los bots responden a comandos, dan la bienvenida a los miembros, reparten roles y mucho más. Sin programar.",
+    "newBot": "Nuevo bot",
+    "emptyTitle": "Aún no hay bots",
+    "emptyHint": "Empieza con una plantilla como Bienvenida o Dados. Solo te llevará un minuto.",
+    "paused": "En pausa tras errores repetidos: revisa la Actividad",
+    "turnOff": "Apagar",
+    "turnOn": "Encender",
+    "isOn": "{{name}} está encendido",
+    "tokenBots": "Bots con token (para desarrolladores)"
+  },
+  "describe": {
+    "label": "Describe lo que debe hacer el bot",
+    "remaining": "Te quedan {{remaining}} de {{total}} hoy",
+    "building": "Creando…",
+    "submit": "Crear"
+  },
+  "newBot": {
+    "fileProblems_one": "El archivo tiene {{count}} problema: {{path}} {{message}}",
+    "fileProblems_many": "El archivo tiene {{count}} problemas: {{path}} {{message}}",
+    "fileProblems_other": "El archivo tiene {{count}} problemas: {{path}} {{message}}",
+    "genericError": "Algo salió mal.",
+    "fileTooLarge": "Ese archivo es demasiado grande para ser una exportación de bot.",
+    "fileInvalid": "Ese archivo no es una exportación de bot de DeCave.",
+    "importedUnresolved": "Importado. Esto no se encontró en este Hub, así que vuelve a elegirlo: {{names}}",
+    "imported": "Importado. Revisa las reglas y publícalas.",
+    "close": "Cerrar",
+    "templates": "Empezar con una plantilla",
+    "createdFromTemplate": "Creado con una plantilla. Revisa cada regla y luego publica.",
+    "creating": "Creando…",
+    "describe": "Descríbelo",
+    "describePlaceholder": "p. ej. Cuando alguien se una, dale la bienvenida en #general y dale el rol Miembro",
+    "scratch": "Desde cero",
+    "name": "Nombre del bot",
+    "create": "Crear",
+    "import": "Importar",
+    "importing": "Importando…",
+    "chooseFile": "Elegir un archivo de bot"
+  },
+  "ruleCard": {
+    "scope": "Dónde y con qué frecuencia",
+    "rooms": "Salas",
+    "allRooms": "Todas las salas",
+    "cooldownMember": "Tiempo de espera por miembro (segundos)",
+    "cooldownRoom": "Tiempo de espera por sala (segundos)",
+    "aiLabel": "Cambiar esta regla con IA",
+    "aiPlaceholder": "Cámbiala con IA, p. ej. “solo los fines de semana”",
+    "thinking": "Pensando…",
+    "change": "Cambiar",
+    "paused": "En pausa",
+    "new": "Nueva",
+    "changed": "Cambiada",
+    "status": {
+      "saved": "Borrador guardado",
+      "pending": "Guardando…",
+      "saving": "Guardando…",
+      "invalid": "Necesita corrección",
+      "failed": "No guardada"
+    },
+    "pauseTitle": "Pausar esta regla",
+    "resumeTitle": "Reanudar esta regla",
+    "pause": "Pausar {{label}}",
+    "resume": "Reanudar {{label}}",
+    "moveUp": "Subir {{label}}",
+    "moveDown": "Bajar {{label}}",
+    "duplicate": "Duplicar",
+    "delete": "Eliminar",
+    "error": "{{message}} Abre la regla para corregirla.",
+    "errorsMore_one": "{{message}} (+{{count}} más) Abre la regla para corregirla.",
+    "errorsMore_many": "{{message}} (+{{count}} más) Abre la regla para corregirla.",
+    "errorsMore_other": "{{message}} (+{{count}} más) Abre la regla para corregirla.",
+    "generated": "Generada, revísala antes de publicar",
+    "when": "Cuando",
+    "if": "Si",
+    "match": "Cumplir",
+    "all": "todas estas",
+    "any": "cualquiera de estas",
+    "always": "Siempre, salvo que añadas una condición.",
+    "addCondition": "Añadir condición",
+    "addConditionTo": "Añadir condición ({{key}})",
+    "do": "Hacer",
+    "addAction": "Añadir acción",
+    "otherwise": "Si no"
+  },
+  "rules": {
+    "unsupported": "La IA no pudo hacerlo todo:",
+    "emptyTitle": "Aún no hay reglas",
+    "emptyHint": "Una regla dice qué la activa, cuándo se aplica y qué hace el bot.",
+    "limit_one": "Un bot puede tener como máximo {{count}} regla.",
+    "limit_many": "Un bot puede tener como máximo {{count}} reglas.",
+    "limit_other": "Un bot puede tener como máximo {{count}} reglas.",
+    "add": "Añadir regla",
+    "describePlaceholder": "O describe una regla, p. ej. “dar @Miembro cuando alguien reaccione con ✅ en #normas”",
+    "deleteLabel": "Eliminar regla",
+    "deletePublished": "¿Eliminar {{label}}? Seguirá funcionando hasta que publiques.",
+    "deleteDraft": "¿Eliminar {{label}}? Nunca se publicó, así que se elimina ya.",
+    "cancel": "Cancelar"
+  },
+  "schedule": {
+    "label": "Programación",
+    "every": "Cada…",
+    "daily": "Todos los días a las",
+    "weekly": "Cada semana el",
+    "cron": "Cron",
+    "minutesLabel": "Minutos",
+    "minutes": "minutos",
+    "time": "Hora",
+    "day": "Día",
+    "cronExpression": "Expresión cron",
+    "timezone": "Zona horaria",
+    "hint": "Al menos 5 minutos de separación. La zona horaria es un nombre IANA como Europe/Madrid."
+  },
+  "settings": {
+    "saveFailed": "No se pudo guardar.",
+    "on": "El bot está encendido",
+    "onHint": "Si está apagado, no se ejecuta ninguna de sus reglas. Los borradores se conservan.",
+    "name": "Nombre",
+    "avatar": "Emoji de avatar",
+    "colour": "Color",
+    "description": "Descripción",
+    "save": "Guardar",
+    "rooms": "Salas permitidas",
+    "roomsHint": "El bot solo actúa en estas salas. Si no eliges ninguna, actúa en todas.",
+    "capabilities": "Permisos",
+    "capabilitiesHint": "Lo que puede hacer el bot. Las acciones no permitidas muestran un error en Actividad.",
+    "export": "Exportar",
+    "exportHint": "Un archivo con el bot y sus reglas. Las salas y los roles se guardan por nombre.",
+    "exportFailed": "No se pudo exportar.",
+    "delete": "Eliminar bot",
+    "deleteHint": "Elimina el bot, sus reglas y su actividad.",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteDescription": "El bot se detiene de inmediato y se eliminan sus reglas y su actividad.",
+    "deleteFailed": "No se pudo eliminar."
+  },
+  "test": {
+    "empty": "Añade y guarda una regla primero y luego pruébala aquí.",
+    "failed": "No se pudo ejecutar la prueba.",
+    "intro": "Elige una regla, rellena una entrada de ejemplo y mira cada paso. No se envía ni se cambia nada.",
+    "rule": "Regla",
+    "room": "Ocurre en",
+    "firstRoom": "La primera sala",
+    "message": "Mensaje",
+    "unsaved": "Esta regla tiene cambios sin guardar; la prueba usa el último borrador guardado.",
+    "running": "Ejecutando…",
+    "run": "Ejecutar prueba",
+    "steps": "Pasos de la prueba",
+    "noMatch": "La regla no se ejecutó: su activador o sus condiciones no coincidieron."
+  },
+  "api": {
+    "problems_one": "{{count}} problema por corregir",
+    "problems_many": "{{count}} problemas por corregir",
+    "problems_other": "{{count}} problemas por corregir"
+  },
+  "card": {
+    "badge": "BOT",
+    "noAnswerStatus": "El bot no respondió ({{status}}).",
+    "noAnswer": "El bot no respondió.",
+    "privateNotice": "Solo tú puedes ver esto",
+    "openImage": "Abrir imagen",
+    "chooseOption": "Elige una opción",
+    "choose": "Elegir…",
+    "commands": "Comandos del bot",
+    "form": {
+      "required": "{{field}} es obligatorio.",
+      "sendFailedStatus": "No se pudo enviar el formulario ({{status}}).",
+      "sendFailed": "No se pudo enviar el formulario.",
+      "cancel": "Cancelar",
+      "sending": "Enviando…",
+      "submit": "Enviar",
+      "untitled": "Formulario"
+    }
+  },
+  "server": {
+    "commandUsage": "Uso: {{usage}}"
+  },
+  "validation": {
+    "notObject": "Debe ser un objeto.",
+    "unknownField": "Campo desconocido.",
+    "nonEmptyString": "Debe ser un texto no vacío.",
+    "maxLength": "Debe tener como máximo {{max}} caracteres.",
+    "boolean": "Debe ser verdadero o falso.",
+    "numberRange": "Debe ser un número de {{min}} a {{max}}.",
+    "oneOf": "Debe ser uno de: {{values}}.",
+    "time": "Debe ser una hora como 09:30.",
+    "idRequired": {
+      "role": "Debe ser un ID de rol.",
+      "voiceRoom": "Debe ser un ID de sala de voz.",
+      "channel": "Debe ser un ID de sala.",
+      "rule": "Debe ser un ID de regla."
+    },
+    "unknownId": {
+      "role": "Rol desconocido en este Hub.",
+      "voiceRoom": "Sala de voz desconocida en este Hub.",
+      "channel": "Sala desconocida en este Hub.",
+      "rule": "Regla desconocida en este Hub."
+    },
+    "numberOrText": "Debe ser un número o un texto corto.",
+    "commandName": "Usa de 1 a 32 letras minúsculas, dígitos o guiones.",
+    "builtInCommand": "Este nombre ya lo usa un comando integrado.",
+    "list": "Debe ser una lista.",
+    "choices": "Debe tener hasta 25 textos cortos.",
+    "invalidRegex": "No es una expresión regular válida.",
+    "scheduleOneMode": "Define exactamente uno de every, daily, weekly o cron.",
+    "scheduleMinimum": "Las programaciones deben tener al menos {{minutes}} minutos de separación.",
+    "cronFields": "Cron debe tener 5 campos: minuto hora día mes día-de-la-semana.",
+    "unknownTrigger": "Tipo de activador desconocido.",
+    "weekdays": "Debe ser una lista de días del 0 al 6.",
+    "unknownCondition": "Tipo de condición desconocido.",
+    "color": "Debe ser un color como #aabbcc.",
+    "httpsLink": "Debe ser un enlace https.",
+    "cardFields": "Debe ser una lista de 25 campos como máximo.",
+    "buttonsOrSelect": "Una tarjeta puede tener botones o un menú de selección, no ambos.",
+    "maxButtons": "Como máximo {{max}} botones.",
+    "selectOptions": "Debe ser una lista de 1 a 25 opciones.",
+    "formFields": "Un formulario necesita de 1 a {{max}} campos.",
+    "pollOptions": "Necesita de 2 a 10 opciones cortas.",
+    "waitRange": "La espera debe estar entre 1 y {{max}} minutos (7 días).",
+    "webhookHttps": "Las URL de webhook deben empezar por https://.",
+    "unknownAction": "Tipo de acción desconocido.",
+    "actionList": "Debe ser una lista de acciones.",
+    "actionRequired": "Necesita al menos una acción.",
+    "maxActions": "Como máximo {{max}} acciones por regla.",
+    "ruleVersion": "Versión de regla no compatible.",
+    "conditionList": "Debe ser una lista de 20 condiciones como máximo.",
+    "regex": {
+      "trailingBackslash": "Un patrón no puede terminar en \\.",
+      "backreference": "No se permiten referencias inversas.",
+      "escapeNotAllowed": "\\{{char}} no está permitido.",
+      "emptyClass": "No se permiten clases [ ] vacías.",
+      "classEscape": "Dentro de [ ] solo \\d \\w \\s \\D \\W \\S \\n \\t o símbolos escapados.",
+      "classBracket": "Usa \\[ para un [ literal dentro de [ ].",
+      "rangePlain": "Un rango en [ ] necesita un carácter simple a cada lado.",
+      "rangeOrder": "Un rango en [ ] está desordenado.",
+      "unclosedClass": "[ ] sin cerrar.",
+      "literalBrace": "Usa \\{ para una { literal.",
+      "repeatCount": "No se permiten repeticiones de más de {{max}}.",
+      "repeatOrder": "En {n,m}, m debe ser al menos n.",
+      "repeatRepeat": "Una repetición no se puede repetir ni hacer perezosa.",
+      "charNotAllowed": "\"{{char}}\" no está permitido aquí.",
+      "nestedGroup": "Los grupos no se pueden anidar.",
+      "groupSyntax": "No se permiten lookarounds, grupos con nombre ni flags en línea.",
+      "unclosedGroup": "( ) sin cerrar.",
+      "emptyGroup": "No se permiten grupos vacíos.",
+      "emptyChoice": "Las opciones dentro de ( | ) no pueden estar vacías.",
+      "choicePlain": "Las opciones dentro de ( | ) deben ser texto simple sin repeticiones.",
+      "groupRepeat": "Los grupos ( ) no se pueden repetir.",
+      "bareChoice": "Pon las opciones dentro de ( | ).",
+      "unmatchedParen": ") sin pareja.",
+      "unboundedRepeats": "Usa como mucho 1 repetición sin límite (*, + o {n,}).",
+      "boundedExtra": "Las repeticiones con límite (?, {n,m}) pueden añadir como máximo {{max}} caracteres en total.",
+      "tooComplex": "El patrón es demasiado complejo."
+    }
+  },
+  "mobile": {
+    "hubBots": {
+      "nameCreated": "{{name}} creado.",
+      "couldNotCreateTheBot": "No se pudo crear el bot.",
+      "hubControl": "CONTROL DEL HUB",
+      "noBotsYetStartFrom": "Aún no hay bots. Empieza con una plantilla de abajo.",
+      "nameEnabled": "{{name}} activado",
+      "hideActivity": "Ocultar actividad",
+      "showActivity": "Mostrar actividad",
+      "noRunsYet": "Aún no hay ejecuciones.",
+      "startFromATemplate": "EMPEZAR CON UNA PLANTILLA",
+      "createBot": "Crear bot",
+      "createdPublishOnDesktop": "{{name}} creado. Publícalo en escritorio o web para activarlo.",
+      "unpublishedEditOnDesktop": "Cambios sin publicar · Edita las reglas en escritorio o web",
+      "editOnDesktop": "Edita las reglas en escritorio o web.",
+      "manageOnDesktop": "Gestionar en escritorio o web"
+    },
+    "publishOnDesktop": "Publícalo en escritorio o web para activarlo",
+    "editOnDesktop": "Edita las reglas en escritorio o web",
+    "tokenBot": "Gestionar en escritorio o web",
+    "pausedAfterErrors": "En pausa tras errores",
+    "summary": "{{rules}} · {{last}}",
+    "lastRun": "última ejecución {{time}}",
+    "noRuns": "Aún no hay ejecuciones",
+    "time": {
+      "minutes_one": "hace {{count}} min",
+      "minutes_many": "hace {{count}} min",
+      "minutes_other": "hace {{count}} min",
+      "hours_one": "hace {{count}} h",
+      "hours_many": "hace {{count}} h",
+      "hours_other": "hace {{count}} h",
+      "days_one": "hace {{count}} d",
+      "days_many": "hace {{count}} d",
+      "days_other": "hace {{count}} d"
+    }
+  },
+  "run": {
+    "server": {
+      "publisherLeft": "Quien lo publicó ya no está en este Hub",
+      "noChannel": "Este activador no tiene sala",
+      "hubChannelsOnly": "Los bots solo pueden actuar en salas del Hub",
+      "channelGone": "La sala ya no existe",
+      "channelOtherHub": "La sala no está en este Hub",
+      "textChannelsOnly": "Los bots solo pueden publicar en salas de texto y foros",
+      "channelNotAllowed": "El bot no tiene permiso en esta sala",
+      "publisherNoAccess": "Quien lo publicó no tiene acceso a esta sala",
+      "publisherCantPost": "Quien lo publicó no puede publicar en este Hub",
+      "roleGone": "El rol ya no existe",
+      "publisherCantManageRole": "Quien lo publicó no puede gestionar este rol",
+      "noMember": "Este activador no tiene miembro",
+      "memberLeft": "El miembro ya no está en este Hub",
+      "noMessage": "Este activador no tiene mensaje",
+      "messageGone": "El mensaje ya no existe",
+      "variableLimit": "Se alcanzó el límite de variables",
+      "notANumber": "El valor no es un número",
+      "waitNeedsChannel": "La espera necesita una sala de texto en este Hub",
+      "rulesUnavailable": "Las reglas no se pueden ejecutar aquí",
+      "pollIncomplete": "Las encuestas necesitan una pregunta y dos opciones",
+      "messageLimit": "Se alcanzó el límite de mensajes",
+      "publisherCantCreateEvents": "Quien lo publicó no puede crear eventos",
+      "eventTitleEmpty": "El título del evento está vacío",
+      "eventTimesInvalid": "Las horas del evento no son válidas",
+      "tooManyEvents": "Este Hub tiene demasiados eventos próximos",
+      "formsNeedInteraction": "Los formularios necesitan un comando o un botón",
+      "postFailed": "No se pudo publicar el mensaje",
+      "forumReplyTarget": "Las respuestas del foro deben ir a una publicación del foro",
+      "postLocked": "Esta publicación está cerrada",
+      "memberNoAccess": "El miembro no puede ver esta sala",
+      "editOwnOnly": "Los bots solo pueden editar sus propios mensajes",
+      "cantEdit": "Este mensaje no se puede editar",
+      "publisherCantModerate": "Quien lo publicó no puede moderar mensajes",
+      "publisherCantDelete": "Quien lo publicó no puede eliminar este mensaje",
+      "cantDeleteKind": "Los bots no pueden eliminar este tipo de mensaje",
+      "emojiRequired": "Se necesita un emoji",
+      "emojiReserved": "Ese emoji está reservado",
+      "threadsNeedForum": "Los hilos necesitan un foro",
+      "publisherCantPostForum": "Quien lo publicó no puede publicar en este foro",
+      "threadNameEmpty": "El nombre del hilo está vacío",
+      "timedRoleNeedsChannel": "Los roles temporales necesitan una sala de texto en este Hub",
+      "webhookLimit": "Se alcanzó el límite de webhooks",
+      "webhookUrlInvalid": "La URL del webhook no es válida",
+      "webhookHttpsOnly": "La URL del webhook debe usar https",
+      "webhookNoLogin": "La URL del webhook no puede incluir credenciales",
+      "webhookNoPort": "La URL del webhook no puede usar un puerto personalizado",
+      "webhookHostRefused": "El host del webhook no está permitido",
+      "webhookRedirect": "No se siguen las redirecciones del webhook",
+      "webhookTooLarge": "La respuesta del webhook es demasiado grande",
+      "webhookTimedOut": "Se agotó el tiempo del webhook",
+      "webhookFailed": "Falló la solicitud del webhook",
+      "unknownAction": "Acción desconocida {{action}}",
+      "capabilityMissing": "El bot no tiene permiso para {{capability}}",
+      "actionFailed": "Falló la acción",
+      "ranActions": "Acciones ejecutadas",
+      "ranNothing": "No se ejecutó nada",
+      "patternNotAllowed": "Patrón no permitido",
+      "chainTooDeep": "Cadena de bots demasiado profunda",
+      "coolingDown": "En espera",
+      "runLimit": "Se alcanzó el límite de ejecuciones del Hub para este minuto",
+      "conditionsNotMet": "No se cumplen las condiciones",
+      "ruleUnavailable": "Esa regla no está publicada o está en pausa",
+      "ruleFailed": "Falló la regla",
+      "runFailed": "Falló la ejecución",
+      "commandMissingOption": "Falta {{option}}. Uso: {{usage}}",
+      "commandInvalidOption": "{{option}} no válido. Uso: {{usage}}",
+      "timerDropped": "El temporizador falló dos veces; se descartó {{kind}}",
+      "wouldCall": "Llamaría a {{method}} {{url}}",
+      "wouldWait_one": "Esperaría {{count}} minuto",
+      "wouldWait_many": "Esperaría {{count}} minutos",
+      "wouldWait_other": "Esperaría {{count}} minutos",
+      "roleStep": "{{action}}: rol {{role}}"
+    }
+  }
+}

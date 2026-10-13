@@ -15,7 +15,10 @@ import type {
   AdminAuditEvent,
 } from "../types";
 import { HTTP_URL } from "../env";
-import { localeForLanguage, preferredTimeOptions } from "../locale";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
+import { serverMessage } from "../../i18n/notice.ts";
+import { formatDate } from "../../i18n/format.ts";
 import { hasDesktopActivityBridge } from "../desktop";
 import type { AdminDashboardState } from "../state/admin-dashboard";
 import type { OwnerSecurityState } from "../state/owner-security";
@@ -249,7 +252,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
       assertCurrent();
       if (!response.ok) {
         if (response.status === 428) setOwnerMfaEnabledState(true);
-        setOwnerMfaNotice(data.error || "Could not start owner MFA setup.");
+        setOwnerMfaNotice(apiErrorMessage(data, "client.owner.mfaSetupStart"));
         return;
       }
       if (
@@ -267,13 +270,13 @@ export function createAdminActions(deps: AdminActionsDeps) {
         setOwnerRecoveryCodes([]);
         setOwnerMfaCode("");
       }
-      setOwnerMfaNotice("Add the secret to your authenticator, then enter its 6-digit code.");
+      setOwnerMfaNotice(i18next.t("chat.actions.owner.mfaAddSecret"));
     } catch {
       if (ownerSecurityOperationRef.current === operation && sameContext())
         setOwnerMfaNotice(
           operation.mutationStarted
-            ? "Could not confirm MFA setup. It may already have changed; check owner security status before starting again."
-            : "Owner MFA setup cancelled or authentication was not completed.",
+            ? i18next.t("chat.actions.owner.mfaSetupUnconfirmed")
+            : i18next.t("chat.actions.owner.mfaSetupCancelled"),
         );
     } finally {
       password = "";
@@ -301,7 +304,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
       });
       const data = (await response.json()) as { success?: boolean; recoveryCodes?: string[]; error?: string };
       if (!response.ok || !data.success || !Array.isArray(data.recoveryCodes)) {
-        setOwnerMfaNotice(data.error || "Could not enable owner MFA.");
+        setOwnerMfaNotice(apiErrorMessage(data, "client.owner.mfaEnable"));
         return;
       }
       setOwnerMfaEnabledState(true);
@@ -310,9 +313,9 @@ export function createAdminActions(deps: AdminActionsDeps) {
       setOwnerMfaOtpAuth("");
       setOwnerMfaCode("");
       setOwnerMfaPassword("");
-      setOwnerMfaNotice("Owner MFA is enabled. Save the recovery codes offline.");
+      setOwnerMfaNotice(i18next.t("chat.actions.owner.mfaEnabled"));
     } catch {
-      setOwnerMfaNotice("Could not connect to DeCave.");
+      setOwnerMfaNotice(i18next.t("errors.client.connect"));
     } finally {
       setOwnerMfaBusy(false);
     }
@@ -344,7 +347,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
 
       if (!response.ok || !data.user || !data.wsToken) {
         setAuthError(
-          data.error || (loginMfaKind === "user" ? "That code did not work." : "Owner MFA verification failed."),
+          apiErrorMessage(data, loginMfaKind === "user" ? "client.owner.codeRejected" : "client.owner.mfaVerifyFailed"),
         );
         if (response.status === 401) {
           setOwnerLoginChallengeToken("");
@@ -366,7 +369,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
       setBirthDateInput("");
       setAuthReady(true);
     } catch {
-      setAuthError("Could not connect to DeCave.");
+      setAuthError(i18next.t("errors.client.connect"));
     } finally {
       setOwnerLoginMfaBusy(false);
     }
@@ -441,13 +444,13 @@ export function createAdminActions(deps: AdminActionsDeps) {
       setOwnerReauthExpiresAt(Date.now() + ttl * 1000);
       setOwnerReauthPassword("");
       setOwnerReauthCode("");
-      setOwnerReauthNotice("Privileged owner access unlocked for 10 minutes.");
+      setOwnerReauthNotice(i18next.t("chat.actions.owner.reauthUnlocked"));
     } catch {
       if (ownerSecurityOperationRef.current === operation && sameContext())
         setOwnerReauthNotice(
           operation.mutationStarted
-            ? "Could not confirm privileged authentication. A token may have been issued; access was not retained here. Check owner security status."
-            : "Owner authentication cancelled or not completed.",
+            ? i18next.t("chat.actions.owner.reauthUnconfirmed")
+            : i18next.t("chat.actions.owner.reauthCancelled"),
         );
     } finally {
       password = "";
@@ -473,8 +476,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
     setOwnerReauthExpiresAt(0);
     ownerPrivilegedContextRef.current = null;
     if (operation?.mutationStarted) {
-      const notice =
-        "Could not confirm the owner action. It may already have taken effect; check owner security status before trying again.";
+      const notice = i18next.t("chat.actions.owner.actionUnconfirmed");
       if (operation.kind === "setup") setOwnerMfaNotice(notice);
       else setOwnerReauthNotice(notice);
     }
@@ -496,7 +498,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
   const promotePlatformOwner = async () => {
     if (!ownerTargetIdentifier.trim()) return;
     if (!ownerReauthToken || ownerReauthExpiresAt <= Date.now()) {
-      setOwnerManagementNotice("Unlock privileged owner access first.");
+      setOwnerManagementNotice(i18next.t("chat.actions.owner.unlockFirst"));
       return;
     }
 
@@ -516,14 +518,14 @@ export function createAdminActions(deps: AdminActionsDeps) {
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setOwnerManagementNotice(data.error || "Could not promote owner.");
+        setOwnerManagementNotice(apiErrorMessage(data, "client.owner.promote"));
         return;
       }
       setOwnerTargetIdentifier("");
-      setOwnerManagementNotice("Platform owner updated.");
+      setOwnerManagementNotice(i18next.t("chat.actions.owner.promoted"));
       await loadOwnerSecurityStatus();
     } catch {
-      setOwnerManagementNotice("Could not connect to DeCave.");
+      setOwnerManagementNotice(i18next.t("errors.client.connect"));
     } finally {
       setOwnerManagementBusy(false);
     }
@@ -531,7 +533,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
 
   const demotePlatformOwner = async (targetUserId: string) => {
     if (!ownerReauthToken || ownerReauthExpiresAt <= Date.now()) {
-      setOwnerManagementNotice("Unlock privileged owner access first.");
+      setOwnerManagementNotice(i18next.t("chat.actions.owner.unlockFirst"));
       return;
     }
 
@@ -549,13 +551,13 @@ export function createAdminActions(deps: AdminActionsDeps) {
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setOwnerManagementNotice(data.error || "Could not demote owner.");
+        setOwnerManagementNotice(apiErrorMessage(data, "client.owner.demote"));
         return;
       }
-      setOwnerManagementNotice("Platform owner removed.");
+      setOwnerManagementNotice(i18next.t("chat.actions.owner.demoted"));
       await loadOwnerSecurityStatus();
     } catch {
-      setOwnerManagementNotice("Could not connect to DeCave.");
+      setOwnerManagementNotice(i18next.t("errors.client.connect"));
     } finally {
       setOwnerManagementBusy(false);
     }
@@ -563,7 +565,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
 
   const regenerateOwnerRecoveryCodes = async () => {
     if (!ownerReauthToken || ownerReauthExpiresAt <= Date.now()) {
-      setOwnerManagementNotice("Unlock privileged owner access first.");
+      setOwnerManagementNotice(i18next.t("chat.actions.owner.unlockFirst"));
       return;
     }
 
@@ -583,13 +585,13 @@ export function createAdminActions(deps: AdminActionsDeps) {
         error?: string;
       };
       if (!response.ok || !Array.isArray(data.recoveryCodes)) {
-        setOwnerManagementNotice(data.error || "Could not regenerate recovery codes.");
+        setOwnerManagementNotice(apiErrorMessage(data, "client.owner.recoveryCodes"));
         return;
       }
       setOwnerRecoveryCodes(data.recoveryCodes);
-      setOwnerManagementNotice("New recovery codes created. The previous set is now invalid.");
+      setOwnerManagementNotice(i18next.t("chat.actions.owner.recoveryCodesCreated"));
     } catch {
-      setOwnerManagementNotice("Could not connect to DeCave.");
+      setOwnerManagementNotice(i18next.t("errors.client.connect"));
     } finally {
       setOwnerManagementBusy(false);
     }
@@ -628,7 +630,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
       ]);
 
       if (!summaryResponse.ok) {
-        setAdminDashboardNotice("Platform owner access is required.");
+        setAdminDashboardNotice(i18next.t("chat.actions.admin.ownerRequired"));
         setShowAdminDashboard(false);
         return;
       }
@@ -653,7 +655,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
         setAdminGameSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
       }
     } catch {
-      setAdminDashboardNotice("Could not load the admin dashboard.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.loadFailed"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -672,7 +674,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
       );
       const data = (await response.json()) as { success?: boolean; error?: string };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not review the game suggestion.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.reviewGame"));
         return;
       }
       setAdminGameSuggestions((items) =>
@@ -683,10 +685,12 @@ export function createAdminActions(deps: AdminActionsDeps) {
         ),
       );
       setAdminDashboardNotice(
-        action === "approve" ? "Game approved and added to Squad Finder." : "Game suggestion rejected.",
+        action === "approve"
+          ? i18next.t("chat.actions.admin.gameApproved")
+          : i18next.t("chat.actions.admin.gameRejected"),
       );
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -707,7 +711,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
 
   const revokeAdminAccountSessions = async (targetUserId: string) => {
     if (!ownerReauthToken || ownerReauthExpiresAt <= Date.now()) {
-      setAdminDashboardNotice("Unlock privileged owner actions with your password + MFA first.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.unlockFirst"));
       return;
     }
 
@@ -725,7 +729,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
       });
       const data = (await response.json()) as { success?: boolean; error?: string };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not revoke sessions.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.revokeSessions"));
         return;
       }
 
@@ -736,17 +740,17 @@ export function createAdminActions(deps: AdminActionsDeps) {
         storeToken("");
         setCurrentUser(null);
         setAuthMode("login");
-        setAuthError("Your sessions were revoked. Sign in again.");
+        setAuthError(i18next.t("chat.actions.admin.ownSessionsRevoked"));
         return;
       }
 
-      setAdminDashboardNotice("All active sessions for that account were revoked.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.sessionsRevoked"));
       await loadAdminDashboard();
       if (selectedAdminAccount?.id === targetUserId) {
         await loadAdminAccountDetail(targetUserId);
       }
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -765,7 +769,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.account) {
-        setAdminDashboardNotice(data.error || "Could not load account details.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.accountDetails"));
         return;
       }
       setSelectedAdminAccount(data.account);
@@ -775,7 +779,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
       setAdminTransferTarget("");
       setAdminCorrectionBirthDate("");
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -788,7 +792,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
 
   const requireAdminPrivilegedUnlock = (): boolean => {
     if (!ownerReauthToken || ownerReauthExpiresAt <= Date.now()) {
-      setAdminDashboardNotice("Unlock privileged owner actions with your password + MFA first.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.unlockFirst"));
       return false;
     }
     return true;
@@ -803,7 +807,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
   const suspendAdminAccount = async () => {
     if (!selectedAdminAccount || !requireAdminPrivilegedUnlock()) return;
     if (!adminActionReason.trim()) {
-      setAdminDashboardNotice("Enter a reason for the suspension.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.suspendReasonMissing"));
       return;
     }
 
@@ -829,14 +833,14 @@ export function createAdminActions(deps: AdminActionsDeps) {
       );
       const data = (await response.json()) as { success?: boolean; error?: string };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not suspend account.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.suspend"));
         return;
       }
-      setAdminDashboardNotice("Account suspended and all sessions revoked.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.suspended"));
       setAdminActionReason("");
       await refreshSelectedAdminAccount();
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -861,13 +865,13 @@ export function createAdminActions(deps: AdminActionsDeps) {
       );
       const data = (await response.json()) as { success?: boolean; error?: string };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not unsuspend account.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.unsuspend"));
         return;
       }
-      setAdminDashboardNotice("Account suspension removed.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.unsuspended"));
       await refreshSelectedAdminAccount();
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -876,7 +880,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
   const correctAdminAccountAge = async () => {
     if (!selectedAdminAccount || !requireAdminPrivilegedUnlock()) return;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(adminCorrectionBirthDate)) {
-      setAdminDashboardNotice("Enter the corrected birth date.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.birthDateMissing"));
       return;
     }
 
@@ -897,14 +901,14 @@ export function createAdminActions(deps: AdminActionsDeps) {
       );
       const data = (await response.json()) as { success?: boolean; error?: string };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not correct the account age.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.correctAge"));
         return;
       }
       setAdminCorrectionBirthDate("");
-      setAdminDashboardNotice("Age corrected and the age restriction was removed.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.ageCorrected"));
       await refreshSelectedAdminAccount();
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -933,13 +937,13 @@ export function createAdminActions(deps: AdminActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not force password reset.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.forceReset"));
         return;
       }
-      setAdminDashboardNotice(data.message || "Password reset required and reset email sent.");
+      setAdminDashboardNotice(serverMessage(data, i18next.t("chat.actions.admin.resetForced")));
       await refreshSelectedAdminAccount();
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -948,7 +952,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
   const scheduleAdminAccountDeletion = async () => {
     if (!selectedAdminAccount || !requireAdminPrivilegedUnlock()) return;
     if (!adminActionReason.trim()) {
-      setAdminDashboardNotice("Enter a reason before scheduling deletion.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.deleteReasonMissing"));
       return;
     }
 
@@ -973,18 +977,18 @@ export function createAdminActions(deps: AdminActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not schedule account deletion.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.scheduleDeletion"));
         return;
       }
       setAdminDashboardNotice(
         data.deleteAfter
-          ? `Account disabled now. Permanent erasure becomes available after ${new Date(data.deleteAfter).toLocaleString(localeForLanguage(), preferredTimeOptions())}.`
-          : "Account scheduled for deletion.",
+          ? i18next.t("chat.actions.admin.erasureAvailableAfter", { date: formatDate(data.deleteAfter, "dateTime") })
+          : i18next.t("chat.actions.admin.deletionScheduled"),
       );
       setAdminActionReason("");
       await refreshSelectedAdminAccount();
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -1009,13 +1013,13 @@ export function createAdminActions(deps: AdminActionsDeps) {
       );
       const data = (await response.json()) as { success?: boolean; error?: string };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not restore account.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.restore"));
         return;
       }
-      setAdminDashboardNotice("Account restored.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.restored"));
       await refreshSelectedAdminAccount();
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -1045,15 +1049,15 @@ export function createAdminActions(deps: AdminActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not erase account.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.erase"));
         return;
       }
 
-      setAdminDashboardNotice(data.message || "Account personal data permanently erased.");
+      setAdminDashboardNotice(serverMessage(data, i18next.t("chat.actions.admin.erased")));
       setAdminEraseConfirmation("");
       await refreshSelectedAdminAccount();
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -1082,13 +1086,13 @@ export function createAdminActions(deps: AdminActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not change platform role.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.changeRole"));
         return;
       }
-      setAdminDashboardNotice("Platform role updated. Existing sessions were revoked.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.roleChanged"));
       await refreshSelectedAdminAccount();
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }
@@ -1097,7 +1101,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
   const transferAdminHubOwnership = async (hubId: number) => {
     if (!requireAdminPrivilegedUnlock()) return;
     if (!adminTransferTarget.trim()) {
-      setAdminDashboardNotice("Enter the new owner's DeCave ID, username or verified email.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.transferTargetMissing"));
       return;
     }
 
@@ -1120,14 +1124,14 @@ export function createAdminActions(deps: AdminActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.success) {
-        setAdminDashboardNotice(data.error || "Could not transfer Hub ownership.");
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.transferHub"));
         return;
       }
-      setAdminDashboardNotice("Hub ownership transferred.");
+      setAdminDashboardNotice(i18next.t("chat.actions.admin.hubTransferred"));
       setAdminTransferTarget("");
       await refreshSelectedAdminAccount();
     } catch {
-      setAdminDashboardNotice("Could not connect to DeCave.");
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
     } finally {
       setAdminDashboardBusy(false);
     }

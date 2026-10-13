@@ -15,6 +15,7 @@ import { hostRoomFor } from "./actions/guard";
 import { dispatchBotEvent, resumeBotRun, type BotEvent } from "./engine";
 import { botsEnabled } from "./flags";
 import { limitsNow } from "./limits";
+import { refusal } from "./reasons";
 import {
   deleteStaleRuleTimers,
   dueTimerRoomIds,
@@ -308,6 +309,12 @@ async function runTimer(env: Env, timer: BotTimer, now: number): Promise<boolean
   }
 }
 
+/** The run-log detail for a timer dropped after its retry failed. */
+function timerDropped(kind: string) {
+  const { reason, notice } = refusal("bots.run.server.timerDropped", { kind });
+  return { detail: reason, notice };
+}
+
 async function retryOrDrop(env: Env, timer: BotTimer, now: number): Promise<void> {
   if (!timer.key.endsWith(RETRY_SUFFIX)) {
     await putTimer(env.DB, { ...timer, key: `${timer.key}${RETRY_SUFFIX}`, fireAt: now + MINUTE });
@@ -320,7 +327,7 @@ async function retryOrDrop(env: Env, timer: BotTimer, now: number): Promise<void
     ruleId: timer.ruleId,
     trigger: kind,
     status: "error",
-    detail: `Timer failed twice; ${kind} dropped`,
+    ...timerDropped(kind),
   }).catch(() => undefined);
 }
 

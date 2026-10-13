@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { t } from "i18next";
 import { AppState } from "react-native";
 import { apiJson, WS_URL } from "@/src/lib/api";
 import { useSession } from "@/src/providers/SessionProvider";
@@ -182,7 +183,7 @@ export function RealtimeProvider({ children }: PropsWithChildren) {
 
             if (event.type === "SESSION_REVOKED") {
               if (!ownsSocket(socket)) return;
-              void invalidate("This account was signed in somewhere else.", token);
+              void invalidate(t("common.mobile.signedInElsewhere"), token);
             }
           } catch {}
         };

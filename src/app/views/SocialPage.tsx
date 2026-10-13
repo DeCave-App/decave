@@ -1,7 +1,9 @@
 // Messages and Friends: conversation list, the open DM or group chat, and the Friends view.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction, MutableRefObject, JSX } from "react";
 import { Fragment } from "react";
+import { shouldSend, useChatPrefs } from "../../features/settings/chatPrefs";
 import { Icon } from "../../components/Icon";
 import {
   DmEncryptionBadge,
@@ -22,7 +24,7 @@ import type {
   GroupChatMessage,
   GroupChat,
 } from "../types";
-import { formatTimestamp } from "../locale";
+import { formatTimestamp } from "../../i18n/format";
 import { presenceLabel, presenceColor } from "../user-display";
 import { UserAvatar } from "../components/UserAvatar";
 import { FriendsView } from "./FriendsView";
@@ -184,6 +186,8 @@ export function SocialPage({
   messageRendering,
   friendActions,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
+  const chatPrefs = useChatPrefs();
   const { loadSocialState, socialAction, addFriendByDecaveId, copyMyDecaveId } = friendActions;
   const { dmPreviewText, replyPreviewText, scrollToMessage, renderDmMessageBody } = messageRendering;
   const {
@@ -213,7 +217,7 @@ export function SocialPage({
       className="dc-workspace-page dc-social-page"
       role="dialog"
       aria-modal="true"
-      aria-label={socialView === "dm" ? "Direct messages" : "Friends"}
+      aria-label={socialView === "dm" ? t("chat.social.dmLabel") : t("chat.social.friendsTitle")}
       data-social-surface={socialView === "dm" ? "dms" : "friends"}
       data-primary-workspace={socialView === "dm" ? "dms" : "secondary"}
     >
@@ -221,20 +225,16 @@ export function SocialPage({
         <div className="dc-dm-reference-shell" data-social-view={socialView}>
           <header className="ds-page-header dc-social-header">
             <div className="ds-page-header-copy">
-              <h2>{socialView === "dm" ? "Messages" : "Friends"}</h2>
-              <p>
-                {socialView === "dm"
-                  ? "Your private and group conversations."
-                  : "See who is online, share your ID and add friends."}
-              </p>
+              <h2>{socialView === "dm" ? t("chat.social.dmTitle") : t("chat.social.friendsTitle")}</h2>
+              <p>{socialView === "dm" ? t("chat.social.dmLead") : t("chat.social.friendsLead")}</p>
             </div>
             <div className="ds-page-header-actions">
               <button
                 type="button"
                 className="ds-btn ds-btn-ghost ds-icon-btn"
                 onClick={() => setShowSocial(false)}
-                aria-label="Close"
-                title="Close"
+                aria-label={t("common.actions.close")}
+                title={t("common.actions.close")}
               >
                 <Icon name="close" />
               </button>
@@ -246,14 +246,14 @@ export function SocialPage({
               <aside className="dc-dm-list-pane ds-social-list">
                 <div className="ds-social-list-head">
                   <div className="ds-section-label">
-                    <span>Conversations</span>
+                    <span>{t("chat.social.conversations")}</span>
                   </div>
                   <button
                     type="button"
                     className="ds-btn ds-btn-ghost ds-icon-btn ds-btn-sm"
                     onClick={openNewConversationComposer}
-                    title="New conversation"
-                    aria-label="New conversation"
+                    title={t("chat.newConversation.kicker")}
+                    aria-label={t("chat.newConversation.kicker")}
                   >
                     <Icon name="message-plus" />
                   </button>
@@ -265,12 +265,12 @@ export function SocialPage({
                     type="search"
                     value={dmConversationSearch}
                     onChange={(event) => setDmConversationSearch(event.target.value)}
-                    placeholder="Search conversations"
-                    aria-label="Search conversations"
+                    placeholder={t("chat.social.searchConversations")}
+                    aria-label={t("chat.social.searchConversations")}
                   />
                 </label>
 
-                <div className="ds-tabs" role="tablist" aria-label="Conversation filters">
+                <div className="ds-tabs" role="tablist" aria-label={t("chat.social.filters")}>
                   {(["all", "unread", "requests"] as const).map((filter) => (
                     <button
                       type="button"
@@ -281,12 +281,16 @@ export function SocialPage({
                       onClick={() => setDmListFilter(filter)}
                     >
                       {filter === "all"
-                        ? "All"
+                        ? t("chat.social.filterAll")
                         : filter === "unread"
-                          ? `Unread${dmUnreadTotal ? ` ${dmUnreadTotal}` : ""}`
+                          ? dmUnreadTotal
+                            ? t("chat.social.filterUnreadCount", { number: dmUnreadTotal })
+                            : t("chat.social.filterUnread")
                           : filter === "requests"
-                            ? `Requests${incomingFriendRequests.length ? ` ${incomingFriendRequests.length}` : ""}`
-                            : "Archived"}
+                            ? incomingFriendRequests.length
+                              ? t("chat.social.filterRequestsCount", { number: incomingFriendRequests.length })
+                              : t("chat.social.filterRequests")
+                            : t("chat.social.archived")}
                     </button>
                   ))}
                 </div>
@@ -294,7 +298,7 @@ export function SocialPage({
                 <div className="dc-dm-scroll ds-list">
                   {dmListFilter === "archived" && (
                     <div className="ds-section-label">
-                      <span>Archived</span>
+                      <span>{t("chat.social.archived")}</span>
                     </div>
                   )}
                   {visibleDmConversations
@@ -329,7 +333,7 @@ export function SocialPage({
                               )}
                             </span>
                             <span className="ds-row-sub">
-                              {dmPreviewText(conversation.latestMessage) || "Private message"}
+                              {dmPreviewText(conversation.latestMessage) || t("common.inbox.privateMessage")}
                             </span>
                           </span>
                           <span className="ds-row-meta">
@@ -361,11 +365,16 @@ export function SocialPage({
                           </span>
                           <span className="ds-row-copy">
                             <span className="ds-row-title">{group.name}</span>
-                            <span className="ds-row-sub">{group.latestMessage || `${group.memberCount} members`}</span>
+                            <span className="ds-row-sub">
+                              {group.latestMessage || t("chat.social.groupMembers", { count: group.memberCount })}
+                            </span>
                           </span>
                           <span className="ds-row-meta">
                             <span>{formatDmSidebarTime(group.latestTimestamp)}</span>
-                            <span className="ds-badge ds-badge-muted" title={`${group.memberCount} members`}>
+                            <span
+                              className="ds-badge ds-badge-muted"
+                              title={t("chat.social.groupMembers", { count: group.memberCount })}
+                            >
                               {group.memberCount}
                             </span>
                           </span>
@@ -380,14 +389,14 @@ export function SocialPage({
                           </span>
                           <span className="ds-row-copy">
                             <span className="ds-row-title">{user.username}</span>
-                            <span className="ds-row-sub">Incoming friend request</span>
+                            <span className="ds-row-sub">{t("chat.social.incomingRequest")}</span>
                           </span>
                           <span className="ds-row-actions">
                             <button
                               type="button"
                               className="ds-btn ds-btn-primary ds-icon-btn ds-btn-sm"
-                              title="Accept"
-                              aria-label={`Accept ${user.username}`}
+                              title={t("common.actions.accept")}
+                              aria-label={t("common.friends.acceptUser", { name: user.username })}
                               onClick={() => void socialAction(user.id, "accept")}
                             >
                               <Icon name="check" />
@@ -395,8 +404,8 @@ export function SocialPage({
                             <button
                               type="button"
                               className="ds-btn ds-btn-ghost ds-icon-btn ds-btn-sm"
-                              title="Decline"
-                              aria-label={`Decline ${user.username}`}
+                              title={t("common.actions.decline")}
+                              aria-label={t("common.friends.declineUser", { name: user.username })}
                               onClick={() => void socialAction(user.id, "reject")}
                             >
                               <Icon name="close" />
@@ -411,14 +420,14 @@ export function SocialPage({
                           </span>
                           <span className="ds-row-copy">
                             <span className="ds-row-title">{user.username}</span>
-                            <span className="ds-row-sub">Request sent</span>
+                            <span className="ds-row-sub">{t("common.friends.requestSent")}</span>
                           </span>
                           <span className="ds-row-meta" />
                         </div>
                       ))}
                       {incomingFriendRequests.length === 0 && outgoingFriendRequests.length === 0 && (
                         <div className="ds-empty">
-                          <p>No pending friend requests.</p>
+                          <p>{t("chat.social.noRequests")}</p>
                         </div>
                       )}
                     </>
@@ -429,10 +438,10 @@ export function SocialPage({
                       <div className="ds-empty">
                         <p>
                           {dmListFilter === "unread"
-                            ? "You have no unread conversations."
+                            ? t("chat.social.noUnread")
                             : dmListFilter === "archived"
-                              ? "No archived chats."
-                              : "No conversations yet. Use the compose button to message a friend."}
+                              ? t("chat.social.noArchived")
+                              : t("chat.social.noConversations")}
                         </p>
                       </div>
                     )}
@@ -447,8 +456,12 @@ export function SocialPage({
                     <Icon name={dmListFilter === "archived" ? "chevron-left" : "archive"} size="sm" />
                     <span>
                       {dmListFilter === "archived"
-                        ? "Back to chats"
-                        : `Archived (${dmConversations.filter((conversation) => dmPreferences[conversation.user.id]?.archived).length})`}
+                        ? t("chat.social.backToChats")
+                        : t("chat.social.archivedCount", {
+                            number: dmConversations.filter(
+                              (conversation) => dmPreferences[conversation.user.id]?.archived,
+                            ).length,
+                          })}
                     </span>
                   </button>
                 </div>
@@ -465,9 +478,7 @@ export function SocialPage({
                       </span>
                       <div className="dc-hub-member-copy">
                         <strong>{activeGroupChat.name}</strong>
-                        <small>
-                          {activeGroupChat.memberCount} members · Group chat{""}
-                        </small>
+                        <small>{t("chat.social.groupChatMeta", { count: activeGroupChat.memberCount })}</small>
                       </div>
                       <div className="dc-dm-head-actions">
                         <GroupEncryptionBadge group={activeGroupChat} />
@@ -480,8 +491,8 @@ export function SocialPage({
                               setShowGroupMembers(true);
                               void loadSocialState();
                             }}
-                            title="Members"
-                            aria-label="Members"
+                            title={t("chat.social.members")}
+                            aria-label={t("chat.social.members")}
                           >
                             <Icon name="users" />
                           </button>
@@ -496,12 +507,14 @@ export function SocialPage({
                           disabled={olderHistoryBusy}
                           onClick={(event) => void loadOlderHistory("group", event.currentTarget.parentElement)}
                         >
-                          {olderHistoryBusy ? "Loading…" : "Load older messages"}
+                          {olderHistoryBusy ? t("common.status.loading") : t("chat.social.loadOlder")}
                         </button>
                       )}
-                      <div className="dc-dm-day">Today</div>
+                      <div className="dc-dm-day">{t("chat.social.today")}</div>
                       {groupMessages.length === 0 ? (
-                        <div className="dc-dm-empty-reference">This is the beginning of {activeGroupChat.name}.</div>
+                        <div className="dc-dm-empty-reference">
+                          {t("chat.social.groupBeginning", { name: activeGroupChat.name })}
+                        </div>
                       ) : (
                         groupMessages.map((message, index) => {
                           const mine = message.fromUserId === currentUser?.id;
@@ -521,14 +534,16 @@ export function SocialPage({
                               <div className="chat-message group-chat-message" data-message-id={message.id}>
                                 <div className="message-avatar-context">
                                   <UserAvatar
-                                    username={mine ? (currentUser?.username ?? "You") : message.username}
+                                    username={
+                                      mine ? (currentUser?.username ?? t("chat.messages.you")) : message.username
+                                    }
                                     avatarUrl={mine ? currentUser?.avatarUrl : message.avatarUrl}
                                     className="message-avatar"
                                   />
                                 </div>
                                 <div className="chat-message-content">
                                   <div className="chat-message-header">
-                                    <strong>{mine ? "You" : message.username}</strong>
+                                    <strong>{mine ? t("chat.messages.you") : message.username}</strong>
                                     <span>{formatTimestamp(message.timestamp)}</span>
                                   </div>
                                   {message.replyToId && (
@@ -537,10 +552,12 @@ export function SocialPage({
                                       className="chat-reply-ref"
                                       onClick={() => scrollToMessage(message.replyToId!)}
                                     >
-                                      ↳ Reply to{" "}
                                       {replyTarget
-                                        ? `${replyTarget.username}: ${replyPreviewText(replyTarget.text)}`
-                                        : "message"}
+                                        ? t("chat.messages.replyTo", {
+                                            name: replyTarget.username,
+                                            preview: replyPreviewText(replyTarget.text),
+                                          })
+                                        : t("chat.messages.replyToMessage")}
                                     </button>
                                   )}
                                   <div className="chat-message-text">{renderGroupMessageBody(message)}</div>
@@ -550,8 +567,8 @@ export function SocialPage({
                                   >
                                     <button
                                       type="button"
-                                      title="Reply"
-                                      aria-label="Reply"
+                                      title={t("chat.messages.reply")}
+                                      aria-label={t("chat.messages.reply")}
                                       onClick={() => setGroupReplyingTo(message)}
                                     >
                                       <Icon name="message" />
@@ -570,13 +587,15 @@ export function SocialPage({
                                             contextLabel: activeGroupChat.name,
                                             evidenceType: "message",
                                             evidenceText: message.text,
-                                            evidenceLabel: `${message.username}'s group message`,
+                                            evidenceLabel: t("chat.report.groupMessageEvidence", {
+                                              name: message.username,
+                                            }),
                                             // Lets the safety team check an encrypted message really was sent.
                                             e2eeProof: dmE2ee.reportProof(message, "group") ?? undefined,
                                           })
                                         }
-                                        title="Report"
-                                        aria-label="Report message"
+                                        title={t("common.actions.report")}
+                                        aria-label={t("chat.messages.reportMessage")}
                                       >
                                         <Icon name="flag" />
                                       </button>
@@ -586,8 +605,10 @@ export function SocialPage({
                                         type="button"
                                         className="danger"
                                         onClick={() => void deleteGroupMessage(message)}
-                                        title={mine ? "Delete your message" : "Delete message as group owner"}
-                                        aria-label="Delete message"
+                                        title={
+                                          mine ? t("chat.messages.deleteOwn") : t("chat.social.deleteAsGroupOwner")
+                                        }
+                                        aria-label={t("chat.messages.deleteMessage")}
                                       >
                                         <Icon name="trash" />
                                       </button>
@@ -604,9 +625,16 @@ export function SocialPage({
                     {groupReplyingTo && (
                       <div className="composer-context">
                         <span>
-                          Replying to {groupReplyingTo.username}: {replyPreviewText(groupReplyingTo.text)}
+                          {t("chat.social.replyingToPreview", {
+                            name: groupReplyingTo.username,
+                            preview: replyPreviewText(groupReplyingTo.text),
+                          })}
                         </span>
-                        <button type="button" onClick={() => setGroupReplyingTo(null)} aria-label="Cancel reply">
+                        <button
+                          type="button"
+                          onClick={() => setGroupReplyingTo(null)}
+                          aria-label={t("chat.social.cancelReply")}
+                        >
                           <Icon name="close" size="sm" />
                         </button>
                       </div>
@@ -616,12 +644,12 @@ export function SocialPage({
                         <button
                           type="button"
                           className="dc-dm-composer-btn icon-only"
-                          title="Add"
+                          title={t("chat.social.add")}
                           onClick={() => {
                             setShowGroupEmojiPicker(false);
                             setGifPickerTarget(null);
                           }}
-                          aria-label="Add"
+                          aria-label={t("chat.social.add")}
                         >
                           <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path
@@ -633,25 +661,26 @@ export function SocialPage({
                       </span>
                       <textarea
                         rows={1}
+                        spellCheck={chatPrefs.spellcheck}
                         value={groupInput}
                         onChange={(event) => setGroupInput(event.target.value)}
                         onKeyDown={(event) => {
-                          if (event.key === "Enter" && !event.shiftKey) {
+                          if (shouldSend(event, chatPrefs)) {
                             event.preventDefault();
                             void sendGroupMessage();
                           }
                         }}
-                        placeholder={`Message ${activeGroupChat.name}`}
+                        placeholder={t("chat.social.messagePlaceholder", { name: activeGroupChat.name })}
                         maxLength={4000}
                       />
                       <span className="dc-composer-popover-anchor" data-composer-popover="true">
                         <button
                           type="button"
                           className="dc-dm-composer-btn gif-pill"
-                          title="GIF"
+                          title={t("chat.composer.gif")}
                           onClick={() => openGifPicker("group")}
                         >
-                          GIF
+                          {t("chat.composer.gif")}
                         </button>
                         {renderGifPicker("group")}
                       </span>
@@ -659,8 +688,8 @@ export function SocialPage({
                         <button
                           type="button"
                           className="dc-dm-composer-btn icon-only"
-                          title="Emoji"
-                          aria-label="Emoji"
+                          title={t("chat.composer.emoji")}
+                          aria-label={t("chat.composer.emoji")}
                           onClick={() => {
                             setGifPickerTarget(null);
                             setShowGroupEmojiPicker((value) => !value);
@@ -680,7 +709,7 @@ export function SocialPage({
                         className="dc-dm-send"
                         onClick={sendGroupMessage}
                         disabled={!groupInput.trim()}
-                        aria-label="Send"
+                        aria-label={t("common.actions.send")}
                       >
                         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                           <path
@@ -713,7 +742,11 @@ export function SocialPage({
                         <button
                           type="button"
                           className={`dc-dm-head-action ${dmPreferences[activeDmUser.id]?.favorite ? "active" : ""}`}
-                          title={dmPreferences[activeDmUser.id]?.favorite ? "Remove favorite" : "Add favorite"}
+                          title={
+                            dmPreferences[activeDmUser.id]?.favorite
+                              ? t("chat.social.removeFavorite")
+                              : t("chat.social.addFavorite")
+                          }
                           onClick={() =>
                             void updateDmPreference(activeDmUser.id, {
                               favorite: !(dmPreferences[activeDmUser.id]?.favorite ?? false),
@@ -725,8 +758,8 @@ export function SocialPage({
                         <button
                           type="button"
                           className="dc-dm-head-action"
-                          title="Voice call"
-                          aria-label="Voice call"
+                          title={t("chat.social.voiceCall")}
+                          aria-label={t("chat.social.voiceCall")}
                           onClick={() =>
                             window.dispatchEvent(
                               new CustomEvent("decave-direct-call-start", {
@@ -744,8 +777,8 @@ export function SocialPage({
                         <button
                           type="button"
                           className="dc-dm-head-action"
-                          title="Video call"
-                          aria-label="Video call"
+                          title={t("chat.social.videoCall")}
+                          aria-label={t("chat.social.videoCall")}
                           onClick={() =>
                             window.dispatchEvent(
                               new CustomEvent("decave-direct-call-start", {
@@ -759,8 +792,8 @@ export function SocialPage({
                         <button
                           type="button"
                           className="dc-dm-head-action"
-                          title="Conversation options"
-                          aria-label="Conversation options"
+                          title={t("chat.social.options")}
+                          aria-label={t("chat.social.options")}
                           onClick={() => setDmHeaderMenuOpen((value) => !value)}
                         >
                           <Icon name="more-vertical" />
@@ -776,7 +809,9 @@ export function SocialPage({
                               })
                             }
                           >
-                            {dmPreferences[activeDmUser.id]?.archived ? "Unarchive chat" : "Archive chat"}
+                            {dmPreferences[activeDmUser.id]?.archived
+                              ? t("chat.social.unarchive")
+                              : t("chat.social.archive")}
                           </button>
                           {
                             <button
@@ -787,7 +822,7 @@ export function SocialPage({
                                 setDmConversationDeleteConfirm(activeDmUser);
                               }}
                             >
-                              Delete conversation
+                              {t("chat.social.deleteConversation")}
                             </button>
                           }
                         </div>
@@ -804,12 +839,12 @@ export function SocialPage({
                           disabled={olderHistoryBusy}
                           onClick={(event) => void loadOlderHistory("dm", event.currentTarget.parentElement)}
                         >
-                          {olderHistoryBusy ? "Loading…" : "Load older messages"}
+                          {olderHistoryBusy ? t("common.status.loading") : t("chat.social.loadOlder")}
                         </button>
                       )}
-                      <div className="dc-dm-day">Today</div>
+                      <div className="dc-dm-day">{t("chat.social.today")}</div>
                       {dmMessages.length === 0 ? (
-                        <div className="dc-dm-empty-reference">This is the beginning of your private conversation.</div>
+                        <div className="dc-dm-empty-reference">{t("chat.social.dmBeginning")}</div>
                       ) : (
                         dmMessages.map((message, index) => {
                           const mine = message.fromUserId === currentUser?.id;
@@ -822,23 +857,25 @@ export function SocialPage({
                             : null;
                           const replyTargetName = replyTarget
                             ? replyTarget.fromUserId === currentUser?.id
-                              ? "You"
+                              ? t("chat.messages.you")
                               : activeDmUser.username
-                            : "message";
+                            : t("chat.social.messageFallback");
                           return (
                             <Fragment key={message.id}>
                               {encryptionStarts && <DmEncryptionDivider />}
                               <div className="chat-message" data-message-id={message.id}>
                                 <div className="message-avatar-context">
                                   <UserAvatar
-                                    username={mine ? (currentUser?.username ?? "You") : activeDmUser.username}
+                                    username={
+                                      mine ? (currentUser?.username ?? t("chat.messages.you")) : activeDmUser.username
+                                    }
                                     avatarUrl={mine ? currentUser?.avatarUrl : activeDmUser.avatarUrl}
                                     className="message-avatar"
                                   />
                                 </div>
                                 <div className="chat-message-content">
                                   <div className="chat-message-header">
-                                    <strong>{mine ? "You" : activeDmUser.username}</strong>
+                                    <strong>{mine ? t("chat.messages.you") : activeDmUser.username}</strong>
                                     <span>{formatTimestamp(message.timestamp)}</span>
                                   </div>
                                   {message.replyToId && (
@@ -847,10 +884,12 @@ export function SocialPage({
                                       className="chat-reply-ref"
                                       onClick={() => scrollToMessage(message.replyToId!)}
                                     >
-                                      ↳ Reply to{" "}
                                       {replyTarget
-                                        ? `${replyTargetName}: ${replyPreviewText(replyTarget.text)}`
-                                        : "message"}
+                                        ? t("chat.messages.replyTo", {
+                                            name: replyTargetName,
+                                            preview: replyPreviewText(replyTarget.text),
+                                          })
+                                        : t("chat.messages.replyToMessage")}
                                     </button>
                                   )}
                                   {editing ? (
@@ -871,8 +910,8 @@ export function SocialPage({
                                       <button
                                         type="button"
                                         className="ds-btn ds-btn-primary ds-icon-btn ds-btn-sm"
-                                        title="Save edit"
-                                        aria-label="Save edit"
+                                        title={t("chat.social.saveEdit")}
+                                        aria-label={t("chat.social.saveEdit")}
                                         onClick={() => void saveEditedDirectMessage()}
                                       >
                                         <Icon name="check" />
@@ -880,8 +919,8 @@ export function SocialPage({
                                       <button
                                         type="button"
                                         className="ds-btn ds-btn-ghost ds-icon-btn ds-btn-sm"
-                                        title="Cancel edit"
-                                        aria-label="Cancel edit"
+                                        title={t("chat.social.cancelEdit")}
+                                        aria-label={t("chat.social.cancelEdit")}
                                         onClick={() => {
                                           setDmEditingId(null);
                                           setDmEditingText("");
@@ -916,8 +955,8 @@ export function SocialPage({
                                         <button
                                           type="button"
                                           className="reaction-action-button"
-                                          title="Add reaction"
-                                          aria-label="Add reaction"
+                                          title={t("chat.messages.addReaction")}
+                                          aria-label={t("chat.messages.addReaction")}
                                           onClick={(event) => toggleMessageReactionPicker(message.id, event)}
                                         >
                                           <Icon name="smile" />
@@ -929,8 +968,8 @@ export function SocialPage({
                                       </div>
                                       <button
                                         type="button"
-                                        title="Reply"
-                                        aria-label="Reply"
+                                        title={t("chat.messages.reply")}
+                                        aria-label={t("chat.messages.reply")}
                                         onClick={() => {
                                           setDmEditingId(null);
                                           setDmEditingText("");
@@ -950,16 +989,18 @@ export function SocialPage({
                                               subjectUsername: activeDmUser.username,
                                               contextType: "dm",
                                               contextId: [currentUser.id, activeDmUser.id].sort().join(":"),
-                                              contextLabel: `Private conversation with ${activeDmUser.username}`,
+                                              contextLabel: t("chat.report.dmContext", { name: activeDmUser.username }),
                                               evidenceType: "message",
                                               evidenceText: message.text,
-                                              evidenceLabel: `${activeDmUser.username}'s private message`,
+                                              evidenceLabel: t("chat.report.dmEvidence", {
+                                                name: activeDmUser.username,
+                                              }),
                                               // Lets the safety team check an encrypted message was really sent.
                                               e2eeProof: dmE2ee.reportProof(message) ?? undefined,
                                             })
                                           }
-                                          title="Report"
-                                          aria-label="Report message"
+                                          title={t("common.actions.report")}
+                                          aria-label={t("chat.messages.reportMessage")}
                                         >
                                           <Icon name="flag" />
                                         </button>
@@ -968,8 +1009,8 @@ export function SocialPage({
                                         <>
                                           <button
                                             type="button"
-                                            title="Edit"
-                                            aria-label="Edit message"
+                                            title={t("common.actions.edit")}
+                                            aria-label={t("chat.messages.editMessage")}
                                             onClick={() => startEditDirectMessage(message)}
                                           >
                                             <Icon name="edit" />
@@ -977,8 +1018,8 @@ export function SocialPage({
                                           <button
                                             type="button"
                                             className="danger"
-                                            title="Delete"
-                                            aria-label="Delete message"
+                                            title={t("common.actions.delete")}
+                                            aria-label={t("chat.messages.deleteMessage")}
                                             onClick={() => setDmDeleteConfirm(message)}
                                           >
                                             <Icon name="trash" />
@@ -998,10 +1039,19 @@ export function SocialPage({
                     {dmReplyingTo && (
                       <div className="composer-context">
                         <span>
-                          Replying to {dmReplyingTo.fromUserId === currentUser?.id ? "You" : activeDmUser.username}:{" "}
-                          {replyPreviewText(dmReplyingTo.text)}
+                          {t("chat.social.replyingToPreview", {
+                            name:
+                              dmReplyingTo.fromUserId === currentUser?.id
+                                ? t("chat.messages.you")
+                                : activeDmUser.username,
+                            preview: replyPreviewText(dmReplyingTo.text),
+                          })}
                         </span>
-                        <button type="button" onClick={() => setDmReplyingTo(null)} aria-label="Cancel reply">
+                        <button
+                          type="button"
+                          onClick={() => setDmReplyingTo(null)}
+                          aria-label={t("chat.social.cancelReply")}
+                        >
                           <Icon name="close" size="sm" />
                         </button>
                       </div>
@@ -1013,22 +1063,26 @@ export function SocialPage({
                       <div className="attachment-composer-state">
                         {dmAttachmentBusy ? (
                           <>
-                            <span>Uploading {dmAttachmentRetryName || "attachment"}…</span>
+                            <span>
+                              {dmAttachmentRetryName
+                                ? t("chat.social.uploadingNamed", { name: dmAttachmentRetryName })
+                                : t("chat.composer.uploading")}
+                            </span>
                             <button type="button" onClick={cancelDmAttachmentUpload}>
-                              Cancel
+                              {t("common.actions.cancel")}
                             </button>
                           </>
                         ) : (
                           <>
                             <span className="attachment-error">
-                              {dmError || `Attachment ready: ${dmAttachmentRetryName}`}
+                              {dmError || t("chat.social.attachmentReady", { name: dmAttachmentRetryName })}
                             </span>
                             {dmAttachmentRetryFileRef.current && (
                               <button
                                 type="button"
                                 onClick={() => void uploadDmAttachment(dmAttachmentRetryFileRef.current!)}
                               >
-                                Retry upload
+                                {t("chat.composer.retryUpload")}
                               </button>
                             )}
                           </>
@@ -1054,8 +1108,8 @@ export function SocialPage({
                         <button
                           type="button"
                           className="dc-dm-composer-btn icon-only"
-                          title="Add"
-                          aria-label="Add"
+                          title={t("chat.social.add")}
+                          aria-label={t("chat.social.add")}
                           disabled={dmAttachmentBusy}
                           onClick={() => {
                             setShowDmEmojiPicker(false);
@@ -1077,22 +1131,22 @@ export function SocialPage({
                               {
                                 id: "upload",
                                 icon: "paperclip",
-                                label: "Upload a file",
-                                hint: "Images, video or documents",
+                                label: t("chat.roomHero.uploadFile"),
+                                hint: t("chat.composer.uploadHint"),
                                 onSelect: () => dmAttachmentInputRef.current?.click(),
                               },
                               {
                                 id: "poll",
                                 icon: "poll",
-                                label: "Create poll",
-                                hint: "Ask the chat to vote",
+                                label: t("chat.roomHero.createPoll"),
+                                hint: t("chat.social.pollHint"),
                                 onSelect: () => openPollComposer("dm"),
                               },
                               {
                                 id: "gif",
                                 icon: "gif",
-                                label: "Send a GIF",
-                                hint: "Search the GIF library",
+                                label: t("chat.composer.sendGif"),
+                                hint: t("chat.composer.gifHint"),
                                 onSelect: () => openGifPicker("dm"),
                               },
                             ]}
@@ -1101,6 +1155,7 @@ export function SocialPage({
                       </span>
                       <textarea
                         rows={1}
+                        spellCheck={chatPrefs.spellcheck}
                         value={dmInput}
                         onChange={(event) => {
                           const value = event.target.value;
@@ -1108,22 +1163,26 @@ export function SocialPage({
                           setDmDrafts((current) => ({ ...current, [activeDmUser.id]: value }));
                         }}
                         onKeyDown={(event) => {
-                          if (event.key === "Enter" && !event.shiftKey) {
+                          if (shouldSend(event, chatPrefs)) {
                             event.preventDefault();
                             void sendDirectMessage();
                           }
                         }}
-                        placeholder={dmAttachmentBusy ? "Uploading attachment…" : `Message @${activeDmUser.username}`}
+                        placeholder={
+                          dmAttachmentBusy
+                            ? t("chat.composer.uploading")
+                            : t("chat.social.dmPlaceholder", { name: activeDmUser.username })
+                        }
                         maxLength={4000}
                       />
                       <span className="dc-composer-popover-anchor" data-composer-popover="true">
                         <button
                           type="button"
                           className="dc-dm-composer-btn gif-pill"
-                          title="GIF"
+                          title={t("chat.composer.gif")}
                           onClick={() => openGifPicker("dm")}
                         >
-                          GIF
+                          {t("chat.composer.gif")}
                         </button>
                         {renderGifPicker("dm")}
                       </span>
@@ -1131,8 +1190,8 @@ export function SocialPage({
                         <button
                           type="button"
                           className="dc-dm-composer-btn icon-only"
-                          title="Emoji"
-                          aria-label="Emoji"
+                          title={t("chat.composer.emoji")}
+                          aria-label={t("chat.composer.emoji")}
                           onClick={() => {
                             setShowDmPlusMenu(false);
                             setGifPickerTarget(null);
@@ -1153,7 +1212,7 @@ export function SocialPage({
                         className="dc-dm-send"
                         onClick={sendDirectMessage}
                         disabled={!dmInput.trim()}
-                        aria-label="Send"
+                        aria-label={t("common.actions.send")}
                       >
                         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                           <path
@@ -1170,13 +1229,13 @@ export function SocialPage({
                       <div className="dc-dm-start-icon ds-empty-icon">
                         <Icon name="mail" />
                       </div>
-                      <div className="ds-kicker">Direct messages</div>
-                      <h3>Start a conversation</h3>
-                      <p>Choose someone from your conversations or send a new private message.</p>
+                      <div className="ds-kicker">{t("chat.social.dmLabel")}</div>
+                      <h3>{t("chat.social.startTitle")}</h3>
+                      <p>{t("chat.social.startBody")}</p>
                       <div className="dc-dm-start-actions">
                         <button type="button" className="ds-btn ds-btn-primary" onClick={openNewConversationComposer}>
                           <Icon name="plus" size="sm" />
-                          New message
+                          {t("chat.social.newMessage")}
                         </button>
                         <button
                           type="button"
@@ -1187,7 +1246,7 @@ export function SocialPage({
                           }}
                         >
                           <Icon name="user-plus" size="sm" />
-                          Find a friend
+                          {t("chat.social.findFriend")}
                         </button>
                       </div>
                       {dmConversations
@@ -1195,7 +1254,7 @@ export function SocialPage({
                         .sort((a, b) => Date.parse(b.latestTimestamp) - Date.parse(a.latestTimestamp))
                         .slice(0, 3).length > 0 && (
                         <div className="dc-dm-recent-contacts">
-                          <small>RECENT CONVERSATIONS</small>
+                          <small>{t("chat.social.recent")}</small>
                           {dmConversations
                             .slice()
                             .sort((a, b) => Date.parse(b.latestTimestamp) - Date.parse(a.latestTimestamp))
@@ -1212,7 +1271,9 @@ export function SocialPage({
                                 />
                                 <span>
                                   <strong>{conversation.user.username}</strong>
-                                  <small>{dmPreviewText(conversation.latestMessage) || "Private conversation"}</small>
+                                  <small>
+                                    {dmPreviewText(conversation.latestMessage) || t("common.home.privateConversation")}
+                                  </small>
                                 </span>
                                 <Icon name="chevron-right" size="sm" />
                               </button>

@@ -5,9 +5,9 @@
 // refresh token. Unsubscribing, unlinking or a revoked token removes the role.
 
 import { createRawToken, nowIso } from "../db";
-import { json } from "../lib/http";
+import { apiError, json } from "../lib/http";
 import { requireUser } from "../lib/sessions";
-import { steamCallbackPage } from "../lib/activity";
+import { linkPageLocale, linkResultPage, type LinkOutcome } from "../lib/link-pages";
 import { realtimeBroadcast } from "../lib/realtime";
 import type { Env } from "../lib/env";
 import type { ApiContext } from "../routes/context";
@@ -185,8 +185,14 @@ async function checkMember(env: Env, userId: string, twitchUserId: string, acces
   for (const hubId of changedHubs) await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { hubId });
 }
 
-function page(title: string, message: string, ok: boolean, showOpenDeCaveLink = false): Response {
-  return steamCallbackPage(title, message, ok, showOpenDeCaveLink, "Twitch");
+async function page(
+  env: Env,
+  request: Request,
+  userId: string | null,
+  outcome: LinkOutcome,
+  options?: { account?: string; showOpenDeCaveLink?: boolean },
+): Promise<Response> {
+  return linkResultPage(await linkPageLocale(env.DB, request, userId), "twitch", outcome, options);
 }
 
 function callbackUrl(request: Request): string {
@@ -208,7 +214,7 @@ export async function handleTwitchMemberRoutes({ request, env, url, p, method }:
   if (p === "/api/account/twitch/connect" && method === "POST") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-    if (!twitchConfigured(env)) return json({ error: "Twitch sign-in isn't available yet." }, 503);
+    if (!twitchConfigured(env)) return apiError("twitch.signInUnavailable", 503);
     const state = createRawToken();
     const createdAt = nowIso();
     await env.DB.prepare("DELETE FROM decave_twitch_member_link_states WHERE user_id=? OR expires_at<=?")
@@ -232,7 +238,7 @@ export async function handleTwitchMemberRoutes({ request, env, url, p, method }:
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const ok = await recheckMember(env, user.id);
-    return ok ? json({ ok: true }) : json({ error: "Link Twitch again to check your subscription." }, 409);
+    return ok ? json({ ok: true }) : apiError("twitch.relinkToCheck", 409);
   }
 
   if (p === TWITCH_MEMBER_CALLBACK_PATH && method === "GET") {
@@ -244,20 +250,14 @@ export async function handleTwitchMemberRoutes({ request, env, url, p, method }:
           .bind(state, nowIso())
           .first<{ user_id: string }>()
       : null;
-    if (!claimed) return page("Twitch link expired", "Start linking Twitch again from the Hub.", false);
-    if (url.searchParams.get("error"))
-      return page("Twitch not linked", "You cancelled the Twitch sign-in. Nothing was linked.", false);
+    if (!claimed) return page(env, request, null, "expired");
+    if (url.searchParams.get("error")) return page(env, request, claimed.user_id, "cancelled");
     // Same browser-session binding as the Steam and FACEIT links.
     const browserHeaders = new Headers(request.headers);
     browserHeaders.delete("authorization");
     const browserUser = await requireUser(new Request(request.url, { method: "GET", headers: browserHeaders }), env);
     if (browserUser instanceof Response || browserUser.id !== claimed.user_id)
-      return page(
-        "Sign in to finish Twitch linking",
-        "Twitch was not linked. Open DeCave in this browser, sign in to the same account that started linking, then link Twitch again.",
-        false,
-        true,
-      );
+      return page(env, request, claimed.user_id, "signIn", { showOpenDeCaveLink: true });
     let tokens: Tokens | null = null;
     let twitchUser: { id: string; login: string } | null = null;
     try {
@@ -275,12 +275,11 @@ export async function handleTwitchMemberRoutes({ request, env, url, p, method }:
     } catch (error) {
       console.error("Twitch member sign-in failed", error instanceof Error ? error.message : "UnknownError");
     }
-    if (!tokens || !twitchUser) return page("Twitch verification failed", "Twitch didn't confirm the sign-in.", false);
+    if (!tokens || !twitchUser) return page(env, request, claimed.user_id, "failed");
     const taken = await env.DB.prepare("SELECT user_id FROM decave_twitch_member_links WHERE twitch_user_id=?")
       .bind(twitchUser.id)
       .first<{ user_id: string }>();
-    if (taken && taken.user_id !== claimed.user_id)
-      return page("Twitch account already linked", "That Twitch account is linked to another DeCave account.", false);
+    if (taken && taken.user_id !== claimed.user_id) return page(env, request, claimed.user_id, "taken");
     const stamp = nowIso();
     await env.DB.prepare(
       `INSERT INTO decave_twitch_member_links(user_id,twitch_user_id,login,refresh_token_enc,linked_at,checked_at)
@@ -302,7 +301,7 @@ export async function handleTwitchMemberRoutes({ request, env, url, p, method }:
     } catch (error) {
       console.error("Twitch subscription check failed", error instanceof Error ? error.message : "UnknownError");
     }
-    return page("Twitch linked", `Your Twitch account ${twitchUser.login} is now linked to DeCave.`, true);
+    return page(env, request, claimed.user_id, "linked", { account: twitchUser.login });
   }
 
   return null;

@@ -1,0 +1,37 @@
+/* Settings → Your setup. */
+.dcs-checkup-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.dcs-checkup-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  border-left: 3px solid var(--dcx-border);
+}
+.dcs-checkup-item.is-high {
+  border-left-color: var(--ds-danger, #e5484d);
+}
+.dcs-checkup-item.is-medium {
+  border-left-color: var(--dcx-warn, #f5a524);
+}
+.dcs-checkup-item.is-low {
+  border-left-color: var(--dcx-accent-2, #4cc9f0);
+}
+.dcs-checkup-severity {
+  color: var(--dcx-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.dcs-checkup-done {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}

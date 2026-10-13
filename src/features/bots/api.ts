@@ -1,7 +1,10 @@
 // Typed calls to the bot builder routes (worker/routes/bot-builder.ts).
 import type { BotRuleError } from "../../../shared/bots/schema.ts";
 import type { BotRule } from "../../../shared/bots/types.ts";
+import { apiErrorMessage, type ApiErrorBody } from "../../i18n/apiError.ts";
+import { i18next } from "../../i18n/index.ts";
 import type { BotCapability, SampleEvent } from "./model.ts";
+import { translateRuleErrors } from "./ruleErrors.ts";
 
 export type AuthorizedFetch = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -40,10 +43,20 @@ export type BotRun = {
   trigger: string;
   status: "ok" | "error" | "limited" | "skipped";
   detail: string;
+  /** `detail` as a notice to show in the UI language (absent or null for older runs). */
+  notice?: unknown;
   created_at: string;
 };
 
-export type DryRunStep = { ruleId: string; action: string; description: string; ok: boolean; reason?: string };
+export type DryRunStep = {
+  ruleId: string;
+  action: string;
+  description: string;
+  ok: boolean;
+  reason?: string;
+  reasonNotice?: unknown;
+  descriptionNotice?: unknown;
+};
 
 export type PublishError = BotRuleError & { ruleId: string };
 
@@ -81,13 +94,13 @@ export function createBotsApi(apiBaseUrl: string, authorizedFetch: AuthorizedFet
     });
     const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (!response.ok) {
-      const errors = Array.isArray(data.errors) ? (data.errors as BotRuleError[]) : [];
+      const errors = Array.isArray(data.errors) ? translateRuleErrors(data.errors as BotRuleError[]) : [];
+      // Rule errors without a server message are summed up; otherwise the
+      // server's message (translated from its code) or the generic one.
       const message =
-        typeof data.error === "string"
-          ? data.error
-          : errors.length
-            ? `${errors.length} problem${errors.length === 1 ? "" : "s"} to fix`
-            : "Something went wrong. Try again.";
+        typeof data.error !== "string" && typeof data.code !== "string" && errors.length
+          ? i18next.t("bots.api.problems", { count: errors.length })
+          : apiErrorMessage(data as ApiErrorBody, "common.unknown");
       throw new BotApiError(response.status, message, errors);
     }
     return data as T;

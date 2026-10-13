@@ -7,12 +7,23 @@ import {
   requireUser,
   securityEvent,
   describeSessionDevice,
+  sessionDeviceParts,
   normalizeSessionClient,
   currentPasswordThrottle,
+  revokeSession,
 } from "../lib/sessions";
-import { json, idFromPath, boundedBodyJson } from "../lib/http";
+import { json, idFromPath, boundedBodyJson, apiError, apiErrorLegacy } from "../lib/http";
 import { realtimeBroadcast } from "../lib/realtime";
-import { nowIso, publicIdOf, rawSessionTokenFromRequest, tokenHash, userByReference, verifyPassword } from "../db";
+import type { SessionDevice } from "../../shared/session-device";
+import {
+  nowIso,
+  publicIdOf,
+  rawSessionTokenFromRequest,
+  sessionPublicId,
+  tokenHash,
+  userByReference,
+  verifyPassword,
+} from "../db";
 import { currentDmKey, dmE2eeEnabled, dmKeyForClient, verifyDmSuccession, type DmKeyRow } from "../lib/dm-e2ee";
 import {
   isDmSignature,
@@ -60,6 +71,65 @@ async function friendIds(db: D1Database, userId: string): Promise<string[]> {
   return rows.results.map((row) => row.friend_id);
 }
 
+type KeyHolderRow = { session_hash: string; added_at: string };
+
+/**
+ * Sessions holding the account key: recorded holders (the creating device and
+ * approved links) plus approved link requests not collected yet. Earliest wins.
+ */
+async function keyHolderRows(db: D1Database, userId: string): Promise<KeyHolderRow[]> {
+  const rows = await db
+    .prepare(
+      `SELECT session_hash, MIN(added_at) AS added_at FROM (
+         SELECT session_hash, added_at FROM decave_dm_key_holders WHERE user_id=?
+         UNION ALL
+         SELECT requester_session_hash AS session_hash, resolved_at AS added_at FROM decave_dm_link_requests
+          WHERE user_id=? AND resolved_at IS NOT NULL AND sealed IS NOT NULL
+       ) GROUP BY session_hash`,
+    )
+    .bind(userId, userId)
+    .all<KeyHolderRow>();
+  return rows.results;
+}
+
+export type DmKeyDevice = {
+  sessionId: string;
+  label: string;
+  /** Parts of the label for clients that show it in their own language. */
+  device: SessionDevice | null;
+  addedAt: string;
+  lastUsedAt: string | null;
+  current: boolean;
+};
+
+async function keyDevices(db: D1Database, userId: string, currentHash: string): Promise<DmKeyDevice[]> {
+  const holders = await keyHolderRows(db, userId);
+  if (!holders.length) return [];
+  const sessions = await db
+    .prepare(
+      `SELECT s.token_hash, COALESCE(m.device_label,'') AS device_label, m.client, m.last_seen_at
+         FROM decave_sessions s LEFT JOIN decave_session_clients m ON m.token_hash=s.token_hash
+        WHERE s.user_id=? AND s.expires_at>?`,
+    )
+    .bind(userId, nowIso())
+    .all<{ token_hash: string; device_label: string; client: string | null; last_seen_at: string | null }>();
+  const live = new Map(sessions.results.map((row) => [row.token_hash, row]));
+  return holders
+    .filter((holder) => live.has(holder.session_hash))
+    .map((holder) => {
+      const session = live.get(holder.session_hash)!;
+      return {
+        sessionId: sessionPublicId(holder.session_hash),
+        label: session.device_label,
+        device: sessionDeviceParts(session.device_label),
+        addedAt: holder.added_at,
+        lastUsedAt: session.last_seen_at ?? null,
+        current: holder.session_hash === currentHash,
+      };
+    })
+    .sort((a, b) => Number(b.current) - Number(a.current) || a.addedAt.localeCompare(b.addedAt));
+}
+
 export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
   if (!p.startsWith("/api/dm-keys")) return null;
   const user = await requireUser(request, env);
@@ -71,12 +141,12 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
     if (p === "/api/dm-keys/me" && method === "GET")
       return json({ enabled: false, key: null, backup: null, keys: [], historyDays: null }, 200, noStore);
     if (/^\/api\/dm-keys\/users\/[^/]+$/.test(p) && method === "GET") return json({ current: null, keys: [] });
-    return json({ error: "Encrypted messages aren't available yet.", code: "DM_E2EE_DISABLED" }, 403);
+    return apiErrorLegacy("DM_E2EE_DISABLED", "dmE2ee.disabled", 403);
   }
 
   if (method !== "GET") {
     const limited = await env.AUTH_RATE_LIMITER.limit({ key: `dm-keys:${user.id}` });
-    if (!limited.success) return json({ error: "Too many attempts. Try again shortly." }, 429);
+    if (!limited.success) return apiError("common.tooManyAttempts", 429);
   }
 
   // This account's key, all its keys (with the sealed seeds that let this account's
@@ -89,9 +159,9 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
       env.DB.prepare("SELECT key_id, backup FROM decave_dm_key_backups WHERE user_id=?")
         .bind(user.id)
         .first<{ key_id: string; backup: string }>(),
-      env.DB.prepare("SELECT history_days FROM decave_dm_key_settings WHERE user_id=?")
+      env.DB.prepare("SELECT history_days, rotation_requested_at FROM decave_dm_key_settings WHERE user_id=?")
         .bind(user.id)
-        .first<{ history_days: number | null }>(),
+        .first<{ history_days: number | null; rotation_requested_at: string | null }>(),
     ]);
     const key = rows.results.find((row) => !row.retired_at) ?? null;
     return json(
@@ -104,6 +174,8 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
           sealedForPrevious: row.sealed_for_previous ? parseDmSealedSuccessor(row.sealed_for_previous) : null,
         })),
         historyDays: settings?.history_days ?? null,
+        // A device holding the key was removed: the next unlocked device rotates it.
+        rotationRequested: Boolean(settings?.rotation_requested_at),
       },
       200,
       noStore,
@@ -113,23 +185,23 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
   // Rotate: the current key signs its replacement and seals it for this account's other devices.
   if (p === "/api/dm-keys/me/rotate" && method === "POST") {
     const body = await boundedBodyJson(request, BODY_LIMIT);
-    if (!body) return json({ error: "Request too large." }, 413);
+    if (!body) return apiError("dmKeys.requestTooLarge", 413);
     const key = parseDmPublicKey(body.key);
     const sealed = parseDmSealedSuccessor(body.sealedForPrevious);
     const certificate = isDmSignature(body.certificate) ? body.certificate : null;
     const backup = body.backup === null || body.backup === undefined ? null : parseDmKeyBackup(body.backup);
     if (!key || !sealed || !certificate || (body.backup && (!backup || backup.keyId !== key.keyId))) {
-      return json({ error: "Invalid encryption key." }, 400);
+      return apiError("dmKeys.invalidKey", 400);
     }
     const current = await currentDmKey(env.DB, user.id);
     if (!current || current.key_id !== body.previousKeyId) {
-      return json({ error: "Your key already changed on another device.", code: "DM_KEY_STALE" }, 409);
+      return apiErrorLegacy("DM_KEY_STALE", "dmKeys.keyStale", 409);
     }
     if (!(await verifyDmSuccession(publicIdOf(user), current, key, certificate))) {
-      return json({ error: "The new key isn't signed by your current key." }, 400);
+      return apiError("dmKeys.keyNotSigned", 400);
     }
     const taken = await env.DB.prepare("SELECT 1 FROM decave_dm_keys WHERE key_id=?").bind(key.keyId).first();
-    if (taken) return json({ error: "Invalid encryption key." }, 400);
+    if (taken) return apiError("dmKeys.invalidKey", 400);
     const now = nowIso();
     const statements = [
       env.DB.prepare("UPDATE decave_dm_keys SET retired_at=? WHERE key_id=? AND retired_at IS NULL").bind(
@@ -140,6 +212,8 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
         `INSERT INTO decave_dm_keys(key_id,user_id,x25519_public,ed25519_public,created_at,previous_key_id,certificate,sealed_for_previous)
          VALUES(?,?,?,?,?,?,?,?)`,
       ).bind(key.keyId, user.id, key.x25519, key.ed25519, now, current.key_id, certificate, JSON.stringify(sealed)),
+      // A removed device asked for this rotation; the new key answers it.
+      env.DB.prepare("UPDATE decave_dm_key_settings SET rotation_requested_at=NULL WHERE user_id=?").bind(user.id),
     ];
     if (backup) {
       statements.push(
@@ -153,7 +227,7 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
       // Two devices rotating at once: the unique index on current keys lets only one win.
       await env.DB.batch(statements);
     } catch {
-      return json({ error: "Your key already changed on another device.", code: "DM_KEY_STALE" }, 409);
+      return apiErrorLegacy("DM_KEY_STALE", "dmKeys.keyStale", 409);
     }
     await securityEvent(env, user.id, "dm_e2ee.key_rotated", request, key.keyId);
     await realtimeBroadcast(
@@ -168,10 +242,10 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
   // How long this account's devices keep replaced keys.
   if (p === "/api/dm-keys/me/settings" && method === "PUT") {
     const body = await boundedBodyJson(request, BODY_LIMIT);
-    if (!body) return json({ error: "Request too large." }, 413);
+    if (!body) return apiError("dmKeys.requestTooLarge", 413);
     const days = body.historyDays;
     if (days !== null && !(typeof days === "number" && HISTORY_CHOICES.has(days))) {
-      return json({ error: "Choose one of the offered options." }, 400);
+      return apiError("dmKeys.chooseOfferedOption", 400);
     }
     await env.DB.prepare(
       `INSERT INTO decave_dm_key_settings(user_id,history_days,updated_at) VALUES(?,?,?)
@@ -193,26 +267,26 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
   // Publish this account's key, or replace it (reset) after confirming the password.
   if (p === "/api/dm-keys/me" && method === "POST") {
     const body = await boundedBodyJson(request, BODY_LIMIT);
-    if (!body) return json({ error: "Request too large." }, 413);
+    if (!body) return apiError("dmKeys.requestTooLarge", 413);
     const key = parseDmPublicKey(body.key);
     const backup = parseDmKeyBackup(body.backup);
-    if (!key || !backup || backup.keyId !== key.keyId) return json({ error: "Invalid encryption key." }, 400);
+    if (!key || !backup || backup.keyId !== key.keyId) return apiError("dmKeys.invalidKey", 400);
     const existing = await currentDmKey(env.DB, user.id);
     if (existing?.key_id === key.keyId) return json({ key: dmKeyForClient(existing) });
     if (existing) {
       if (body.reset !== true) {
-        return json({ error: "This account already has an encryption key.", code: "DM_KEY_EXISTS" }, 409);
+        return apiErrorLegacy("DM_KEY_EXISTS", "dmKeys.keyExists", 409);
       }
       const password = typeof body.currentPassword === "string" ? body.currentPassword : "";
       const passwordThrottle = await currentPasswordThrottle(env, user.id);
       if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(password, user.password_salt, user.password_hash))) {
         await securityEvent(env, user.id, "dm_e2ee.reset_reauth_failed", request);
-        return json({ error: "Current password is incorrect." }, 403);
+        return apiError("common.currentPasswordIncorrect", 403);
       }
     }
     const taken = await env.DB.prepare("SELECT 1 FROM decave_dm_keys WHERE key_id=?").bind(key.keyId).first();
-    if (taken) return json({ error: "Invalid encryption key." }, 400);
+    if (taken) return apiError("dmKeys.invalidKey", 400);
     const now = nowIso();
     await env.DB.batch([
       env.DB.prepare("UPDATE decave_dm_keys SET retired_at=? WHERE user_id=? AND retired_at IS NULL").bind(
@@ -228,6 +302,14 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
       ).bind(user.id, key.keyId, JSON.stringify(backup), now),
       // Pending link requests were for the old key.
       env.DB.prepare("DELETE FROM decave_dm_link_requests WHERE user_id=?").bind(user.id),
+      // A new key lives only on this device until others are linked again.
+      env.DB.prepare("DELETE FROM decave_dm_key_holders WHERE user_id=?").bind(user.id),
+      env.DB.prepare("INSERT INTO decave_dm_key_holders(user_id,session_hash,added_at) VALUES(?,?,?)").bind(
+        user.id,
+        sessionHash,
+        now,
+      ),
+      env.DB.prepare("UPDATE decave_dm_key_settings SET rotation_requested_at=NULL WHERE user_id=?").bind(user.id),
     ]);
     await securityEvent(env, user.id, existing ? "dm_e2ee.key_reset" : "dm_e2ee.key_created", request, key.keyId);
     const row = (await currentDmKey(env.DB, user.id))!;
@@ -242,11 +324,11 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
   // A new recovery code: same key, new backup.
   if (p === "/api/dm-keys/me/backup" && method === "PUT") {
     const body = await boundedBodyJson(request, BODY_LIMIT);
-    if (!body) return json({ error: "Request too large." }, 413);
+    if (!body) return apiError("dmKeys.requestTooLarge", 413);
     const backup = parseDmKeyBackup(body.backup);
     const current = await currentDmKey(env.DB, user.id);
     if (!backup || !current || backup.keyId !== current.key_id) {
-      return json({ error: "That backup is not for your current key." }, 400);
+      return apiError("dmKeys.backupKeyMismatch", 400);
     }
     await env.DB.prepare(
       `INSERT INTO decave_dm_key_backups(user_id,key_id,backup,updated_at) VALUES(?,?,?,?)
@@ -263,7 +345,7 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
   const userKeys = idFromPath(p, /^\/api\/dm-keys\/users\/([^/]+)$/);
   if (userKeys && method === "GET") {
     const target = await userByReference(env.DB, decodeURIComponent(userKeys[1]));
-    if (!target || target.deleted_at) return json({ error: "User not found" }, 404);
+    if (!target || target.deleted_at) return apiError("common.userNotFound", 404);
     const rows = await env.DB.prepare(
       `SELECT * FROM decave_dm_keys WHERE user_id=? ORDER BY created_at DESC LIMIT ${MAX_LISTED_KEYS}`,
     )
@@ -279,11 +361,11 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
 
   if (p === "/api/dm-keys/link-requests" && method === "POST") {
     const body = await boundedBodyJson(request, BODY_LIMIT);
-    if (!body) return json({ error: "Request too large." }, 413);
+    if (!body) return apiError("dmKeys.requestTooLarge", 413);
     const linkPublic = typeof body.linkPublicKey === "string" ? body.linkPublicKey : "";
-    if (!/^[A-Za-z0-9_-]{43}$/.test(linkPublic)) return json({ error: "Invalid device key." }, 400);
+    if (!/^[A-Za-z0-9_-]{43}$/.test(linkPublic)) return apiError("dmKeys.invalidDeviceKey", 400);
     if (!(await currentDmKey(env.DB, user.id))) {
-      return json({ error: "This account has no encryption key yet.", code: "DM_KEY_MISSING" }, 409);
+      return apiErrorLegacy("DM_KEY_MISSING", "dmKeys.keyMissing", 409);
     }
     const now = nowIso();
     await env.DB.prepare("DELETE FROM decave_dm_link_requests WHERE user_id=? AND expires_at<=?")
@@ -295,7 +377,7 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
       .bind(user.id)
       .first<{ count: number }>();
     if (Number(pending?.count ?? 0) >= MAX_PENDING_LINK_REQUESTS) {
-      return json({ error: "Too many devices are waiting for approval. Try again in a few minutes." }, 429);
+      return apiError("dmKeys.tooManyPendingDevices", 429);
     }
     const id = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + LINK_REQUEST_TTL_MS).toISOString();
@@ -312,7 +394,7 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
       .run();
     await securityEvent(env, user.id, "dm_e2ee.link_requested", request, deviceLabel);
     await realtimeBroadcast(env, { type: "DM_LINK_REQUEST", requestId: id }, { userIds: [user.id] });
-    return json({ request: { id, expiresAt, deviceLabel } }, 201);
+    return json({ request: { id, expiresAt, deviceLabel, device: sessionDeviceParts(deviceLabel) } }, 201);
   }
 
   if (p === "/api/dm-keys/link-requests" && method === "GET") {
@@ -328,6 +410,7 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
           id: row.id,
           linkPublicKey: row.link_public,
           deviceLabel: row.device_label,
+          device: sessionDeviceParts(row.device_label),
           createdAt: row.created_at,
           expiresAt: row.expires_at,
           fromThisDevice: row.requester_session_hash === sessionHash,
@@ -338,26 +421,65 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
     );
   }
 
+  // Devices that hold the account key and are still signed in.
+  if (p === "/api/dm-keys/me/devices" && method === "GET") {
+    return json({ devices: await keyDevices(env.DB, user.id, sessionHash) }, 200, noStore);
+  }
+
+  // Remove one: sign it out and ask for a new key, so it can't read new messages.
+  const deviceRoute = idFromPath(p, /^\/api\/dm-keys\/me\/devices\/([0-9a-f]{32})$/);
+  if (deviceRoute && method === "DELETE") {
+    const holders = await keyHolderRows(env.DB, user.id);
+    const target = holders.find((row) => sessionPublicId(row.session_hash) === deviceRoute[1]);
+    if (!target) return apiError("dmKeys.deviceNotFound", 404);
+    if (target.session_hash === sessionHash) return apiError("dmKeys.cannotRemoveCurrent", 400);
+    const now = nowIso();
+    await revokeSession(env, target.session_hash, "dm_key_device_removed");
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM decave_dm_key_holders WHERE user_id=? AND session_hash=?").bind(
+        user.id,
+        target.session_hash,
+      ),
+      env.DB.prepare(
+        `INSERT INTO decave_dm_key_settings(user_id,history_days,updated_at,rotation_requested_at) VALUES(?,NULL,?,?)
+         ON CONFLICT(user_id) DO UPDATE SET rotation_requested_at=excluded.rotation_requested_at, updated_at=excluded.updated_at`,
+      ).bind(user.id, now, now),
+    ]);
+    await securityEvent(
+      env,
+      user.id,
+      "dm_e2ee.device_removed",
+      request,
+      `client_session=${deviceRoute[1].slice(0, 12)}`,
+    );
+    await realtimeBroadcast(
+      env,
+      { type: "DM_KEYS_CHANGED", userId: publicIdOf(user), rotationRequested: true },
+      { userIds: [user.id] },
+    );
+    return json({ success: true, rotationRequested: true });
+  }
+
   const linkRoute = idFromPath(p, /^\/api\/dm-keys\/link-requests\/([0-9a-f-]{36})(?:\/(approve|deny))?$/);
   if (linkRoute) {
     const row = await env.DB.prepare("SELECT * FROM decave_dm_link_requests WHERE id=? AND user_id=?")
       .bind(linkRoute[1], user.id)
       .first<LinkRequestRow>();
-    if (!row) return json({ error: "That request has expired." }, 404);
+    if (!row) return apiError("dmKeys.requestExpired", 404);
     const now = nowIso();
     const status = linkStatus(row, now);
 
     // The requesting device collects the sealed key once.
     if (!linkRoute[2] && method === "GET") {
-      if (row.requester_session_hash !== sessionHash) return json({ error: "That request has expired." }, 404);
+      if (row.requester_session_hash !== sessionHash) return apiError("dmKeys.requestExpired", 404);
       if (status !== "pending") {
         await env.DB.prepare("DELETE FROM decave_dm_link_requests WHERE id=?").bind(row.id).run();
       }
       return json({ status, sealed: status === "approved" ? parseDmLinkSealed(row.sealed) : null }, 200, noStore);
     }
 
-    if (method !== "POST" || !linkRoute[2]) return json({ error: "Not found" }, 404);
-    if (status !== "pending") return json({ error: "That request has already been answered or expired." }, 409);
+    if (method !== "POST" || !linkRoute[2]) return apiError("common.notFound", 404);
+    if (status !== "pending") return apiError("dmKeys.requestAnsweredOrExpired", 409);
 
     if (linkRoute[2] === "deny") {
       await env.DB.prepare("UPDATE decave_dm_link_requests SET resolved_at=?, sealed=NULL WHERE id=?")
@@ -369,25 +491,28 @@ export async function handleDmKeyRoutes({ request, env, p, method }: ApiContext)
     }
 
     if (row.requester_session_hash === sessionHash) {
-      return json({ error: "Approve this from a device that can already read your messages." }, 403);
+      return apiError("dmKeys.approveFromTrustedDevice", 403);
     }
     const body = await boundedBodyJson(request, BODY_LIMIT);
-    if (!body) return json({ error: "Request too large." }, 413);
+    if (!body) return apiError("dmKeys.requestTooLarge", 413);
     const sealed = parseDmLinkSealed(body.sealed);
     const current = await currentDmKey(env.DB, user.id);
     if (!sealed || !current || sealed.keyId !== current.key_id) {
-      return json({ error: "That key is not your current encryption key." }, 400);
+      return apiError("dmKeys.keyNotCurrent", 400);
     }
     const updated = await env.DB.prepare(
       "UPDATE decave_dm_link_requests SET resolved_at=?, sealed=? WHERE id=? AND resolved_at IS NULL",
     )
       .bind(now, JSON.stringify(sealed), row.id)
       .run();
-    if (!updated.meta.changes) return json({ error: "That request has already been answered." }, 409);
+    if (!updated.meta.changes) return apiError("dmKeys.requestAnswered", 409);
+    await env.DB.prepare("INSERT OR IGNORE INTO decave_dm_key_holders(user_id,session_hash,added_at) VALUES(?,?,?)")
+      .bind(user.id, row.requester_session_hash, now)
+      .run();
     await securityEvent(env, user.id, "dm_e2ee.link_approved", request, row.device_label);
     await realtimeBroadcast(env, { type: "DM_LINK_RESOLVED", requestId: row.id }, { userIds: [user.id] });
     return json({ success: true });
   }
 
-  return json({ error: "Not found" }, 404);
+  return apiError("common.notFound", 404);
 }

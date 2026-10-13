@@ -1,0 +1,43 @@
+{
+  "tray": {
+    "open": "Apri DeCave",
+    "toggleMute": "Disattiva / Riattiva microfono",
+    "toggleDeafen": "Disattiva / Riattiva audio",
+    "quit": "Esci da DeCave"
+  },
+  "window": {
+    "streamTitle": "Stream DeCave"
+  },
+  "update": {
+    "checkFailed": "DeCave non è riuscito a cercare aggiornamenti. Controlla la connessione e riprova.",
+    "publisherUnverified": "Gli aggiornamenti automatici sono disattivati perché non è stato possibile verificare l'editore Windows dell'app installata.",
+    "installFailed": "DeCave non è riuscito a completare l'aggiornamento. Riprova più tardi."
+  },
+  "keybinds": {
+    "mustDiffer": "Le scorciatoie per disattivare microfono e audio devono essere diverse.",
+    "inUse": "Una di queste scorciatoie è già usata da Windows o da un'altra app."
+  },
+  "picker": {
+    "windowTitle": "Scegli cosa condividere · DeCave",
+    "title": "Scegli cosa condividere",
+    "subtitle": "Seleziona uno schermo o una finestra per la condivisione schermo di DeCave.",
+    "cancel": "Annulla",
+    "entireScreen": "Schermo intero",
+    "window": "Finestra",
+    "noPreview": "Nessuna anteprima"
+  },
+  "turnstile": {
+    "windowTitle": "Verifica di sicurezza DeCave",
+    "invalidToken": "La verifica di sicurezza ha restituito un token non valido.",
+    "unsupportedAction": "Azione di verifica di sicurezza non supportata.",
+    "replaced": "La verifica di sicurezza è stata sostituita da una nuova richiesta.",
+    "timedOut": "La verifica di sicurezza è scaduta.",
+    "loadFailed": "Impossibile caricare la verifica di sicurezza."
+  },
+  "overlay": {
+    "voice": "Vocale",
+    "unknown": "Sconosciuto",
+    "muted": "Microfono disattivato",
+    "deafened": "Audio disattivato"
+  }
+}

@@ -2,19 +2,29 @@
 // app keeps an identical copy at mobile/src/lib/account-export.ts (checked by
 // scripts/__tests__/account-export.test.mjs).
 
+const EXPORT_FAILED = "The export could not be completed. Retry the download.";
+const EXPORT_UNFINISHED = "The export did not finish. Retry the download.";
+
+/** `error` in English, with `errorKey` (its catalog key) for apps that translate when it is one of these. */
+function exportError(error: string): { complete: false; error: string; errorKey?: string } {
+  if (error === EXPORT_FAILED) return { complete: false, error, errorKey: "settings.accountExport.failed" };
+  if (error === EXPORT_UNFINISHED) return { complete: false, error, errorKey: "settings.accountExport.unfinished" };
+  return { complete: false, error };
+}
+
 /** The v2 export streams a JSON object and writes this terminal status last. */
-export function accountExportStatus(tail: string): { complete: boolean; error?: string } {
+export function accountExportStatus(tail: string): { complete: boolean; error?: string; errorKey?: string } {
   const text = tail.trimEnd();
   if (/"complete"\s*:\s*true\s*}\s*$/.test(text)) return { complete: true };
   const failed = /"complete"\s*:\s*false\s*,\s*"error"\s*:\s*"((?:\\.|[^"\\])*)"\s*}\s*$/.exec(text);
   if (failed) {
     try {
-      return { complete: false, error: JSON.parse(`"${failed[1]}"`) as string };
+      return exportError(JSON.parse(`"${failed[1]}"`) as string);
     } catch {
-      return { complete: false, error: "The export could not be completed. Retry the download." };
+      return exportError(EXPORT_FAILED);
     }
   }
-  return { complete: false, error: "The export did not finish. Retry the download." };
+  return exportError(EXPORT_UNFINISHED);
 }
 
 /**

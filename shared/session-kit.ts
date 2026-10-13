@@ -7,6 +7,9 @@
  * state before applying a kit.
  */
 
+import englishChat from "./i18n/locales/en/chat.json" with { type: "json" };
+import { englishText, type TextParams } from "./i18n/english.ts";
+
 export const SESSION_KIT_VERSION = 1 as const;
 export const MAX_SESSION_KITS = 40;
 export const MAX_SESSION_KIT_NAME_LENGTH = 64;
@@ -92,8 +95,13 @@ export type SessionKitReferenceIssueCode =
 export type SessionKitReferenceIssue = {
   code: SessionKitReferenceIssueCode;
   reference: string;
+  /** English; `key` is its catalog key for clients that translate. */
   message: string;
+  key: string;
 };
+
+/** A catalog key (chat.session.kitLaunch.*) with its values; clients render it with t(). */
+export type SessionKitText = { key: string; params?: TextParams };
 
 export type SessionKitLaunchPlan = {
   kitId: string;
@@ -112,7 +120,9 @@ export type SessionKitLaunchPlan = {
   issues: SessionKitReferenceIssue[];
   /** A missing hub prevents contextual launch; other stale references can be skipped safely. */
   canLaunch: boolean;
+  /** English summary lines; `summaryText` holds the same lines as catalog keys. */
   summary: string[];
+  summaryText: SessionKitText[];
   /** Applying a plan never captures, publishes, enables a camera, or unmutes a track. */
   mediaActionRequired: readonly ["microphone", "camera"];
   /** Available invite candidates remain unchanged until the user chooses an explicit invite action. */
@@ -275,8 +285,24 @@ function channelsFor(catalog: SessionKitReferenceCatalog, hubId: string): Set<st
   return catalogSet((catalog.channelIdsByHub as Readonly<Record<string, readonly string[]>>)[hubId]);
 }
 
-function issue(code: SessionKitReferenceIssueCode, reference: string, message: string): SessionKitReferenceIssue {
-  return { code, reference, message };
+const KIT_LAUNCH = "session.kitLaunch";
+
+/** English for a kit-launch text; count values pick the English plural form. */
+function kitLaunchEnglish(text: SessionKitText): string {
+  const path = text.key.slice("chat.".length);
+  const count = text.params?.count;
+  const plural = typeof count === "number" ? (count === 1 ? "_one" : "_other") : "";
+  return englishText(englishChat, `${path}${plural}`, text.params);
+}
+
+function issue(code: SessionKitReferenceIssueCode, reference: string): SessionKitReferenceIssue {
+  const name = code.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase());
+  const key = `chat.${KIT_LAUNCH}.issues.${name}`;
+  return { code, reference, message: kitLaunchEnglish({ key }), key };
+}
+
+function summaryLine(name: string, params?: TextParams): SessionKitText {
+  return { key: `chat.${KIT_LAUNCH}.summary.${name}`, ...(params ? { params } : {}) };
 }
 
 /** Resolve stale server/device references before a kit is applied to the UI. */
@@ -291,52 +317,30 @@ export function validateSessionKitReferences(
   const inputs = catalogSet(catalog.inputDeviceIds);
   const outputs = catalogSet(catalog.outputDeviceIds);
   const hubId = hubs.has(kit.scope.hubId) ? kit.scope.hubId : null;
-  if (!hubId)
-    issues.push(
-      issue(
-        "hub-unavailable",
-        kit.scope.hubId,
-        "This Hub is no longer available; the kit will open at the safe home state.",
-      ),
-    );
+  if (!hubId) issues.push(issue("hub-unavailable", kit.scope.hubId));
   const channelId =
     hubId && kit.scope.channelId && channelsFor(catalog, hubId).has(kit.scope.channelId) ? kit.scope.channelId : null;
-  if (kit.scope.channelId && !channelId)
-    issues.push(issue("channel-unavailable", kit.scope.channelId, "This room is no longer available and was skipped."));
+  if (kit.scope.channelId && !channelId) issues.push(issue("channel-unavailable", kit.scope.channelId));
   const eventId = kit.scope.eventId && events.has(kit.scope.eventId) ? kit.scope.eventId : null;
-  if (kit.scope.eventId && !eventId)
-    issues.push(issue("event-unavailable", kit.scope.eventId, "This event is unavailable and was skipped."));
+  if (kit.scope.eventId && !eventId) issues.push(issue("event-unavailable", kit.scope.eventId));
   // Invites are never restored from an unverified catalog. The caller must
   // provide current membership explicitly before any invite action is shown.
   const inviteUserIds = catalog.inviteUserIds ? kit.inviteUserIds.filter((userId) => members.has(userId)) : [];
   for (const userId of kit.inviteUserIds) {
-    if (!inviteUserIds.includes(userId))
-      issues.push(issue("invite-member-unavailable", userId, "An unavailable invite was skipped."));
+    if (!inviteUserIds.includes(userId)) issues.push(issue("invite-member-unavailable", userId));
   }
   const inputDeviceId =
     kit.voice.inputDeviceId && catalog.inputDeviceIds && inputs.has(kit.voice.inputDeviceId)
       ? kit.voice.inputDeviceId
       : null;
   if (kit.voice.inputDeviceId && !inputDeviceId)
-    issues.push(
-      issue(
-        "input-device-unavailable",
-        kit.voice.inputDeviceId,
-        "The saved input is unavailable; the system input will be kept.",
-      ),
-    );
+    issues.push(issue("input-device-unavailable", kit.voice.inputDeviceId));
   const outputDeviceId =
     kit.voice.outputDeviceId && catalog.outputDeviceIds && outputs.has(kit.voice.outputDeviceId)
       ? kit.voice.outputDeviceId
       : null;
   if (kit.voice.outputDeviceId && !outputDeviceId)
-    issues.push(
-      issue(
-        "output-device-unavailable",
-        kit.voice.outputDeviceId,
-        "The saved output is unavailable; the system output will be kept.",
-      ),
-    );
+    issues.push(issue("output-device-unavailable", kit.voice.outputDeviceId));
   const restoredVoice: SessionKitVoiceProfile = { ...kit.voice, inputDeviceId, outputDeviceId };
   const restored = {
     hubId,
@@ -347,17 +351,24 @@ export function validateSessionKitReferences(
     voice: restoredVoice,
     privacy: { ...kit.privacy },
   };
-  const summary = [
-    hubId ? `Hub: ${hubId}` : "Hub: unavailable (safe home state)",
-    channelId ? `Room: ${channelId}` : kit.scope.channelId ? "Room: unavailable (skipped)" : "Room: unchanged",
-    kit.game.name ? `Game: ${kit.game.name}${kit.game.platform ? ` · ${kit.game.platform}` : ""}` : "Game: not set",
-    eventId ? `Event: ${eventId}` : kit.scope.eventId ? "Event: unavailable (skipped)" : "Event: none",
-    inviteUserIds.length
-      ? `Invites: ${inviteUserIds.length} available; unchanged until you choose Invite`
-      : "Invites: none",
-    "Microphone: unchanged until you choose Join and enable it",
-    "Camera: unchanged until you choose Camera",
+  const summaryText = [
+    hubId ? summaryLine("hub", { hub: hubId }) : summaryLine("hubUnavailable"),
+    channelId
+      ? summaryLine("room", { room: channelId })
+      : summaryLine(kit.scope.channelId ? "roomUnavailable" : "roomUnchanged"),
+    kit.game.name
+      ? kit.game.platform
+        ? summaryLine("gameWithPlatform", { game: kit.game.name, platform: kit.game.platform })
+        : summaryLine("game", { game: kit.game.name })
+      : summaryLine("gameNotSet"),
+    eventId
+      ? summaryLine("event", { event: eventId })
+      : summaryLine(kit.scope.eventId ? "eventUnavailable" : "eventNone"),
+    inviteUserIds.length ? summaryLine("invites", { count: inviteUserIds.length }) : summaryLine("invitesNone"),
+    summaryLine("microphone"),
+    summaryLine("camera"),
   ];
+  const summary = summaryText.map(kitLaunchEnglish);
   return {
     kitId: kit.id,
     kitName: kit.name,
@@ -366,6 +377,7 @@ export function validateSessionKitReferences(
     issues,
     canLaunch: Boolean(hubId),
     summary,
+    summaryText,
     mediaActionRequired: ["microphone", "camera"],
     inviteActionRequired: inviteUserIds.length > 0,
   };

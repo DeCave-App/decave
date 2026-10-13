@@ -3,11 +3,13 @@ import type { Env } from "./lib/env";
 import {
   sameOriginWriteAllowed,
   webSocketOriginAllowed,
-  json,
+  apiError,
+  apiErrorLegacy,
   RequestBodyTooLargeError,
   securityHeaders,
   preventHtmlAssetCaching,
 } from "./lib/http";
+import { apiErrorWithFields } from "./lib/api-error-fields";
 import { ensureHubFeatureSchema } from "./lib/hub-schema";
 import { ensureOfficialHubSchema } from "./lib/official-hubs";
 import { handleTrustSafetyApi, pruneExpiredEvidenceUploadReservations } from "./routes/trust-safety";
@@ -47,7 +49,7 @@ export async function handleApi(request: Request, env: Env, ctx?: ExecutionConte
   try {
     return await dispatchApiRequest(request, env, ctx);
   } catch (error) {
-    if (error instanceof RequestBodyTooLargeError) return json({ error: error.message }, 413);
+    if (error instanceof RequestBodyTooLargeError) return apiError("api.requestTooLarge", 413);
     throw error;
   }
 }
@@ -64,17 +66,11 @@ async function dispatchApiRequest(request: Request, env: Env, ctx?: ExecutionCon
     await ensureOfficialHubSchema(env);
   } catch (error) {
     console.error("Could not verify official Hub policy schema", error instanceof Error ? error.name : "UnknownError");
-    return json(
-      {
-        error: "Official Hub posting policy is temporarily unavailable.",
-        code: "HUB_POLICY_UNAVAILABLE",
-      },
-      503,
-    );
+    return apiErrorLegacy("HUB_POLICY_UNAVAILABLE", "officialHub.postingPolicyUnavailable", 503);
   }
 
   if (!sameOriginAllowed) {
-    return json({ error: "Cross-site request blocked" }, 403);
+    return apiError("api.crossSiteBlocked", 403);
   }
 
   // Trust & Safety reports and evidence are a separate API surface from chat;
@@ -114,17 +110,17 @@ async function dispatchApiRequest(request: Request, env: Env, ctx?: ExecutionCon
     if (response) return response;
   }
 
-  return json({ error: "Not found", path: p }, 404);
+  return apiErrorWithFields("api.notFound", 404, { path: p });
 }
 
 async function handleWebSocket(request: Request, env: Env): Promise<Response> {
   if ((request.headers.get("Upgrade") ?? "").toLowerCase() !== "websocket") {
-    return json({ error: "Expected WebSocket upgrade" }, 426);
+    return apiError("api.websocketExpected", 426);
   }
   // Cross-site WebSocket hijacking guard: browsers attach Origin to the
   // upgrade; native clients may omit it.
   if (!webSocketOriginAllowed(request)) {
-    return json({ error: "Cross-site WebSocket blocked" }, 403);
+    return apiError("api.crossSiteWebSocketBlocked", 403);
   }
   const room = await globalRoom(env);
   return room.fetch(new Request("https://internal.decave/connect", request));

@@ -1,0 +1,53 @@
+{
+  "hidden": {
+    "hubMessage": "Nouveau message dans un Hub",
+    "directMessage": "Tu as un nouveau message"
+  },
+  "sender": {
+    "hubMessage": "{{sender}} a envoyé un message",
+    "directMessage": "{{sender}} t'a envoyé un message",
+    "inRoom": "{{sender}} dans {{where}}",
+    "someone": "Quelqu'un",
+    "unknownDirect": "Nouveau message"
+  },
+  "preview": {
+    "gif": "A envoyé un GIF",
+    "attachment": "A envoyé une pièce jointe",
+    "encrypted": "T'a envoyé un message chiffré"
+  },
+  "mobile": {
+    "hiddenMention": "Tu as été mentionné sur DeCave.",
+    "hiddenMessage": "Tu as reçu un nouveau message.",
+    "groupChat": "Discussion de groupe",
+    "hubMessage": "Message de Hub",
+    "sentMessage": "{{sender}} a envoyé un message.",
+    "mentionedIn": "T'a mentionné dans {{place}}.",
+    "mentioned": "T'a mentionné.",
+    "sentPrivate": "T'a envoyé un message privé.",
+    "withSender": "{{sender}} : {{text}}",
+    "unknownUser": "Utilisateur DeCave",
+    "hubRoom": "Salon du Hub",
+    "encryptedMessage": "🔒 Message chiffré",
+    "channels": {
+      "messages": {
+        "name": "Messages",
+        "description": "Messages privés, discussions de groupe et alertes de messages des Hubs"
+      },
+      "silent": {
+        "name": "Messages (silencieux)",
+        "description": "Alertes de messages DeCave silencieuses"
+      }
+    },
+    "primer": {
+      "title": "Reste informé",
+      "message": "Reçois des notifications pour les MP, les mentions, les demandes d'ami et quand un Squad est prêt pour toi. Tu peux ajuster ça dans les Paramètres.",
+      "allow": "Activer"
+    },
+    "squad": {
+      "title": "Squad disponible",
+      "body_one": "{{count}}/4 joueur est prêt pour {{game}}.",
+      "body_other": "{{count}}/4 joueurs sont prêts pour {{game}}.",
+      "body_many": "{{count}}/4 joueurs sont prêts pour {{game}}."
+    }
+  }
+}

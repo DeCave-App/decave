@@ -5,6 +5,7 @@
 // decave_hub_bots is created lazily by ensureHubFeatureSchema, so the tables
 // here have no foreign key to it; deleteBot removes the children explicitly.
 
+import { parseBotRunNotice, type BotRunNotice } from "../../shared/bots/run-notice.ts";
 import { BOT_LIMITS, type BotRule, type BotVariableScope } from "../../shared/bots/types";
 import { nowIso } from "../db";
 
@@ -34,6 +35,8 @@ export type BotRunRow = {
   trigger: string;
   status: BotRunStatus;
   detail: string;
+  /** `detail` as a notice the bot builder renders in the viewer's language (null for older runs). */
+  notice: BotRunNotice | null;
   created_at: string;
 };
 export type BotTimer = {
@@ -412,17 +415,47 @@ export async function countVariableNames(db: D1Database, hubId: number): Promise
 
 // Run log -----------------------------------------------------------------
 
+/** Migration 0092 adds decave_bot_runs.detail_notice; until it runs, runs are logged without it. */
+let runNoticeColumn: boolean | null = null;
+
+async function hasRunNoticeColumn(db: D1Database): Promise<boolean> {
+  if (runNoticeColumn !== null) return runNoticeColumn;
+  try {
+    const columns = await db.prepare("PRAGMA table_info(decave_bot_runs)").all<{ name: string }>();
+    runNoticeColumn = columns.results.some((column) => column.name === "detail_notice");
+  } catch {
+    return false;
+  }
+  return runNoticeColumn;
+}
+
 export async function logRun(
   db: D1Database,
-  run: { botId: string; ruleId: string | null; trigger: string; status: BotRunStatus; detail: string },
+  run: {
+    botId: string;
+    ruleId: string | null;
+    trigger: string;
+    status: BotRunStatus;
+    detail: string;
+    notice?: BotRunNotice | null;
+  },
 ): Promise<void> {
+  const notice = run.notice ? JSON.stringify(run.notice) : null;
+  const withNotice = notice !== null && notice.length <= 2000 && (await hasRunNoticeColumn(db));
   const statements = [
-    db
-      .prepare(
-        `INSERT INTO decave_bot_runs(hub_id,bot_id,rule_id,trigger,status,detail,created_at)
-         SELECT hub_id,?,?,?,?,?,? FROM decave_hub_bots WHERE id=?`,
-      )
-      .bind(run.botId, run.ruleId, run.trigger, run.status, run.detail.slice(0, 500), nowIso(), run.botId),
+    withNotice
+      ? db
+          .prepare(
+            `INSERT INTO decave_bot_runs(hub_id,bot_id,rule_id,trigger,status,detail,detail_notice,created_at)
+             SELECT hub_id,?,?,?,?,?,?,? FROM decave_hub_bots WHERE id=?`,
+          )
+          .bind(run.botId, run.ruleId, run.trigger, run.status, run.detail.slice(0, 500), notice, nowIso(), run.botId)
+      : db
+          .prepare(
+            `INSERT INTO decave_bot_runs(hub_id,bot_id,rule_id,trigger,status,detail,created_at)
+             SELECT hub_id,?,?,?,?,?,? FROM decave_hub_bots WHERE id=?`,
+          )
+          .bind(run.botId, run.ruleId, run.trigger, run.status, run.detail.slice(0, 500), nowIso(), run.botId),
   ];
   if (run.status === "ok") {
     statements.push(db.prepare("UPDATE decave_hub_bots SET failure_streak=0 WHERE id=?").bind(run.botId));
@@ -446,14 +479,15 @@ export async function listRuns(
   options: { errorsOnly?: boolean; limit?: number } = {},
 ): Promise<BotRunRow[]> {
   const limit = Math.min(Math.max(Math.trunc(options.limit ?? 50), 1), 200);
+  const noticeColumn = (await hasRunNoticeColumn(db)) ? "detail_notice" : "NULL AS detail_notice";
   const result = await db
     .prepare(
-      `SELECT id,bot_id,rule_id,trigger,status,detail,created_at FROM decave_bot_runs
+      `SELECT id,bot_id,rule_id,trigger,status,detail,${noticeColumn},created_at FROM decave_bot_runs
        WHERE bot_id=? ${options.errorsOnly ? "AND status='error'" : ""} ORDER BY id DESC LIMIT ?`,
     )
     .bind(botId, limit)
-    .all<BotRunRow>();
-  return result.results;
+    .all<Omit<BotRunRow, "notice"> & { detail_notice: string | null }>();
+  return result.results.map(({ detail_notice, ...row }) => ({ ...row, notice: parseBotRunNotice(detail_notice) }));
 }
 
 // Timers ------------------------------------------------------------------

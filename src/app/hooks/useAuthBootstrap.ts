@@ -5,6 +5,7 @@ import { type Dispatch, type SetStateAction, useEffect } from "react";
 import type { SafetyProfile } from "../../safety/types";
 import type { AccountUser } from "../types";
 import { HTTP_URL } from "../env";
+import { applyAccountLocale } from "../../i18n";
 
 export type AuthBootstrapDeps = {
   resetPrivateAccountState: () => void;
@@ -64,7 +65,7 @@ export function useAuthBootstrap(deps: AuthBootstrapDeps): void {
           }
           return;
         }
-        const data = (await meResponse.json()) as { user?: AccountUser; safety?: SafetyProfile };
+        const data = (await meResponse.json()) as { user?: AccountUser; safety?: SafetyProfile; locale?: unknown };
         const token = data.user ? await fetchWsToken() : "";
         if (cancelled) return;
         if (!data.user || !token) {
@@ -75,6 +76,7 @@ export function useAuthBootstrap(deps: AuthBootstrapDeps): void {
         }
         resetPrivateAccountState();
         setCurrentUser({ ...data.user, safety: data.safety ?? data.user.safety });
+        applyAccountLocale(data.locale);
         storeToken(token);
       } catch (error) {
         console.error("Could not validate session:", error);

@@ -1,0 +1,120 @@
+{
+  "category": {
+    "HARASSMENT_BULLYING": "Acoso o bullying",
+    "HATE_SPEECH": "Discurso de odio",
+    "SEXUAL_INAPPROPRIATE": "Contenido sexual o inapropiado",
+    "SUSPECTED_GROOMING": "Sospecha de grooming",
+    "CHILD_SAFETY": "Riesgo para la seguridad infantil",
+    "THREATS_VIOLENCE": "Amenazas o violencia",
+    "SPAM_SCAM": "Spam o estafa",
+    "IMPERSONATION": "Suplantación de identidad",
+    "UNDERAGE_USER": "Usuario menor de edad",
+    "INAPPROPRIATE_MEDIA": "Contenido multimedia inapropiado",
+    "SELF_HARM": "Riesgo de autolesión",
+    "OTHER": "Otro"
+  },
+  "urgency": {
+    "critical": "Crítica",
+    "high": "Alta",
+    "medium": "Media",
+    "low": "Baja",
+    "spam_invalid": "Spam o no válido"
+  },
+  "report": {
+    "title": {
+      "content": "Reportar contenido",
+      "user": "Reportar a {{name}}",
+      "thisUser": "Reportar a este usuario",
+      "item": "Reportar {{label}}",
+      "thisContent": "Reportar este contenido"
+    },
+    "failed": "No se pudo enviar el reporte.",
+    "submitted": "Reporte enviado. Gracias por ayudar a mantener DeCave seguro.",
+    "submittedNoEvidence": "Reporte enviado, pero no se pudo adjuntar el mensaje reportado, así que el equipo de seguridad no puede leerlo. Puedes cerrar esto.",
+    "connectFailed": "No se pudo conectar con DeCave.",
+    "kicker": "Confianza y seguridad",
+    "private": "Tu reporte es privado. A la persona reportada no se le mostrará tu identidad.",
+    "category": "¿Qué pasó?",
+    "urgency": "Urgencia",
+    "details": "Detalles <optional>(opcional)</optional>",
+    "detailsPlaceholder": "Cuéntanos lo que debemos saber",
+    "evidence": "Pruebas seleccionadas",
+    "evidenceEncrypted": "Se cifrarán en este dispositivo antes de subirse.",
+    "blockAfter": "Bloquear a este usuario tras enviar",
+    "cancel": "Cancelar",
+    "submitting": "Enviando…",
+    "submit": "Enviar reporte"
+  },
+  "myReports": {
+    "loadFailed": "No se pudieron cargar tus reportes.",
+    "connectFailed": "No se pudo conectar con DeCave.",
+    "kicker": "SOLO PARA TI",
+    "title": "Mis reportes",
+    "intro": "Consulta el estado de los reportes que has enviado. Los detalles de la revisión son privados.",
+    "loading": "Cargando…",
+    "refresh": "Actualizar",
+    "empty": "No has enviado ningún reporte.",
+    "rowMeta": "{{target}} · {{date}}",
+    "report": "Reporte",
+    "close": "Cerrar",
+    "noDetails": "No se dieron más detalles.",
+    "statusLine": "Estado: {{status}} · enviado el {{date}}",
+    "status": {
+      "submitted": "Enviado",
+      "under_review": "En revisión",
+      "awaiting_information": "Esperando información",
+      "action_taken": "Medidas tomadas",
+      "no_violation": "Sin infracción",
+      "escalated": "Escalado",
+      "appealed": "Apelado",
+      "closed": "Cerrado"
+    },
+    "urgency": {
+      "critical": "crítica",
+      "high": "alta",
+      "medium": "media",
+      "low": "baja",
+      "spam_invalid": "spam o no válido"
+    },
+    "target": {
+      "user": "usuario",
+      "message": "mensaje",
+      "content": "contenido",
+      "attachment": "archivo adjunto",
+      "profile": "perfil",
+      "voice_participant": "participante de voz"
+    }
+  },
+  "qrLogin": {
+    "creating": "Creando un código de inicio de sesión seguro…",
+    "createFailed": "No se pudo crear el inicio de sesión por QR.",
+    "instructions": "Abre DeCave Mobile → Ajustes → Dispositivos → Escanear QR de inicio de sesión.",
+    "updating": "Actualizando el código de inicio de sesión seguro…",
+    "expired": "El inicio de sesión por QR caducó.",
+    "codeAlt": "Código QR de inicio de sesión de DeCave",
+    "preparing": "Preparando…",
+    "scan": "Escanea con la app de DeCave"
+  },
+  "mobile": {
+    "myReports": {
+      "reportValue": "Reporte {{value}}"
+    },
+    "category": {
+      "HARASSMENT_BULLYING": "Acoso",
+      "SEXUAL_INAPPROPRIATE": "Contenido sexual",
+      "SUSPECTED_GROOMING": "Grooming",
+      "CHILD_SAFETY": "Seguridad infantil",
+      "THREATS_VIOLENCE": "Amenazas",
+      "SELF_HARM": "Autolesión"
+    },
+    "report": {
+      "submittedNoEvidenceShort": "Reporte enviado, pero no se pudo adjuntar el mensaje reportado.",
+      "failed": "No se pudo enviar el reporte.",
+      "kicker": "CONFIANZA Y SEGURIDAD",
+      "private": "Tu reporte es privado. La persona reportada no verá tu identidad.",
+      "detailsPlaceholder": "Cuéntanos lo que debemos saber (opcional)",
+      "evidenceNote": "El mensaje reportado se adjunta cifrado para que solo el equipo de seguridad de DeCave pueda leerlo.",
+      "contextNote": "Tu reporte y su contexto se envían al equipo de seguridad de DeCave."
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import type { SafetyReportTarget } from "./types";
 import type { DmReportProof } from "../../shared/dm-e2ee";
+import { apiErrorMessage, type ApiErrorBody } from "../i18n/apiError.ts";
 
 type ReportKey = {
   keyId: string;
@@ -221,8 +222,8 @@ export async function uploadReportEvidence(
     body: encrypted,
   });
   if (!response.ok) {
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error || "Encrypted evidence could not be uploaded.");
+    const data = (await response.json().catch(() => ({}))) as ApiErrorBody;
+    throw new Error(apiErrorMessage(data, "trustSafety.evidenceUploadFailed"));
   }
   return true;
 }

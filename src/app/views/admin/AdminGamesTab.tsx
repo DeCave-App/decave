@@ -1,7 +1,8 @@
 // Platform owner dashboard > Games: Squad Finder game suggestions.
 
 import type { SquadGameSuggestion } from "../../types";
-import { localeForLanguage, preferredTimeOptions } from "../../locale";
+import { useTranslation } from "react-i18next";
+import { formatDate } from "../../../i18n/format";
 
 type Props = {
   adminGameSuggestions: SquadGameSuggestion[];
@@ -10,13 +11,12 @@ type Props = {
 };
 
 export function AdminGamesTab({ adminGameSuggestions, adminDashboardBusy, reviewSquadGameSuggestion }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div style={{ display: "grid", gap: "10px" }}>
       <div>
-        <h3 style={{ margin: 0 }}>Squad Finder game review</h3>
-        <p style={{ color: "var(--ds-muted)", fontSize: "12px" }}>
-          Approved suggestions immediately become selectable on web and mobile.
-        </p>
+        <h3 style={{ margin: 0 }}>{t("common.admin.games.title")}</h3>
+        <p style={{ color: "var(--ds-muted)", fontSize: "12px" }}>{t("common.admin.games.lead")}</p>
       </div>
       {adminGameSuggestions.filter((item) => item.status === "pending").length === 0 && (
         <div
@@ -27,7 +27,7 @@ export function AdminGamesTab({ adminGameSuggestions, adminDashboardBusy, review
             color: "var(--ds-muted)",
           }}
         >
-          No games are waiting for review.
+          {t("common.admin.games.empty")}
         </div>
       )}
       {adminGameSuggestions
@@ -49,8 +49,10 @@ export function AdminGamesTab({ adminGameSuggestions, adminDashboardBusy, review
             <div style={{ flex: 1, minWidth: "180px" }}>
               <strong>{item.gameName}</strong>
               <div style={{ color: "var(--ds-muted)", fontSize: "11px", marginTop: "4px" }}>
-                Suggested by {item.submittedBy} ·{" "}
-                {new Date(item.createdAt).toLocaleString(localeForLanguage(), preferredTimeOptions())}
+                {t("common.admin.games.suggestedBy", {
+                  name: item.submittedBy,
+                  date: formatDate(item.createdAt, "dateTime"),
+                })}
               </div>
             </div>
             <button
@@ -59,7 +61,7 @@ export function AdminGamesTab({ adminGameSuggestions, adminDashboardBusy, review
               disabled={adminDashboardBusy}
               onClick={() => void reviewSquadGameSuggestion(item.id, "approve")}
             >
-              Approve
+              {t("common.admin.games.approve")}
             </button>
             <button
               type="button"
@@ -67,7 +69,7 @@ export function AdminGamesTab({ adminGameSuggestions, adminDashboardBusy, review
               disabled={adminDashboardBusy}
               onClick={() => void reviewSquadGameSuggestion(item.id, "reject")}
             >
-              Reject
+              {t("common.admin.games.reject")}
             </button>
           </div>
         ))}

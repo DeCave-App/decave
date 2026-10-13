@@ -1,0 +1,41 @@
+{
+  "common": {
+    "greeting": "Cześć {{username}},",
+    "settingsPath": "Ustawienia > Konto i bezpieczeństwo"
+  },
+  "verify": {
+    "subject": "Zweryfikuj e-mail w DeCave",
+    "text": "Cześć {{username}}, zweryfikuj swój e-mail w DeCave: {{link}}",
+    "heading": "Zweryfikuj e-mail w DeCave",
+    "body": "Potwierdź ten adres e-mail, aby aktywować konto.",
+    "button": "Zweryfikuj e-mail",
+    "expiry": "Ten link wygaśnie za 24 godziny."
+  },
+  "reset": {
+    "subject": "Zresetuj hasło do DeCave",
+    "text": "Cześć {{username}}, zresetuj hasło do DeCave: {{link}}",
+    "heading": "Zresetuj hasło do DeCave",
+    "body": "Jeśli to ty prosisz o reset hasła, użyj przycisku poniżej.",
+    "button": "Zresetuj hasło",
+    "expiry": "Ten link wygaśnie za 30 minut."
+  },
+  "signInAlert": {
+    "subject": "Nowe logowanie na twoje konto DeCave",
+    "heading": "Nowe logowanie do DeCave",
+    "usedOnText": "Ktoś właśnie zalogował się na twoje konto DeCave na urządzeniu: {{device}}",
+    "time": "Czas: {{when}}",
+    "usedOn": "Ktoś właśnie zalogował się na twoje konto na urządzeniu:",
+    "ifYou": "Jeśli to ty, nie musisz nic robić.",
+    "notYouText": "Jeśli to nie ty, zabezpiecz teraz konto (wyloguje to wszystkie urządzenia i wyśle link do resetu hasła): {{link}}",
+    "turnOffText": "Możesz wyłączyć te e-maile w: {{settingsPath}}.",
+    "button": "To nie ja",
+    "footer": "To wyloguje wszystkie urządzenia i wyśle ci e-mailem link do resetu hasła. Link działa przez 7 dni. Wyłącz te e-maile w: {{settingsPath}}."
+  },
+  "emailChanged": {
+    "subject": "Adres e-mail twojego konta DeCave został zmieniony",
+    "heading": "Adres e-mail w DeCave został zmieniony",
+    "changedText": "Adres e-mail twojego konta DeCave został zmieniony na {{newEmail}}.",
+    "changed": "Adres e-mail twojego konta został zmieniony na <strong>{{newEmail}}</strong>.",
+    "notYou": "Jeśli to nie ty zmieniasz adres, zaloguj się do DeCave, zmień hasło i wyloguj inne urządzenia w: {{settingsPath}}."
+  }
+}

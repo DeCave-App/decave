@@ -34,6 +34,9 @@ import type {
   SocialState,
 } from "@/src/types";
 import { decryptConversationPreviews, groupPreview, rememberGroup } from "@/src/lib/e2ee/client";
+import { useTranslation } from "react-i18next";
+import { i18next } from "@/src/i18n";
+import { dateLocale } from "@/src/lib/date-locale";
 
 type DmPreference = { favorite: boolean; archived: boolean };
 type ListFilter = "all" | "unread" | "requests";
@@ -46,16 +49,16 @@ function formatRelativeTime(value: string): string {
   const diff = Math.max(0, Date.now() - timestamp);
   const minutes = Math.floor(diff / 60_000);
 
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return i18next.t("common.mobile.time.now");
+  if (minutes < 60) return i18next.t("common.mobile.time.minutes", { count: minutes });
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) return i18next.t("common.mobile.time.hours", { count: hours });
 
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
+  if (days < 7) return i18next.t("common.mobile.time.days", { count: days });
 
-  return new Date(timestamp).toLocaleDateString(undefined, {
+  return new Date(timestamp).toLocaleDateString(dateLocale(), {
     month: "short",
     day: "numeric",
   });
@@ -64,6 +67,7 @@ function formatRelativeTime(value: string): string {
 const SPLIT_MIN_WIDTH = 700;
 
 export default function DmsScreen() {
+  const { t } = useTranslation(["dm", "chat", "common"]);
   const { width } = useWindowDimensions();
   const split = width >= SPLIT_MIN_WIDTH;
   const [splitDm, setSplitDm] = useState<{ id: string; username: string } | null>(null);
@@ -121,7 +125,7 @@ export default function DmsScreen() {
         })
         .catch(() => {});
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Could not load conversations.");
+      setLoadError(error instanceof Error ? error.message : t("dm.mobile.dms.couldNotLoadConversations"));
     } finally {
       setLoaded(true);
     }
@@ -187,7 +191,7 @@ export default function DmsScreen() {
       successHaptic();
     } catch (error) {
       setPrefs((current) => ({ ...current, [userId]: previous }));
-      Alert.alert("Could not update chat", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(t("dm.mobile.dms.couldNotUpdateChat"), error instanceof Error ? error.message : t("dm.mobile.dms.pleaseTryAgain"));
     }
   };
 
@@ -197,7 +201,7 @@ export default function DmsScreen() {
       await apiJson(`/api/friends/${encodeURIComponent(user.id)}/${action}`, { method: "POST" }, token);
       await load();
     } catch (error) {
-      Alert.alert("Could not update request", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(t("dm.mobile.dms.couldNotUpdateRequest"), error instanceof Error ? error.message : t("dm.mobile.dms.pleaseTryAgain"));
     }
   };
 
@@ -281,7 +285,7 @@ export default function DmsScreen() {
       setNotice(
         error instanceof Error
           ? error.message
-          : "Could not create group chat.",
+          : t("dm.mobile.dms.couldNotCreateGroupChat"),
       );
     } finally {
       setCreating(false);
@@ -305,10 +309,10 @@ export default function DmsScreen() {
       >
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>PRIVATE CHAT</Text>
-            <Text style={styles.title}>Messages</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("dm.mobile.dms.privateChat")}</Text>
+            <Text style={styles.title}>{t("dm.mobile.dms.messages")}</Text>
             <Text style={styles.subtitle}>
-              Your direct messages, favorites first.
+              {t("dm.mobile.dms.yourDirectMessagesFavoritesFirst")}
             </Text>
           </View>
 
@@ -317,7 +321,7 @@ export default function DmsScreen() {
             onPress={openComposer}
            
             accessibilityRole="button"
-            accessibilityLabel="Start a new conversation"
+            accessibilityLabel={t("dm.mobile.dms.startANewConversation")}
           >
             <Ionicons name="create-outline" size={22} color="#fff" />
           </Pressable>
@@ -331,10 +335,10 @@ export default function DmsScreen() {
               const active = filter === key;
               const label =
                 key === "all"
-                  ? "All"
+                  ? t("chat.social.filterAll")
                   : key === "unread"
-                    ? `Unread${unreadTotal ? ` · ${unreadTotal}` : ""}`
-                    : `Requests${incoming.length ? ` · ${incoming.length}` : ""}`;
+                    ? unreadTotal ? t("dm.mobile.dms.unreadCount", { count: unreadTotal }) : t("chat.social.filterUnread")
+                    : incoming.length ? t("dm.mobile.dms.requestsCount", { count: incoming.length }) : t("chat.social.filterRequests");
               return (
                 <Pressable
                   key={key}
@@ -351,8 +355,8 @@ export default function DmsScreen() {
         ) : (
           <Pressable accessibilityRole="button" style={styles.backRow} onPress={() => setView("chats")}>
             <Ionicons name="chevron-back" size={16} color={colors.cyan} />
-            <Text style={styles.backRowText}>Back to chats</Text>
-            <Text style={styles.backRowTitle}>{view === "archived" ? "Archived" : "Group chats"}</Text>
+            <Text style={styles.backRowText}>{t("dm.mobile.dms.backToChats")}</Text>
+            <Text style={styles.backRowTitle}>{view === "archived" ? t("dm.mobile.dms.archived") : t("dm.mobile.dms.groupChats")}</Text>
           </Pressable>
         )}
 
@@ -362,7 +366,7 @@ export default function DmsScreen() {
           <LoadError message={loadError} onRetry={() => void load()} />
         ) : view === "chats" && filter === "requests" ? (
           incoming.length === 0 ? (
-            <Text style={styles.listEmpty}>No message requests right now.</Text>
+            <Text style={styles.listEmpty}>{t("dm.mobile.dms.noMessageRequestsRightNow")}</Text>
           ) : (
             <View style={styles.conversationList}>
               {incoming.map((user) => (
@@ -370,13 +374,13 @@ export default function DmsScreen() {
                   <Avatar username={user.username} avatarUrl={user.avatarUrl} online={user.online} size={46} />
                   <View style={styles.rowCopy}>
                     <Text style={styles.name} numberOfLines={1}>{user.username}</Text>
-                    <Text style={styles.preview} numberOfLines={1}>Wants to be friends</Text>
+                    <Text style={styles.preview} numberOfLines={1}>{t("common.friends.wantsToBeFriends")}</Text>
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Accept ${user.username}`} style={styles.acceptButton} onPress={() => void respondToRequest(user, "accept")}>
-                    <Text style={styles.acceptText}>Accept</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("dm.mobile.dms.acceptUsername", { username: user.username })} style={styles.acceptButton} onPress={() => void respondToRequest(user, "accept")}>
+                    <Text style={styles.acceptText}>{t("common.actions.accept")}</Text>
                   </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Ignore ${user.username}`} style={styles.ignoreButton} onPress={() => void respondToRequest(user, "reject")}>
-                    <Text style={styles.ignoreText}>Ignore</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("dm.mobile.dms.ignoreUsername", { username: user.username })} style={styles.ignoreButton} onPress={() => void respondToRequest(user, "reject")}>
+                    <Text style={styles.ignoreText}>{t("common.friends.ignore")}</Text>
                   </Pressable>
                 </View>
               ))}
@@ -415,9 +419,9 @@ export default function DmsScreen() {
 
                   <Text style={styles.preview} numberOfLines={1}>
                     {drafts[`group:${group.id}`] ? (
-                      <Text maxFontSizeMultiplier={1.3} style={styles.draftTag}>Draft: <Text style={styles.preview}>{drafts[`group:${group.id}`]}</Text></Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.draftTag}>{t("dm.mobile.dms.draft")}{" "}<Text style={styles.preview}>{drafts[`group:${group.id}`]}</Text></Text>
                     ) : (
-                      group.latestMessage || `${group.memberCount} members`
+                      group.latestMessage || t("dm.mobile.dms.membercountMembers", { memberCount: group.memberCount })
                     )}
                   </Text>
                 </View>
@@ -444,22 +448,22 @@ export default function DmsScreen() {
                 color={colors.cyan}
               />
             </View>
-            <Text style={styles.emptyTitle}>No conversations yet</Text>
+            <Text style={styles.emptyTitle}>{t("dm.mobile.dms.noConversationsYet")}</Text>
             <Text style={styles.emptyText}>
-              Start a DM with a friend or create a group conversation.
+              {t("dm.mobile.dms.startADmWithA")}
             </Text>
             <View style={styles.emptyActions}>
               <Pressable accessibilityRole="button" style={styles.emptyAction} onPress={openComposer}>
-                <Text style={styles.emptyActionText}>New conversation</Text>
+                <Text style={styles.emptyActionText}>{t("dm.mobile.dms.newConversation")}</Text>
               </Pressable>
               <Pressable accessibilityRole="button" style={[styles.emptyAction, styles.emptyActionSecondary]} onPress={() => router.navigate("/friends")}>
-                <Text style={[styles.emptyActionText, styles.emptyActionSecondaryText]}>Add friends</Text>
+                <Text style={[styles.emptyActionText, styles.emptyActionSecondaryText]}>{t("dm.mobile.dms.addFriends")}</Text>
               </Pressable>
             </View>
           </View>
         ) : visibleDms.length === 0 ? (
           <Text style={styles.listEmpty}>
-            {view === "archived" ? "No archived chats." : filter === "unread" ? "You have no unread conversations." : "No conversations yet. Use the compose button to message a friend."}
+            {view === "archived" ? t("dm.mobile.dms.noArchivedChats") : filter === "unread" ? t("dm.mobile.dms.youHaveNoUnreadConversations") : t("dm.mobile.dms.noConversationsYetUseThe")}
           </Text>
         ) : (
           <View style={styles.conversationList}>
@@ -479,7 +483,7 @@ export default function DmsScreen() {
                         {unreadHere && (
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`Mark ${item.user.username} as read`}
+                            accessibilityLabel={t("dm.mobile.dms.markUsernameAsRead", { username: item.user.username })}
                             style={[styles.swipeAction, { backgroundColor: colors.violet }]}
                             onPress={() => {
                               tapHaptic();
@@ -488,12 +492,12 @@ export default function DmsScreen() {
                             }}
                           >
                             <Ionicons name="checkmark-done" size={18} color="#fff" />
-                            <Text style={styles.swipeActionText}>Read</Text>
+                            <Text style={styles.swipeActionText}>{t("dm.mobile.dms.read")}</Text>
                           </Pressable>
                         )}
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={favorite ? `Unfavorite ${item.user.username}` : `Favorite ${item.user.username}`}
+                          accessibilityLabel={favorite ? t("dm.mobile.dms.unfavoriteUsername", { username: item.user.username }) : t("dm.mobile.dms.favoriteUsername", { username: item.user.username })}
                           style={[styles.swipeAction, { backgroundColor: colors.panel2 }]}
                           onPress={() => {
                             swipeable.close();
@@ -501,11 +505,11 @@ export default function DmsScreen() {
                           }}
                         >
                           <Ionicons name={favorite ? "star" : "star-outline"} size={18} color={colors.yellow} />
-                          <Text style={[styles.swipeActionText, { color: colors.text }]}>{favorite ? "Unstar" : "Star"}</Text>
+                          <Text style={[styles.swipeActionText, { color: colors.text }]}>{favorite ? t("dm.mobile.dms.unstar") : t("dm.mobile.dms.star")}</Text>
                         </Pressable>
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={archived ? `Unarchive ${item.user.username}` : `Archive ${item.user.username}`}
+                          accessibilityLabel={archived ? t("dm.mobile.dms.unarchiveUsername", { username: item.user.username }) : t("dm.mobile.dms.archiveUsername", { username: item.user.username })}
                           style={[styles.swipeAction, { backgroundColor: colors.panel2 }]}
                           onPress={() => {
                             swipeable.close();
@@ -513,28 +517,28 @@ export default function DmsScreen() {
                           }}
                         >
                           <Ionicons name={archived ? "arrow-undo-outline" : "archive-outline"} size={18} color={colors.text} />
-                          <Text style={[styles.swipeActionText, { color: colors.text }]}>{archived ? "Restore" : "Archive"}</Text>
+                          <Text style={[styles.swipeActionText, { color: colors.text }]}>{archived ? t("dm.mobile.dms.restore") : t("dm.mobile.dms.archive")}</Text>
                         </Pressable>
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={mutedHere ? `Unmute ${item.user.username}` : `Mute ${item.user.username}`}
+                          accessibilityLabel={mutedHere ? t("dm.mobile.dms.unmuteUsername", { username: item.user.username }) : t("dm.mobile.dms.muteUsername", { username: item.user.username })}
                           style={[styles.swipeAction, { backgroundColor: colors.panel2 }]}
                           onPress={() => {
                             swipeable.close();
                             toggleMute(item.user.id)
                               .then(() => successHaptic())
-                              .catch((error) => Alert.alert("Could not update mute", error instanceof Error ? error.message : "Please try again."));
+                              .catch((error) => Alert.alert(t("dm.mobile.dms.couldNotUpdateMute"), error instanceof Error ? error.message : t("dm.mobile.dms.pleaseTryAgain")));
                           }}
                         >
                           <Ionicons name={mutedHere ? "notifications-outline" : "notifications-off-outline"} size={18} color={colors.text} />
-                          <Text style={[styles.swipeActionText, { color: colors.text }]}>{mutedHere ? "Unmute" : "Mute"}</Text>
+                          <Text style={[styles.swipeActionText, { color: colors.text }]}>{mutedHere ? t("dm.call.unmute") : t("dm.call.mute")}</Text>
                         </Pressable>
                       </View>
                     )}
                   >
                   <Pressable accessibilityRole="button"
-                    accessibilityLabel={`${item.user.username}${favorite ? ", favorite" : ""}`}
-                    accessibilityHint="Swipe left for read, star, archive and mute"
+                    accessibilityLabel={favorite ? t("dm.mobile.dms.favoriteRow", { username: item.user.username }) : item.user.username}
+                    accessibilityHint={t("dm.mobile.dms.swipeLeftForReadStar")}
                     style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
                       styles.row,
                       (pressed || hovered) && styles.rowPressed,
@@ -574,9 +578,9 @@ export default function DmsScreen() {
 
                       <Text style={styles.preview} numberOfLines={1}>
                         {drafts[`dm:${item.user.id}`] ? (
-                          <Text maxFontSizeMultiplier={1.3} style={styles.draftTag}>Draft: <Text style={styles.preview}>{drafts[`dm:${item.user.id}`]}</Text></Text>
+                          <Text maxFontSizeMultiplier={1.3} style={styles.draftTag}>{t("dm.mobile.dms.draft")}{" "}<Text style={styles.preview}>{drafts[`dm:${item.user.id}`]}</Text></Text>
                         ) : (
-                          item.latestMessage || "Open conversation"
+                          item.latestMessage || t("common.mobile.home.openConversation")
                         )}
                       </Text>
                     </View>
@@ -600,12 +604,12 @@ export default function DmsScreen() {
             {groups.length > 0 && (
               <Pressable accessibilityRole="button" style={styles.footLink} onPress={() => setView("groups")}>
                 <Ionicons name="people-outline" size={15} color={colors.muted} />
-                <Text style={styles.footLinkText}>Group chats ({groups.length})</Text>
+                <Text style={styles.footLinkText}>{t("dm.mobile.dms.groupChatsCount", { count: groups.length })}</Text>
               </Pressable>
             )}
             <Pressable accessibilityRole="button" style={styles.footLink} onPress={() => setView("archived")}>
               <Ionicons name="archive-outline" size={15} color={colors.muted} />
-              <Text style={styles.footLinkText}>Archived ({archivedCount})</Text>
+              <Text style={styles.footLinkText}>{t("dm.mobile.dms.archivedArchivedcount", { archivedCount })}</Text>
             </Pressable>
           </View>
         )}
@@ -617,7 +621,7 @@ export default function DmsScreen() {
           ) : (
             <View style={styles.splitEmpty}>
               <Ionicons name="chatbubbles-outline" size={34} color={colors.faint} />
-              <Text style={styles.splitEmptyText}>Pick a conversation</Text>
+              <Text style={styles.splitEmptyText}>{t("dm.mobile.dms.pickAConversation")}</Text>
             </View>
           )}
         </View>
@@ -644,11 +648,11 @@ export default function DmsScreen() {
               </View>
 
               <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.modalKicker}>NEW CONVERSATION</Text>
-                <Text style={styles.modalTitle}>Choose friends</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.modalKicker}>{t("dm.mobile.dms.newConversation2")}</Text>
+                <Text style={styles.modalTitle}>{t("dm.mobile.dms.chooseFriends")}</Text>
               </View>
 
-              <Pressable accessibilityRole="button" accessibilityLabel="Close"
+              <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")}
                 style={styles.modalClose}
                 onPress={closeComposer}
                 hitSlop={8}
@@ -662,14 +666,14 @@ export default function DmsScreen() {
               <TextInput
                 value={friendQuery}
                 onChangeText={setFriendQuery}
-                placeholder="Search friends"
+                placeholder={t("common.friendsSidebar.search")}
                 placeholderTextColor={colors.faint}
                 style={styles.searchInput}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
               {!!friendQuery && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Clear" onPress={() => setFriendQuery("")} hitSlop={8}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.clear")} onPress={() => setFriendQuery("")} hitSlop={8}>
                   <Ionicons
                     name="close-circle"
                     size={18}
@@ -705,8 +709,7 @@ export default function DmsScreen() {
             )}
 
             <Text style={styles.modalHelp}>
-              Tap Message for a 1-to-1 DM. Select at least two friends to
-              create a group.
+              {t("dm.mobile.dms.tapMessageForA1")}
             </Text>
 
             <ScrollView keyboardDismissMode="on-drag"
@@ -718,8 +721,8 @@ export default function DmsScreen() {
                 <View style={styles.friendEmpty}>
                   <Text style={styles.friendEmptyText}>
                     {friends.length === 0
-                      ? "Add friends first, then they will appear here."
-                      : "No friends match your search."}
+                      ? t("dm.mobile.dms.addFriendsFirstThenThey")
+                      : t("dm.mobile.dms.noFriendsMatchYourSearch")}
                   </Text>
                 </View>
               ) : (
@@ -728,7 +731,7 @@ export default function DmsScreen() {
 
                   return (
                     <View key={friend.id} style={styles.friendRow}>
-                      <Pressable accessibilityRole="button" accessibilityLabel={selected ? `Deselect ${friend.username}` : `Select ${friend.username}`}
+                      <Pressable accessibilityRole="button" accessibilityLabel={selected ? t("dm.mobile.dms.deselectUsername", { username: friend.username }) : t("dm.mobile.dms.selectUsername", { username: friend.username })}
                         style={[
                           styles.check,
                           selected && styles.checkSelected,
@@ -763,7 +766,7 @@ export default function DmsScreen() {
                             ]}
                           />
                           <Text style={styles.friendStatus}>
-                            {friend.online ? "Online" : "Offline"}
+                            {friend.online ? t("common.presence.online") : t("common.presence.offline")}
                           </Text>
                         </View>
                       </View>
@@ -777,7 +780,7 @@ export default function DmsScreen() {
                           size={15}
                           color={colors.cyan}
                         />
-                        <Text style={styles.messageButtonText}>Message</Text>
+                        <Text style={styles.messageButtonText}>{t("dm.mobile.dms.message")}</Text>
                       </Pressable>
                     </View>
                   );
@@ -786,11 +789,11 @@ export default function DmsScreen() {
             </ScrollView>
 
             <View style={styles.groupArea}>
-              <Text style={styles.fieldLabel}>GROUP NAME</Text>
+              <Text style={styles.fieldLabel}>{t("dm.mobile.dms.groupName")}</Text>
               <TextInput
                 value={groupName}
                 onChangeText={setGroupName}
-                placeholder="Optional group name"
+                placeholder={t("dm.mobile.dms.optionalGroupName")}
                 placeholderTextColor={colors.faint}
                 maxLength={48}
                 style={styles.groupNameInput}
@@ -819,10 +822,10 @@ export default function DmsScreen() {
                 <Ionicons name="people" size={17} color="#fff" />
                 <Text style={styles.createGroupText}>
                   {creating
-                    ? "Creating…"
+                    ? t("dm.mobile.dms.creating")
                     : selectedIds.length < 2
-                      ? "Select 2+ friends"
-                      : `Create group · ${selectedIds.length + 1} members`}
+                      ? t("dm.mobile.dms.select2Friends")
+                      : t("dm.mobile.dms.createGroupCountMembers", { count: selectedIds.length + 1 })}
                 </Text>
               </Pressable>
             </View>

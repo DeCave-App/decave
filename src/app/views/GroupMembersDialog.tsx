@@ -1,5 +1,6 @@
 // Members of a group chat: add a friend, remove members, leave or delete the group.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { AccountUser, SocialUser, GroupChat } from "../types";
@@ -23,19 +24,20 @@ export function GroupMembersDialog({
   setShowGroupMembers,
   directMessages,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { addGroupMember, removeGroupMember, deleteActiveGroup } = directMessages;
   return (
     <div className="modal-overlay" onClick={() => setShowGroupMembers(false)}>
       <div className="modal dc-social-modal" onClick={(event) => event.stopPropagation()}>
         <div className="ds-modal-head">
           <div>
-            <span className="ds-kicker">Group members</span>
+            <span className="ds-kicker">{t("chat.groupMembers.kicker")}</span>
             <h2>{activeGroupChat.name}</h2>
           </div>
           <button
             type="button"
             className="ds-btn ds-btn-ghost ds-icon-btn"
-            aria-label="Close"
+            aria-label={t("common.actions.close")}
             onClick={() => setShowGroupMembers(false)}
           >
             <Icon name="close" />
@@ -53,15 +55,15 @@ export function GroupMembersDialog({
                 <div className="ds-row-copy">
                   <span className="ds-row-title">
                     {member.username}
-                    {isMe ? " · You" : ""}
+                    {isMe ? t("chat.groupMembers.youSuffix") : ""}
                   </span>
                   <span className={`ds-row-sub${isOwner ? " ds-text-accent" : ""}`}>
                     {isOwner ? (
                       <>
-                        <Icon name="crown" size="sm" /> Group owner
+                        <Icon name="crown" size="sm" /> {t("chat.groupMembers.owner")}
                       </>
                     ) : (
-                      "Member"
+                      t("chat.groupMembers.member")
                     )}
                   </span>
                 </div>
@@ -71,7 +73,7 @@ export function GroupMembersDialog({
                     className="ds-btn ds-btn-sm ds-btn-danger"
                     onClick={() => void removeGroupMember(member)}
                   >
-                    Remove
+                    {t("common.actions.remove")}
                   </button>
                 ) : isMe && !isOwner ? (
                   <button
@@ -80,7 +82,7 @@ export function GroupMembersDialog({
                     onClick={() => void removeGroupMember(member)}
                   >
                     <Icon name="log-out" />
-                    Leave
+                    {t("common.actions.leave")}
                   </button>
                 ) : null}
               </div>
@@ -88,11 +90,11 @@ export function GroupMembersDialog({
           })}
         </div>
 
-        <span className="ds-section-label">Add a friend</span>
+        <span className="ds-section-label">{t("chat.groupMembers.addTitle")}</span>
         <div className="ds-list">
           {friends.filter((friend) => !activeGroupChat.members.some((member) => member.id === friend.id)).length ===
           0 ? (
-            <div className="ds-row-sub dc-social-modal-empty">No other friends are available to add.</div>
+            <div className="ds-row-sub dc-social-modal-empty">{t("chat.groupMembers.noneToAdd")}</div>
           ) : (
             friends
               .filter((friend) => !activeGroupChat.members.some((member) => member.id === friend.id))
@@ -109,7 +111,7 @@ export function GroupMembersDialog({
                     onClick={() => void addGroupMember(friend)}
                   >
                     <Icon name="user-plus" />
-                    Add
+                    {t("common.actions.add")}
                   </button>
                 </div>
               ))
@@ -117,15 +119,13 @@ export function GroupMembersDialog({
         </div>
 
         {activeGroupChat.ownerUserId === currentUser.id && activeGroupChat.memberCount > 1 && (
-          <p className="ds-text-muted dc-social-modal-note">
-            As owner, remove the other members before leaving the group.
-          </p>
+          <p className="ds-text-muted dc-social-modal-note">{t("chat.groupMembers.ownerNote")}</p>
         )}
         {activeGroupChat.ownerUserId === currentUser.id && (
           <div className="ds-modal-actions dc-social-modal-danger">
             <button type="button" className="ds-btn ds-btn-danger" onClick={() => void deleteActiveGroup()}>
               <Icon name="trash" />
-              Delete group
+              {t("chat.groupMembers.deleteGroup")}
             </button>
           </div>
         )}

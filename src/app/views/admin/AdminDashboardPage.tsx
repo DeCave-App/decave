@@ -1,5 +1,6 @@
 // Platform owner dashboard: header, tabs and the active tab.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import TrustSafetyDashboard from "../../../components/TrustSafetyDashboard";
 import type { AccountUser, AdminDashboardTab } from "../../types";
@@ -33,6 +34,7 @@ export function AdminDashboardPage({
   ownerSecurity,
   adminActions,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const {
     ownerPrivilegedReauth,
     loadAdminDashboard,
@@ -106,7 +108,7 @@ export function AdminDashboardPage({
       className="dc-workspace-page dc-admin-page"
       role="dialog"
       aria-modal="true"
-      aria-label="Admin and security"
+      aria-label={t("common.admin.label")}
     >
       <div
         className="dc-admin-shell"
@@ -130,11 +132,9 @@ export function AdminDashboardPage({
           }}
         >
           <div>
-            <div className="social-kicker">OWNER ONLY</div>
-            <h2 style={{ marginBottom: "4px" }}>Admin & Security</h2>
-            <p style={{ margin: 0, color: "var(--ds-muted)" }}>
-              Platform health, accounts, security events and audit history.
-            </p>
+            <div className="social-kicker">{t("common.admin.kicker")}</div>
+            <h2 style={{ marginBottom: "4px" }}>{t("common.admin.title")}</h2>
+            <p style={{ margin: 0, color: "var(--ds-muted)" }}>{t("common.admin.lead")}</p>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
@@ -143,10 +143,10 @@ export function AdminDashboardPage({
               onClick={() => void loadAdminDashboard()}
               disabled={adminDashboardBusy}
             >
-              {adminDashboardBusy ? "Refreshing..." : "Refresh"}
+              {adminDashboardBusy ? t("common.admin.refreshing") : t("common.actions.refresh")}
             </button>
             <button type="button" className="modal-secondary" onClick={() => setShowAdminDashboard(false)}>
-              Close
+              {t("common.actions.close")}
             </button>
           </div>
         </div>
@@ -172,16 +172,16 @@ export function AdminDashboardPage({
               }}
             >
               {tab === "overview"
-                ? "Overview"
+                ? t("common.admin.tabs.overview")
                 : tab === "accounts"
-                  ? "Accounts"
+                  ? t("common.admin.tabs.accounts")
                   : tab === "games"
-                    ? "Squad Games"
+                    ? t("common.admin.tabs.games")
                     : tab === "security"
-                      ? "Security Events"
+                      ? t("common.admin.tabs.security")
                       : tab === "audit"
-                        ? "Owner Audit"
-                        : "Trust & Safety"}
+                        ? t("common.admin.tabs.audit")
+                        : t("common.admin.tabs.trustSafety")}
             </button>
           ))}
         </div>
@@ -269,7 +269,7 @@ export function AdminDashboardPage({
               ownerReauthExpiresAt={ownerReauthExpiresAt}
               onOpenPrivilegedUnlock={() => {
                 setAdminDashboardTab("overview");
-                setOwnerReauthNotice("Use the privileged action unlock above, then return to Trust & Safety.");
+                setOwnerReauthNotice(t("common.admin.unlockFirst"));
               }}
             />
           )}

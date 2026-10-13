@@ -1,4 +1,5 @@
 import type { HubRole, StreamerConfig } from "../../shared/streamer-mode";
+import type { ServerNotice } from "../../shared/i18n/server-notices.ts";
 /** Structural subset of D1, allowing the identical route code to be tested against SQLite. */
 export interface Statement {
   bind(...values: (string | number | null)[]): Statement;
@@ -32,7 +33,10 @@ export type StreamerDependencies = {
    * not a DM attachment or a private-room image. */
   authorizeHubImage(request: Request, hubId: number, userId: string, path: string): Promise<boolean>;
   /** After stream settings are saved (Twitch auto-live link). Returns a notice for the creator, or null. */
-  onSettingsSaved?(hubId: number, config: Omit<StreamerConfig, "version">): Promise<string | null>;
+  onSettingsSaved?(
+    hubId: number,
+    config: Omit<StreamerConfig, "version">,
+  ): Promise<{ message: string; notice: ServerNotice } | null>;
   /** The member's Twitch link and subscription to this Hub's channel (subRoles Hubs). */
   memberTwitch?(
     hubId: number,

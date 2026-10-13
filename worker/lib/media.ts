@@ -2,7 +2,7 @@
 
 import type { Env } from "./env";
 import { requireUser } from "./sessions";
-import { json } from "./http";
+import { apiError } from "./http";
 import { getRoom, getHub, getRole } from "../db";
 import { canAccessRoom } from "./hubs";
 
@@ -150,7 +150,8 @@ export function reconcileAttachmentDeletionStatements(
 
 /**
  * Every R2 object owned by one Hub (channel attachments, assets, soundboard and
- * artwork, clip thumbnails). Bind the Hub id nine times. Callers must run
+ * artwork, room backgrounds, clip thumbnails). Bind the Hub id
+ * HUB_MEDIA_OBJECT_KEYS_BINDS times. Callers must run
  * ensureHubFeatureSchema and ensureSoundboardSchema first.
  */
 export const HUB_MEDIA_OBJECT_KEYS_SQL = `SELECT attachment_key AS object_key FROM decave_messages WHERE hub_id=? AND attachment_key IS NOT NULL
@@ -161,12 +162,14 @@ export const HUB_MEDIA_OBJECT_KEYS_SQL = `SELECT attachment_key AS object_key FR
   UNION SELECT banner_key AS object_key FROM decave_hubs WHERE id=? AND banner_key IS NOT NULL
   UNION SELECT chat_background_key AS object_key FROM decave_hubs WHERE id=? AND chat_background_key IS NOT NULL
   UNION SELECT header_key AS object_key FROM decave_hubs WHERE id=? AND header_key IS NOT NULL
+  UNION SELECT background_key AS object_key FROM decave_rooms WHERE hub_id=? AND background_key IS NOT NULL
   UNION SELECT thumbnail_key AS object_key FROM decave_twitch_clips_posted WHERE hub_id=? AND thumbnail_key IS NOT NULL AND thumbnail_key<>''`;
+export const HUB_MEDIA_OBJECT_KEYS_BINDS = 10;
 
 export async function hubMediaObjectKeys(db: D1Database, hubId: number): Promise<string[]> {
   const rows = await db
     .prepare(HUB_MEDIA_OBJECT_KEYS_SQL)
-    .bind(hubId, hubId, hubId, hubId, hubId, hubId, hubId, hubId, hubId)
+    .bind(...Array<number>(HUB_MEDIA_OBJECT_KEYS_BINDS).fill(hubId))
     .all<{ object_key: string }>();
   return [...new Set(rows.results.map((row) => row.object_key).filter(Boolean))];
 }
@@ -189,7 +192,7 @@ export function queueHubMediaDeletionStatement(
        SELECT object_key,?,0,NULL FROM (${HUB_MEDIA_OBJECT_KEYS_SQL})
        WHERE object_key IS NOT NULL AND (${guardSql})`,
     )
-    .bind(queuedAt, hubId, hubId, hubId, hubId, hubId, hubId, hubId, hubId, hubId, ...guardBindings);
+    .bind(queuedAt, ...Array<number>(HUB_MEDIA_OBJECT_KEYS_BINDS).fill(hubId), ...guardBindings);
 }
 
 /** Attempt R2 deletion only for keys that are actually queued (a guarded batch may have skipped them). */
@@ -327,12 +330,12 @@ export async function serveR2(request: Request, env: Env, exportOwnerUserId?: st
     if (access) {
       if (access.kind === "dm") {
         if (user.id !== access.owner_user_id && user.id !== access.peer_user_id) {
-          return json({ error: "No access to this private attachment." }, 403);
+          return apiError("media.privateAttachmentDenied", 403);
         }
       } else {
         const room = access.room_id ? await getRoom(env.DB, access.room_id) : null;
         if (access.owner_user_id !== exportOwnerUserId && (!room || !(await canAccessRoom(env.DB, room, user.id)))) {
-          return json({ error: "No access to this room attachment." }, 403);
+          return apiError("media.roomAttachmentDenied", 403);
         }
       }
     } else if (key.startsWith("attachments/dms/")) {
@@ -342,7 +345,7 @@ export async function serveR2(request: Request, env: Env, exportOwnerUserId?: st
       const userA = parts[2] ?? "";
       const userB = parts[3] ?? "";
       if (!userA || !userB || (user.id !== userA && user.id !== userB)) {
-        return json({ error: "No access to this private attachment." }, 403);
+        return apiError("media.privateAttachmentDenied", 403);
       }
     } else {
       // Historical Hub attachments used attachments/<hub>/<room>/<object>.
@@ -364,7 +367,7 @@ export async function serveR2(request: Request, env: Env, exportOwnerUserId?: st
         room.hub_id !== hubId ||
         (!(await canAccessRoom(env.DB, room, user.id)) && !exportAuthor)
       ) {
-        return json({ error: "No access to this room attachment." }, 403);
+        return apiError("media.roomAttachmentDenied", 403);
       }
     }
   } else if (key.startsWith("hub-media/") || key.startsWith("hub-assets/")) {
@@ -378,7 +381,19 @@ export async function serveR2(request: Request, env: Env, exportOwnerUserId?: st
     // Public Hub artwork is visible to authenticated users browsing Hubs.
     // Private Hub artwork/assets require membership.
     if (hub.visibility !== "public" && !(await getRole(env.DB, hubId, user.id))) {
-      return json({ error: "No access to this Hub media." }, 403);
+      return apiError("media.hubMediaDenied", 403);
+    }
+    // A room's own background is visible only to people who can open that
+    // room, so a private room's art never leaks through the public-Hub rule.
+    if (parts[0] === "hub-media" && parts[2] === "room-background") {
+      const room = await getRoom(env.DB, Number(parts[3]));
+      if (
+        !room ||
+        room.hub_id !== hubId ||
+        room.background_key !== key ||
+        !(await canAccessRoom(env.DB, room, user.id))
+      )
+        return new Response("Not found", { status: 404 });
     }
   } else {
     // Fail closed for unknown R2 prefixes. The app Worker must never become a

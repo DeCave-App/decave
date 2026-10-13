@@ -3,6 +3,7 @@
 import { View, Text, Pressable } from "react-native";
 import { styles } from "./hubScreen.styles";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { colors } from "@/src/theme";
 import type { Channel, Hub, VoiceParticipant } from "@/src/types";
 import { roomTypeOf, SplitContext } from "./hubShared";
@@ -11,6 +12,7 @@ import { useDrafts } from "@/src/lib/drafts";
 import { useContext } from "react";
 import { router } from "expo-router";
 import { Avatar } from "@/src/components/Avatar";
+import { parseRoomAccent } from "../../../../shared/room-style";
 
 export function ChannelSection({
   title,
@@ -27,6 +29,7 @@ export function ChannelSection({
   onAdd: () => void;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation(["hub"]);
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -40,7 +43,7 @@ export function ChannelSection({
             <Text maxFontSizeMultiplier={1.3} style={styles.countText}>{count}</Text>
           </View>
           {canManage && (
-            <Pressable accessibilityRole="button" accessibilityLabel="Add room" style={styles.sectionAdd} onPress={onAdd} hitSlop={8}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("hub.mobile.rooms.add")} style={styles.sectionAdd} onPress={onAdd} hitSlop={8}>
               <Ionicons name="add" size={16} color={colors.cyan} />
             </Pressable>
           )}
@@ -67,9 +70,11 @@ export function ChannelRow({
   canManage: boolean;
   onEdit: () => void;
 }) {
+  const { t } = useTranslation(["hub"]);
   const isVoice = channel.type === "voice";
   const isForum = roomTypeOf(channel) === "forum";
   const roomIcon = channel.icon?.trim();
+  const accent = parseRoomAccent(channel.accent) ?? null;
   const { rooms, markRoomRead } = useUnread();
   const unreadCount = rooms[String(channel.id)] ?? 0;
   const hasDraft = !!useDrafts()[`room:${channel.id}`];
@@ -119,6 +124,7 @@ export function ChannelRow({
             styles.roomIcon,
             isVoice && styles.voiceIcon,
             connected && styles.voiceIconConnected,
+            accent && !connected && { borderColor: accent, backgroundColor: `${accent}26` },
           ]}
         >
           {roomIcon ? (
@@ -127,7 +133,7 @@ export function ChannelRow({
             <Ionicons
               name={isVoice ? "volume-high" : isForum ? "albums" : "chatbubble-ellipses"}
               size={18}
-              color={connected ? colors.green : colors.cyan}
+              color={connected ? colors.green : (accent ?? colors.cyan)}
             />
           )}
         </View>
@@ -137,7 +143,7 @@ export function ChannelRow({
             <Text style={[styles.roomName, unreadCount > 0 && { color: colors.strong }]} numberOfLines={1}>
               {channel.name}
             </Text>
-            {hasDraft && <Text maxFontSizeMultiplier={1.3} style={styles.draftTag}>Draft</Text>}
+            {hasDraft && <Text maxFontSizeMultiplier={1.3} style={styles.draftTag}>{t("hub.mobile.rooms.draft")}</Text>}
             {unreadCount > 0 && (
               <View style={styles.unreadBadge}>
                 <Text maxFontSizeMultiplier={1.3} style={styles.unreadBadgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
@@ -147,7 +153,7 @@ export function ChannelRow({
             {channel.private && (
               <View style={styles.privateBadge}>
                 <Ionicons name="lock-closed" size={10} color={colors.muted} />
-                <Text style={styles.privateText}>Private</Text>
+                <Text style={styles.privateText}>{t("hub.sidebar.private")}</Text>
               </View>
             )}
           </View>
@@ -155,15 +161,13 @@ export function ChannelRow({
           <Text style={[styles.roomMeta, connected && styles.connectedText]}>
             {isVoice
               ? connected
-                ? "Connected · tap for voice controls"
+                ? t("hub.mobile.rooms.connected")
                 : participants.length > 0
-                  ? `${participants.length} ${
-                      participants.length === 1 ? "person" : "people"
-                    } in voice`
-                  : "Voice Room · tap to join"
+                  ? t("hub.voicePanel.peopleInVoice", { count: participants.length })
+                  : t("hub.mobile.rooms.voiceJoin")
               : isForum
-                ? "Forum"
-                : "Text Room"}
+                ? t("hub.roomSettings.type.forum.label")
+                : t("hub.mobile.rooms.textRoom")}
           </Text>
 
           {isVoice && participants.length > 0 && (
@@ -209,7 +213,7 @@ export function ChannelRow({
         {connected && (
           <View style={styles.connectedBadge}>
             <View style={styles.connectedDot} />
-            <Text maxFontSizeMultiplier={1.3} style={styles.connectedBadgeText}>LIVE</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.connectedBadgeText}>{t("hub.sidebar.voice.live")}</Text>
           </View>
         )}
 
@@ -219,7 +223,7 @@ export function ChannelRow({
             onPress={onEdit}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={`Edit ${channel.name}`}
+            accessibilityLabel={t("hub.mobile.rooms.edit", { name: channel.name })}
           >
             <Ionicons name="ellipsis-horizontal" size={18} color={colors.text} />
           </Pressable>

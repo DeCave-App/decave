@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 import * as QuickActions from "expo-quick-actions";
 import { useQuickActionCallback } from "expo-quick-actions/hooks";
 import { loadLastVoiceRoom, voiceRoomHref } from "@/src/lib/last-voice-room";
@@ -7,6 +8,7 @@ import { useSession } from "@/src/providers/SessionProvider";
 
 /** Long-press app icon shortcuts: DMs, Find a Squad, and rejoining the last voice room. */
 export function QuickActionsBridge() {
+  const { t } = useTranslation(["common", "chat", "voice"]);
   const { user, token } = useSession();
 
   useEffect(() => {
@@ -18,15 +20,15 @@ export function QuickActionsBridge() {
     void loadLastVoiceRoom().then((room) => {
       if (!active) return;
       void QuickActions.setItems([
-        { id: "dms", title: "Messages", icon: "symbol:bubble.left.and.bubble.right", params: { href: "/dms" } },
-        { id: "squad", title: "Find a Squad", icon: "symbol:gamecontroller", params: { href: "/squad-finder" } },
+        { id: "dms", title: t("chat.social.dmTitle"), icon: "symbol:bubble.left.and.bubble.right", params: { href: "/dms" } },
+        { id: "squad", title: t("common.squad.title"), icon: "symbol:gamecontroller", params: { href: "/squad-finder" } },
         ...(room
-          ? [{ id: "voice", title: "Rejoin voice", subtitle: room.name, icon: "symbol:headphones", params: { href: voiceRoomHref(room) } }]
+          ? [{ id: "voice", title: t("voice.mobile.rejoin"), subtitle: room.name, icon: "symbol:headphones", params: { href: voiceRoomHref(room) } }]
           : []),
       ]).catch(() => undefined);
     });
     return () => { active = false; };
-  }, [user?.id, token]);
+  }, [user?.id, token, t]);
 
   useQuickActionCallback((action) => {
     const href = action.params?.href;

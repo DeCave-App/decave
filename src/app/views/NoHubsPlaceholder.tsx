@@ -1,5 +1,6 @@
 // Main area for accounts without a Hub yet: discover or create one, or use Friends and DMs.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import type { HubTemplateId } from "../../../shared/hub-templates";
 import type { ServerVisibility, SocialUser } from "../types";
@@ -29,6 +30,7 @@ export function NoHubsPlaceholder({
   openServerBrowser,
   loadSocialState,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div
       style={{
@@ -51,12 +53,11 @@ export function NoHubsPlaceholder({
         }}
       >
         <div style={{ color: "var(--ds-accent-2)", fontSize: "11px", fontWeight: 900, letterSpacing: ".16em" }}>
-          DECAVE HOME
+          {t("hub.noHubs.kicker")}
         </div>
-        <h2 style={{ margin: "10px 0 8px", fontSize: "28px" }}>You can join a Hub whenever you're ready</h2>
+        <h2 style={{ margin: "10px 0 8px", fontSize: "28px" }}>{t("hub.noHubs.title")}</h2>
         <p style={{ color: "var(--ds-muted)", lineHeight: 1.6, margin: "0 auto 22px", maxWidth: "560px" }}>
-          Your account is ready. You can use Home, Friends and DMs without joining a Hub. Create one or discover public
-          Hubs at any time.
+          {t("hub.noHubs.body")}
         </p>
         <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
           <button
@@ -70,10 +71,10 @@ export function NoHubsPlaceholder({
               setShowCreateServer(true);
             }}
           >
-            + Create Hub
+            {t("hub.noHubs.create")}
           </button>
           <button type="button" className="modal-secondary" onClick={openServerBrowser}>
-            Discover Public Hubs
+            {t("hub.noHubs.discover")}
           </button>
           <button
             type="button"
@@ -85,7 +86,7 @@ export function NoHubsPlaceholder({
               void loadSocialState();
             }}
           >
-            Friends
+            {t("hub.noHubs.friends")}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@
 // to install it, and the status text shown in Settings.
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { DesktopUpdateState } from "../types";
 import {
   checkDesktopForUpdates,
@@ -14,6 +15,7 @@ export function useDesktopUpdates() {
   const [desktopUpdateState, setDesktopUpdateState] = useState<DesktopUpdateState | null>(null);
   const [desktopUpdateAction, setDesktopUpdateAction] = useState<"checking" | "restarting" | null>(null);
   const [desktopUpdateNotice, setDesktopUpdateNotice] = useState("");
+  const { t } = useTranslation(["chat"]);
 
   useEffect(() => {
     if (!hasDesktopActivityBridge()) return;
@@ -24,7 +26,7 @@ export function useDesktopUpdates() {
       })
       .catch((error) => {
         if (!active) return;
-        setDesktopUpdateNotice(error instanceof Error ? error.message : "Could not read the desktop update status.");
+        setDesktopUpdateNotice(error instanceof Error ? error.message : t("chat.actions.desktopUpdate.statusFailed"));
       });
     const unsubscribe = window.decaveDesktop?.onUpdateStatus?.((state) => {
       if (active) setDesktopUpdateState(state);
@@ -43,7 +45,7 @@ export function useDesktopUpdates() {
       const state = await checkDesktopForUpdates();
       setDesktopUpdateState(state);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "DeCave could not check for updates. Try again later.";
+      const message = error instanceof Error ? error.message : t("chat.actions.desktopUpdate.checkFailed");
       setDesktopUpdateNotice(message);
     } finally {
       setDesktopUpdateAction(null);
@@ -56,10 +58,9 @@ export function useDesktopUpdates() {
     setDesktopUpdateNotice("");
     try {
       const restarted = await restartDesktopToUpdate();
-      if (!restarted) throw new Error("DeCave could not restart to apply the update. Save your work and try again.");
+      if (!restarted) throw new Error(t("chat.actions.desktopUpdate.restartRefused"));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "DeCave could not restart to apply the update. Try again later.";
+      const message = error instanceof Error ? error.message : t("chat.actions.desktopUpdate.restartFailed");
       setDesktopUpdateNotice(message);
     } finally {
       setDesktopUpdateAction(null);
@@ -67,25 +68,36 @@ export function useDesktopUpdates() {
   };
 
   const desktopInstalledVersion = hasDesktopActivityBridge()
-    ? (desktopUpdateState?.currentVersion ?? "Loading…")
-    : "Web (live)";
+    ? (desktopUpdateState?.currentVersion ?? t("chat.actions.desktopUpdate.versionLoading"))
+    : t("chat.actions.desktopUpdate.webVersion");
+  const installed = desktopInstalledVersion;
+  const available = desktopUpdateState?.availableVersion ?? "";
   const desktopUpdateStatusCopy = !hasDesktopActivityBridge()
-    ? "Desktop updates are available in the DeCave Windows desktop app."
+    ? t("chat.actions.desktopUpdate.webOnly")
     : !desktopUpdateState
-      ? "Installed version is loading from the desktop bridge."
+      ? t("chat.actions.desktopUpdate.loading")
       : desktopUpdateState.status === "checking"
-        ? `Installed version ${desktopInstalledVersion} · Checking for updates…`
+        ? t("chat.actions.desktopUpdate.checking", { installed })
         : desktopUpdateState.status === "downloading"
-          ? `Installed version ${desktopInstalledVersion} · Downloading update ${desktopUpdateState.availableVersion ?? ""}${desktopUpdateState.percent !== null ? ` · ${Math.round(desktopUpdateState.percent)}%` : ""}`
+          ? desktopUpdateState.percent !== null
+            ? t("chat.actions.desktopUpdate.downloadingPercent", {
+                installed,
+                available,
+                percent: Math.round(desktopUpdateState.percent),
+              })
+            : t("chat.actions.desktopUpdate.downloading", { installed, available })
           : desktopUpdateState.status === "downloaded"
-            ? `Installed version ${desktopInstalledVersion} · Update ${desktopUpdateState.availableVersion ?? ""} downloaded and ready. Restart to apply.`
+            ? t("chat.actions.desktopUpdate.downloaded", { installed, available })
             : desktopUpdateState.status === "up-to-date"
-              ? `Installed version ${desktopInstalledVersion} · You're up to date.`
+              ? t("chat.actions.desktopUpdate.upToDate", { installed })
               : desktopUpdateState.status === "error"
-                ? `Installed version ${desktopInstalledVersion} · Update check failed: ${desktopUpdateState.error || "Try again later."}`
+                ? t("chat.actions.desktopUpdate.failed", {
+                    installed,
+                    reason: desktopUpdateState.error || t("chat.actions.desktopUpdate.tryLater"),
+                  })
                 : desktopUpdateState.status === "disabled"
-                  ? `Installed version ${desktopInstalledVersion} · Desktop updates are disabled in this build.`
-                  : `Installed version ${desktopInstalledVersion} · Ready to check for updates.`;
+                  ? t("chat.actions.desktopUpdate.disabled", { installed })
+                  : t("chat.actions.desktopUpdate.ready", { installed });
 
   return {
     desktopUpdateState,

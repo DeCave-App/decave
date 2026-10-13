@@ -1,3 +1,4 @@
+import { i18next } from "../i18n/index.ts";
 import {
   accountStorageKey,
   browserLocalStorage,
@@ -204,7 +205,7 @@ export function createQuietPresenceRepository(
     key,
     load: () => {
       const result = readLocalJsonResult(storage, key, DEFAULT_QUIET_PRESENCE);
-      storageError = result.ok ? null : (result.error ?? "Quiet presence could not be read.");
+      storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.quiet.readFailed"));
       return normalizeQuietPresenceSettings(result.value ?? DEFAULT_QUIET_PRESENCE, now());
     },
     save: (candidate) => {
@@ -213,7 +214,7 @@ export function createQuietPresenceRepository(
         now(),
       );
       const result = writeLocalJsonResult(storage, key, settings);
-      storageError = result.ok ? null : (result.error ?? "Quiet presence could not be saved.");
+      storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.quiet.saveFailed"));
       return { ok: result.ok, settings, ...(result.error ? { error: result.error } : {}) };
     },
     lastError: () => storageError,

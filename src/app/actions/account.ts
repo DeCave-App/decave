@@ -3,6 +3,8 @@
 
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import { buildSyncedSettings, SETTINGS_SYNC_STAMP_KEY, mutedHubsForSync } from "../../features/settings";
+import { getChatPrefs } from "../../features/settings/chatPrefs";
+import { getCheckupDismissed } from "../../features/settings/checkup/dismissed";
 import type {
   Server,
   AccountUser,
@@ -16,22 +18,23 @@ import type {
   TimeFormatPreference,
   LanguagePreference,
   VoiceMiniPlayerPosition,
-  AccountPreferences,
+  AccountPreferencesResponse,
   DeviceSession,
 } from "../types";
 import { HTTP_URL } from "../env";
-import {
-  LANGUAGE_TIME_KEY,
-  setActiveLanguagePreference,
-  setActiveTimeFormatPreference,
-  localeForLanguage,
-} from "../locale";
+import { LANGUAGE_TIME_KEY, setActiveLanguagePreference, setActiveTimeFormatPreference } from "../locale";
+import { isDateStyleLanguage } from "../../../shared/date-style";
 import { hasDesktopActivityBridge, getDesktopSystemSettings, setDesktopStreamerMode } from "../desktop";
 import type { AccountEditState } from "../state/account-edit";
 import type { AccountSessionsState } from "../state/account-sessions";
 import type { SettingsWindowState } from "../state/settings-window";
 import type { PreferencesState } from "../state/preferences";
 import type { OwnerSecurityState } from "../state/owner-security";
+import { i18next, setDateStyleHtmlLang } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
+import { serverMessage } from "../../i18n/notice.ts";
+import { formatDate } from "../../i18n/format.ts";
+import { deviceName } from "../../i18n/sessionDevice.ts";
 import { dmE2ee } from "../../e2ee/dm-e2ee-client";
 
 export type AccountActionsDeps = {
@@ -196,27 +199,18 @@ export function createAccountActions(deps: AccountActionsDeps) {
       const response = await authorizedFetch(`${HTTP_URL}/api/account/preferences`, {
         cache: "no-store",
       });
-      const data = (await response.json().catch(() => ({}))) as Partial<AccountPreferences> & {
+      const data = (await response.json().catch(() => ({}))) as AccountPreferencesResponse & {
         error?: string;
         clientSettings?: unknown;
         clientSettingsUpdatedAt?: string | null;
       };
       if (!response.ok) {
-        setSecurityNotice(data.error || "Could not load account preferences.");
+        setSecurityNotice(apiErrorMessage(data, "client.account.loadPreferences"));
         return;
       }
       applyRemoteSettings(data.clientSettings, data.clientSettingsUpdatedAt ?? null);
 
-      const language: LanguagePreference =
-        data.language === "pl" ||
-        data.language === "el" ||
-        data.language === "de" ||
-        data.language === "fr" ||
-        data.language === "es" ||
-        data.language === "it" ||
-        data.language === "pt"
-          ? data.language
-          : "en";
+      const language: LanguagePreference = isDateStyleLanguage(data.language) ? data.language : "en";
       const timeFormat: TimeFormatPreference =
         data.timeFormat === "12h" || data.timeFormat === "24h" ? data.timeFormat : "system";
       const voiceMiniPlayerPosition: VoiceMiniPlayerPosition | null =
@@ -235,9 +229,6 @@ export function createAccountActions(deps: AccountActionsDeps) {
         usernameChangedAt: typeof data.usernameChangedAt === "string" ? data.usernameChangedAt : null,
         usernameChangeAvailableAt:
           typeof data.usernameChangeAvailableAt === "string" ? data.usernameChangeAvailableAt : null,
-        friendRequestPolicy,
-        allowStreamPreviews: data.allowStreamPreviews !== false,
-        streamerMode: data.streamerMode === true,
         language,
         timeFormat,
         voiceMiniPlayerPosition,
@@ -256,7 +247,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
 
       setActiveLanguagePreference(language);
       setActiveTimeFormatPreference(timeFormat);
-      document.documentElement.lang = language;
+      setDateStyleHtmlLang(language);
       try {
         localStorage.setItem(LANGUAGE_TIME_KEY, JSON.stringify({ language, timeFormat }));
       } catch {}
@@ -264,7 +255,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
         void setDesktopStreamerMode(data.streamerMode === true).catch(() => undefined);
       }
     } catch {
-      setSecurityNotice("Could not load account preferences.");
+      setSecurityNotice(i18next.t("errors.client.account.loadPreferences"));
     }
   };
 
@@ -297,16 +288,18 @@ export function createAccountActions(deps: AccountActionsDeps) {
             notifyLevels,
             mutedHubs: mutedHubsForSync(mutedHubIds, hubMuteSchedule),
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+            chat: getChatPrefs(),
+            checkupDismissed: getCheckupDismissed(),
           }),
         }),
       });
-      const data = (await response.json().catch(() => ({}))) as Partial<AccountPreferences> & {
+      const data = (await response.json().catch(() => ({}))) as AccountPreferencesResponse & {
         error?: string;
         clientSettings?: unknown;
         clientSettingsUpdatedAt?: string | null;
       };
       if (!response.ok) {
-        setProfileAvatarError(data.error || "Could not save privacy settings.");
+        setProfileAvatarError(apiErrorMessage(data, "client.account.savePrivacy"));
         return false;
       }
       if (data.clientSettingsUpdatedAt) {
@@ -314,11 +307,19 @@ export function createAccountActions(deps: AccountActionsDeps) {
           localStorage.setItem(SETTINGS_SYNC_STAMP_KEY, data.clientSettingsUpdatedAt);
         } catch {}
       }
-      const { clientSettings: _synced, clientSettingsUpdatedAt: _syncedAt, ...savedPreferences } = data;
+      const {
+        clientSettings: _synced,
+        clientSettingsUpdatedAt: _syncedAt,
+        // These live in PrivacySettings only.
+        friendRequestPolicy: _friendRequestPolicy,
+        allowStreamPreviews: _allowStreamPreviews,
+        streamerMode: _streamerMode,
+        ...savedPreferences
+      } = data;
       setAccountPreferences((current) => ({ ...current, ...savedPreferences }));
       setActiveLanguagePreference(accountPreferences.language);
       setActiveTimeFormatPreference(accountPreferences.timeFormat);
-      document.documentElement.lang = accountPreferences.language;
+      setDateStyleHtmlLang(accountPreferences.language);
       try {
         localStorage.setItem(
           LANGUAGE_TIME_KEY,
@@ -333,7 +334,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
       }
       return true;
     } catch {
-      setProfileAvatarError("Could not save privacy settings.");
+      setProfileAvatarError(i18next.t("errors.client.account.savePrivacy"));
       return false;
     }
   };
@@ -421,7 +422,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: value, currentPassword: password }),
         });
-        const data = (await response.json().catch(() => ({}))) as Partial<AccountPreferences> & {
+        const data = (await response.json().catch(() => ({}))) as AccountPreferencesResponse & {
           user?: AccountUser;
           error?: string;
           usernameChangeAvailableAt?: string;
@@ -429,10 +430,11 @@ export function createAccountActions(deps: AccountActionsDeps) {
         assertCurrent();
         if (!response.ok || !data.user) {
           setAccountEditNotice(
-            data.error ||
-              (data.usernameChangeAvailableAt
-                ? `You can change your username again on ${new Date(data.usernameChangeAvailableAt).toLocaleDateString(localeForLanguage())}.`
-                : "Could not change username."),
+            data.usernameChangeAvailableAt && !data.error
+              ? i18next.t("chat.actions.account.usernameAvailableOn", {
+                  date: formatDate(data.usernameChangeAvailableAt, "medium"),
+                })
+              : apiErrorMessage(data, "client.account.changeUsername"),
           );
           if (data.usernameChangeAvailableAt) {
             setAccountPreferences((current) => ({
@@ -453,7 +455,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
               ? data.usernameChangeAvailableAt
               : current.usernameChangeAvailableAt,
         }));
-        setSecurityNotice("Username updated.");
+        setSecurityNotice(i18next.t("chat.actions.account.usernameUpdated"));
         setAccountEditField(null);
         return;
       }
@@ -480,18 +482,18 @@ export function createAccountActions(deps: AccountActionsDeps) {
         };
         assertCurrent();
         if (!response.ok || !data.user) {
-          setAccountEditNotice(data.error || "Could not update email.");
+          setAccountEditNotice(apiErrorMessage(data, "client.account.updateEmail"));
           return;
         }
         if (data.user.id !== operation.accountId) throw new Error("Account response did not match.");
         setCurrentUserFromResponse(data.user);
         setSecurityVerificationUrl(data.localVerificationUrl || "");
-        setSecurityNotice(data.message || "Verification email sent.");
+        setSecurityNotice(serverMessage(data, i18next.t("chat.actions.account.verificationEmailSent")));
         setAccountEditField(null);
         return;
       }
     } catch {
-      if (isCurrent()) setAccountEditNotice("Could not confirm the account update. Verify your account and try again.");
+      if (isCurrent()) setAccountEditNotice(i18next.t("chat.actions.account.updateUnconfirmed"));
     } finally {
       window.clearTimeout(timeout);
       if (accountEditOperationRef.current === operation) {
@@ -506,7 +508,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
   const changePassword = async () => {
     const user = currentUser;
     if (!user) {
-      setChangePasswordNotice("Your session is not ready yet.");
+      setChangePasswordNotice(i18next.t("chat.actions.account.sessionNotReady"));
       return;
     }
 
@@ -517,22 +519,22 @@ export function createAccountActions(deps: AccountActionsDeps) {
     setChangePasswordNotice("");
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setChangePasswordNotice("Fill in all password fields.");
+      setChangePasswordNotice(i18next.t("chat.actions.account.passwordFieldsMissing"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setChangePasswordNotice("The new passwords do not match.");
+      setChangePasswordNotice(i18next.t("chat.actions.account.passwordsMismatch"));
       return;
     }
 
     if (newPassword === currentPassword) {
-      setChangePasswordNotice("Your new password must be different from your current password.");
+      setChangePasswordNotice(i18next.t("chat.actions.account.passwordUnchanged"));
       return;
     }
 
     if (newPassword.length < 10 || newPassword.length > 128) {
-      setChangePasswordNotice("Use 10-128 characters for the new password.");
+      setChangePasswordNotice(i18next.t("chat.actions.account.passwordLength"));
       return;
     }
 
@@ -554,7 +556,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
       };
 
       if (!response.ok) {
-        setChangePasswordNotice(data.error || "Could not change password.");
+        setChangePasswordNotice(apiErrorMessage(data, "client.account.changePassword"));
         return;
       }
 
@@ -598,10 +600,10 @@ export function createAccountActions(deps: AccountActionsDeps) {
       setOwnerReauthToken("");
       setOwnerReauthExpiresAt(0);
       setAuthMode("login");
-      setAuthError(data.message || "Password changed successfully. Sign in again with your new password.");
+      setAuthError(serverMessage(data, i18next.t("chat.actions.account.passwordChanged")));
     } catch (error) {
       console.error("Password change failed:", error);
-      setChangePasswordNotice("Could not change password.");
+      setChangePasswordNotice(i18next.t("errors.client.account.changePassword"));
     } finally {
       setChangePasswordBusy(false);
     }
@@ -612,17 +614,24 @@ export function createAccountActions(deps: AccountActionsDeps) {
       const response = await authorizedFetch(`${HTTP_URL}/api/auth/sessions`, { cache: "no-store" });
       const data = (await response.json()) as { sessions?: DeviceSession[]; error?: string };
       if (!response.ok) {
-        setSecurityNotice(data.error || "Could not load active sessions.");
+        setSecurityNotice(apiErrorMessage(data, "client.account.loadSessions"));
         return;
       }
       setDeviceSessions(Array.isArray(data.sessions) ? data.sessions : []);
     } catch {
-      setSecurityNotice("Could not load active sessions.");
+      setSecurityNotice(i18next.t("errors.client.account.loadSessions"));
     }
   };
 
   const revokeDeviceSession = async (session: DeviceSession) => {
-    if (!window.confirm(`Log out ${session.deviceLabel || session.client}?`)) return;
+    if (
+      !window.confirm(
+        i18next.t("chat.actions.account.confirmLogoutSession", {
+          device: deviceName(session.deviceLabel, session.device) || session.client,
+        }),
+      )
+    )
+      return;
     setSessionBusyId(session.id);
     setSecurityNotice("");
     try {
@@ -633,7 +642,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
       });
       const data = (await response.json()) as { current?: boolean; error?: string };
       if (!response.ok) {
-        setSecurityNotice(data.error || "Could not log out that session.");
+        setSecurityNotice(apiErrorMessage(data, "client.account.logoutSession"));
         return;
       }
       if (data.current) {
@@ -641,9 +650,9 @@ export function createAccountActions(deps: AccountActionsDeps) {
         return;
       }
       setDeviceSessions((current) => current.filter((item) => item.id !== session.id));
-      setSecurityNotice("Session logged out.");
+      setSecurityNotice(i18next.t("chat.actions.account.sessionLoggedOut"));
     } catch {
-      setSecurityNotice("Could not log out that session.");
+      setSecurityNotice(i18next.t("errors.client.account.logoutSession"));
     } finally {
       setSessionBusyId("");
     }
@@ -655,9 +664,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
     setDangerPassword("");
     setAccountDangerAction(null);
     if (operation?.mutationStarted) {
-      setSecurityNotice(
-        "Could not confirm the account action. It may already have taken effect; check account status before trying again.",
-      );
+      setSecurityNotice(i18next.t("chat.actions.account.dangerUnconfirmed"));
     }
   };
 
@@ -680,7 +687,7 @@ export function createAccountActions(deps: AccountActionsDeps) {
   const runAccountDangerAction = async (action: "disable" | "delete") => {
     if (!currentUser || accountDangerOperationRef.current || action !== accountDangerAction) return;
     if (!dangerPassword) {
-      setSecurityNotice("Enter your current password first.");
+      setSecurityNotice(i18next.t("chat.actions.account.enterCurrentPassword"));
       return;
     }
     const password = dangerPassword;
@@ -730,7 +737,9 @@ export function createAccountActions(deps: AccountActionsDeps) {
           setDeleteOwnershipBlock(ownedHubs.map((server) => server.name));
           return;
         }
-        setSecurityNotice(data.error || `Could not ${action} account.`);
+        setSecurityNotice(
+          apiErrorMessage(data, action === "disable" ? "client.account.disable" : "client.account.delete"),
+        );
         return;
       }
       // Only an acknowledged, still-current response may end this account session.
@@ -741,16 +750,20 @@ export function createAccountActions(deps: AccountActionsDeps) {
       if (accountEditAccountIdRef.current === null || accountEditAccountIdRef.current === operation.accountId) {
         setAuthError(
           action === "disable"
-            ? "Account disabled. Sign in again whenever you want to reactivate it."
-            : `Account deletion scheduled${data.deleteAfter ? ` for ${new Date(data.deleteAfter).toLocaleDateString(localeForLanguage())}` : " in 30 days"}. Sign in before then to cancel.`,
+            ? i18next.t("chat.actions.account.disabled")
+            : data.deleteAfter
+              ? i18next.t("chat.actions.account.deletionScheduledOn", { date: formatDate(data.deleteAfter, "medium") })
+              : i18next.t("chat.actions.account.deletionScheduled"),
         );
       }
     } catch {
       if (accountDangerOperationRef.current === operation && sameAccountSession()) {
         setSecurityNotice(
           operation.mutationStarted
-            ? "Could not confirm the account action. It may already have taken effect; check account status before trying again."
-            : `Could not ${action} account. Authentication was not completed.`,
+            ? i18next.t("chat.actions.account.dangerUnconfirmed")
+            : action === "disable"
+              ? i18next.t("chat.actions.account.disableNotAuthenticated")
+              : i18next.t("chat.actions.account.deleteNotAuthenticated"),
         );
       }
     } finally {

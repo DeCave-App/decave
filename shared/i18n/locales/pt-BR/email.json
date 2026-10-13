@@ -1,0 +1,41 @@
+{
+  "common": {
+    "greeting": "Oi, {{username}},",
+    "settingsPath": "Configurações > Conta e segurança"
+  },
+  "verify": {
+    "subject": "Confirme seu e-mail do DeCave",
+    "text": "Oi, {{username}}, confirme seu e-mail do DeCave: {{link}}",
+    "heading": "Confirme seu e-mail do DeCave",
+    "body": "Confirme este endereço de e-mail para ativar sua conta.",
+    "button": "Confirmar e-mail",
+    "expiry": "Este link expira em 24 horas."
+  },
+  "reset": {
+    "subject": "Redefina sua senha do DeCave",
+    "text": "Oi, {{username}}, redefina sua senha do DeCave: {{link}}",
+    "heading": "Redefina sua senha do DeCave",
+    "body": "Se você pediu para redefinir a senha, use o botão abaixo.",
+    "button": "Redefinir senha",
+    "expiry": "Este link expira em 30 minutos."
+  },
+  "signInAlert": {
+    "subject": "Novo login na sua conta do DeCave",
+    "heading": "Novo login no DeCave",
+    "usedOnText": "Sua conta do DeCave acabou de ser usada para entrar em: {{device}}",
+    "time": "Horário: {{when}}",
+    "usedOn": "Sua conta acabou de ser usada para entrar em:",
+    "ifYou": "Se foi você, não precisa fazer nada.",
+    "notYouText": "Se não foi você, proteja sua conta agora (isso desconecta todos os dispositivos e envia um link para redefinir a senha): {{link}}",
+    "turnOffText": "Você pode desativar estes e-mails em {{settingsPath}}.",
+    "button": "Não fui eu",
+    "footer": "Isso desconecta todos os dispositivos e envia para você um link para redefinir a senha. O link vale por 7 dias. Desative estes e-mails em {{settingsPath}}."
+  },
+  "emailChanged": {
+    "subject": "O endereço de e-mail da sua conta do DeCave foi alterado",
+    "heading": "Seu endereço de e-mail do DeCave mudou",
+    "changedText": "O endereço de e-mail da sua conta do DeCave foi alterado para {{newEmail}}.",
+    "changed": "O endereço de e-mail da sua conta foi alterado para <strong>{{newEmail}}</strong>.",
+    "notYou": "Se não foi você que fez essa alteração, entre no DeCave, troque sua senha e desconecte os outros dispositivos em {{settingsPath}}."
+  }
+}

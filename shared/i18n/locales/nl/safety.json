@@ -1,0 +1,120 @@
+{
+  "category": {
+    "HARASSMENT_BULLYING": "Intimidatie of pesten",
+    "HATE_SPEECH": "Haatzaaiende taal",
+    "SEXUAL_INAPPROPRIATE": "Seksuele of ongepaste content",
+    "SUSPECTED_GROOMING": "Vermoeden van grooming",
+    "CHILD_SAFETY": "Zorgen over kinderveiligheid",
+    "THREATS_VIOLENCE": "Bedreigingen of geweld",
+    "SPAM_SCAM": "Spam of oplichting",
+    "IMPERSONATION": "Zich voordoen als iemand anders",
+    "UNDERAGE_USER": "Minderjarige gebruiker",
+    "INAPPROPRIATE_MEDIA": "Ongepaste media",
+    "SELF_HARM": "Zorgen over zelfbeschadiging",
+    "OTHER": "Overig"
+  },
+  "urgency": {
+    "critical": "Kritiek",
+    "high": "Hoog",
+    "medium": "Gemiddeld",
+    "low": "Laag",
+    "spam_invalid": "Spam of ongeldig"
+  },
+  "report": {
+    "title": {
+      "content": "Content rapporteren",
+      "user": "{{name}} rapporteren",
+      "thisUser": "Deze gebruiker rapporteren",
+      "item": "{{label}} rapporteren",
+      "thisContent": "Deze content rapporteren"
+    },
+    "failed": "Het rapport kon niet worden verstuurd.",
+    "submitted": "Rapport verstuurd. Bedankt dat je helpt DeCave veilig te houden.",
+    "submittedNoEvidence": "Rapport verstuurd, maar het gerapporteerde bericht kon niet worden bijgevoegd, dus het veiligheidsteam kan het niet lezen. Je kunt dit venster sluiten.",
+    "connectFailed": "Kan geen verbinding maken met DeCave.",
+    "kicker": "Vertrouwen en veiligheid",
+    "private": "Je rapport is privé. De persoon die je rapporteert, krijgt niet te zien wie jij bent.",
+    "category": "Wat is er gebeurd?",
+    "urgency": "Urgentie",
+    "details": "Details <optional>(optioneel)</optional>",
+    "detailsPlaceholder": "Vertel ons wat we moeten weten",
+    "evidence": "Geselecteerd bewijs",
+    "evidenceEncrypted": "Het wordt op dit apparaat versleuteld voordat het wordt geüpload.",
+    "blockAfter": "Deze gebruiker blokkeren na het versturen",
+    "cancel": "Annuleren",
+    "submitting": "Versturen…",
+    "submit": "Rapport versturen"
+  },
+  "myReports": {
+    "loadFailed": "Kan je rapporten niet laden.",
+    "connectFailed": "Kan geen verbinding maken met DeCave.",
+    "kicker": "ALLEEN VOOR JOU",
+    "title": "Mijn rapporten",
+    "intro": "Volg de rapporten die je hebt verstuurd. Details van de beoordeling blijven privé.",
+    "loading": "Laden…",
+    "refresh": "Vernieuwen",
+    "empty": "Je hebt nog geen rapporten verstuurd.",
+    "rowMeta": "{{target}} · {{date}}",
+    "report": "Rapport",
+    "close": "Sluiten",
+    "noDetails": "Er zijn geen extra details opgegeven.",
+    "statusLine": "Status: {{status}} · verstuurd op {{date}}",
+    "status": {
+      "submitted": "Verstuurd",
+      "under_review": "In behandeling",
+      "awaiting_information": "Wacht op informatie",
+      "action_taken": "Actie ondernomen",
+      "no_violation": "Geen overtreding",
+      "escalated": "Geëscaleerd",
+      "appealed": "Bezwaar ingediend",
+      "closed": "Gesloten"
+    },
+    "urgency": {
+      "critical": "kritiek",
+      "high": "hoog",
+      "medium": "gemiddeld",
+      "low": "laag",
+      "spam_invalid": "spam/ongeldig"
+    },
+    "target": {
+      "user": "gebruiker",
+      "message": "bericht",
+      "content": "content",
+      "attachment": "bijlage",
+      "profile": "profiel",
+      "voice_participant": "spraakdeelnemer"
+    }
+  },
+  "qrLogin": {
+    "creating": "Veilige inlogcode maken…",
+    "createFailed": "Kan geen QR-login maken.",
+    "instructions": "Open DeCave Mobile → Instellingen → Apparaten → QR-login scannen.",
+    "updating": "Veilige inlogcode bijwerken…",
+    "expired": "QR-login verlopen.",
+    "codeAlt": "DeCave QR-inlogcode",
+    "preparing": "Voorbereiden…",
+    "scan": "Scan met de DeCave-app"
+  },
+  "mobile": {
+    "myReports": {
+      "reportValue": "Rapport {{value}}"
+    },
+    "category": {
+      "HARASSMENT_BULLYING": "Intimidatie",
+      "SEXUAL_INAPPROPRIATE": "Seksuele content",
+      "SUSPECTED_GROOMING": "Grooming",
+      "CHILD_SAFETY": "Kinderveiligheid",
+      "THREATS_VIOLENCE": "Bedreigingen",
+      "SELF_HARM": "Zelfbeschadiging"
+    },
+    "report": {
+      "submittedNoEvidenceShort": "Rapport verstuurd, maar het gerapporteerde bericht kon niet worden bijgevoegd.",
+      "failed": "Kan het rapport niet versturen.",
+      "kicker": "VERTROUWEN EN VEILIGHEID",
+      "private": "Je rapport is privé. De persoon die je rapporteert, ziet niet wie jij bent.",
+      "detailsPlaceholder": "Vertel ons wat we moeten weten (optioneel)",
+      "evidenceNote": "Het gerapporteerde bericht is bijgevoegd en versleuteld, zodat alleen het veiligheidsteam van DeCave het kan lezen.",
+      "contextNote": "Je rapport en de context ervan worden naar het veiligheidsteam van DeCave gestuurd."
+    }
+  }
+}

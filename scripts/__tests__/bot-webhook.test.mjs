@@ -88,7 +88,11 @@ test("sends fixed headers, manual redirect and parses JSON", async () => {
 test("redirects are refused, not followed", async () => {
   const fetchImpl = async () => new Response(null, { status: 301, headers: { location: "https://169.254.169.254/" } });
   const result = await guardedFetch("https://example.com/h", { method: "GET" }, fetchImpl);
-  assert.deepEqual(result, { ok: false, reason: "Webhook redirects aren't followed" });
+  assert.deepEqual(result, {
+    ok: false,
+    reason: "Webhook redirects aren't followed",
+    notice: { code: "bots.run.server.webhookRedirect" },
+  });
 });
 
 test("a slow response is aborted after 5000 ms", async () => {
@@ -107,14 +111,22 @@ test("a slow response is aborted after 5000 ms", async () => {
   });
   assert.equal(delay, 5000);
   fire();
-  assert.deepEqual(await pending, { ok: false, reason: "Webhook timed out" });
+  assert.deepEqual(await pending, {
+    ok: false,
+    reason: "Webhook timed out",
+    notice: { code: "bots.run.server.webhookTimedOut" },
+  });
   assert.equal(cleared, true);
 });
 
 test("a 70 KB body is refused, even streamed without Content-Length", async () => {
   const big = "a".repeat(70 * 1024);
   const result = await guardedFetch("https://example.com/h", { method: "GET" }, okFetch(big));
-  assert.deepEqual(result, { ok: false, reason: "Webhook response too large" });
+  assert.deepEqual(result, {
+    ok: false,
+    reason: "Webhook response too large",
+    notice: { code: "bots.run.server.webhookTooLarge" },
+  });
   const chunk = new Uint8Array(16 * 1024);
   let pulled = 0;
   const stream = new ReadableStream({
@@ -124,7 +136,11 @@ test("a 70 KB body is refused, even streamed without Content-Length", async () =
     },
   });
   const streamed = await guardedFetch("https://example.com/h", { method: "GET" }, async () => new Response(stream));
-  assert.deepEqual(streamed, { ok: false, reason: "Webhook response too large" });
+  assert.deepEqual(streamed, {
+    ok: false,
+    reason: "Webhook response too large",
+    notice: { code: "bots.run.server.webhookTooLarge" },
+  });
   assert.ok(pulled <= 8, "stops reading soon after the cap");
 });
 
@@ -198,7 +214,12 @@ test("the 11th webhook call in a minute is limited", async () => {
     const action = { type: "webhook", url: "https://example.com/p", method: "GET" };
     for (let i = 0; i < 10; i++) assert.equal((await handler.run(actionCtx(), action)).ok, true);
     const eleventh = await handler.run(actionCtx(), action);
-    assert.deepEqual(eleventh, { ok: false, reason: "Webhook limit reached", limited: true });
+    assert.deepEqual(eleventh, {
+      ok: false,
+      reason: "Webhook limit reached",
+      notice: { code: "bots.run.server.webhookLimit" },
+      limited: true,
+    });
     assert.equal(globalThis.fetch.calls.length, 10);
   } finally {
     globalThis.fetch = realFetch;

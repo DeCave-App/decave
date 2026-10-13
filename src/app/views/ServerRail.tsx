@@ -1,5 +1,6 @@
 // Left rail: DeCave brand and the primary navigation (Home, Hubs, DMs, Friends).
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import decaveMark from "../../assets/decave-mark-reference.png";
 import { Icon } from "../../components/Icon";
@@ -47,6 +48,7 @@ export function ServerRail({
   dmUnreadTotal,
   pageNavigation,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const {
     openSettings,
     openHomeWorkspace,
@@ -96,7 +98,7 @@ export function ServerRail({
       </div>
 
       <nav
-        aria-label="Primary navigation"
+        aria-label={t("common.rail.label")}
         className="dc-primary-navigation"
         style={{
           width: "100%",
@@ -109,7 +111,7 @@ export function ServerRail({
       >
         <button
           type="button"
-          title="Home"
+          title={t("common.rail.homeTitle")}
           onClick={openHomeWorkspace}
           className={showHome ? "dc-rail-page-button active" : "dc-rail-page-button"}
           aria-current={showHome ? "page" : undefined}
@@ -118,12 +120,12 @@ export function ServerRail({
           <span className="dc-rail-icon" aria-hidden="true">
             <Icon name="home" size="xl" />
           </span>
-          <span className="dc-rail-label">Home</span>
+          <span className="dc-rail-label">{t("common.rail.home")}</span>
         </button>
 
         <button
           type="button"
-          title="Direct Messages"
+          title={t("common.bottomBar.directMessages")}
           onClick={openDirectMessagesWorkspace}
           className={showSocial && socialView === "dm" ? "dc-rail-page-button active" : "dc-rail-page-button"}
           aria-current={showSocial && socialView === "dm" ? "page" : undefined}
@@ -132,12 +134,9 @@ export function ServerRail({
           <span className="dc-rail-icon" aria-hidden="true">
             <Icon name="message" size="xl" />
           </span>
-          <span className="dc-rail-label">DMs</span>
+          <span className="dc-rail-label">{t("common.rail.dms")}</span>
           {dmUnreadTotal > 0 && (
-            <b
-              title={`${dmUnreadTotal} unread private message${dmUnreadTotal === 1 ? "" : "s"}`}
-              className="dc-rail-badge"
-            >
+            <b title={t("common.rail.dmUnread", { count: dmUnreadTotal })} className="dc-rail-badge">
               {dmUnreadTotal > 99 ? "99+" : dmUnreadTotal}
             </b>
           )}
@@ -145,7 +144,7 @@ export function ServerRail({
 
         <button
           type="button"
-          title="Friends"
+          title={t("common.rail.friendsTitle")}
           onClick={openFriendsWorkspace}
           className={showSocial && socialView === "friends" ? "dc-rail-page-button active" : "dc-rail-page-button"}
           aria-current={showSocial && socialView === "friends" ? "page" : undefined}
@@ -154,12 +153,12 @@ export function ServerRail({
           <span className="dc-rail-icon" aria-hidden="true">
             <Icon name="users" size="xl" />
           </span>
-          <span className="dc-rail-label">Friends</span>
+          <span className="dc-rail-label">{t("common.rail.friends")}</span>
         </button>
 
         <button
           type="button"
-          title="Squad Finder"
+          title={t("common.rail.squadTitle")}
           onClick={openSquadFinderWorkspace}
           className={showSquadFinder ? "dc-rail-page-button active" : "dc-rail-page-button"}
           aria-current={showSquadFinder ? "page" : undefined}
@@ -168,12 +167,12 @@ export function ServerRail({
           <span className="dc-rail-icon" aria-hidden="true">
             <Icon name="gamepad" size="xl" />
           </span>
-          <span className="dc-rail-label">Squad</span>
+          <span className="dc-rail-label">{t("common.rail.squad")}</span>
         </button>
 
         <button
           type="button"
-          title="Discover Hubs"
+          title={t("common.bottomBar.discoverHubs")}
           onClick={openServerBrowser}
           className={showServerBrowser ? "dc-rail-page-button active" : "dc-rail-page-button"}
           aria-current={showServerBrowser ? "page" : undefined}
@@ -182,13 +181,13 @@ export function ServerRail({
           <span className="dc-rail-icon" aria-hidden="true">
             <Icon name="compass" size="xl" />
           </span>
-          <span className="dc-rail-label">Discover</span>
+          <span className="dc-rail-label">{t("common.rail.discover")}</span>
         </button>
 
         {platformOwnerActive && (
           <button
             type="button"
-            title="Platform Admin & Security"
+            title={t("common.rail.adminTitle")}
             onClick={openAdminDashboard}
             className={showAdminDashboard ? "dc-rail-page-button active" : "dc-rail-page-button"}
             aria-current={showAdminDashboard ? "page" : undefined}
@@ -197,14 +196,14 @@ export function ServerRail({
             <span className="dc-rail-icon" aria-hidden="true">
               <Icon name="shield" size="xl" />
             </span>
-            <span className="dc-rail-label">Admin</span>
+            <span className="dc-rail-label">{t("common.rail.admin")}</span>
           </button>
         )}
       </nav>
 
       <button
         type="button"
-        title="Report a bug or suggest a feature"
+        title={t("common.rail.feedbackTitle")}
         onClick={() => {
           closePrimaryTransientOverlays();
           setFeedbackNotice("");
@@ -217,12 +216,12 @@ export function ServerRail({
         <span className="dc-rail-icon" aria-hidden="true">
           <Icon name="bulb" size="xl" />
         </span>
-        <span className="dc-rail-label">Feedback</span>
+        <span className="dc-rail-label">{t("common.rail.feedback")}</span>
       </button>
 
       <button
         type="button"
-        title="Settings"
+        title={t("common.rail.settingsTitle")}
         onClick={openSettings}
         className={
           showSettings
@@ -235,7 +234,7 @@ export function ServerRail({
         <span className="dc-rail-icon" aria-hidden="true">
           <Icon name="settings" size="xl" />
         </span>
-        <span className="dc-rail-label">Settings</span>
+        <span className="dc-rail-label">{t("common.rail.settings")}</span>
       </button>
     </aside>
   );

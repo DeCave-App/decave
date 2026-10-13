@@ -1,0 +1,52 @@
+{
+  "hidden": {
+    "hubMessage": "Nieuw bericht in een Hub",
+    "directMessage": "Je hebt een nieuw bericht"
+  },
+  "sender": {
+    "hubMessage": "{{sender}} heeft een bericht gestuurd",
+    "directMessage": "{{sender}} heeft je een bericht gestuurd",
+    "inRoom": "{{sender}} in {{where}}",
+    "someone": "Iemand",
+    "unknownDirect": "Nieuw bericht"
+  },
+  "preview": {
+    "gif": "Heeft een gif gestuurd",
+    "attachment": "Heeft een bijlage gestuurd",
+    "encrypted": "Heeft je een versleuteld bericht gestuurd"
+  },
+  "mobile": {
+    "hiddenMention": "Je bent vermeld in DeCave.",
+    "hiddenMessage": "Je hebt een nieuw bericht ontvangen.",
+    "groupChat": "Groepschat",
+    "hubMessage": "Hub-bericht",
+    "sentMessage": "{{sender}} heeft een bericht gestuurd.",
+    "mentionedIn": "Heeft je vermeld in {{place}}.",
+    "mentioned": "Heeft je vermeld.",
+    "sentPrivate": "Heeft je een privébericht gestuurd.",
+    "withSender": "{{sender}}: {{text}}",
+    "unknownUser": "DeCave-gebruiker",
+    "hubRoom": "Hub-kanaal",
+    "encryptedMessage": "🔒 Versleuteld bericht",
+    "channels": {
+      "messages": {
+        "name": "Berichten",
+        "description": "Privéberichten, groepschats en meldingen van Hub-berichten"
+      },
+      "silent": {
+        "name": "Berichten (stil)",
+        "description": "Stille DeCave-berichtmeldingen"
+      }
+    },
+    "primer": {
+      "title": "Blijf op de hoogte",
+      "message": "Krijg meldingen over DM's, vermeldingen, vriendschapsverzoeken en wanneer er een Squad voor je klaarstaat. Je kunt dit aanpassen in Instellingen.",
+      "allow": "Aanzetten"
+    },
+    "squad": {
+      "title": "Squad beschikbaar",
+      "body_one": "{{count}}/4 spelers zijn klaar voor {{game}}.",
+      "body_other": "{{count}}/4 spelers zijn klaar voor {{game}}."
+    }
+  }
+}

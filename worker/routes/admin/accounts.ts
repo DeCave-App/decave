@@ -10,7 +10,8 @@ import {
   platformUserByIdentifier,
 } from "../../lib/platform-owner";
 import { nowIso, userByReference, type UserRow, tokenHash, getHub, publicIdOf } from "../../db";
-import { json, bodyJson, authBaseUrlForEnvironment } from "../../lib/http";
+import { json, bodyJson, authBaseUrlForEnvironment, apiError, apiErrorLegacy } from "../../lib/http";
+import { serverNotice } from "../../lib/notices";
 import { ownerRequireReauth } from "../../lib/mfa";
 import {
   deriveAgeProfile,
@@ -22,6 +23,7 @@ import {
 import { securityEvent, revokeAccountSessions, createAuthToken, activeSuspension } from "../../lib/sessions";
 import { streamerMigrationExists, streamerRevokeParticipantStatements } from "../../streamer/index.ts";
 import { sendResetEmail } from "../../lib/email";
+import { userLocale } from "../../lib/i18n";
 import { ownedHubCount } from "../../lib/hubs";
 import { UNDERAGE_DELETION_REASON } from "../../retention";
 import { realtimeBroadcast } from "../../lib/realtime";
@@ -126,19 +128,19 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const targetReference = decodeURIComponent(adminAgeRecoveryMatch[1]);
     const target = await userByReference(env.DB, targetReference);
-    if (!target) return json({ error: "Account was not found" }, 404);
+    if (!target) return apiError("admin.accountNotFound", 404);
     // An account scheduled for deletion only because it was found to be under
     // 18 can still be corrected during the grace period.
     const underageDeletion = target.deleted_at && target.deletion_reason === UNDERAGE_DELETION_REASON;
     if (target.erased_at || (target.deleted_at && !underageDeletion)) {
-      return json({ error: "This account is not active." }, 409);
+      return apiError("admin.accountNotActive", 409);
     }
 
     const body = await bodyJson(request);
     const profile = deriveAgeProfile(body.birthDate);
-    if (!profile) return json({ error: "Enter a valid birth date." }, 400);
+    if (!profile) return apiError("admin.birthDateInvalid", 400);
     if (profile.ageStatus !== "eligible") {
-      return json({ error: "The corrected birth date must show that the account holder is at least 18." }, 400);
+      return apiError("admin.birthDateUnderage", 400);
     }
 
     await saveAgeProfile(env.DB, target.id, profile, nowIso(), "reviewed");
@@ -171,7 +173,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const targetReference = decodeURIComponent(adminAccountDetailMatch[1]);
     const targetUser = await userByReference(env.DB, targetReference);
-    if (!targetUser) return json({ error: "Account was not found" }, 404);
+    if (!targetUser) return apiError("admin.accountNotFound", 404);
     const targetUserId = targetUser.id;
     const now = nowIso();
 
@@ -212,7 +214,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
         active_sessions: number;
       }>();
 
-    if (!target) return json({ error: "Account was not found" }, 404);
+    if (!target) return apiError("admin.accountNotFound", 404);
     await platformAudit(env, owner.id, "platform.account_details_viewed", request, target.id);
 
     const hubs = await env.DB.prepare(
@@ -316,15 +318,15 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const targetReference = decodeURIComponent(adminSuspendMatch[1]);
     const target = await userByReference(env.DB, targetReference);
-    if (!target) return json({ error: "Account was not found" }, 404);
+    if (!target) return apiError("admin.accountNotFound", 404);
 
     if (target.id === owner.id) {
-      return json({ error: "You cannot suspend your own owner account." }, 409);
+      return apiError("admin.cannotSuspendSelf", 409);
     }
-    if (target.erased_at) return json({ error: "This account has already been erased." }, 409);
-    if (target.deleted_at) return json({ error: "Restore the account before suspending it." }, 409);
+    if (target.erased_at) return apiError("admin.accountAlreadyBeenErased", 409);
+    if (target.deleted_at) return apiError("admin.restoreBeforeSuspend", 409);
     if (target.platform_role === "owner") {
-      return json({ error: "Demote the platform owner before suspending the account." }, 409);
+      return apiError("admin.demoteBeforeSuspend", 409);
     }
 
     const body = await bodyJson(request);
@@ -335,7 +337,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
         ? Math.max(1, Math.min(365, Math.trunc(durationDaysRaw)))
         : null;
 
-    if (!reason) return json({ error: "A suspension reason is required." }, 400);
+    if (!reason) return apiError("admin.suspensionReasonRequired", 400);
 
     const suspendedAt = nowIso();
     const suspendedUntil = durationDays ? new Date(Date.now() + durationDays * 86400000).toISOString() : null;
@@ -373,7 +375,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const targetReference = decodeURIComponent(adminUnsuspendMatch[1]);
     const targetUser = await userByReference(env.DB, targetReference);
-    if (!targetUser) return json({ error: "Account was not found" }, 404);
+    if (!targetUser) return apiError("admin.accountNotFound", 404);
     const targetUserId = targetUser.id;
     const target = await env.DB.prepare("SELECT id,erased_at,deleted_at FROM decave_users WHERE id=? LIMIT 1")
       .bind(targetUserId)
@@ -382,9 +384,9 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
         erased_at: string | null;
         deleted_at: string | null;
       }>();
-    if (!target) return json({ error: "Account was not found" }, 404);
-    if (target.erased_at) return json({ error: "An erased account cannot be restored." }, 409);
-    if (target.deleted_at) return json({ error: "Restore the deleted account first." }, 409);
+    if (!target) return apiError("admin.accountNotFound", 404);
+    if (target.erased_at) return apiError("admin.erasedCannotRestore", 409);
+    if (target.deleted_at) return apiError("admin.restoreDeletedFirst", 409);
 
     await env.DB.prepare(
       `UPDATE decave_users
@@ -408,27 +410,34 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const targetReference = decodeURIComponent(adminForceResetMatch[1]);
     const targetUser = await userByReference(env.DB, targetReference);
-    if (!targetUser) return json({ error: "Account was not found" }, 404);
+    if (!targetUser) return apiError("admin.accountNotFound", 404);
     const targetUserId = targetUser.id;
     if (targetUserId === owner.id) {
-      return json({ error: "Use Change Password for your own account instead of forcing a reset." }, 409);
+      return apiError("admin.useChangePassword", 409);
     }
 
     const target = await env.DB.prepare("SELECT * FROM decave_users WHERE id=? LIMIT 1")
       .bind(targetUserId)
       .first<UserRow>();
-    if (!target) return json({ error: "Account was not found" }, 404);
+    if (!target) return apiError("admin.accountNotFound", 404);
     if (target.erased_at || target.deleted_at) {
-      return json({ error: "This account is not active." }, 409);
+      return apiError("admin.accountNotActive", 409);
     }
     if (!target.email || !target.email_verified_at) {
-      return json({ error: "A verified email is required before a forced password reset." }, 409);
+      return apiError("admin.resetNeedsVerifiedEmail", 409);
     }
 
     const token = await createAuthToken(env, target.id, "reset_password", 30 * 60000);
 
     try {
-      await sendResetEmail(env, target.email, target.username, token, authBaseUrlForEnvironment(env));
+      await sendResetEmail(
+        env,
+        target.email,
+        target.username,
+        token,
+        authBaseUrlForEnvironment(env),
+        await userLocale(env.DB, target.id),
+      );
     } catch (error) {
       console.error("Could not send forced password reset email", error instanceof Error ? error.name : "UnknownError");
       await env.DB.prepare(
@@ -438,7 +447,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
       )
         .bind(nowIso(), target.id)
         .run();
-      return json({ error: "Could not send the password reset email." }, 502);
+      return apiError("admin.resetEmailFailed", 502);
     }
 
     await env.DB.batch([
@@ -457,7 +466,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     return json({
       success: true,
-      message: "Password reset required. A reset email was sent.",
+      ...serverNotice("admin.server.passwordResetForced"),
     });
   }
 
@@ -470,35 +479,29 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const targetReference = decodeURIComponent(adminDeleteMatch[1]);
     const targetUser = await userByReference(env.DB, targetReference);
-    if (!targetUser) return json({ error: "Account was not found" }, 404);
+    if (!targetUser) return apiError("admin.accountNotFound", 404);
     const targetUserId = targetUser.id;
     if (targetUserId === owner.id) {
-      return json({ error: "You cannot schedule your own owner account for deletion." }, 409);
+      return apiError("admin.cannotDeleteSelf", 409);
     }
 
     const target = await env.DB.prepare("SELECT * FROM decave_users WHERE id=? LIMIT 1")
       .bind(targetUserId)
       .first<UserRow>();
-    if (!target) return json({ error: "Account was not found" }, 404);
-    if (target.erased_at) return json({ error: "This account is already erased." }, 409);
+    if (!target) return apiError("admin.accountNotFound", 404);
+    if (target.erased_at) return apiError("admin.accountAlreadyErased", 409);
     if (target.platform_role === "owner") {
-      return json({ error: "Demote the platform owner before scheduling account deletion." }, 409);
+      return apiError("admin.demoteBeforeDelete", 409);
     }
 
     const hubs = await ownedHubCount(env.DB, target.id);
     if (hubs > 0) {
-      return json(
-        {
-          error: "Transfer or delete every Hub owned by this account before scheduling deletion.",
-          hubsOwned: hubs,
-        },
-        409,
-      );
+      return apiError("admin.hubsOwnedBeforeDelete", 409, undefined, undefined, { hubsOwned: hubs });
     }
 
     const body = await bodyJson(request);
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 300) : "";
-    if (!reason) return json({ error: "A deletion reason is required." }, 400);
+    if (!reason) return apiError("admin.deletionReasonRequired", 400);
 
     const deletedAt = nowIso();
     const deleteAfter = new Date(Date.now() + 30 * 86400000).toISOString();
@@ -531,7 +534,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const targetReference = decodeURIComponent(adminRestoreMatch[1]);
     const targetUser = await userByReference(env.DB, targetReference);
-    if (!targetUser) return json({ error: "Account was not found" }, 404);
+    if (!targetUser) return apiError("admin.accountNotFound", 404);
     const targetUserId = targetUser.id;
     const target = await env.DB.prepare(
       "SELECT id,deleted_at,erased_at,erasure_started_at FROM decave_users WHERE id=? LIMIT 1",
@@ -543,9 +546,8 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
         erased_at: string | null;
         erasure_started_at: string | null;
       }>();
-    if (!target) return json({ error: "Account was not found" }, 404);
-    if (target.erased_at || target.erasure_started_at)
-      return json({ error: "An erased or erasing account cannot be restored." }, 409);
+    if (!target) return apiError("admin.accountNotFound", 404);
+    if (target.erased_at || target.erasure_started_at) return apiError("admin.erasingCannotRestore", 409);
     if (!target.deleted_at) return json({ success: true, unchanged: true });
 
     const restoreResult = await env.DB.prepare(
@@ -555,8 +557,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
     )
       .bind(target.id)
       .run();
-    if (Number(restoreResult.meta.changes ?? 0) !== 1)
-      return json({ error: "The account changed state and could not be restored." }, 409);
+    if (Number(restoreResult.meta.changes ?? 0) !== 1) return apiError("admin.restoreStateChanged", 409);
 
     await platformAudit(env, owner.id, "platform.account_restored", request, target.id);
     await securityEvent(env, target.id, "account.restored", null);
@@ -572,22 +573,22 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const targetReference = decodeURIComponent(adminRoleMatch[1]);
     const targetUser = await userByReference(env.DB, targetReference);
-    if (!targetUser) return json({ error: "Account was not found" }, 404);
+    if (!targetUser) return apiError("admin.accountNotFound", 404);
     const targetUserId = targetUser.id;
     const body = await bodyJson(request);
     const role: PlatformRole | null =
       body.role === "user" || body.role === "admin" || body.role === "owner" ? body.role : null;
-    if (!role) return json({ error: "Platform role must be user, admin or owner." }, 400);
+    if (!role) return apiError("admin.platformRoleInvalid", 400);
 
     const target = await env.DB.prepare("SELECT * FROM decave_users WHERE id=? LIMIT 1")
       .bind(targetUserId)
       .first<UserRow>();
-    if (!target) return json({ error: "Account was not found" }, 404);
+    if (!target) return apiError("admin.accountNotFound", 404);
     if (target.erased_at || target.deleted_at) {
-      return json({ error: "Restore the account before changing its platform role." }, 409);
+      return apiError("admin.restoreBeforeRoleChange", 409);
     }
     if (target.id === owner.id && target.platform_role === "owner" && role !== "owner") {
-      return json({ error: "You cannot demote your own platform-owner account." }, 409);
+      return apiError("admin.cannotDemoteSelf", 409);
     }
     if (target.platform_role === role) {
       return json({ success: true, unchanged: true, platformRole: role });
@@ -596,18 +597,12 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
     if (target.platform_role === "owner" && role !== "owner") {
       const count = await platformOwnerCount(env.DB);
       if (count <= 2) {
-        return json(
-          {
-            error: "DeCave must keep at least two platform owners. Promote another owner first.",
-            ownerCount: count,
-          },
-          409,
-        );
+        return apiError("admin.minimumOwners", 409, undefined, undefined, { ownerCount: count });
       }
     }
 
     if (role === "owner" && !target.email_verified_at) {
-      return json({ error: "Verify the target account email before promoting it to owner." }, 409);
+      return apiError("admin.verifyEmailBeforePromote", 409);
     }
 
     const roleUpdate = await env.DB.prepare(
@@ -616,8 +611,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
     )
       .bind(role, target.id)
       .run();
-    if (Number(roleUpdate.meta.changes ?? 0) !== 1)
-      return json({ error: "The account changed state. Restore it before changing its platform role." }, 409);
+    if (Number(roleUpdate.meta.changes ?? 0) !== 1) return apiError("admin.roleStateChanged", 409);
 
     if (target.platform_role === "owner" && role !== "owner") {
       await env.DB.batch([
@@ -650,18 +644,18 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const hubId = Number(adminTransferHubMatch[1]);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Hub was not found" }, 404);
+    if (!hub) return apiError("admin.hubNotFound", 404);
 
     const body = await bodyJson(request);
     const targetIdentifier = typeof body.targetIdentifier === "string" ? body.targetIdentifier.trim() : "";
     if (!targetIdentifier) {
-      return json({ error: "Enter the new owner's DeCave ID, username or verified email." }, 400);
+      return apiError("admin.newOwnerRequired", 400);
     }
 
     const target = await platformUserByIdentifier(env.DB, targetIdentifier);
-    if (!target) return json({ error: "New owner account was not found." }, 404);
+    if (!target) return apiError("admin.newOwnerNotFound", 404);
     if (target.erased_at || target.deleted_at || activeSuspension(target)) {
-      return json({ error: "The new owner account must be active." }, 409);
+      return apiError("admin.newOwnerNotActive", 409);
     }
     if (target.id === hub.owner_id) {
       return json({ success: true, unchanged: true });
@@ -690,8 +684,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
            AND EXISTS(SELECT 1 FROM decave_hubs WHERE id=? AND owner_id=?)`,
       ).bind(hubId, oldOwnerId, hubId, target.id),
     ]);
-    if (Number(transferResults[0]?.meta?.changes ?? 0) !== 1)
-      return json({ error: "The new owner account or Hub changed state. Retry the transfer." }, 409);
+    if (Number(transferResults[0]?.meta?.changes ?? 0) !== 1) return apiError("admin.transferStateChanged", 409);
 
     await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { hubId, userIds: [oldOwnerId, target.id] });
     await platformAudit(env, owner.id, "platform.hub_ownership_transferred", request, target.id, {
@@ -717,49 +710,43 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
 
     const targetReference = decodeURIComponent(adminEraseMatch[1]);
     const targetUser = await userByReference(env.DB, targetReference);
-    if (!targetUser) return json({ error: "Account was not found" }, 404);
+    if (!targetUser) return apiError("admin.accountNotFound", 404);
     const targetUserId = targetUser.id;
     if (targetUserId === owner.id) {
-      return json({ error: "You cannot erase your own platform-owner account." }, 409);
+      return apiError("admin.cannotEraseSelf", 409);
     }
 
     const target = await env.DB.prepare("SELECT * FROM decave_users WHERE id=? LIMIT 1")
       .bind(targetUserId)
       .first<UserRow>();
-    if (!target) return json({ error: "Account was not found" }, 404);
+    if (!target) return apiError("admin.accountNotFound", 404);
     const alreadyErased = Boolean(target.erased_at);
     if (!alreadyErased && target.platform_role === "owner") {
-      return json({ error: "Demote the platform owner before erasing the account." }, 409);
+      return apiError("admin.demoteBeforeErase", 409);
     }
     if (!alreadyErased && (!target.deleted_at || !target.delete_after)) {
-      return json({ error: "Schedule account deletion before permanent erasure." }, 409);
+      return apiError("admin.scheduleDeletionBeforeErase", 409);
     }
     if (!alreadyErased && target.delete_after && target.delete_after > nowIso()) {
-      return json(
-        {
-          error: "The 30-day deletion recovery period has not ended yet.",
-          deleteAfter: target.delete_after,
-        },
-        409,
-      );
+      return apiError("admin.deletionRecoveryPending", 409, undefined, undefined, { deleteAfter: target.delete_after });
     }
 
     if (!alreadyErased) {
       const hubs = await ownedHubCount(env.DB, target.id);
       if (hubs > 0) {
-        return json({ error: "Transfer or delete every Hub owned by this account first." }, 409);
+        return apiError("admin.hubsOwnedFirst", 409);
       }
 
       const body = await bodyJson(request);
       const confirmation = typeof body.confirmation === "string" ? body.confirmation.trim() : "";
       if (confirmation !== target.username) {
-        return json({ error: "Type the exact current username to confirm permanent erasure." }, 400);
+        return apiError("admin.eraseConfirmMismatch", 400);
       }
     }
 
     // Manual and scheduled erasure share the same atomic claim and cleanup path.
     const claimedAt = await claimAccountErasure(env, target.id);
-    if (!claimedAt) return json({ error: "The account changed state or erasure is already in progress." }, 409);
+    if (!claimedAt) return apiError("admin.erasureStateChanged", 409);
 
     let erasure: Awaited<ReturnType<typeof eraseAccountData>>;
     try {
@@ -770,13 +757,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
           "Permanent account erasure stopped after an object-storage deletion failure.",
           error.cause instanceof Error ? error.cause.name : "UnknownError",
         );
-        return json(
-          {
-            error: "Permanent erasure could not delete every stored object. Retry the operation.",
-            code: "ACCOUNT_ERASURE_STORAGE_FAILURE",
-          },
-          503,
-        );
+        return apiErrorLegacy("ACCOUNT_ERASURE_STORAGE_FAILURE", "admin.erasureStorageFailure", 503);
       }
       throw error;
     }
@@ -799,8 +780,7 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
       success: true,
       erasedAt: erasure.erasedAt,
       accountId: publicIdOf(erasure.target),
-      message:
-        "Account data and owned media were erased where retention permitted. Legally held safety evidence and the anonymized audit tombstone remain retained.",
+      ...serverNotice("admin.server.accountErased"),
     });
   }
 

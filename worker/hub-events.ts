@@ -20,6 +20,7 @@ import {
   type HubEventRsvpStatus,
 } from "../shared/hub-events";
 import { safeJsonStringArray } from "../shared/forum";
+import { errorFields, legacyErrorFields, type ErrorCode } from "./lib/http";
 
 export type HubEventRow = {
   id: string;
@@ -232,20 +233,21 @@ async function resolveReferences(
   viewer: Viewer,
   input: HubEventInput,
 ): Promise<{ ok: true; storedAudienceIds: string[] } | { ok: false; response: Response }> {
-  const bad = (field: string, error: string) => ({ ok: false as const, response: deps.json({ error, field }, 400) });
+  const bad = (field: string, code: ErrorCode) => ({
+    ok: false as const,
+    response: deps.json({ ...errorFields(code), field }, 400),
+  });
   if (input.channelId !== null) {
     const room = await getRoom(db, input.channelId);
     if (!room || room.hub_id !== viewer.hubId || room.type !== "text")
-      return bad("channelId", "Announcement room must be a text room in this Hub.");
-    if (!(await deps.canAccessRoom(room, viewer.user.id)))
-      return bad("channelId", "You do not have access to that room.");
+      return bad("channelId", "hubEvents.announcementRoomInvalid");
+    if (!(await deps.canAccessRoom(room, viewer.user.id))) return bad("channelId", "hubEvents.roomNoAccess");
   }
   if (input.voiceChannelId !== null) {
     const room = await getRoom(db, input.voiceChannelId);
     if (!room || room.hub_id !== viewer.hubId || room.type !== "voice")
-      return bad("voiceChannelId", "Voice room must be a voice room in this Hub.");
-    if (!(await deps.canAccessRoom(room, viewer.user.id)))
-      return bad("voiceChannelId", "You do not have access to that voice room.");
+      return bad("voiceChannelId", "hubEvents.voiceRoomInvalid");
+    if (!(await deps.canAccessRoom(room, viewer.user.id))) return bad("voiceChannelId", "hubEvents.voiceRoomNoAccess");
   }
   if (input.audience === "roles") {
     const marks = input.audienceIds.map(() => "?").join(",");
@@ -253,8 +255,7 @@ async function resolveReferences(
       .prepare(`SELECT id FROM decave_custom_roles WHERE hub_id=? AND id IN (${marks})`)
       .bind(viewer.hubId, ...input.audienceIds)
       .all<{ id: string }>();
-    if (rows.results.length !== input.audienceIds.length)
-      return bad("audienceIds", "Every role must belong to this Hub.");
+    if (rows.results.length !== input.audienceIds.length) return bad("audienceIds", "hubEvents.audienceRolesInvalid");
     return { ok: true, storedAudienceIds: input.audienceIds };
   }
   if (input.audience === "members") {
@@ -262,7 +263,7 @@ async function resolveReferences(
     for (const reference of input.audienceIds) {
       const user = await userByReference(db, reference);
       if (!user || !(await getRole(db, viewer.hubId, user.id)))
-        return bad("audienceIds", "Every member must belong to this Hub.");
+        return bad("audienceIds", "hubEvents.audienceMembersInvalid");
       stored.push(user.id);
     }
     return { ok: true, storedAudienceIds: Array.from(new Set(stored)) };
@@ -318,9 +319,9 @@ export async function handleHubEventRoute(
   const user = await deps.requireUser(request);
   if (user instanceof Response) return user;
   const hub = await getHub(db, hubId);
-  if (!hub) return deps.json({ error: "Hub not found" }, 404);
+  if (!hub) return deps.json(errorFields("hubEvents.hubNotFound"), 404);
   const viewer = await viewerFor(db, hubId, user);
-  if (!viewer) return deps.json({ error: "You are not a member of this Hub" }, 403);
+  if (!viewer) return deps.json(errorFields("hubEvents.notMember"), 403);
   const roomAccess = new Map<number, boolean>();
 
   // ---- collection ------------------------------------------------------
@@ -331,8 +332,8 @@ export async function handleHubEventRoute(
     const from = fromParam === null || fromParam === "" ? now - 31 * 86_400_000 : Number(fromParam);
     const to = toParam === null || toParam === "" ? from + 92 * 86_400_000 : Number(toParam);
     if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to) || to <= from)
-      return deps.json({ error: "from/to must be ms timestamps with to > from" }, 400);
-    if (to - from > HUB_EVENT_LIMITS.maxRangeMs) return deps.json({ error: "Range too large (max 400 days)" }, 400);
+      return deps.json(errorFields("hubEvents.invalidRange"), 400);
+    if (to - from > HUB_EVENT_LIMITS.maxRangeMs) return deps.json(errorFields("hubEvents.rangeTooLarge"), 400);
     const includeCancelled = url.searchParams.get("includeCancelled") === "1";
     const rows = await db
       .prepare(
@@ -367,10 +368,10 @@ export async function handleHubEventRoute(
   }
 
   if (!eventId && method === "POST") {
-    if (!viewer.canCreate) return deps.json({ error: "Missing manageEvents permission" }, 403);
+    if (!viewer.canCreate) return deps.json(errorFields("hubEvents.manageEventsRequired"), 403);
     const body = await deps.bodyJson(request);
     const result = validateHubEventInput(body, { now });
-    if (!result.ok) return deps.json({ error: result.error, field: result.field }, 400);
+    if (!result.ok) return deps.json({ ...errorFields(result.code, result.params), field: result.field }, 400);
     const refs = await resolveReferences(db, deps, viewer, result.value);
     if (!refs.ok) return refs.response;
     const count = await db
@@ -379,7 +380,7 @@ export async function handleHubEventRoute(
       )
       .bind(hubId, now)
       .first<{ n: number }>();
-    if (Number(count?.n ?? 0) >= 500) return deps.json({ error: "This Hub has too many upcoming events" }, 429);
+    if (Number(count?.n ?? 0) >= 500) return deps.json(errorFields("hubEvents.tooManyUpcoming"), 429);
     const id = crypto.randomUUID();
     const v = result.value;
     await db
@@ -424,7 +425,7 @@ export async function handleHubEventRoute(
     .bind(eventId, hubId)
     .first<HubEventRow>();
   if (!row || !(await canSeeEvent(db, deps, viewer, row, roomAccess)))
-    return deps.json({ error: "Event not found" }, 404);
+    return deps.json(errorFields("hubEvents.notFound"), 404);
   const canManage = viewer.canManageAll || row.created_by === user.id;
 
   if (method === "GET" && sub === "ics") {
@@ -465,8 +466,8 @@ export async function handleHubEventRoute(
   }
 
   if (method === "PATCH") {
-    if (!canManage) return deps.json({ error: "Only the event creator or an event manager can edit this event" }, 403);
-    if (row.cancelled_at !== null) return deps.json({ error: "Cancelled events cannot be edited" }, 409);
+    if (!canManage) return deps.json(errorFields("hubEvents.editNotAllowed"), 403);
+    if (row.cancelled_at !== null) return deps.json(errorFields("hubEvents.cancelledNotEditable"), 409);
     const body = await deps.bodyJson(request);
     // audienceIds for members come back from the API as public ids; translate the
     // stored internal ids so an untouched PATCH re-validates cleanly.
@@ -483,7 +484,7 @@ export async function handleHubEventRoute(
       existing.audienceIds = ids;
     }
     const result = validateHubEventInput(body, { now, existing, partial: true });
-    if (!result.ok) return deps.json({ error: result.error, field: result.field }, 400);
+    if (!result.ok) return deps.json({ ...errorFields(result.code, result.params), field: result.field }, 400);
     const refs = await resolveReferences(db, deps, viewer, result.value);
     if (!refs.ok) return refs.response;
     const v = result.value;
@@ -521,8 +522,7 @@ export async function handleHubEventRoute(
   }
 
   if (method === "DELETE") {
-    if (!canManage)
-      return deps.json({ error: "Only the event creator or an event manager can cancel this event" }, 403);
+    if (!canManage) return deps.json(errorFields("hubEvents.cancelNotAllowed"), 403);
     if (row.cancelled_at === null) {
       await db
         .prepare("UPDATE decave_hub_events SET cancelled_at=?,updated_at=? WHERE id=? AND hub_id=?")
@@ -534,13 +534,13 @@ export async function handleHubEventRoute(
   }
 
   if (method === "PUT" && sub === "rsvp") {
-    if (row.cancelled_at !== null) return deps.json({ error: "This event was cancelled" }, 409);
+    if (row.cancelled_at !== null) return deps.json(errorFields("hubEvents.cancelled"), 409);
     const body = await deps.bodyJson(request);
     const status = body.status;
     if (status !== null && !HUB_EVENT_RSVP_STATUSES.includes(status as HubEventRsvpStatus))
-      return deps.json({ error: "status must be going, maybe, declined or null" }, 400);
+      return deps.json(errorFields("hubEvents.invalidRsvpStatus"), 400);
     const lastEnd = row.recurrence === "none" ? (row.ends_at ?? row.starts_at) : null;
-    if (lastEnd !== null && Number(lastEnd) < now) return deps.json({ error: "This event has already ended" }, 409);
+    if (lastEnd !== null && Number(lastEnd) < now) return deps.json(errorFields("hubEvents.ended"), 409);
     if (status === null) {
       await db.prepare("DELETE FROM decave_hub_event_rsvps WHERE event_id=? AND user_id=?").bind(row.id, user.id).run();
     } else if (status === "going" && row.capacity !== null) {
@@ -554,8 +554,7 @@ export async function handleHubEventRoute(
         )
         .bind(row.id, user.id, now, row.id, user.id, row.capacity)
         .run();
-      if (!Number(result.meta?.changes ?? 0))
-        return deps.json({ error: "This event is full", code: "EVENT_FULL" }, 409);
+      if (!Number(result.meta?.changes ?? 0)) return deps.json(legacyErrorFields("EVENT_FULL", "hubEvents.full"), 409);
     } else {
       await db
         .prepare(

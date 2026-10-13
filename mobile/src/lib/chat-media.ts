@@ -1,5 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
-import { API_BASE } from "@/src/lib/api";
+import { t } from "i18next";
+import { API_BASE, apiErrorText } from "@/src/lib/api";
 
 export const GIF_PREFIX = "__DECAVE_GIF__";
 export const DM_ATTACHMENT_PREFIX = "__DECAVE_DM_ATTACHMENT__";
@@ -84,7 +85,7 @@ export async function pickMedia(source: "library" | "camera"): Promise<ImagePick
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
-    throw new Error(source === "camera" ? "Camera access is off for DeCave. Turn it on in Settings." : "Photo access is off for DeCave. Turn it on in Settings.");
+    throw new Error(source === "camera" ? t("chat.mobile.media.cameraOff") : t("chat.mobile.media.photosOff"));
   }
   const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images", "videos"], quality: 0.85, exif: false };
   const result = source === "camera" ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
@@ -100,7 +101,7 @@ export async function uploadAsset(
 ): Promise<UploadedAttachment> {
   const name = asset.fileName || `photo-${Date.now()}.${asset.mimeType?.split("/")[1] ?? "jpg"}`;
   const mime = asset.mimeType || (asset.type === "video" ? "video/mp4" : "image/jpeg");
-  if (asset.fileSize && asset.fileSize > 25 * 1024 * 1024) throw new Error("Attachments can be up to 25 MB.");
+  if (asset.fileSize && asset.fileSize > 25 * 1024 * 1024) throw new Error(t("chat.mobile.media.tooLarge"));
 
   const fileResponse = await fetch(asset.uri);
   const blob = await fileResponse.blob();
@@ -119,7 +120,7 @@ export async function uploadAsset(
     },
     body: blob,
   });
-  const data = (await response.json().catch(() => ({}))) as { attachment?: UploadedAttachment; error?: string };
-  if (!response.ok || !data.attachment) throw new Error(data.error || "Could not upload the attachment.");
+  const data = (await response.json().catch(() => ({}))) as { attachment?: UploadedAttachment; code?: unknown; params?: unknown; error?: unknown };
+  if (!response.ok || !data.attachment) throw new Error(apiErrorText(data, t("chat.mobile.media.uploadFailed")));
   return data.attachment;
 }

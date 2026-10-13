@@ -1,5 +1,6 @@
 // Hub chat status around the reply/edit bar and message composer.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import { Icon } from "../../components/Icon";
 import type { Channel, ComposerTarget, Server } from "../types";
@@ -44,12 +45,15 @@ export function HubComposerStatus({
   hubChat,
   canCreateEventsIn,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <>
       {(composer.replyingTo || composer.editingMessage) && (
         <div className="composer-context">
           <span>
-            {composer.editingMessage ? `Editing your message` : `Replying to ${composer.replyingTo?.username}`}
+            {composer.editingMessage
+              ? t("chat.composer.editing")
+              : t("chat.composer.replyingTo", { name: composer.replyingTo?.username })}
           </span>
           <button
             type="button"
@@ -65,16 +69,19 @@ export function HubComposerStatus({
       )}
       <div className="chat-live-status-row">
         <span>
-          {Object.entries(typingUsers)
-            .filter(([, until]) => until > Date.now())
-            .slice(0, 3)
-            .map(([key]) => key.split(":").slice(1).join(":"))
-            .join(", ")}
-          {Object.values(typingUsers).some((until) => until > Date.now()) ? " typing…" : ""}
+          {Object.values(typingUsers).some((until) => until > Date.now())
+            ? t("chat.composer.typing", {
+                names: Object.entries(typingUsers)
+                  .filter(([, until]) => until > Date.now())
+                  .slice(0, 3)
+                  .map(([key]) => key.split(":").slice(1).join(":"))
+                  .join(", "),
+              })
+            : ""}
         </span>
         {!chatAtBottom && (
           <button type="button" onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}>
-            Jump to latest ↓
+            {t("chat.composer.jumpToLatest")}
           </button>
         )}
       </div>

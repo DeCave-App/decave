@@ -1,41 +1,38 @@
 import type { ReactNode } from "react";
+import { FieldError } from "./SettingsControls";
+import type { TextDraft } from "./useSettingField";
+import { useSettingsT } from "./useSettingsT";
 
 export const DISPLAY_NAME_MAX = 32;
 export const PRONOUNS_MAX = 24;
 
 type DetailsProps = {
   username: string;
-  displayName: string;
-  pronouns: string;
-  onDisplayName: (value: string) => void;
-  onPronouns: (value: string) => void;
+  displayName: TextDraft;
+  pronouns: TextDraft;
 };
 
-/** Settings → Profile: display name and pronouns (saved with the Save button). */
-export function ProfileDetailsFields({ username, displayName, pronouns, onDisplayName, onPronouns }: DetailsProps) {
+/** Settings → Profile & status: display name and pronouns (save on blur or Enter). */
+export function ProfileDetailsFields({ username, displayName, pronouns }: DetailsProps) {
+  const { t } = useSettingsT();
   return (
-    <div className="dcs-inline-fields">
+    <div className="dcs-inline-fields" data-settings-anchor="display-name">
       <label className="dcs-field">
-        <span>Display name</span>
-        <input
-          className="dcx-input"
-          value={displayName}
-          maxLength={DISPLAY_NAME_MAX}
-          placeholder={username}
-          onChange={(event) => onDisplayName(event.target.value)}
-        />
-        <small>Shown on your profile instead of your username. Leave empty to use {username}.</small>
+        <span>{t("settings.profile.displayName")}</span>
+        <input className="dcx-input" maxLength={DISPLAY_NAME_MAX} placeholder={username} {...displayName.inputProps} />
+        <small>{t("settings.profile.displayNameHelp", { username })}</small>
+        <FieldError field={displayName.field} />
       </label>
       <label className="dcs-field">
-        <span>Pronouns</span>
+        <span>{t("settings.profile.pronouns")}</span>
         <input
           className="dcx-input"
-          value={pronouns}
           maxLength={PRONOUNS_MAX}
-          placeholder="e.g. she/her, he/him, they/them"
-          onChange={(event) => onPronouns(event.target.value)}
+          placeholder={t("settings.profile.pronounsPlaceholder")}
+          {...pronouns.inputProps}
         />
-        <small>Optional. Shown next to your name on your profile.</small>
+        <small>{t("settings.profile.pronounsHelp")}</small>
+        <FieldError field={pronouns.field} />
       </label>
     </div>
   );
@@ -50,10 +47,11 @@ type BannerProps = {
   onRemove: () => void;
 };
 
-/** Settings → Profile: wide image across the top of your profile card. */
+/** Settings → Profile & status: wide image across the top of your profile card. */
 export function BannerField({ bannerUrl, accent, busy, error, onUpload, onRemove }: BannerProps) {
+  const { t } = useSettingsT();
   return (
-    <div className="dcs-banner-field">
+    <div className="dcs-banner-field" data-settings-anchor="banner">
       <div
         className="dcs-banner-preview"
         style={
@@ -65,7 +63,11 @@ export function BannerField({ bannerUrl, accent, busy, error, onUpload, onRemove
       />
       <div className="dcs-card-actions">
         <label className={`modal-secondary dcs-file-button${busy ? " is-busy" : ""}`}>
-          {busy ? "Saving…" : bannerUrl ? "Change banner" : "Add banner"}
+          {busy
+            ? t("settings.profile.saving")
+            : bannerUrl
+              ? t("settings.profile.changeBanner")
+              : t("settings.profile.addBanner")}
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp"
@@ -79,10 +81,10 @@ export function BannerField({ bannerUrl, accent, busy, error, onUpload, onRemove
         </label>
         {bannerUrl && (
           <button type="button" className="modal-secondary" disabled={busy} onClick={onRemove}>
-            Remove
+            {t("settings.profile.remove")}
           </button>
         )}
-        <small className="dcs-muted">PNG, JPEG or WebP · up to 3 MB · 3:1 looks best</small>
+        <small className="dcs-muted">{t("settings.profile.bannerHelp")}</small>
       </div>
       {error && (
         <p className="dcs-error" role="alert">
@@ -115,6 +117,7 @@ export function ProfilePreviewCard({
   accent,
   bannerUrl,
 }: PreviewProps) {
+  const { t } = useSettingsT();
   const name = displayName.trim() || username;
   return (
     <figure className="dcs-profile-preview" style={{ ["--dcs-accent" as string]: accent }}>
@@ -133,7 +136,7 @@ export function ProfilePreviewCard({
         {statusText.trim() && <p className="dcs-profile-preview-status">{statusText}</p>}
         {bio.trim() && <p>{bio}</p>}
       </div>
-      <figcaption>Preview · how others see your profile</figcaption>
+      <figcaption>{t("settings.profile.previewCaption")}</figcaption>
     </figure>
   );
 }

@@ -61,17 +61,17 @@ test("Age, report, and block paths are wired across the product", () => {
   const mobileVoice = read("mobile/app/voice/[id].tsx");
 
   assert.match(worker, /deriveAgeProfile\(body\.birthDate\)/);
-  assert.match(worker, /code: "AGE_RESTRICTED"/);
+  assert.match(worker, /apiErrorLegacy\("AGE_RESTRICTED"/);
   assert.match(worker, /const reportCreate = pathname === "\/api\/safety\/reports" && method === "POST"/);
   assert.match(worker, /const blockDetail = idFromPath\(pathname, \/\^\\\/api\\\/safety\\\/blocks/);
   assert.match(worker, /isBlockedEitherDirection\(env\.DB, user\.id, targetId\)/);
   assert.match(hub, /isBlockedEitherDirection\(this\.env\.DB, state\.userId, targetId\)/);
   assert.match(hub, /isBlockedEitherDirection\(this\.env\.DB, state\.userId, targetUserId\)/);
-  assert.match(web, /Report User/);
+  assert.match(web, /t\("common\.userMenu\.report"\)/);
   assert.match(web, /openSafetyReport\(/);
   assert.match(web, /TrustSafetyDashboard/);
-  assert.match(mobileDm, /Report message/);
-  assert.match(mobileGroup, /Report message/);
-  assert.match(mobileChannel, /Report message/);
-  assert.match(mobileVoice, /Report user/);
+  assert.match(mobileDm, /t\("dm\.mobile\.conversation\.reportMessage"\)/);
+  assert.match(mobileGroup, /t\("dm\.mobile\.conversation\.reportMessage"\)/);
+  assert.match(mobileChannel, /t\("chat\.messages\.reportMessage"\)/);
+  assert.match(mobileVoice, /t\("voice\.mobile\.room\.reportUser"\)/);
 });

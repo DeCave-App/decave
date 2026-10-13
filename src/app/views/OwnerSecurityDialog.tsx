@@ -1,5 +1,6 @@
 // Asks the owner for an authenticator or recovery code before a protected admin operation.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { AdminActions } from "../actions/admin";
@@ -19,22 +20,19 @@ export function OwnerSecurityDialog({
   ownerLoginMfaBusy,
   adminActions,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="modal-overlay" onClick={adminActions.cancelOwnerSecurityOperation}>
       <div className="modal dc-owner-security-modal" onClick={(event) => event.stopPropagation()}>
         <span className="ds-kicker">
-          <Icon name="shield" size="sm" /> Owner security
+          <Icon name="shield" size="sm" /> {t("common.ownerSecurity.kicker")}
         </span>
-        <h2>Confirm owner security action</h2>
-        <p>
-          {ownerLoginChallengeToken
-            ? "Enter your authenticator or recovery code to finish fresh authentication."
-            : "Owner authentication is in progress."}
-        </p>
+        <h2>{t("common.ownerSecurity.title")}</h2>
+        <p>{ownerLoginChallengeToken ? t("common.ownerSecurity.enterCode") : t("common.ownerSecurity.inProgress")}</p>
         {ownerLoginChallengeToken && (
           <>
             <label className="ds-field">
-              Authenticator or recovery code
+              {t("common.account.mfaCodeLabel")}
               <input
                 className="ds-input"
                 value={ownerLoginMfaCode}
@@ -49,12 +47,12 @@ export function OwnerSecurityDialog({
               disabled={ownerLoginMfaBusy || !ownerLoginMfaCode.trim()}
               onClick={() => void adminActions.submitOwnerMfaLogin()}
             >
-              Verify code
+              {t("common.actions.verifyCode")}
             </button>
           </>
         )}
         <button type="button" className="ds-btn" onClick={adminActions.cancelOwnerSecurityOperation}>
-          Cancel
+          {t("common.actions.cancel")}
         </button>
       </div>
     </div>

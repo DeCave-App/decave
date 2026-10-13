@@ -10,8 +10,12 @@ import {
   type DmEnvelope,
   type DmPublicKey,
 } from "../../shared/dm-e2ee-format";
+import type { TFunction } from "i18next";
+import { DEFAULT_LOCALE } from "../../shared/i18n/languages.ts";
 import { publicIdOf, type UserRow } from "../db";
 import type { Env } from "./env";
+import { legacyErrorFields, type ErrorCode, type LegacyErrorFields } from "./http";
+import { workerT } from "./i18n";
 
 /**
  * Whether end-to-end encrypted DMs are on. Off, nobody gets a key, DMs stay
@@ -135,9 +139,18 @@ export async function currentDmKey(db: D1Database, userId: string): Promise<DmKe
     .first<DmKeyRow>();
 }
 
+/**
+ * A refused message: `code` is the machine code clients branch on (DM_E2EE_STALE_KEY...),
+ * `i18nKey` the errors-catalog key of the English `error`.
+ */
+export type DmRejection = { ok: false; status: number } & LegacyErrorFields;
+
+function rejectDm(status: number, code: string, i18nKey: ErrorCode): DmRejection {
+  return { ok: false, status, ...legacyErrorFields(code, i18nKey) };
+}
+
 export type OutgoingDm =
-  | { ok: true; text: string; envelope: string | null; id: string | null; attachmentRefs: string | null }
-  | { ok: false; status: number; error: string; code: string };
+  { ok: true; text: string; envelope: string | null; id: string | null; attachmentRefs: string | null } | DmRejection;
 
 type DmMessageWrite = {
   id: string;
@@ -239,10 +252,10 @@ export async function checkOutgoingDm(
 ): Promise<OutgoingDm> {
   if (!input.enabled) {
     if (input.envelope !== undefined && input.envelope !== null) {
-      return { ok: false, status: 409, error: "Encrypted messages aren't available yet.", code: "DM_E2EE_DISABLED" };
+      return rejectDm(409, "DM_E2EE_DISABLED", "dmE2ee.disabled");
     }
     const text = typeof input.text === "string" ? input.text.trim().slice(0, 4000) : "";
-    if (!text) return { ok: false, status: 400, error: "Message cannot be empty.", code: "DM_EMPTY" };
+    if (!text) return rejectDm(400, "DM_EMPTY", "dmE2ee.empty");
     return { ok: true, text, envelope: null, id: null, attachmentRefs: null };
   }
   const [senderKey, targetKey] = await Promise.all([
@@ -252,47 +265,31 @@ export async function checkOutgoingDm(
 
   if (input.envelope === undefined || input.envelope === null) {
     if (senderKey && targetKey) {
-      return {
-        ok: false,
-        status: 409,
-        error: "This conversation is end-to-end encrypted. Update DeCave to send messages here.",
-        code: "DM_E2EE_REQUIRED",
-      };
+      return rejectDm(409, "DM_E2EE_REQUIRED", "dmE2ee.conversationEncrypted");
     }
     const text = typeof input.text === "string" ? input.text.trim().slice(0, 4000) : "";
-    if (!text) return { ok: false, status: 400, error: "Message cannot be empty.", code: "DM_EMPTY" };
+    if (!text) return rejectDm(400, "DM_EMPTY", "dmE2ee.empty");
     return { ok: true, text, envelope: null, id: null, attachmentRefs: null };
   }
 
   const envelope = parseDmEnvelope(input.envelope);
-  if (!envelope)
-    return { ok: false, status: 400, error: "That encrypted message is malformed.", code: "DM_E2EE_INVALID" };
+  if (!envelope) return rejectDm(400, "DM_E2EE_INVALID", "dmE2ee.malformed");
   if (envelope.from !== publicIdOf(input.sender) || envelope.to !== publicIdOf(input.target)) {
-    return {
-      ok: false,
-      status: 400,
-      error: "That encrypted message is for another conversation.",
-      code: "DM_E2EE_INVALID",
-    };
+    return rejectDm(400, "DM_E2EE_INVALID", "dmE2ee.otherConversation");
   }
   if (input.editing !== undefined && envelope.id !== input.editing) {
-    return { ok: false, status: 400, error: "That encrypted edit is for another message.", code: "DM_E2EE_INVALID" };
+    return rejectDm(400, "DM_E2EE_INVALID", "dmE2ee.otherMessage");
   }
   // A stale key on either side means the client should refetch keys and seal again.
   if (!senderKey || envelope.sk !== senderKey.key_id || !envelope.w.some((wrap) => wrap.k === senderKey.key_id)) {
-    return { ok: false, status: 409, error: "Your encryption key changed. Try again.", code: "DM_E2EE_STALE_KEY" };
+    return rejectDm(409, "DM_E2EE_STALE_KEY", "dmE2ee.yourKeyChanged");
   }
   if (!targetKey || !envelope.w.some((wrap) => wrap.k === targetKey.key_id)) {
-    return {
-      ok: false,
-      status: 409,
-      error: "Their encryption key changed. Try again.",
-      code: "DM_E2EE_STALE_KEY",
-    };
+    return rejectDm(409, "DM_E2EE_STALE_KEY", "dmE2ee.theirKeyChanged");
   }
   const attachmentRefs = await attachmentRefsFor(db, input.attachmentKeys, input.sender, input.target);
   if (attachmentRefs === null) {
-    return { ok: false, status: 400, error: "That attachment isn't available.", code: "DM_E2EE_INVALID" };
+    return rejectDm(400, "DM_E2EE_INVALID", "dmE2ee.attachmentUnavailable");
   }
   return { ok: true, text: "", envelope: JSON.stringify(envelope), id: envelope.id, attachmentRefs };
 }
@@ -304,13 +301,13 @@ export async function checkOutgoingDm(
 export async function checkReactionEnvelope(
   db: D1Database,
   input: { reactor: UserRow; other: UserRow; messageId: string; envelope: unknown },
-): Promise<{ ok: true; envelope: string } | { ok: false; status: number; error: string; code: string }> {
+): Promise<{ ok: true; envelope: string } | DmRejection> {
   const envelope = parseDmEnvelope(input.envelope);
   if (!envelope || envelope.id !== input.messageId) {
-    return { ok: false, status: 400, error: "Those encrypted reactions are malformed.", code: "DM_E2EE_INVALID" };
+    return rejectDm(400, "DM_E2EE_INVALID", "dmE2ee.reactionsMalformed");
   }
   if (envelope.from !== publicIdOf(input.reactor) || envelope.to !== publicIdOf(input.other)) {
-    return { ok: false, status: 400, error: "Those reactions are for another conversation.", code: "DM_E2EE_INVALID" };
+    return rejectDm(400, "DM_E2EE_INVALID", "dmE2ee.reactionsOtherConversation");
   }
   const keys = await currentDmKeys(db, [input.reactor.id, input.other.id]);
   const mine = keys.get(input.reactor.id);
@@ -322,7 +319,7 @@ export async function checkReactionEnvelope(
     !theirs ||
     !hasWrap(envelope, theirs.key_id)
   ) {
-    return { ok: false, status: 409, error: "An encryption key changed. Try again.", code: "DM_E2EE_STALE_KEY" };
+    return rejectDm(409, "DM_E2EE_STALE_KEY", "dmE2ee.aKeyChanged");
   }
   return { ok: true, envelope: JSON.stringify(envelope) };
 }
@@ -333,7 +330,11 @@ function hasWrap(envelope: DmEnvelope, keyId: string): boolean {
 
 export type OutgoingGroupMessage =
   | { ok: true; text: string; envelope: string | null; id: string | null; encrypted: boolean }
-  | { ok: false; error: string; code: string };
+  | ({ ok: false } & LegacyErrorFields);
+
+function rejectGroup(code: string, i18nKey: ErrorCode): OutgoingGroupMessage {
+  return { ok: false, ...legacyErrorFields(code, i18nKey) };
+}
 
 /**
  * Decide how a group chat message may be stored. A group is encrypted once it
@@ -355,12 +356,12 @@ export async function checkOutgoingGroupMessage(
 ): Promise<OutgoingGroupMessage> {
   const plaintext = (): OutgoingGroupMessage => {
     const text = typeof input.text === "string" ? input.text.trim().slice(0, 4000) : "";
-    if (!text) return { ok: false, error: "Message cannot be empty.", code: "GROUP_EMPTY" };
+    if (!text) return rejectGroup("GROUP_EMPTY", "dmE2ee.empty");
     return { ok: true, text, envelope: null, id: null, encrypted: false };
   };
   const hasEnvelope = input.envelope !== undefined && input.envelope !== null;
   if (!input.enabled) {
-    if (hasEnvelope) return { ok: false, error: "Encrypted messages aren't available yet.", code: "DM_E2EE_DISABLED" };
+    if (hasEnvelope) return rejectGroup("DM_E2EE_DISABLED", "dmE2ee.disabled");
     return plaintext();
   }
   const keys = await currentDmKeys(
@@ -370,25 +371,17 @@ export async function checkOutgoingGroupMessage(
   const everyoneHasKey = input.members.every((member) => keys.has(member.id));
   if (!hasEnvelope) {
     if (input.encryptedSince || everyoneHasKey) {
-      return {
-        ok: false,
-        error: "This group is end-to-end encrypted. Update DeCave to send messages here.",
-        code: "DM_E2EE_REQUIRED",
-      };
+      return rejectGroup("DM_E2EE_REQUIRED", "dmE2ee.groupEncrypted");
     }
     return plaintext();
   }
   const envelope = parseDmEnvelope(input.envelope, DM_GROUP_MAX_WRAPS);
-  if (!envelope) return { ok: false, error: "That encrypted message is malformed.", code: "DM_E2EE_INVALID" };
+  if (!envelope) return rejectGroup("DM_E2EE_INVALID", "dmE2ee.malformed");
   if (envelope.from !== publicIdOf(input.sender) || envelope.to !== input.groupId) {
-    return { ok: false, error: "That encrypted message is for another group.", code: "DM_E2EE_INVALID" };
+    return rejectGroup("DM_E2EE_INVALID", "dmE2ee.otherGroup");
   }
   if (!everyoneHasKey) {
-    return {
-      ok: false,
-      error: "Someone in this group can't receive encrypted messages yet.",
-      code: "DM_E2EE_MEMBER_NO_KEY",
-    };
+    return rejectGroup("DM_E2EE_MEMBER_NO_KEY", "dmE2ee.memberNoKey");
   }
   // Exactly the members' current keys: nobody left out, nobody who has left.
   const expected = new Set(input.members.map((member) => keys.get(member.id)!.key_id));
@@ -396,12 +389,15 @@ export async function checkOutgoingGroupMessage(
   const wrapped = new Set(envelope.w.map((wrap) => wrap.k));
   const exact = wrapped.size === expected.size && [...expected].every((keyId) => wrapped.has(keyId));
   if (envelope.sk !== senderKey.key_id || !exact) {
-    return { ok: false, error: "The group's members or keys changed. Try again.", code: "DM_E2EE_STALE_KEY" };
+    return rejectGroup("DM_E2EE_STALE_KEY", "dmE2ee.groupChanged");
   }
   return { ok: true, text: "", envelope: JSON.stringify(envelope), id: envelope.id, encrypted: true };
 }
 
 /** Push text for a DM: the server can only describe an encrypted message, not quote it. */
-export function dmPushText(stored: { text: string; envelope: string | null }): string {
-  return stored.envelope ? "Sent you an encrypted message" : stored.text;
+export function dmPushText(
+  stored: { text: string; envelope: string | null },
+  t: TFunction = workerT(DEFAULT_LOCALE),
+): string {
+  return stored.envelope ? t("push.preview.encrypted") : stored.text;
 }

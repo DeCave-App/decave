@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { register } from "node:module";
 
 register("../test-support/mobile-extensionless-loader.mjs", import.meta.url);
+await import("../test-support/mobile-i18n-english.mjs");
 const { summarizeBot, timeAgo } = await import("../../mobile/src/lib/bots.ts");
 
 const now = Date.parse("2026-10-09T12:00:00Z");

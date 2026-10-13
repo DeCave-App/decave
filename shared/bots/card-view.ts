@@ -4,6 +4,9 @@
 import { BOT_LIMITS } from "./types.ts";
 import type { BotCardButton, BotCommandOption, BotFormField } from "./types.ts";
 
+/** Catalog key of the private-notice label; render it with t(). */
+export const PRIVATE_NOTICE_LABEL_KEY = "bots.card.privateNotice";
+/** The label's English text (bots.card.privateNotice), for clients without translations yet. */
 export const PRIVATE_NOTICE_LABEL = "Only you can see this";
 
 export type MessageBot = { id: string; name: string; color: string | null; avatarEmoji: string | null };
@@ -98,8 +101,13 @@ export function interactionBody(messageId: string, customId: string, value?: str
   return value === undefined ? { messageId, customId } : { messageId, customId, value };
 }
 
-/** The form an interaction response asks to open, or null. */
-export function formFromResponse(data: unknown): BotForm | null {
+/** Catalog key of the title shown for a bot form that has none; render it with t(). */
+export const UNTITLED_FORM_KEY = "bots.card.form.untitled";
+/** That title's English text, for clients without translations yet. */
+export const UNTITLED_FORM_TITLE = "Form";
+
+/** The form an interaction response asks to open, or null. `untitled` titles a form that has no title. */
+export function formFromResponse(data: unknown, untitled = UNTITLED_FORM_TITLE): BotForm | null {
   if (!isObject(data) || !isObject(data.form)) return null;
   const form = data.form;
   if (!str(form.formId) || !Array.isArray(form.fields)) return null;
@@ -115,7 +123,7 @@ export function formFromResponse(data: unknown): BotForm | null {
           required: f.required === true,
         }) as BotFormField,
     );
-  return { formId: form.formId, title: str(form.title) ? form.title : "Form", fields };
+  return { formId: form.formId, title: str(form.title) ? form.title : untitled, fields };
 }
 
 /** Body for POST bot-forms/:formId: every declared field, nothing else. */
@@ -186,6 +194,21 @@ export function botMessageText(text: string): string {
     return typeof payload.text === "string" ? payload.text : "";
   } catch {
     return "";
+  }
+}
+
+/**
+ * The server notice ({ code, params }) stored with a bot message's text, when
+ * DeCave wrote that text (usage hints, Twitch clips): clients render it in the
+ * reader's language instead of the English text.
+ */
+export function botMessageNotice(text: string): unknown {
+  if (!text.startsWith(BOT_TEXT_PREFIX)) return null;
+  try {
+    const payload = JSON.parse(text.slice(BOT_TEXT_PREFIX.length)) as { notice?: unknown } | null;
+    return payload && typeof payload === "object" ? (payload.notice ?? null) : null;
+  } catch {
+    return null;
   }
 }
 

@@ -1,3 +1,4 @@
+import { t } from "i18next";
 import { Alert } from "react-native";
 
 /**
@@ -10,7 +11,7 @@ export function primePermission(title: string, message: string, allowLabel: stri
       title,
       message,
       [
-        { text: "Not now", style: "cancel", onPress: () => resolve(false) },
+        { text: t("common.mobile.notNow"), style: "cancel", onPress: () => resolve(false) },
         { text: allowLabel, onPress: () => resolve(true) },
       ],
       { cancelable: true, onDismiss: () => resolve(false) },

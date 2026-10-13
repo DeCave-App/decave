@@ -2,7 +2,8 @@
 // they are for fun), a map vote, team voice rooms and a reported score that
 // feeds the monthly leaderboard. One open or live PUG per Hub.
 
-import { StreamerInputError, isCreator, unbiasedIndex } from "../../shared/streamer-mode";
+import { isCreator, unbiasedIndex } from "../../shared/streamer-mode";
+import { streamerError } from "./errors";
 import {
   pickMap,
   pugCreateInput,
@@ -110,7 +111,7 @@ export async function readPug(db: Database, hubId: number, userId: string, now: 
 }
 
 function requireCreator(admission: Admission): void {
-  if (!isCreator(admission.role)) throw new StreamerInputError("Creator permission required.", 403);
+  if (!isCreator(admission.role)) throw streamerError("streamer.creatorRequired", 403);
 }
 
 async function activeRow(ctx: PugContext, status?: "open" | "live"): Promise<PugRow> {
@@ -119,12 +120,9 @@ async function activeRow(ctx: PugContext, status?: "open" | "live"): Promise<Pug
     "SELECT * FROM decave_streamer_pugs WHERE hub_id=? AND status IN ('open','live') LIMIT 1",
     ctx.hubId,
   );
-  if (!row) throw new StreamerInputError("There's no PUG running right now.", 404);
+  if (!row) throw streamerError("streamer.pug.notRunning", 404);
   if (status && row.status !== status)
-    throw new StreamerInputError(
-      status === "open" ? "This PUG has already started." : "This PUG hasn't started yet.",
-      409,
-    );
+    throw streamerError(status === "open" ? "streamer.pug.alreadyStarted" : "streamer.pug.notStarted", 409);
   return row;
 }
 
@@ -145,7 +143,7 @@ export async function handlePugMutation(path: string, input: Record<string, unkn
       value.voiceA,
       value.voiceB,
     );
-    if (rooms.length !== 2) throw new StreamerInputError("Pick two voice rooms of this Hub for the teams.");
+    if (rooms.length !== 2) throw streamerError("streamer.pug.pickTwoRooms");
     const id = ctx.newId();
     try {
       await ctx.audit(
@@ -167,7 +165,7 @@ export async function handlePugMutation(path: string, input: Record<string, unkn
       );
     } catch (error) {
       if (error instanceof Error && /UNIQUE constraint failed/.test(error.message))
-        throw new StreamerInputError("A PUG is already running in this Hub.", 409);
+        throw streamerError("streamer.pug.alreadyRunning", 409);
       throw error;
     }
     return { ok: true, id };
@@ -180,7 +178,7 @@ export async function handlePugMutation(path: string, input: Record<string, unkn
       "SELECT COUNT(*) AS n FROM decave_streamer_pug_players WHERE pug_id=?",
       row.id,
     );
-    if ((count?.n ?? 0) >= row.team_size * 2) throw new StreamerInputError("This PUG is full.", 409);
+    if ((count?.n ?? 0) >= row.team_size * 2) throw streamerError("streamer.pug.full", 409);
     await statement(
       db,
       `INSERT OR IGNORE INTO decave_streamer_pug_players(pug_id,hub_id,user_id,joined_at)
@@ -204,7 +202,7 @@ export async function handlePugMutation(path: string, input: Record<string, unkn
   if (path === "pug/vote") {
     const row = await activeRow(ctx, "open");
     const map = typeof input.map === "string" ? input.map : "";
-    if (!parseMaps(row.maps_json).includes(map)) throw new StreamerInputError("Vote for a map in this PUG's pool.");
+    if (!parseMaps(row.maps_json).includes(map)) throw streamerError("streamer.pug.mapNotInPool");
     const result = await statement(
       db,
       "UPDATE decave_streamer_pug_players SET map_vote=? WHERE pug_id=? AND user_id=?",
@@ -212,7 +210,7 @@ export async function handlePugMutation(path: string, input: Record<string, unkn
       row.id,
       me,
     ).run();
-    if (!result.meta.changes) throw new StreamerInputError("Join the PUG to vote for a map.", 409);
+    if (!result.meta.changes) throw streamerError("streamer.pug.joinToVote", 409);
     return { ok: true };
   }
 
@@ -224,7 +222,7 @@ export async function handlePugMutation(path: string, input: Record<string, unkn
       "SELECT user_id,map_vote FROM decave_streamer_pug_players WHERE pug_id=? ORDER BY joined_at,user_id",
       row.id,
     );
-    if (players.length < 2) throw new StreamerInputError("At least 2 players need to join before you start.", 409);
+    if (players.length < 2) throw streamerError("streamer.pug.notEnoughPlayers", 409);
     // Random teams, no balancing: these games are for fun. Team A gets the extra player on an odd count.
     const order = shuffled(players, random);
     const half = Math.ceil(order.length / 2);
@@ -261,7 +259,7 @@ export async function handlePugMutation(path: string, input: Record<string, unkn
         stamp,
       ),
     ]);
-    if (!results[0].meta.changes) throw new StreamerInputError("The PUG changed. Refresh and try again.", 409);
+    if (!results[0].meta.changes) throw streamerError("streamer.pug.changed", 409);
     return { ok: true, map };
   }
 
@@ -300,7 +298,7 @@ export async function handlePugMutation(path: string, input: Record<string, unkn
     return { ok: true };
   }
 
-  throw new StreamerInputError("Unknown PUG action.", 404);
+  throw streamerError("streamer.pug.unknownAction", 404);
 }
 
 function monthStart(now: number, offset = 0): Date {

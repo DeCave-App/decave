@@ -1,0 +1,50 @@
+{
+  "rules": {
+    "communityRules": {
+      "title": "Zasady społeczności DeCave",
+      "body": "Te zasady obowiązują wszędzie w DeCave: w Hubs, prywatnych wiadomościach, czatach grupowych, na czacie głosowym i w Find a Squad.\n\n1. **Szanuj innych.** Żadnego nękania, prześladowania, gróźb ani obraźliwych ataków na konkretne osoby.\n2. **Zero mowy nienawiści.** Nic, co atakuje ludzi ze względu na rasę, pochodzenie etniczne, religię, płeć, orientację seksualną, niepełnosprawność lub narodowość.\n3. **W miejscach publicznych trzymaj się treści SFW.** Żadnych treści seksualnych, drastycznych ani szokujących w Hubs, które się na to nie zgodziły. Nigdy niczego z udziałem nieletnich.\n4. **Chroń prywatność.** Nie udostępniaj niczyich danych osobowych (prawdziwego imienia i nazwiska, adresu, zdjęć, kont) bez zgody tej osoby.\n5. **Zero cheatów, oszustw i exploitów.** Żadnej sprzedaży cheatów, handlu kontami, linków phishingowych, fałszywych giveawayów ani podszywania się pod zespół DeCave.\n6. **Zero spamu.** Żadnego masowego wysyłania prywatnych wiadomości, powtarzanych wiadomości, niechcianych reklam ani autopromocji poza miejscami, które na to pozwalają.\n7. **Przestrzegaj zasad danego Hub.** Właściciele Hubs mogą dodać surowsze zasady dla swojej społeczności.\n8. **Przestrzegaj prawa** i [Warunków korzystania z usługi](https://de-cave.com/terms).\n\n**Egzekwowanie:** w zależności od wagi naruszenia łamanie tych zasad może skończyć się ostrzeżeniem, tymczasowymi ograniczeniami, usunięciem z Hub lub trwałym banem w DeCave.\n\n**Zgłoś problem:** kliknij prawym przyciskiem wiadomość lub profil i wybierz **Zgłoś**. Zgłoszenia są prywatne, a zgłoszona osoba nigdy nie dowie się, kto ją zgłosił."
+    }
+  },
+  "faq": {
+    "private": {
+      "title": "Czy ten Hub jest prywatny? Czy inni mnie tu widzą?",
+      "body": "Tak, jest prywatny. Każdy automatycznie dołącza do DeCave Official, ale członkowie nie widzą siebie nawzajem: lista członków, ich liczba i status online są ukryte, a pisać może tylko zespół DeCave. Nikt nie wie, że tu jesteś."
+    },
+    "profile": {
+      "title": "Jak ustawić profil?",
+      "body": "Kliknij swój awatar w lewym dolnym rogu → **Profil**. Możesz dodać zdjęcie, baner, bio i gry, w które grasz."
+    },
+    "friends": {
+      "title": "Jak dodać znajomych?",
+      "body": "Otwórz **Znajomi**, wybierz **Dodaj znajomego** i wyszukaj po nazwie użytkownika. Gdy zaakceptuje, możecie pisać, dzwonić i zapraszać się do Hubs."
+    },
+    "findSquad": {
+      "title": "Czym jest Find a Squad?",
+      "body": "Wybierz grę i to, czego szukasz, a DeCave połączy cię z graczami, którzy szukają tego samego. Po dopasowaniu dostajecie pokój Squad do wspólnego czatu i rozmów głosowych."
+    },
+    "hubs": {
+      "title": "Jak dołączyć do Hub lub go utworzyć?",
+      "body": "Użyj przycisku **+** na górnym pasku. Możesz przeglądać publiczne Hubs, dołączyć do jednego przez link z zaproszeniem albo utworzyć własny z szablonu (w tym z układu dla streamerów)."
+    },
+    "voiceRooms": {
+      "title": "Jak działają pokoje głosowe?",
+      "body": "Kliknij pokój głosowy w dowolnym Hub, aby dołączyć. W sterowaniu głosem możesz wyciszyć mikrofon, wyłączyć dźwięk, udostępnić ekran i zmienić urządzenie wejściowe. Tryb „Naciśnij i mów” jest dostępny w aplikacji na komputer."
+    },
+    "desktopApp": {
+      "title": "Czy warto używać aplikacji na komputer?",
+      "body": "Jest opcjonalna, ale dodaje wykrywanie gier, powiadomienia na pulpicie, globalny tryb „Naciśnij i mów” i automatyczne aktualizacje. Pobierz ją na Windowsa lub Maca ze strony [de-cave.com](https://de-cave.com)."
+    },
+    "report": {
+      "title": "Jak kogoś zgłosić?",
+      "body": "Kliknij prawym przyciskiem wiadomość lub profil tej osoby i wybierz **Zgłoś**. Zgłoszenia są prywatne."
+    },
+    "whatsNew": {
+      "title": "Gdzie sprawdzić, co nowego?",
+      "body": "Czytaj **#announcements**, aby poznać nowości, i **#patch-notes**, aby śledzić każdą aktualizację."
+    },
+    "deleteAccount": {
+      "title": "Jak usunąć konto lub swoje dane?",
+      "body": "Wejdź w **Ustawienia → Konto**. Szczegóły o tym, co jest przechowywane i jak jest usuwane, znajdziesz w [Polityce prywatności](https://de-cave.com/privacy)."
+    }
+  }
+}

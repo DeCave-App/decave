@@ -1,0 +1,120 @@
+{
+  "category": {
+    "HARASSMENT_BULLYING": "Belästigung oder Mobbing",
+    "HATE_SPEECH": "Hassrede",
+    "SEXUAL_INAPPROPRIATE": "Sexuelle oder unangemessene Inhalte",
+    "SUSPECTED_GROOMING": "Verdacht auf Grooming",
+    "CHILD_SAFETY": "Bedenken zum Kinderschutz",
+    "THREATS_VIOLENCE": "Drohungen oder Gewalt",
+    "SPAM_SCAM": "Spam oder Betrug",
+    "IMPERSONATION": "Identitätsanmaßung",
+    "UNDERAGE_USER": "Minderjährige Person",
+    "INAPPROPRIATE_MEDIA": "Unangemessene Medien",
+    "SELF_HARM": "Sorge um Selbstverletzung",
+    "OTHER": "Sonstiges"
+  },
+  "urgency": {
+    "critical": "Kritisch",
+    "high": "Hoch",
+    "medium": "Mittel",
+    "low": "Niedrig",
+    "spam_invalid": "Spam oder ungültig"
+  },
+  "report": {
+    "title": {
+      "content": "Inhalt melden",
+      "user": "{{name}} melden",
+      "thisUser": "Diese Person melden",
+      "item": "{{label}} melden",
+      "thisContent": "Diesen Inhalt melden"
+    },
+    "failed": "Die Meldung konnte nicht gesendet werden.",
+    "submitted": "Meldung gesendet. Danke, dass du hilfst, DeCave sicher zu halten.",
+    "submittedNoEvidence": "Meldung gesendet, aber die gemeldete Nachricht konnte nicht angehängt werden, deshalb kann das Safety-Team sie nicht lesen. Du kannst das Fenster schließen.",
+    "connectFailed": "Keine Verbindung zu DeCave.",
+    "kicker": "Trust & Safety",
+    "private": "Deine Meldung ist privat. Der gemeldeten Person wird deine Identität nicht angezeigt.",
+    "category": "Was ist passiert?",
+    "urgency": "Dringlichkeit",
+    "details": "Details <optional>(optional)</optional>",
+    "detailsPlaceholder": "Erzähl uns, was wir wissen sollten",
+    "evidence": "Ausgewählte Beweise",
+    "evidenceEncrypted": "Sie werden vor dem Hochladen auf diesem Gerät verschlüsselt.",
+    "blockAfter": "Diese Person nach dem Senden blockieren",
+    "cancel": "Abbrechen",
+    "submitting": "Wird gesendet …",
+    "submit": "Meldung senden"
+  },
+  "myReports": {
+    "loadFailed": "Deine Meldungen konnten nicht geladen werden.",
+    "connectFailed": "Keine Verbindung zu DeCave.",
+    "kicker": "NUR FÜR DICH",
+    "title": "Meine Meldungen",
+    "intro": "Verfolge die Meldungen, die du gesendet hast. Details der Prüfung bleiben privat.",
+    "loading": "Wird geladen …",
+    "refresh": "Aktualisieren",
+    "empty": "Du hast noch keine Meldungen gesendet.",
+    "rowMeta": "{{target}} · {{date}}",
+    "report": "Meldung",
+    "close": "Schließen",
+    "noDetails": "Es wurden keine weiteren Details angegeben.",
+    "statusLine": "Status: {{status}} · gesendet {{date}}",
+    "status": {
+      "submitted": "Gesendet",
+      "under_review": "In Prüfung",
+      "awaiting_information": "Wartet auf Infos",
+      "action_taken": "Maßnahme ergriffen",
+      "no_violation": "Kein Verstoß",
+      "escalated": "Eskaliert",
+      "appealed": "Einspruch eingelegt",
+      "closed": "Geschlossen"
+    },
+    "urgency": {
+      "critical": "kritisch",
+      "high": "hoch",
+      "medium": "mittel",
+      "low": "niedrig",
+      "spam_invalid": "Spam/ungültig"
+    },
+    "target": {
+      "user": "Person",
+      "message": "Nachricht",
+      "content": "Inhalt",
+      "attachment": "Anhang",
+      "profile": "Profil",
+      "voice_participant": "Voice-Teilnehmer"
+    }
+  },
+  "qrLogin": {
+    "creating": "Sicherer Anmeldecode wird erstellt …",
+    "createFailed": "QR-Login konnte nicht erstellt werden.",
+    "instructions": "Öffne DeCave Mobile → Einstellungen → Geräte → QR-Login scannen.",
+    "updating": "Sicherer Anmeldecode wird aktualisiert …",
+    "expired": "QR-Login abgelaufen.",
+    "codeAlt": "DeCave-QR-Login-Code",
+    "preparing": "Wird vorbereitet …",
+    "scan": "Mit der DeCave-App scannen"
+  },
+  "mobile": {
+    "myReports": {
+      "reportValue": "Meldung {{value}}"
+    },
+    "category": {
+      "HARASSMENT_BULLYING": "Belästigung",
+      "SEXUAL_INAPPROPRIATE": "Sexuelle Inhalte",
+      "SUSPECTED_GROOMING": "Grooming",
+      "CHILD_SAFETY": "Kinderschutz",
+      "THREATS_VIOLENCE": "Drohungen",
+      "SELF_HARM": "Selbstverletzung"
+    },
+    "report": {
+      "submittedNoEvidenceShort": "Meldung gesendet, aber die gemeldete Nachricht konnte nicht angehängt werden.",
+      "failed": "Die Meldung konnte nicht gesendet werden.",
+      "kicker": "TRUST & SAFETY",
+      "private": "Deine Meldung ist privat. Die gemeldete Person sieht deine Identität nicht.",
+      "detailsPlaceholder": "Erzähl uns, was wir wissen sollten (optional)",
+      "evidenceNote": "Die gemeldete Nachricht ist angehängt und so verschlüsselt, dass nur das Safety-Team von DeCave sie lesen kann.",
+      "contextNote": "Deine Meldung und ihr Kontext werden an das Safety-Team von DeCave gesendet."
+    }
+  }
+}

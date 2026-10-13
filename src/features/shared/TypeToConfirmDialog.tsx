@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { useDialogA11y } from "./useDialogA11y";
 import "./shared.css";
 
@@ -23,6 +24,7 @@ export function TypeToConfirmDialog({
   onConfirm,
   onCancel,
 }: TypeToConfirmDialogProps) {
+  const { t } = useTranslation(["chat"]);
   const [value, setValue] = useState("");
   const titleId = useId();
   const descriptionId = useId();
@@ -50,7 +52,12 @@ export function TypeToConfirmDialog({
         <h2 id={titleId}>{title}</h2>
         <p id={descriptionId}>{description}</p>
         <label htmlFor={inputId} className="dcx-confirm-label">
-          Type <strong>{confirmText}</strong> to confirm
+          <Trans
+            t={t}
+            i18nKey="chat.shared.typeToConfirm.prompt"
+            values={{ text: confirmText }}
+            components={{ strong: <strong /> }}
+          />
         </label>
         <input
           id={inputId}
@@ -66,10 +73,10 @@ export function TypeToConfirmDialog({
         />
         <div className="dcx-confirm-actions">
           <button type="button" className="dcx-btn" disabled={busy} onClick={onCancel}>
-            Cancel
+            {t("chat.shared.typeToConfirm.cancel")}
           </button>
           <button type="button" className="dcx-btn dcx-btn-danger" disabled={!matches || busy} onClick={onConfirm}>
-            {busy ? "Working…" : actionLabel}
+            {busy ? t("chat.shared.typeToConfirm.working") : actionLabel}
           </button>
         </div>
       </div>

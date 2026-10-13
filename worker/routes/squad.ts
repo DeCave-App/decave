@@ -14,7 +14,7 @@ import {
   type SquadSearchRow,
   squadSearchForClient,
 } from "../lib/squad";
-import { json, bodyJson, idFromPath } from "../lib/http";
+import { apiError, json, bodyJson, idFromPath } from "../lib/http";
 import { nowIso, ensureGroupChatSchema, groupChatMemberIds, getRole } from "../db";
 import { requirePlatformOwner } from "../lib/platform-owner";
 import { nextIntegerId } from "../lib/hubs";
@@ -22,6 +22,7 @@ import { realtimeBroadcast } from "../lib/realtime";
 import { groupChatForClient } from "../lib/social";
 import { ensureHubFeatureSchema } from "../lib/hub-schema";
 import { ensureSoundboardSchema } from "../lib/soundboard";
+import { serverNotice } from "../lib/notices";
 import {
   deleteQueuedMediaIfQueued,
   ensureMediaDeletionQueueSchema,
@@ -56,18 +57,17 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
     await ensureSquadGameSuggestionsSchema(env);
     const body = await bodyJson(request);
     const gameName = typeof body.gameName === "string" ? body.gameName.trim().replace(/\s+/g, " ") : "";
-    if (gameName.length < 2 || gameName.length > 60)
-      return json({ error: "Enter a game name between 2 and 60 characters." }, 400);
+    if (gameName.length < 2 || gameName.length > 60) return apiError("squad.gameNameLength", 400);
     const normalized = normalizedSquadGame(gameName);
     if (SQUAD_GAMES.some((game) => normalizedSquadGame(game) === normalized))
-      return json({ error: "That game is already available." }, 409);
+      return apiError("squad.gameAvailable", 409);
     const existing = await env.DB.prepare(
       "SELECT status FROM decave_squad_game_suggestions WHERE game_name_normalized=? ORDER BY created_at DESC LIMIT 1",
     )
       .bind(normalized)
       .first<{ status: string }>();
-    if (existing?.status === "approved") return json({ error: "That game is already available." }, 409);
-    if (existing?.status === "pending") return json({ error: "That game is already awaiting review." }, 409);
+    if (existing?.status === "approved") return apiError("squad.gameAvailable", 409);
+    if (existing?.status === "pending") return apiError("squad.gamePending", 409);
     const now = nowIso();
     await env.DB.prepare(
       `INSERT INTO decave_squad_game_suggestions(id,user_id,game_name,game_name_normalized,status,created_at)
@@ -119,7 +119,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
     )
       .bind(status, owner.id, nowIso(), suggestionId)
       .run();
-    if (!result.meta.changes) return json({ error: "That pending suggestion was not found." }, 404);
+    if (!result.meta.changes) return apiError("squad.suggestionNotFound", 404);
     return json({ success: true, status });
   }
 
@@ -141,7 +141,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
       const language = squadChoice(body.language, SQUAD_LANGUAGES);
       const region = squadChoice(body.region, SQUAD_REGIONS);
       if (!game || !platform || !language || !region || typeof body.microphoneRequired !== "boolean") {
-        return json({ error: "Choose a valid game, platform, language, region and microphone preference." }, 400);
+        return apiError("squad.criteriaInvalid", 400);
       }
       const now = nowIso();
       const expires = new Date(Date.now() + 30 * 60_000).toISOString();
@@ -229,8 +229,8 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
         .bind(targetId, now)
         .first<SquadSearchRow>(),
     ]);
-    if (!mine) return json({ error: "Start your search before joining a squad." }, 400);
-    if (!target || target.user_id === user.id) return json({ error: "That squad is no longer available." }, 404);
+    if (!mine) return apiError("squad.searchFirst", 400);
+    if (!target || target.user_id === user.id) return apiError("squad.unavailable", 404);
     if (
       mine.game !== target.game ||
       mine.platform !== target.platform ||
@@ -238,7 +238,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
       mine.region !== target.region ||
       mine.microphone_required !== target.microphone_required
     ) {
-      return json({ error: "That squad no longer matches your required criteria." }, 409);
+      return apiError("squad.criteriaMismatch", 409);
     }
 
     let groupId = target.group_id;
@@ -295,7 +295,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
         // received a squad-room Hub or messages, so it owns no R2 objects.
         await env.DB.prepare("DELETE FROM decave_group_chats WHERE id=?").bind(candidateGroupId).run();
       }
-      if (!groupId) return json({ error: "That squad is no longer available." }, 409);
+      if (!groupId) return apiError("squad.unavailable", 409);
     }
 
     if (groupId) {
@@ -324,7 +324,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
       )
         .bind(groupId, user.id)
         .first();
-      if (!joined && !alreadyMember) return json({ error: "That squad is already full." }, 409);
+      if (!joined && !alreadyMember) return apiError("squad.full", 409);
     }
 
     let squadRoom = await env.DB.prepare("SELECT hub_id,room_id FROM decave_squad_rooms WHERE group_id=?")
@@ -338,7 +338,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
       )
         .bind(target.user_id)
         .first<{ active: number }>();
-      if (!targetStillActive) return json({ error: "That squad is no longer available." }, 409);
+      if (!targetStillActive) return apiError("squad.unavailable", 409);
       // nextIntegerId is intentionally kept for the legacy integer schema. A
       // concurrent room creator can read the same next value, so retry a
       // failed allocation after the winning batch commits.
@@ -380,14 +380,14 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
         squadRoom = await env.DB.prepare("SELECT hub_id,room_id FROM decave_squad_rooms WHERE group_id=?")
           .bind(groupId)
           .first<{ hub_id: number; room_id: number }>();
-        if (!squadRoom) return json({ error: "Could not create the squad room." }, 503);
+        if (!squadRoom) return apiError("squad.roomCreateFailed", 503);
         if (squadRoom.hub_id !== hubId) {
           // We lost the room mapping race; remove the unreferenced candidate
           // hub so concurrent joins do not leak duplicate private hubs.
           await env.DB.prepare("DELETE FROM decave_hubs WHERE id=?").bind(hubId).run();
         }
       }
-      if (!squadRoom) return json({ error: "Could not create the squad room." }, 503);
+      if (!squadRoom) return apiError("squad.roomCreateFailed", 503);
     } else {
       await env.DB.prepare(
         "INSERT OR IGNORE INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(?,?,'member',?)",
@@ -419,7 +419,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
     const squadRoom = await env.DB.prepare("SELECT group_id,room_id FROM decave_squad_rooms WHERE hub_id=?")
       .bind(hubId)
       .first<{ group_id: string; room_id: number }>();
-    if (!squadRoom || !(await getRole(env.DB, hubId, user.id))) return json({ error: "Squad room not found." }, 404);
+    if (!squadRoom || !(await getRole(env.DB, hubId, user.id))) return apiError("squad.roomNotFound", 404);
     const owners = await env.DB.prepare(
       `SELECT groups.owner_user_id,hubs.owner_id AS hub_owner_id
        FROM decave_group_chats groups JOIN decave_hubs hubs ON hubs.id=?
@@ -427,10 +427,10 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
     )
       .bind(hubId, squadRoom.group_id)
       .first<{ owner_user_id: string; hub_owner_id: string }>();
-    if (!owners) return json({ error: "Squad room not found." }, 404);
+    if (!owners) return apiError("squad.roomNotFound", 404);
     const isOwner = owners.owner_user_id === user.id || owners.hub_owner_id === user.id;
     if (isOwner && (owners.owner_user_id !== user.id || owners.hub_owner_id !== user.id))
-      return json({ error: "Squad ownership is changing. Try again shortly." }, 409);
+      return apiError("squad.ownershipChanging", 409);
     const members = isOwner
       ? await env.DB.prepare(
           `SELECT members.user_id FROM decave_group_chat_members members
@@ -449,7 +449,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
       )
         .bind(squadRoom.group_id, user.id)
         .first<{ present: number }>();
-      if (remaining) return json({ error: "An eligible squad member must take ownership before you leave." }, 409);
+      if (remaining) return apiError("squad.transferBeforeLeaving", 409);
     }
     const now = nowIso();
     const guardEligibleSuccessor =
@@ -531,13 +531,13 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
     }
     const leaveResults = await env.DB.batch(statements);
     if (isOwner && nextOwner && Number(leaveResults[0]?.meta.changes ?? 0) !== 1)
-      return json({ error: "The next owner is no longer eligible. Try again." }, 409);
+      return apiError("squad.nextOwnerIneligible", 409);
     if (
       isOwner &&
       !nextOwner &&
       (Number(leaveResults[3]?.meta.changes ?? 0) !== 1 || Number(leaveResults[4]?.meta.changes ?? 0) !== 1)
     )
-      return json({ error: "Squad ownership changed. Try again." }, 409);
+      return apiError("squad.ownershipChanged", 409);
     if (isOwner && !nextOwner && squadMediaKeys.length) await deleteQueuedMediaIfQueued(env, squadMediaKeys);
     const remainingIds = await groupChatMemberIds(env.DB, squadRoom.group_id);
     await realtimeBroadcast(
@@ -547,7 +547,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
     );
     await realtimeBroadcast(
       env,
-      { type: "ACCESS_REVOKED", serverId: hubId, message: "You left the squad room." },
+      { type: "ACCESS_REVOKED", serverId: hubId, ...serverNotice("chat.server.leftSquadRoom") },
       { userIds: [user.id] },
     );
     await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { userIds: remainingIds });

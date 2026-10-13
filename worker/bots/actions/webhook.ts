@@ -3,7 +3,8 @@
 
 import { renderTemplate } from "../../../shared/bots/render";
 import { takeBudget } from "../limits";
-import { guardedFetch, webhookUrlProblem } from "../webhook";
+import { refusal } from "../reasons";
+import { guardedFetch, webhookUrlRefusal } from "../webhook";
 import { registerAction, type ActionResult } from "./registry";
 
 const MAX_KEYS = 20;
@@ -57,14 +58,15 @@ registerAction("webhook", {
     if (action.type !== "webhook") return { ok: true };
     // Render, then validate the final URL: variables can't smuggle in a bad host.
     const url = renderTemplate(action.url, ctx.vars);
-    const problem = webhookUrlProblem(url);
-    if (problem) return { ok: false, reason: problem };
+    const problem = webhookUrlRefusal(url);
+    if (problem) return { ok: false, ...problem };
     // Dry run: no network call and no budget; the engine logs the step description.
     if (ctx.dryRun) return { ok: true };
-    if (!takeBudget(ctx.event.hubId, "webhooks")) return { ok: false, reason: "Webhook limit reached", limited: true };
+    if (!takeBudget(ctx.event.hubId, "webhooks"))
+      return { ok: false, ...refusal("bots.run.server.webhookLimit"), limited: true };
     const body = action.method === "POST" ? renderBody(action.body ?? "", ctx.vars) : undefined;
     const result = await guardedFetch(url, { method: action.method, body });
-    if (!result.ok) return { ok: false, reason: result.reason };
+    if (!result.ok) return { ok: false, reason: result.reason, notice: result.notice };
     return { ok: true, vars: { ...flatten(result.json), "webhook.status": result.status } };
   },
 });

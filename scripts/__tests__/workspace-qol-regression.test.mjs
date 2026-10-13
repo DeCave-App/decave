@@ -27,7 +27,7 @@ test("channel reorder is a single permission-checked complete-section operation"
   assert.doesNotMatch(app, /Promise\.all\(ordered\.map\(\(channel, position\).*?\/api\/channels\//s);
   assert.match(worker, /\/api\\\/servers\\\/\(\\d\+\)\\\/channels\\\/reorder/);
   assert.match(worker, /hasPermission\(env\.DB, hubId, user\.id, "manageRooms"\)/);
-  assert.match(worker, /The order must include every room in that section/);
+  assert.match(worker, /apiError\("hubs\.roomOrderIncomplete", 400\)/);
   assert.match(worker, /env\.DB\.batch\(\s*orderedIds\.map/);
 });
 
@@ -51,7 +51,7 @@ test("Hub, voice, Discover, and DM requested cleanup remains present", async () 
     app,
     /onClick=\{\(\) => \{\s*if \(!inThisVoiceRoom\) openFriendVoiceRoom\(group\.server, group\.channel\);\s*\}\}/,
   );
-  assert.match(app, /className="dc-friends-voice-panel" aria-label="Friends in voice rooms"/);
+  assert.match(app, /className="dc-friends-voice-panel" aria-label=\{t\("common\.friendsSidebar\.voiceLabel"\)\}/);
   assert.match(app, /friendVoiceGroups\.map\(\(group\) => \{\s*const inThisVoiceRoom/);
   assert.match(app, /setShowHubMembersPanel\(false\)/);
   assert.match(css, /\.voice-presence-person\s*\{\s*width:\s*auto\s*!important;\s*min-height:\s*190px/);

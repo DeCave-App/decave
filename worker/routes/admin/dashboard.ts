@@ -2,7 +2,7 @@
 
 import { requirePlatformOwner } from "../../lib/platform-owner";
 import { nowIso } from "../../db";
-import { json } from "../../lib/http";
+import { json, apiError } from "../../lib/http";
 import { ensureSquadFinderSchema } from "../../lib/squad";
 import { realtimeFetch } from "../../lib/realtime";
 import type { ApiContext } from "../context";
@@ -32,9 +32,9 @@ export async function handleAdminDashboardRoutes({
     const toDate = new Date(`${requestedTo}T00:00:00.000Z`);
     const fromDate = new Date(`${requestedFrom}T00:00:00.000Z`);
     if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime()) || fromDate > toDate)
-      return json({ error: "Invalid dashboard date range" }, 400);
+      return apiError("admin.dashboardRangeInvalid", 400);
     const rangeDays = Math.floor((toDate.getTime() - fromDate.getTime()) / 86_400_000) + 1;
-    if (rangeDays > 90) return json({ error: "Dashboard range cannot exceed 90 days" }, 400);
+    if (rangeDays > 90) return apiError("admin.dashboardRangeTooLong", 400);
     const rangeStart = new Date(fromDate.getTime() + timezoneOffsetMinutes * 60_000).toISOString();
     const rangeEnd = new Date(toDate.getTime() + 86_400_000 + timezoneOffsetMinutes * 60_000).toISOString();
     const activityDate = requestedFrom === requestedTo ? requestedFrom : `${requestedFrom} – ${requestedTo}`;

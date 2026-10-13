@@ -1,5 +1,6 @@
 // A forum room in a Hub: the forum view with your permissions and its composer.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "../../components/Icon";
@@ -24,7 +25,7 @@ import type {
 } from "../types";
 import { HTTP_URL } from "../env";
 import { messageBotFields } from "../../../shared/bots/card-view";
-import { formatTimestamp } from "../locale";
+import { formatTimestamp } from "../../i18n/format";
 import { safeForumIconUrl } from "../message-payloads";
 import { UserAvatar } from "../components/UserAvatar";
 import type { ForumRoomUiState } from "../state/forum-room-ui";
@@ -62,6 +63,7 @@ export function HubForumRoom({
   hubChat,
   messageRendering,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { renderForumRichText, downloadLegacyAttachment, renderHubMessageBody, roomLink } = messageRendering;
   const {
     publishForumText,
@@ -143,7 +145,9 @@ export function HubForumRoom({
 
 ${post.payload.body}`
               : message.text,
-            evidenceLabel: `${messageBotFields(message).bot?.name ?? message.username}'s forum ${post ? "post" : "reply"}`,
+            evidenceLabel: t(post ? "chat.report.forumPostEvidence" : "chat.report.forumReplyEvidence", {
+              name: messageBotFields(message).bot?.name ?? message.username,
+            }),
           })
         }
         onDownload={(attachment) => void downloadLegacyAttachment(attachment)}
@@ -157,11 +161,11 @@ ${post.payload.body}`
             <button
               type="button"
               className="fx-icon-btn"
-              aria-label="Send a GIF"
-              title="GIF"
+              aria-label={t("chat.composer.sendGif")}
+              title={t("chat.composer.gif")}
               onClick={() => openGifPicker("forum")}
             >
-              <small>GIF</small>
+              <small>{t("chat.composer.gif")}</small>
             </button>
             {renderGifPicker("forum")}
           </span>
@@ -171,8 +175,8 @@ ${post.payload.body}`
             <button
               type="button"
               className="fx-icon-btn"
-              aria-label="Emoji"
-              title="Emoji"
+              aria-label={t("chat.composer.emoji")}
+              title={t("chat.composer.emoji")}
               onClick={() => {
                 setGifPickerTarget(null);
                 setShowForumEmojiPicker((value) => !value);

@@ -9,6 +9,7 @@ import { DmE2eeSession, type DmDeviceState } from "./dm-e2ee-session";
 import { createDmE2eeSending } from "./dm-e2ee-sending";
 import { decryptAttachment, encryptAttachment, isDmFileKey, type DmFileKey } from "./dm-e2ee";
 import { base64UrlToBytes } from "./dm-e2ee-format";
+import { t } from "i18next";
 import { API_BASE } from "@/src/lib/api";
 
 let sessionToken: string | null = null;
@@ -61,7 +62,7 @@ export const dmE2ee = new DmE2eeSession({
       const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
       return { ok: response.ok, status: response.status, data };
     } catch {
-      return { ok: false, status: 0, data: { error: "Could not reach DeCave." } };
+      return { ok: false, status: 0, data: { error: t("dm.e2ee.client.unreachable") } };
     }
   },
   // The keyring never leaves this phone. It can outgrow SecureStore's ~2 KB limit,
@@ -120,7 +121,7 @@ export const dmE2ee = new DmE2eeSession({
         recoveryCodeUnconfirmed: raw.recoveryCodeUnconfirmed === true,
       };
     } catch {
-      throw new Error("Could not read this device's encryption security state.");
+      throw new Error(t("dm.e2ee.client.readStateFailed"));
     }
   },
   saveDeviceState: async (accountId, state) => {
@@ -129,7 +130,7 @@ export const dmE2ee = new DmE2eeSession({
       if (!file.exists) file.create();
       file.write(JSON.stringify(state));
     } catch {
-      throw new Error("Could not save this device's encryption security state.");
+      throw new Error(t("dm.e2ee.client.saveStateFailed"));
     }
   },
 });
@@ -167,7 +168,18 @@ export const {
   retryGroupFrameAfterError,
   groupPreview,
   decryptConversationPreviews,
-} = createDmE2eeSending(dmE2ee);
+} = createDmE2eeSending(dmE2ee, {
+  // List previews in the app language, read when each preview is made.
+  previewLabels: {
+    gif: () => t("dm.preview.gif"),
+    attachment: () => t("dm.preview.attachment"),
+    namedAttachment: (name) => t("dm.preview.namedAttachment", { name }),
+    poll: () => t("dm.preview.poll"),
+    pollQuestion: (question) => t("dm.preview.pollQuestion", { question }),
+    message: () => t("dm.preview.message"),
+    encrypted: () => t("dm.preview.encrypted"),
+  },
+});
 
 // Groups the app has open or listed, so a GROUP_ERROR resend uses the latest members.
 const knownGroups = new Map<string, { id: string; e2ee?: boolean; members: ReadonlyArray<{ id: string }> }>();

@@ -3,8 +3,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { AccountUser, AdminAccountSummary, AdminAccountDetail } from "../../types";
 import { readableAuditLabel } from "../../format";
+import { adminValueLabel } from "./adminValues";
 import { selectStyle } from "../../inline-styles";
-import { localeForLanguage, preferredTimeOptions } from "../../locale";
+import { useTranslation } from "react-i18next";
+import { formatDate } from "../../../i18n/format";
 
 type Props = {
   currentUser: AccountUser;
@@ -87,6 +89,7 @@ export function AdminAccountsTab({
   changeAdminPlatformRole,
   transferAdminHubOwnership,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div style={{ display: "grid", gap: "12px" }}>
       <div className="admin-filter-bar">
@@ -97,33 +100,33 @@ export function AdminAccountsTab({
           onKeyDown={(event) => {
             if (event.key === "Enter") void loadAdminDashboard(adminAccountSearch);
           }}
-          placeholder="Search username, email or DeCave ID"
+          placeholder={t("common.admin.accounts.search")}
         />
         <select
           value={adminAccountRoleFilter}
           onChange={(event) => setAdminAccountRoleFilter(event.target.value as typeof adminAccountRoleFilter)}
-          aria-label="Filter accounts by role"
+          aria-label={t("common.admin.accounts.roleFilter")}
         >
-          <option value="all">All roles</option>
-          <option value="owner">Owners</option>
-          <option value="admin">Admins</option>
-          <option value="user">Users</option>
+          <option value="all">{t("hub.sidebar.allRoles")}</option>
+          <option value="owner">{t("hub.sidebar.owners")}</option>
+          <option value="admin">{t("hub.sidebar.admins")}</option>
+          <option value="user">{t("common.admin.accounts.users")}</option>
         </select>
         <select
           value={adminAccountStateFilter}
           onChange={(event) => setAdminAccountStateFilter(event.target.value as typeof adminAccountStateFilter)}
-          aria-label="Filter accounts by status"
+          aria-label={t("common.admin.accounts.stateFilter")}
         >
-          <option value="all">All states</option>
-          <option value="active">Active</option>
-          <option value="suspended">Suspended</option>
-          <option value="reset">Password reset required</option>
-          <option value="deletion">Deletion scheduled</option>
-          <option value="erased">Erased</option>
-          <option value="unverified">Email unverified</option>
+          <option value="all">{t("common.admin.accounts.allStates")}</option>
+          <option value="active">{t("common.admin.accounts.stateActive")}</option>
+          <option value="suspended">{t("common.admin.accounts.stateSuspended")}</option>
+          <option value="reset">{t("common.admin.accounts.stateReset")}</option>
+          <option value="deletion">{t("common.admin.accounts.stateDeletion")}</option>
+          <option value="erased">{t("common.admin.accounts.stateErased")}</option>
+          <option value="unverified">{t("common.admin.accounts.stateUnverified")}</option>
         </select>
         <button type="button" className="modal-secondary" onClick={() => void loadAdminDashboard(adminAccountSearch)}>
-          Search
+          {t("common.actions.search")}
         </button>
       </div>
 
@@ -191,7 +194,10 @@ export function AdminAccountsTab({
                     overflowWrap: "anywhere",
                   }}
                 >
-                  {account.platformRole} · {account.activeSessions} session(s)
+                  {t("common.admin.accounts.roleSessions", {
+                    role: adminValueLabel("platformRole", account.platformRole),
+                    count: account.activeSessions,
+                  })}
                 </div>
                 <div
                   style={{
@@ -209,14 +215,14 @@ export function AdminAccountsTab({
                   }}
                 >
                   {account.erasedAt
-                    ? "ERASED"
+                    ? t("common.admin.accounts.badgeErased")
                     : account.deletedAt
-                      ? "DELETION"
+                      ? t("common.admin.accounts.badgeDeletion")
                       : account.suspended
-                        ? "SUSPENDED"
+                        ? t("common.admin.accounts.badgeSuspended")
                         : account.passwordResetRequired
-                          ? "RESET REQUIRED"
-                          : "ACTIVE"}
+                          ? t("common.admin.accounts.badgeReset")
+                          : t("common.admin.accounts.badgeActive")}
                 </div>
               </button>
             ))}
@@ -242,7 +248,7 @@ export function AdminAccountsTab({
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <div className="social-kicker">ACCOUNT CONTROL</div>
+                <div className="social-kicker">{t("common.admin.accounts.kicker")}</div>
                 <h3 style={{ margin: "4px 0" }}>{selectedAdminAccount.username}</h3>
                 <div
                   style={{
@@ -255,7 +261,7 @@ export function AdminAccountsTab({
                 </div>
               </div>
               <button type="button" className="modal-secondary" onClick={() => setSelectedAdminAccount(null)}>
-                Close
+                {t("common.actions.close")}
               </button>
             </div>
 
@@ -269,32 +275,40 @@ export function AdminAccountsTab({
               }}
             >
               <div>
-                <strong>Email</strong>
-                <div style={{ overflowWrap: "anywhere" }}>{selectedAdminAccount.email || "No email"}</div>
-              </div>
-              <div>
-                <strong>Created</strong>
-                <div>
-                  {new Date(selectedAdminAccount.createdAt).toLocaleString(localeForLanguage(), preferredTimeOptions())}
+                <strong>{t("common.auth.email")}</strong>
+                <div style={{ overflowWrap: "anywhere" }}>
+                  {selectedAdminAccount.email || t("common.admin.accounts.noEmail")}
                 </div>
               </div>
               <div>
-                <strong>Sessions</strong>
+                <strong>{t("common.admin.accounts.created")}</strong>
+                <div>{formatDate(selectedAdminAccount.createdAt, "dateTime")}</div>
+              </div>
+              <div>
+                <strong>{t("common.admin.accounts.sessions")}</strong>
                 <div>{selectedAdminAccount.activeSessions}</div>
               </div>
               <div>
-                <strong>Hubs owned</strong>
+                <strong>{t("common.admin.accounts.hubsOwned")}</strong>
                 <div>{selectedAdminAccount.hubsOwned.length}</div>
               </div>
               {selectedAdminAccount.platformRole === "owner" && (
                 <>
                   <div>
-                    <strong>Owner MFA</strong>
-                    <div>{selectedAdminAccount.ownerMfaEnabled ? "Enabled" : "Not enabled"}</div>
+                    <strong>{t("common.admin.accounts.ownerMfa")}</strong>
+                    <div>
+                      {selectedAdminAccount.ownerMfaEnabled
+                        ? t("common.admin.accounts.enabled")
+                        : t("common.admin.accounts.notEnabled")}
+                    </div>
                   </div>
                   <div>
-                    <strong>Recovery codes</strong>
-                    <div>{selectedAdminAccount.ownerRecoveryCodesRemaining} remaining</div>
+                    <strong>{t("common.admin.accounts.recoveryCodes")}</strong>
+                    <div>
+                      {t("common.admin.accounts.remaining", {
+                        count: selectedAdminAccount.ownerRecoveryCodesRemaining,
+                      })}
+                    </div>
                   </div>
                 </>
               )}
@@ -310,16 +324,16 @@ export function AdminAccountsTab({
                 gap: "8px",
               }}
             >
-              <strong>Platform role</strong>
+              <strong>{t("common.admin.accounts.platformRole")}</strong>
               <div style={{ display: "flex", gap: "8px" }}>
                 <select
                   value={adminPlatformRoleChoice}
                   onChange={(event) => setAdminPlatformRoleChoice(event.target.value as "user" | "admin" | "owner")}
                   style={selectStyle}
                 >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                  <option value="owner">Owner</option>
+                  <option value="user">{t("common.admin.accounts.roleUser")}</option>
+                  <option value="admin">{t("common.roles.admin")}</option>
+                  <option value="owner">{t("common.roles.owner")}</option>
                 </select>
                 <button
                   type="button"
@@ -332,12 +346,10 @@ export function AdminAccountsTab({
                   }
                   onClick={() => void changeAdminPlatformRole()}
                 >
-                  Change Role
+                  {t("common.admin.accounts.changeRole")}
                 </button>
               </div>
-              <span style={{ color: "var(--ds-muted)", fontSize: "10px" }}>
-                Owner changes obey the two-owner safety floor and verified-email requirement.
-              </span>
+              <span style={{ color: "var(--ds-muted)", fontSize: "10px" }}>{t("common.admin.accounts.roleHint")}</span>
             </div>
 
             <div
@@ -350,7 +362,7 @@ export function AdminAccountsTab({
                 border: "1px solid color-mix(in srgb, var(--ds-border) 14%, transparent)",
               }}
             >
-              <strong>Security actions</strong>
+              <strong>{t("common.admin.accounts.securityActions")}</strong>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <button
                   type="button"
@@ -363,7 +375,7 @@ export function AdminAccountsTab({
                   }
                   onClick={() => void revokeAdminAccountSessions(selectedAdminAccount.id)}
                 >
-                  Revoke Sessions
+                  {t("common.admin.accounts.revokeSessions")}
                 </button>
                 <button
                   type="button"
@@ -379,7 +391,7 @@ export function AdminAccountsTab({
                   }
                   onClick={() => void forceAdminPasswordReset()}
                 >
-                  Force Password Reset
+                  {t("common.admin.accounts.forceReset")}
                 </button>
               </div>
             </div>
@@ -400,7 +412,7 @@ export function AdminAccountsTab({
                     : "1px solid color-mix(in srgb, var(--ds-border) 14%, transparent)",
               }}
             >
-              <strong>Age eligibility</strong>
+              <strong>{t("common.admin.accounts.ageTitle")}</strong>
               <span
                 style={{
                   color: selectedAdminAccount.ageStatus === "ineligible" ? "var(--ds-danger)" : "var(--ds-muted)",
@@ -408,21 +420,24 @@ export function AdminAccountsTab({
                 }}
               >
                 {selectedAdminAccount.ageStatus === "ineligible"
-                  ? "Age restricted — the account cannot use DeCave."
-                  : `${selectedAdminAccount.ageStatus} · ${selectedAdminAccount.ageBand} · ${selectedAdminAccount.ageAssuranceMethod}`}
+                  ? t("common.admin.accounts.ageRestricted")
+                  : t("common.admin.accounts.ageSummary", {
+                      status: adminValueLabel("ageStatus", selectedAdminAccount.ageStatus),
+                      band: adminValueLabel("ageBand", selectedAdminAccount.ageBand),
+                      method: adminValueLabel("ageAssuranceMethod", selectedAdminAccount.ageAssuranceMethod),
+                    })}
               </span>
               {selectedAdminAccount.ageStatus === "ineligible" && (
                 <>
                   <span style={{ color: "var(--ds-text-soft)", fontSize: "10px" }}>
-                    If the birth date was entered incorrectly, an owner can review the corrected date. It must show the
-                    account holder is at least 18.
+                    {t("common.admin.accounts.ageHint")}
                   </span>
                   <input
                     type="date"
                     value={adminCorrectionBirthDate}
                     max={new Date().toISOString().slice(0, 10)}
                     onChange={(event) => setAdminCorrectionBirthDate(event.target.value)}
-                    aria-label="Corrected birth date"
+                    aria-label={t("common.admin.accounts.correctedBirthDate")}
                   />
                   <button
                     type="button"
@@ -435,7 +450,7 @@ export function AdminAccountsTab({
                     }
                     onClick={() => void correctAdminAccountAge()}
                   >
-                    Correct age and unblock
+                    {t("common.admin.accounts.correctAge")}
                   </button>
                 </>
               )}
@@ -452,15 +467,26 @@ export function AdminAccountsTab({
                   border: "1px solid color-mix(in srgb, var(--ds-warn) 22%, transparent)",
                 }}
               >
-                <strong>Suspension</strong>
+                <strong>{t("common.admin.accounts.suspension")}</strong>
                 {selectedAdminAccount.suspended ? (
                   <>
                     <div style={{ color: "var(--ds-warn)", fontSize: "11px" }}>
-                      Suspended
                       {selectedAdminAccount.suspendedUntil
-                        ? ` until ${new Date(selectedAdminAccount.suspendedUntil).toLocaleString(localeForLanguage(), preferredTimeOptions())}`
-                        : " indefinitely"}
-                      {selectedAdminAccount.suspensionReason ? ` · ${selectedAdminAccount.suspensionReason}` : ""}
+                        ? t(
+                            selectedAdminAccount.suspensionReason
+                              ? "common.admin.accounts.suspendedUntilReason"
+                              : "common.admin.accounts.suspendedUntil",
+                            {
+                              date: formatDate(selectedAdminAccount.suspendedUntil, "dateTime"),
+                              reason: selectedAdminAccount.suspensionReason ?? "",
+                            },
+                          )
+                        : t(
+                            selectedAdminAccount.suspensionReason
+                              ? "common.admin.accounts.suspendedIndefinitelyReason"
+                              : "common.admin.accounts.suspendedIndefinitely",
+                            { reason: selectedAdminAccount.suspensionReason ?? "" },
+                          )}
                     </div>
                     <button
                       type="button"
@@ -468,7 +494,7 @@ export function AdminAccountsTab({
                       disabled={adminDashboardBusy || !ownerReauthToken || ownerReauthExpiresAt <= Date.now()}
                       onClick={() => void unsuspendAdminAccount()}
                     >
-                      Unsuspend Account
+                      {t("common.admin.accounts.unsuspend")}
                     </button>
                   </>
                 ) : (
@@ -477,7 +503,7 @@ export function AdminAccountsTab({
                       type="text"
                       value={adminActionReason}
                       onChange={(event) => setAdminActionReason(event.target.value)}
-                      placeholder="Reason for suspension"
+                      placeholder={t("common.admin.accounts.suspendReason")}
                       maxLength={300}
                     />
                     <select
@@ -485,11 +511,11 @@ export function AdminAccountsTab({
                       onChange={(event) => setAdminSuspendDuration(event.target.value)}
                       style={selectStyle}
                     >
-                      <option value="1">1 day</option>
-                      <option value="7">7 days</option>
-                      <option value="30">30 days</option>
-                      <option value="90">90 days</option>
-                      <option value="indefinite">Indefinite</option>
+                      <option value="1">{t("common.admin.accounts.duration1")}</option>
+                      <option value="7">{t("common.admin.accounts.duration7")}</option>
+                      <option value="30">{t("common.admin.accounts.duration30")}</option>
+                      <option value="90">{t("common.admin.accounts.duration90")}</option>
+                      <option value="indefinite">{t("common.admin.accounts.durationIndefinite")}</option>
                     </select>
                     <button
                       type="button"
@@ -504,11 +530,11 @@ export function AdminAccountsTab({
                       }
                       onClick={() => void suspendAdminAccount()}
                     >
-                      Suspend Account
+                      {t("common.admin.accounts.suspend")}
                     </button>
                     {selectedAdminAccount.platformRole === "owner" && (
                       <span style={{ color: "var(--ds-muted)", fontSize: "10px" }}>
-                        Demote the owner before suspension.
+                        {t("common.admin.accounts.demoteFirst")}
                       </span>
                     )}
                   </>
@@ -527,12 +553,12 @@ export function AdminAccountsTab({
                   border: "1px solid color-mix(in srgb, var(--ds-border) 14%, transparent)",
                 }}
               >
-                <strong>Owned Hubs</strong>
+                <strong>{t("common.admin.accounts.ownedHubs")}</strong>
                 <input
                   type="text"
                   value={adminTransferTarget}
                   onChange={(event) => setAdminTransferTarget(event.target.value)}
-                  placeholder="New owner ID, username or verified email"
+                  placeholder={t("common.admin.accounts.transferTarget")}
                 />
                 {selectedAdminAccount.hubsOwned.map((hub) => (
                   <div
@@ -556,7 +582,10 @@ export function AdminAccountsTab({
                           marginTop: "2px",
                         }}
                       >
-                        #{hub.id} · {hub.visibility}
+                        {t("common.admin.accounts.hubMeta", {
+                          id: hub.id,
+                          visibility: adminValueLabel("visibility", hub.visibility),
+                        })}
                       </small>
                     </span>
                     <button
@@ -570,7 +599,7 @@ export function AdminAccountsTab({
                       }
                       onClick={() => void transferAdminHubOwnership(hub.id)}
                     >
-                      Transfer
+                      {t("common.admin.accounts.transfer")}
                     </button>
                   </div>
                 ))}
@@ -587,21 +616,20 @@ export function AdminAccountsTab({
                 border: "1px solid color-mix(in srgb, var(--ds-danger) 28%, transparent)",
               }}
             >
-              <strong style={{ color: "var(--ds-danger)" }}>Danger Zone</strong>
+              <strong style={{ color: "var(--ds-danger)" }}>{t("common.admin.accounts.dangerZone")}</strong>
 
               {selectedAdminAccount.erasedAt ? (
                 <div style={{ color: "var(--ds-muted)", fontSize: "11px" }}>
-                  Personal/authentication data was permanently erased on{" "}
-                  {new Date(selectedAdminAccount.erasedAt).toLocaleString(localeForLanguage(), preferredTimeOptions())}.
-                  The immutable ID remains as an anonymized audit tombstone.
+                  {t("common.admin.accounts.erasedOn", { date: formatDate(selectedAdminAccount.erasedAt, "dateTime") })}
                 </div>
               ) : selectedAdminAccount.deletedAt ? (
                 <>
                   <div style={{ color: "var(--ds-danger)", fontSize: "11px" }}>
-                    Account disabled for deletion.
                     {selectedAdminAccount.deleteAfter
-                      ? ` Recovery period ends ${new Date(selectedAdminAccount.deleteAfter).toLocaleString(localeForLanguage(), preferredTimeOptions())}.`
-                      : ""}
+                      ? t("common.admin.accounts.deletionRecoveryEnds", {
+                          date: formatDate(selectedAdminAccount.deleteAfter, "dateTime"),
+                        })
+                      : t("common.admin.accounts.deletionDisabled")}
                   </div>
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                     <button
@@ -610,7 +638,7 @@ export function AdminAccountsTab({
                       disabled={adminDashboardBusy || !ownerReauthToken || ownerReauthExpiresAt <= Date.now()}
                       onClick={() => void restoreAdminAccount()}
                     >
-                      Restore Account
+                      {t("common.admin.accounts.restore")}
                     </button>
                   </div>
 
@@ -618,7 +646,7 @@ export function AdminAccountsTab({
                     type="text"
                     value={adminEraseConfirmation}
                     onChange={(event) => setAdminEraseConfirmation(event.target.value)}
-                    placeholder={`Type ${selectedAdminAccount.username} after the 30-day recovery period`}
+                    placeholder={t("common.admin.accounts.erasePlaceholder", { name: selectedAdminAccount.username })}
                   />
                   <button
                     type="button"
@@ -637,7 +665,7 @@ export function AdminAccountsTab({
                       borderColor: "color-mix(in srgb, var(--ds-danger) 48%, transparent)",
                     }}
                   >
-                    Permanently Erase Personal Data
+                    {t("common.admin.accounts.erase")}
                   </button>
                 </>
               ) : (
@@ -646,7 +674,7 @@ export function AdminAccountsTab({
                     type="text"
                     value={adminActionReason}
                     onChange={(event) => setAdminActionReason(event.target.value)}
-                    placeholder="Reason for account deletion"
+                    placeholder={t("common.admin.accounts.deleteReason")}
                     maxLength={300}
                   />
                   <button
@@ -667,11 +695,10 @@ export function AdminAccountsTab({
                       borderColor: "color-mix(in srgb, var(--ds-danger) 48%, transparent)",
                     }}
                   >
-                    Schedule Account Deletion
+                    {t("common.admin.accounts.scheduleDeletion")}
                   </button>
                   <span style={{ color: "var(--ds-muted)", fontSize: "10px" }}>
-                    Deletion disables access immediately and gives a 30-day restore window. Transfer owned Hubs and
-                    demote platform owners first.
+                    {t("common.admin.accounts.deletionHint")}
                   </span>
                 </>
               )}
@@ -687,9 +714,11 @@ export function AdminAccountsTab({
                 border: "1px solid color-mix(in srgb, var(--ds-border) 12%, transparent)",
               }}
             >
-              <strong>Recent account security</strong>
+              <strong>{t("common.admin.accounts.recentSecurity")}</strong>
               {selectedAdminAccount.recentSecurityEvents.length === 0 ? (
-                <span style={{ color: "var(--ds-muted)", fontSize: "10px" }}>No recent security events.</span>
+                <span style={{ color: "var(--ds-muted)", fontSize: "10px" }}>
+                  {t("common.admin.accounts.noRecentSecurity")}
+                </span>
               ) : (
                 selectedAdminAccount.recentSecurityEvents.slice(0, 8).map((event) => (
                   <div
@@ -701,8 +730,7 @@ export function AdminAccountsTab({
                       borderTop: "1px solid color-mix(in srgb, var(--ds-border) 8%, transparent)",
                     }}
                   >
-                    <strong>{readableAuditLabel(event.event)}</strong> ·{" "}
-                    {new Date(event.createdAt).toLocaleString(localeForLanguage(), preferredTimeOptions())}
+                    <strong>{readableAuditLabel(event.event)}</strong> · {formatDate(event.createdAt, "dateTime")}
                   </div>
                 ))
               )}

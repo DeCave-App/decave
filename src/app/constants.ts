@@ -1,6 +1,7 @@
 // Fixed app values: emoji and icon choices, page sizes, upload limits.
 
 import type { Server } from "./types";
+import { i18next } from "../i18n/index.ts";
 
 /** How long a successful report stays on screen, long enough to read or hear before it closes. */
 export const REPORT_CONFIRMATION_MS = 3000;
@@ -193,7 +194,10 @@ export const HISTORY_PAGE_SIZE = 100;
 
 export const EMPTY_SERVER: Server = {
   id: 0,
-  name: "No Hub Yet",
+  // Shown in the UI language; read when rendered.
+  get name() {
+    return i18next.t("hub.noHubs.emptyHubName");
+  },
   icon: "+",
   ownerId: null,
   myRole: null,

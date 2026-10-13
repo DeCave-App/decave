@@ -3,9 +3,10 @@
 import type { DmEnvelope } from "../../shared/dm-e2ee-format";
 import type { DmFileKey } from "../../shared/dm-e2ee";
 import type { DmE2eeMark } from "../../shared/dm-e2ee-session";
+import type { DateStyleLanguage } from "../../shared/date-style";
 import type { IconName } from "../components/Icon";
 import type { HubLayout } from "../../shared/streamer-mode";
-import type { ExtraSettings, NotifyLevels } from "../features/settings";
+import type { SettingsTabId } from "../features/settings/settingsMap";
 import type { LocalRecapActionInput } from "../session/local-recap.ts";
 import type { SafetyProfile } from "../safety/types";
 import type { NotificationPreview } from "../privacy/notification-preview";
@@ -52,6 +53,9 @@ export type Channel = {
   postRoleIds?: string[];
   /** False when this member can read but not post here (read-only room). */
   canPost?: boolean;
+  /** Per-room styling: accent '#rrggbb' and own chat background; null = use the Hub's. */
+  accent?: string | null;
+  backgroundUrl?: string | null;
   forumPostPolicy?: "everyone" | "staff" | "roles" | "members";
   forumPostRoleIds?: string[];
   forumPostMemberIds?: string[];
@@ -482,16 +486,13 @@ export type ActivityState = {
 
 export type FriendRequestPolicy = "everyone" | "friends_of_friends" | "none";
 export type TimeFormatPreference = "system" | "12h" | "24h";
-export type LanguagePreference = "en" | "pl" | "el" | "de" | "fr" | "es" | "it" | "pt";
+export type LanguagePreference = DateStyleLanguage;
 export type VoiceMiniPlayerPosition = { x: number; y: number };
 export type VoiceMiniDragState = { pointerId: number; offsetX: number; offsetY: number; moved: boolean };
 
 export type AccountPreferences = {
   usernameChangedAt: string | null;
   usernameChangeAvailableAt: string | null;
-  friendRequestPolicy: FriendRequestPolicy;
-  allowStreamPreviews: boolean;
-  streamerMode: boolean;
   language: LanguagePreference;
   timeFormat: TimeFormatPreference;
   voiceMiniPlayerPosition: VoiceMiniPlayerPosition | null;
@@ -499,6 +500,16 @@ export type AccountPreferences = {
   loginAlerts: boolean;
   /** Who can see the game you're playing. */
   activityVisibility: "everyone" | "friends" | "nobody";
+};
+
+/**
+ * What /api/account/preferences returns. Friend requests, stream previews and
+ * Streamer Mode come back too but live in PrivacySettings only.
+ */
+export type AccountPreferencesResponse = Partial<AccountPreferences> & {
+  friendRequestPolicy?: string;
+  allowStreamPreviews?: boolean;
+  streamerMode?: boolean;
 };
 
 export type DesktopSystemSettings = {
@@ -596,6 +607,8 @@ export type DeviceSession = {
   id: string;
   client: "mobile" | "web" | "desktop" | "legacy";
   deviceLabel: string;
+  /** Parts of the label for showing it in the UI language (shared/session-device.ts). */
+  device?: unknown;
   createdAt: string;
   expiresAt: string;
   lastActiveAt?: string | null;
@@ -764,44 +777,9 @@ export type SoundSettings = {
   undeafen: boolean;
   screenShare: boolean;
 };
-export type SettingsSnapshot = {
-  profileBio: string;
-  profileStatus: PresenceStatus;
-  profileStatusText: string;
-  profileAccent: string;
-  profileDisplayName: string;
-  profilePronouns: string;
-  appSkin: AppSkin;
-  extraSettings: ExtraSettings;
-  notificationPreset: string;
-  notificationSettings: NotificationSettings;
-  privacySettings: PrivacySettings;
-  soundSettings: SoundSettings;
-  accessibilityTextScale: number;
-  audioSettings: AudioSettings;
-  activitySettings: ActivitySettings;
-  language: LanguagePreference;
-  timeFormat: TimeFormatPreference;
-  loginAlerts: boolean;
-  activityVisibility: AccountPreferences["activityVisibility"];
-  notifyLevels: NotifyLevels;
-  desktopSystemSettings: DesktopSystemSettings;
-  desktopKeybinds: DesktopKeybindSettings;
-};
 
-export type SettingsTab =
-  | "profile"
-  | "account"
-  | "activity"
-  | "appearance"
-  | "notifications"
-  | "sounds"
-  | "privacy"
-  | "voice"
-  | "system"
-  | "keybinds"
-  | "language"
-  | "support";
+/** A Settings tab; see src/features/settings/settingsMap.ts. */
+export type SettingsTab = SettingsTabId;
 
 export type AdminDashboardTab = "overview" | "accounts" | "games" | "security" | "audit" | "trust-safety";
 

@@ -5,6 +5,7 @@ import { type Dispatch, type SetStateAction, type MutableRefObject, useEffect } 
 import type { AccountUser, PeerSession } from "../app/types";
 import { HTTP_URL, WS_URL } from "../app/env";
 import { hasDesktopActivityBridge } from "../app/desktop";
+import { i18next } from "../i18n/index.ts";
 import { connectRealtime, type RealtimeSendWindow } from "./connection";
 import { handleRealtimeEvent, type RealtimeAppHandlers } from "./events";
 
@@ -114,7 +115,7 @@ export function useRealtimeConnection(deps: RealtimeConnectionDeps): void {
         realtimeReconnectEnabledRef.current = false;
         storeToken("");
         setCurrentUser(null);
-        setAuthError("Your session expired. Please sign in again.");
+        setAuthError(i18next.t("chat.actions.session.expiredSignIn"));
       },
       onTokenRefreshed: storeToken,
       onFrame: (data) => {

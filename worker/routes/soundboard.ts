@@ -3,7 +3,7 @@
 import { requireUser } from "../lib/sessions";
 import { ensureSoundboardSchema, type SoundboardRow, soundboardSoundForClient } from "../lib/soundboard";
 import { getRole, nowIso, hasPermission } from "../db";
-import { json, bodyJson, idFromPath } from "../lib/http";
+import { apiError, json, bodyJson, idFromPath } from "../lib/http";
 import { realtimeBroadcast } from "../lib/realtime";
 import type { ApiContext } from "./context";
 
@@ -14,7 +14,7 @@ export async function handleSoundboardRoutes({ request, env, p, method }: ApiCon
     await ensureSoundboardSchema(env);
     const hubId = Number(new URL(request.url).searchParams.get("hubId"));
     if (!Number.isSafeInteger(hubId) || hubId <= 0 || !(await getRole(env.DB, hubId, user.id)))
-      return json({ error: "Hub access required." }, 403);
+      return apiError("soundboard.hubAccessRequired", 403);
     // Preserve pre-Hub soundboards: the uploader's first Hub soundboard visit
     // adopts their existing personal sounds, after which every Hub member sees them.
     await env.DB.prepare("UPDATE decave_soundboard_sounds SET hub_id=? WHERE hub_id IS NULL AND user_id=?")
@@ -36,13 +36,13 @@ export async function handleSoundboardRoutes({ request, env, p, method }: ApiCon
     const body = await bodyJson(request);
     const hubId = Number(body.hubId);
     if (!Number.isSafeInteger(hubId) || hubId <= 0 || !(await getRole(env.DB, hubId, user.id)))
-      return json({ error: "Hub access required." }, 403);
+      return apiError("soundboard.hubAccessRequired", 403);
 
     const count = await env.DB.prepare("SELECT COUNT(*) AS count FROM decave_soundboard_sounds WHERE hub_id=?")
       .bind(hubId)
       .first<{ count: number }>();
     if (Number(count?.count ?? 0) >= 48) {
-      return json({ error: "This Hub can save up to 48 soundboard sounds." }, 409);
+      return apiError("soundboard.limitReached", 409);
     }
 
     const name =
@@ -59,12 +59,12 @@ export async function handleSoundboardRoutes({ request, env, p, method }: ApiCon
         : "";
     const dataUrl = typeof body.dataUrl === "string" ? body.dataUrl : "";
     const match = /^data:(audio\/(?:mpeg|wav|x-wav|ogg|mp4|webm));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
-    if (!name) return json({ error: "Give the sound a name." }, 400);
-    if (!match) return json({ error: "Upload an MP3, WAV, OGG, M4A or WebM audio file." }, 400);
+    if (!name) return apiError("soundboard.nameRequired", 400);
+    if (!match) return apiError("soundboard.fileType", 400);
 
     const bytes = Uint8Array.from(atob(match[2]), (char) => char.charCodeAt(0));
     if (!bytes.length || bytes.length > 1536 * 1024) {
-      return json({ error: "Soundboard files must be 1.5 MB or smaller." }, 400);
+      return apiError("soundboard.fileTooLarge", 400);
     }
 
     const mimeType = match[1] === "audio/x-wav" ? "audio/wav" : match[1];
@@ -126,9 +126,9 @@ export async function handleSoundboardRoutes({ request, env, p, method }: ApiCon
     const row = await env.DB.prepare("SELECT * FROM decave_soundboard_sounds WHERE id=?")
       .bind(id)
       .first<SoundboardRow>();
-    if (!row) return json({ error: "Sound not found." }, 404);
+    if (!row) return apiError("soundboard.notFound", 404);
     if (!row.hub_id || (row.user_id !== user.id && !(await hasPermission(env.DB, row.hub_id, user.id, "manageRooms"))))
-      return json({ error: "Only the uploader or a Hub manager can delete this sound." }, 403);
+      return apiError("soundboard.deleteForbidden", 403);
     await env.MEDIA.delete(row.r2_key);
     await env.DB.prepare("DELETE FROM decave_soundboard_sounds WHERE id=?").bind(id).run();
     await realtimeBroadcast(env, { type: "SOUNDBOARD_REFRESH", hubId: row.hub_id }, { hubId: row.hub_id });

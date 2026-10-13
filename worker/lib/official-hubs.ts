@@ -2,7 +2,7 @@
 
 import type { Env } from "./env";
 import { nowIso, officialHubPostingDecision } from "../db";
-import { json } from "./http";
+import { apiError, apiErrorLegacy } from "./http";
 
 export let officialHubSchemaReady: Promise<void> | null = null;
 
@@ -60,16 +60,10 @@ export async function requireHubPostingPermission(
 ): Promise<Response | null> {
   const decision = await officialHubPostingDecision(db, hubId, userId);
   if (decision === "unavailable") {
-    return json(
-      {
-        error: "Official Hub posting policy is temporarily unavailable.",
-        code: "HUB_POLICY_UNAVAILABLE",
-      },
-      503,
-    );
+    return apiErrorLegacy("HUB_POLICY_UNAVAILABLE", "officialHub.postingPolicyUnavailable", 503);
   }
   if (decision === "deny") {
-    return json({ error: "Only the Hub owner can post in this Hub" }, 403);
+    return apiError("officialHub.ownerOnlyPosting", 403);
   }
   return null;
 }

@@ -2,6 +2,7 @@
 
 import type { ServerRole, CustomRoleView, PresenceStatus } from "./types";
 import { HTTP_URL } from "./env";
+import { i18next } from "../i18n/index.ts";
 
 function builtInRoleIcon(role?: ServerRole | null): string {
   return role === "owner" ? "👑" : role === "admin" ? "🛡️" : "👤";
@@ -32,10 +33,10 @@ export function resolveAvatarUrl(value?: string | null): string {
 }
 
 export function presenceLabel(status?: PresenceStatus, online = true) {
-  if (!online || status === "invisible") return "Offline";
-  if (status === "idle") return "Idle";
-  if (status === "dnd") return "Do Not Disturb";
-  return "Online";
+  if (!online || status === "invisible") return i18next.t("chat.actions.presence.offline");
+  if (status === "idle") return i18next.t("chat.actions.presence.idle");
+  if (status === "dnd") return i18next.t("chat.actions.presence.dnd");
+  return i18next.t("chat.actions.presence.online");
 }
 
 export function presenceColor(status?: PresenceStatus, online = true) {

@@ -3,7 +3,8 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { AdminAuditEvent } from "../../types";
 import { readableAuditLabel } from "../../format";
-import { localeForLanguage, preferredTimeOptions } from "../../locale";
+import { useTranslation } from "react-i18next";
+import { formatDate } from "../../../i18n/format";
 
 type Props = {
   adminAuditEvents: AdminAuditEvent[];
@@ -20,6 +21,7 @@ export function AdminAuditTab({
   adminEventRange,
   setAdminEventRange,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div style={{ display: "grid", gap: "8px" }}>
       <div className="admin-filter-bar single-search">
@@ -27,17 +29,17 @@ export function AdminAuditTab({
           type="search"
           value={adminAuditFilter}
           onChange={(event) => setAdminAuditFilter(event.target.value)}
-          placeholder="Filter action, actor, target or country"
+          placeholder={t("common.admin.audit.filter")}
         />
         <select
           value={adminEventRange}
           onChange={(event) => setAdminEventRange(event.target.value as typeof adminEventRange)}
-          aria-label="Audit date range"
+          aria-label={t("common.admin.audit.range")}
         >
-          <option value="24h">Last 24 hours</option>
-          <option value="7d">Last 7 days</option>
-          <option value="30d">Last 30 days</option>
-          <option value="all">All time</option>
+          <option value="24h">{t("common.admin.range.day")}</option>
+          <option value="7d">{t("common.admin.range.week")}</option>
+          <option value="30d">{t("common.admin.range.month")}</option>
+          <option value="all">{t("common.admin.range.all")}</option>
         </select>
         <button
           type="button"
@@ -52,11 +54,11 @@ export function AdminAuditTab({
             URL.revokeObjectURL(url);
           }}
         >
-          Export JSON
+          {t("common.admin.audit.export")}
         </button>
         {adminAuditFilter && (
           <button type="button" className="modal-secondary" onClick={() => setAdminAuditFilter("")}>
-            Clear
+            {t("common.actions.clear")}
           </button>
         )}
       </div>
@@ -98,18 +100,30 @@ export function AdminAuditTab({
             <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
               <strong>{readableAuditLabel(event.action)}</strong>
               <span style={{ color: "var(--ds-muted)", fontSize: "10px" }}>
-                {new Date(event.createdAt).toLocaleString(localeForLanguage(), preferredTimeOptions())}
+                {formatDate(event.createdAt, "dateTime")}
               </span>
             </div>
             <div style={{ color: "var(--ds-muted)", fontSize: "11px", marginTop: "4px" }}>
-              Actor: {event.actorUsername || event.actorUserId}
               {event.targetUsername || event.targetUserId
-                ? ` · Target: ${event.targetUsername || event.targetUserId}`
-                : ""}
-              {event.requestCountry ? ` · ${event.requestCountry}` : ""}
+                ? event.requestCountry
+                  ? t("common.admin.audit.actorTargetCountry", {
+                      actor: event.actorUsername || event.actorUserId,
+                      target: event.targetUsername || event.targetUserId,
+                      country: event.requestCountry,
+                    })
+                  : t("common.admin.audit.actorTarget", {
+                      actor: event.actorUsername || event.actorUserId,
+                      target: event.targetUsername || event.targetUserId,
+                    })
+                : event.requestCountry
+                  ? t("common.admin.audit.actorCountry", {
+                      actor: event.actorUsername || event.actorUserId,
+                      country: event.requestCountry,
+                    })
+                  : t("common.admin.audit.actor", { actor: event.actorUsername || event.actorUserId })}
             </div>
             <details className="dc-admin-technical">
-              <summary>Technical details</summary>
+              <summary>{t("common.admin.technicalDetails")}</summary>
               <code>{event.action}</code>
               <pre>{JSON.stringify(event.detail ?? {}, null, 2)}</pre>
             </details>

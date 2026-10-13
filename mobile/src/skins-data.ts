@@ -1,4 +1,7 @@
-// Skin definitions. Kept free of imports so the theme can read them at startup.
+// Skin definitions. Kept free of app imports so the theme can read them at
+// startup; names and descriptions are read from the catalogs when shown.
+
+import i18next from "i18next";
 
 export type SkinId =
   | "neon"
@@ -34,8 +37,12 @@ export const SKINS: SkinDefinition[] = [
   {
     id: "neon",
     lightAccent: "#7C3AED",
-    name: "Neon Lounge",
-    description: "Near-black with violet glow and cyan highlights.",
+    get name() {
+      return i18next.t("settings.mobile.skins.neon.name");
+    },
+    get description() {
+      return i18next.t("settings.mobile.skins.neon.description");
+    },
     palette: {
       bg: "#09080D",
       panel: "#14121B",
@@ -51,8 +58,12 @@ export const SKINS: SkinDefinition[] = [
   {
     id: "nebula",
     lightAccent: "#0B7C99",
-    name: "Nebula Pulse",
-    description: "DeCave's violet and cyan default.",
+    get name() {
+      return i18next.t("settings.appearance.skins.nebula.name");
+    },
+    get description() {
+      return i18next.t("settings.mobile.skins.nebula.description");
+    },
     palette: {
       bg: "#070B16",
       panel: "#0D1425",
@@ -68,8 +79,12 @@ export const SKINS: SkinDefinition[] = [
   {
     id: "arctic",
     lightAccent: "#0A6FA8",
-    name: "Arctic Flux",
-    description: "Cool blue glass with icy highlights.",
+    get name() {
+      return i18next.t("settings.appearance.skins.arctic.name");
+    },
+    get description() {
+      return i18next.t("settings.mobile.skins.arctic.description");
+    },
     palette: {
       bg: "#061019",
       panel: "#0A1824",
@@ -85,8 +100,12 @@ export const SKINS: SkinDefinition[] = [
   {
     id: "crimson",
     lightAccent: "#C42A45",
-    name: "Crimson Glass",
-    description: "Dark graphite with warm crimson glow.",
+    get name() {
+      return i18next.t("settings.appearance.skins.crimson.name");
+    },
+    get description() {
+      return i18next.t("settings.mobile.skins.crimson.description");
+    },
     palette: {
       bg: "#11080B",
       panel: "#1A0D12",
@@ -102,8 +121,12 @@ export const SKINS: SkinDefinition[] = [
   {
     id: "royal",
     lightAccent: "#8636DB",
-    name: "Royal Violet",
-    description: "Deep purple with bright royal accents.",
+    get name() {
+      return i18next.t("settings.appearance.skins.royal.name");
+    },
+    get description() {
+      return i18next.t("settings.mobile.skins.royal.description");
+    },
     palette: {
       bg: "#0B0715",
       panel: "#130C22",
@@ -119,8 +142,12 @@ export const SKINS: SkinDefinition[] = [
   {
     id: "pearl",
     lightAccent: "#4A5A70",
-    name: "Pearl Glass",
-    description: "Soft slate glass with pearl highlights.",
+    get name() {
+      return i18next.t("settings.appearance.skins.pearl.name");
+    },
+    get description() {
+      return i18next.t("settings.mobile.skins.pearl.description");
+    },
     palette: {
       bg: "#11151B",
       panel: "#181E26",
@@ -136,8 +163,12 @@ export const SKINS: SkinDefinition[] = [
   {
     id: "obsidian",
     lightAccent: "#2F3540",
-    name: "Obsidian Glass",
-    description: "Near-black glass with a clean silver edge.",
+    get name() {
+      return i18next.t("settings.appearance.skins.obsidian.name");
+    },
+    get description() {
+      return i18next.t("settings.mobile.skins.obsidian.description");
+    },
     palette: {
       bg: "#050607",
       panel: "#0B0D10",

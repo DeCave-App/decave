@@ -3,7 +3,7 @@
 
 import { requirePlatformOwner, platformAudit } from "../../lib/platform-owner";
 import { currentPasswordThrottle } from "../../lib/sessions";
-import { json, bodyJson } from "../../lib/http";
+import { json, bodyJson, apiError } from "../../lib/http";
 import {
   platformOwnerMfaEnabled,
   ownerRandomMfaSecret,
@@ -45,7 +45,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
     if (passwordThrottle) return passwordThrottle;
     if (!(await verifyPassword(currentPassword, owner.password_salt, owner.password_hash))) {
       await platformAudit(env, owner.id, "platform.mfa_setup_reauth_failed", request);
-      return json({ error: "Current password is incorrect" }, 403);
+      return apiError("common.currentPasswordIncorrectShort", 403);
     }
     const existing = await env.DB.prepare(
       "SELECT secret_ciphertext,enabled_at FROM decave_owner_mfa WHERE user_id=? LIMIT 1",
@@ -58,12 +58,12 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
         const mfaCode = typeof body?.mfaCode === "string" ? body.mfaCode : "";
         if (!mfaCode) {
           await platformAudit(env, owner.id, "platform.mfa_setup_reauth_failed", request);
-          return json({ error: "Verify your current authenticator or recovery code before replacing MFA." }, 428);
+          return apiError("admin.verifyMfaBeforeReplace", 428);
         }
         const method = await ownerVerifyMfaOrRecovery(env, owner.id, mfaCode);
         if (!method) {
           await platformAudit(env, owner.id, "platform.mfa_setup_reauth_failed", request);
-          return json({ error: "The current authenticator or recovery code is invalid." }, 403);
+          return apiError("admin.currentMfaCodeInvalid", 403);
         }
       }
     }
@@ -110,8 +110,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
         now,
       ),
     ]);
-    if (Number(results[0]?.meta.changes) !== 1)
-      return json({ error: "Account authentication policy changed. Authenticate again." }, 409);
+    if (Number(results[0]?.meta.changes) !== 1) return apiError("admin.authPolicyChanged", 409);
     await platformAudit(env, owner.id, "platform.mfa_setup_started", request, owner.id, {
       replacingEnrolledFactor: replaceEnabled,
     });
@@ -131,12 +130,12 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
     )
       .bind(owner.id)
       .first<{ secret_ciphertext: string }>();
-    if (!row) return json({ error: "Start MFA setup first" }, 409);
+    if (!row) return apiError("admin.mfaSetupNotStarted", 409);
     const secret = await ownerDecryptMfa(env, row.secret_ciphertext);
     const matchedStep = await ownerMatchingTotpStep(secret, code);
     if (matchedStep === null) {
       await platformAudit(env, owner.id, "platform.mfa_enable_failed", request);
-      return json({ error: "Authenticator code is invalid" }, 403);
+      return apiError("admin.authenticatorCodeInvalid", 403);
     }
     const codes = Array.from({ length: 10 }, () => ownerRecoveryCode());
     const now = nowIso();
@@ -178,8 +177,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
         event,
       ),
     ]);
-    if (Number(results[0]?.meta.changes) !== 1)
-      return json({ error: "Owner or MFA state changed. Start MFA setup again." }, 409);
+    if (Number(results[0]?.meta.changes) !== 1) return apiError("admin.ownerMfaStateChanged", 409);
     return json({ success: true, recoveryCodes: codes }, 200, { "Cache-Control": "no-store, private" });
   }
 
@@ -193,15 +191,15 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
     if (passwordThrottle) return passwordThrottle;
     if (!(await verifyPassword(currentPassword, owner.password_salt, owner.password_hash))) {
       await platformAudit(env, owner.id, "platform.reauth_password_failed", request);
-      return json({ error: "Current password is incorrect" }, 403);
+      return apiError("common.currentPasswordIncorrectShort", 403);
     }
     if (!(await platformOwnerMfaEnabled(env.DB, owner.id))) {
-      return json({ error: "Owner MFA must be enabled first" }, 409);
+      return apiError("admin.ownerMfaRequired", 409);
     }
     const methodUsed = await ownerVerifyMfaOrRecovery(env, owner.id, body.mfaCode);
     if (!methodUsed) {
       await platformAudit(env, owner.id, "platform.reauth_mfa_failed", request);
-      return json({ error: "MFA or recovery code is invalid" }, 403);
+      return apiError("admin.mfaOrRecoveryInvalid", 403);
     }
     // Keep legacy proof semantics, but do not let an in-flight legacy proof
     // issue privileges after a concurrent CUTOVER or role/MFA removal.
@@ -232,8 +230,7 @@ export async function handleOwnerSecurityRoutes({ request, env, p, method }: Api
         now,
       ),
     ]);
-    if (Number(results[0]?.meta.changes) !== 1)
-      return json({ error: "Owner authentication policy changed. Authenticate again." }, 409);
+    if (Number(results[0]?.meta.changes) !== 1) return apiError("admin.ownerAuthPolicyChanged", 409);
     return json({ reauthToken, expiresInSeconds: 600 }, 200, { "Cache-Control": "no-store, private" });
   }
 

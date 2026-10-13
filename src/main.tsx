@@ -2,6 +2,9 @@
 import ReactDOM from "react-dom/client";
 import "./styles/design-system.css";
 import App from "./App";
+import { I18nProvider } from "./i18n/I18nProvider";
+import { i18next } from "./i18n";
+import { followLocaleOnDesktop } from "./app/desktop";
 
 class AppErrorBoundary extends React.Component<React.PropsWithChildren, { error: Error | null }> {
   state: { error: Error | null } = { error: null };
@@ -38,10 +41,8 @@ class AppErrorBoundary extends React.Component<React.PropsWithChildren, { error:
             boxShadow: "0 20px 60px rgba(0,0,0,.35)",
           }}
         >
-          <h1 style={{ margin: "0 0 8px", fontSize: "20px" }}>DeCave could not render</h1>
-          <p style={{ margin: "0 0 16px", color: "var(--ds-text-soft)" }}>
-            The local app hit a runtime error before the interface loaded.
-          </p>
+          <h1 style={{ margin: "0 0 8px", fontSize: "20px" }}>{i18next.t("common.app.renderFailedTitle")}</h1>
+          <p style={{ margin: "0 0 16px", color: "var(--ds-text-soft)" }}>{i18next.t("common.app.renderFailedBody")}</p>
           <pre
             style={{
               maxHeight: "240px",
@@ -69,7 +70,7 @@ class AppErrorBoundary extends React.Component<React.PropsWithChildren, { error:
               cursor: "pointer",
             }}
           >
-            Reload app
+            {i18next.t("common.app.reload")}
           </button>
         </section>
       </main>
@@ -77,10 +78,14 @@ class AppErrorBoundary extends React.Component<React.PropsWithChildren, { error:
   }
 }
 
+followLocaleOnDesktop();
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <AppErrorBoundary>
-      <App />
+      <I18nProvider>
+        <App />
+      </I18nProvider>
     </AppErrorBoundary>
   </React.StrictMode>,
 );

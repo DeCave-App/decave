@@ -1,8 +1,9 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Icon } from "../../components/Icon";
 import {
   HUB_HOME_LIMITS,
-  HUB_HOME_SECTION_LABELS,
   hubRulesList,
   moveHubHomeSection,
   normalizeHubHomeConfig,
@@ -10,7 +11,9 @@ import {
   type HubHomeSectionId,
 } from "../../../shared/hub-home";
 import "./hubHome.css";
-import { localeForLanguage, preferredTimeOptions } from "../../app/locale";
+import { preferredTimeOptions } from "../../app/locale";
+import { formatNumber } from "../../i18n/format";
+import { intlLocale } from "./intlLocale";
 
 export type HubHomePerson = { id: string; name: string; avatar: ReactNode; speaking?: boolean };
 
@@ -88,21 +91,23 @@ export type HubHomeProps = {
   onOpenInsights?: () => void;
 };
 
-export function formatCountdown(start: number, now: number): string {
+type HubT = TFunction<["hub"]>;
+
+export function formatCountdown(start: number, now: number, t: HubT): string {
   const diff = start - now;
-  if (diff <= 0) return "Happening now";
+  if (diff <= 0) return t("hub.hubHome.countdown.now");
   const minutes = Math.round(diff / 60000);
-  if (minutes < 60) return `In ${Math.max(1, minutes)}m`;
+  if (minutes < 60) return t("hub.hubHome.countdown.minutes", { minutes: Math.max(1, minutes) });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `In ${hours}h ${minutes % 60}m`;
+  if (hours < 24) return t("hub.hubHome.countdown.hours", { hours, minutes: minutes % 60 });
   const days = Math.round(hours / 24);
-  return days === 1 ? "Tomorrow" : `In ${days} days`;
+  return days === 1 ? t("hub.hubHome.countdown.tomorrow") : t("hub.hubHome.countdown.days", { count: days });
 }
 
 function formatWhen(start: number): string {
   const date = new Date(start);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(localeForLanguage(), {
+  return new Intl.DateTimeFormat(intlLocale(), {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
@@ -111,7 +116,7 @@ function formatWhen(start: number): string {
 }
 
 function count(value: number | null): string {
-  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value).toLocaleString() : "—";
+  return typeof value === "number" && Number.isFinite(value) ? formatNumber(Math.max(0, value)) : "—";
 }
 
 function sameConfig(a: HubHomeConfig, b: HubHomeConfig): boolean {
@@ -119,6 +124,7 @@ function sameConfig(a: HubHomeConfig, b: HubHomeConfig): boolean {
 }
 
 export function HubHome(props: HubHomeProps) {
+  const { t } = useTranslation(["hub"]);
   const now = props.now ?? Date.now();
   const nextEvent = props.events[0] ?? null;
   const joinable = props.live.find((room) => !room.connected) ?? null;
@@ -156,7 +162,7 @@ export function HubHome(props: HubHomeProps) {
       await props.onSaveHome(normalizeHubHomeConfig(draft));
       setEditing(false);
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Could not save Hub Home.");
+      setSaveError(error instanceof Error ? error.message : t("hub.hubHome.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -179,7 +185,7 @@ export function HubHome(props: HubHomeProps) {
           return (
             <div className="hh-editor">
               <label className="hh-sr" htmlFor="hh-welcome-input">
-                Welcome message
+                {t("hub.hubHome.welcomeLabel")}
               </label>
               <textarea
                 id="hh-welcome-input"
@@ -187,7 +193,7 @@ export function HubHome(props: HubHomeProps) {
                 rows={4}
                 maxLength={HUB_HOME_LIMITS.welcome}
                 value={draft.welcome}
-                placeholder="Say hello, explain what this Hub is for, and where new people should start."
+                placeholder={t("hub.hubHome.welcomePlaceholder")}
                 onChange={(event) => setDraft((current) => ({ ...current, welcome: event.target.value }))}
               />
               <small className="hh-count">
@@ -202,7 +208,7 @@ export function HubHome(props: HubHomeProps) {
           return (
             <div className="hh-editor">
               <label className="hh-sr" htmlFor="hh-rules-input">
-                Rules, one per line
+                {t("hub.hubHome.rulesLabel")}
               </label>
               <textarea
                 id="hh-rules-input"
@@ -210,10 +216,10 @@ export function HubHome(props: HubHomeProps) {
                 rows={6}
                 maxLength={HUB_HOME_LIMITS.rules}
                 value={draft.rules}
-                placeholder={"Be decent. No harassment.\nClips go in the clips room.\nMic required for ranked squads."}
+                placeholder={t("hub.hubHome.rulesPlaceholder")}
                 onChange={(event) => setDraft((current) => ({ ...current, rules: event.target.value }))}
               />
-              <small className="hh-count">One rule per line · up to {HUB_HOME_LIMITS.ruleLines} rules</small>
+              <small className="hh-count">{t("hub.hubHome.rulesCount", { count: HUB_HOME_LIMITS.ruleLines })}</small>
             </div>
           );
         }
@@ -229,7 +235,7 @@ export function HubHome(props: HubHomeProps) {
           <div className="hh-now">
             {props.live.map((room) => (
               <article key={room.roomId} className="hh-now-card live">
-                <span className="hh-tag">● Live voice</span>
+                <span className="hh-tag">{t("hub.hubHome.liveVoice")}</span>
                 <strong>
                   {room.icon ? `${room.icon} ` : ""}
                   {room.name}
@@ -239,8 +245,8 @@ export function HubHome(props: HubHomeProps) {
                     .slice(0, 3)
                     .map((person) => person.name)
                     .join(", ")}
-                  {room.people.length > 3 ? ` and ${room.people.length - 3} more` : ""}
-                  {room.sharing ? " · sharing screen" : ""}
+                  {room.people.length > 3 ? t("hub.hubHome.andMore", { count: room.people.length - 3 }) : ""}
+                  {room.sharing ? t("hub.hubHome.sharingScreen") : ""}
                 </small>
                 <div className="hh-now-foot">
                   <span className="hh-faces">
@@ -256,11 +262,11 @@ export function HubHome(props: HubHomeProps) {
                   </span>
                   {room.connected ? (
                     <button type="button" className="hh-btn sm" onClick={() => props.onOpenRoom(room.roomId)}>
-                      Open
+                      {t("hub.hubHome.open")}
                     </button>
                   ) : (
                     <button type="button" className="hh-btn sm primary" onClick={() => props.onJoinVoice(room.roomId)}>
-                      Join
+                      {t("hub.hubHome.join")}
                     </button>
                   )}
                 </div>
@@ -268,34 +274,37 @@ export function HubHome(props: HubHomeProps) {
             ))}
             {nextEvent && (
               <article className="hh-now-card event">
-                <span className="hh-tag">Next event · {formatCountdown(nextEvent.start, now)}</span>
+                <span className="hh-tag">
+                  {t("hub.hubHome.nextEvent", { when: formatCountdown(nextEvent.start, now, t) })}
+                </span>
                 <strong>{nextEvent.title}</strong>
                 <small>
                   {formatWhen(nextEvent.start)}
-                  {nextEvent.roomName ? ` · ${nextEvent.roomName}` : ""} · {nextEvent.going} going
+                  {nextEvent.roomName ? ` · ${nextEvent.roomName}` : ""} ·{" "}
+                  {t("hub.hubHome.going", { count: nextEvent.going })}
                 </small>
                 <div className="hh-now-foot">
                   <span className="hh-rsvp">
                     {nextEvent.myRsvp === "going"
-                      ? "You're going"
+                      ? t("hub.hubHome.rsvp.going")
                       : nextEvent.myRsvp === "maybe"
-                        ? "You said maybe"
-                        : "No reply yet"}
+                        ? t("hub.hubHome.rsvp.maybe")
+                        : t("hub.hubHome.rsvp.none")}
                   </span>
                   <button type="button" className="hh-btn sm" onClick={() => props.onOpenEvent(nextEvent.key)}>
-                    Details
+                    {t("hub.hubHome.details")}
                   </button>
                 </div>
               </article>
             )}
             {props.live.length === 0 && !nextEvent && (
               <div className="hh-empty">
-                <strong>It's quiet right now</strong>
-                <span>Nobody is in voice and nothing is scheduled.</span>
+                <strong>{t("hub.hubHome.quiet.title")}</strong>
+                <span>{t("hub.hubHome.quiet.detail")}</span>
                 {props.canCreateEvents && (
                   <button type="button" className="hh-btn sm" onClick={props.onCreateEvent}>
                     <Icon name="calendar" size="sm" />
-                    Schedule an event
+                    {t("hub.hubHome.scheduleEvent")}
                   </button>
                 )}
               </div>
@@ -316,10 +325,10 @@ export function HubHome(props: HubHomeProps) {
                     <small>
                       {item.detail ||
                         (item.mentions > 0
-                          ? `${item.mentions} mention${item.mentions === 1 ? "" : "s"}`
+                          ? t("hub.hubHome.catchUp.mentions", { count: item.mentions })
                           : item.unread > 0
-                            ? `${item.unread} new message${item.unread === 1 ? "" : "s"}`
-                            : "New activity")}
+                            ? t("hub.hubHome.catchUp.unread", { count: item.unread })
+                            : t("hub.hubHome.catchUp.activity"))}
                     </small>
                   </span>
                   {item.mentions > 0 ? (
@@ -334,16 +343,14 @@ export function HubHome(props: HubHomeProps) {
             ))}
           </ul>
         ) : (
-          <p className="hh-quiet">You're all caught up. New messages in this Hub show up here.</p>
+          <p className="hh-quiet">{t("hub.hubHome.catchUp.empty")}</p>
         );
       case "about":
         return (
           <>
             <p className="hh-about">
               {props.description?.trim() ||
-                (props.canManage
-                  ? "Add a description in Manage Hub so new members know what this Hub is for."
-                  : "This Hub has not added a description yet.")}
+                (props.canManage ? t("hub.hubHome.about.manageHint") : t("hub.hubHome.about.empty"))}
             </p>
             {props.tags.length > 0 && (
               <div className="hh-tags">
@@ -364,12 +371,12 @@ export function HubHome(props: HubHomeProps) {
                   <button type="button" className="hh-row" onClick={() => props.onOpenEvent(event.key)}>
                     <span className="hh-date" aria-hidden="true">
                       <b>{date.getDate()}</b>
-                      <small>{date.toLocaleString(localeForLanguage(), { month: "short" })}</small>
+                      <small>{date.toLocaleString(intlLocale(), { month: "short" })}</small>
                     </span>
                     <span className="hh-row-copy">
                       <strong>{event.title}</strong>
                       <small>
-                        {formatWhen(event.start)} · {event.going} going
+                        {formatWhen(event.start)} · {t("hub.hubHome.going", { count: event.going })}
                       </small>
                     </span>
                   </button>
@@ -379,12 +386,12 @@ export function HubHome(props: HubHomeProps) {
           </ul>
         ) : (
           <p className="hh-quiet">
-            No upcoming events.
+            {t("hub.hubHome.events.empty")}
             {props.canCreateEvents && (
               <>
                 {" "}
                 <button type="button" className="hh-link" onClick={props.onCreateEvent}>
-                  Schedule one
+                  {t("hub.hubHome.events.scheduleOne")}
                 </button>
               </>
             )}
@@ -392,7 +399,7 @@ export function HubHome(props: HubHomeProps) {
         );
       case "members":
         if (props.membershipPrivate)
-          return editing ? <p className="hh-quiet">Hidden: this Hub keeps its member list private.</p> : null;
+          return editing ? <p className="hh-quiet">{t("hub.hubHome.members.hidden")}</p> : null;
         return (
           <div className="hh-members">
             <span className="hh-faces big">
@@ -403,8 +410,8 @@ export function HubHome(props: HubHomeProps) {
               ))}
             </span>
             <small>
-              {count(props.onlineCount)} online
-              {props.friendsHere > 0 ? ` · ${props.friendsHere} friend${props.friendsHere === 1 ? "" : "s"} here` : ""}
+              {t("hub.hubHome.online", { online: count(props.onlineCount) })}
+              {props.friendsHere > 0 ? t("hub.hubHome.members.friendsHere", { count: props.friendsHere }) : ""}
             </small>
           </div>
         );
@@ -418,38 +425,40 @@ export function HubHome(props: HubHomeProps) {
     if (id === "catchUp" && props.catchUp.length > 0)
       return (
         <button type="button" className="hh-link" onClick={props.onMarkAllRead}>
-          Mark all read
+          {t("hub.hubHome.links.markAllRead")}
         </button>
       );
     if (id === "about" && props.canManage)
       return (
         <button type="button" className="hh-link" onClick={props.onManage}>
-          Edit
+          {t("hub.hubHome.links.edit")}
         </button>
       );
     if ((id === "welcome" || id === "rules") && props.canCustomize)
       return (
         <button type="button" className="hh-link" onClick={startEditing}>
-          Edit
+          {t("hub.hubHome.links.edit")}
         </button>
       );
     if (id === "events")
       return (
         <button type="button" className="hh-link" onClick={props.onOpenCalendar}>
-          Calendar
+          {t("hub.hubHome.links.calendar")}
         </button>
       );
     if (id === "members" && !props.membershipPrivate)
       return (
         <button type="button" className="hh-link" onClick={props.onOpenMembers}>
-          See all
+          {t("hub.hubHome.links.seeAll")}
         </button>
       );
     return null;
   };
 
   const sectionTitle = (id: HubHomeSectionId): string =>
-    id === "catchUp" && props.catchUp.length ? `Catch up · ${props.catchUp.length}` : HUB_HOME_SECTION_LABELS[id].title;
+    id === "catchUp" && props.catchUp.length
+      ? t("hub.hubHome.catchUp.titleWithCount", { n: props.catchUp.length })
+      : t(`hub.hubHome.sections.${id}.title`);
 
   const visibleSections = config.sections.filter((section) => editing || section.visible);
   const rendered = visibleSections.flatMap((section, index) => {
@@ -474,8 +483,8 @@ export function HubHome(props: HubHomeProps) {
                 className="hh-tool"
                 onClick={() => move(section.id, -1)}
                 disabled={position <= 0}
-                aria-label={`Move ${HUB_HOME_SECTION_LABELS[section.id].title} up`}
-                title="Move up"
+                aria-label={t("hub.hubHome.moveSectionUp", { section: t(`hub.hubHome.sections.${section.id}.title`) })}
+                title={t("hub.hubHome.moveUp")}
               >
                 <Icon name="chevron-up" size="sm" />
               </button>
@@ -484,8 +493,10 @@ export function HubHome(props: HubHomeProps) {
                 className="hh-tool"
                 onClick={() => move(section.id, 1)}
                 disabled={position >= config.sections.length - 1}
-                aria-label={`Move ${HUB_HOME_SECTION_LABELS[section.id].title} down`}
-                title="Move down"
+                aria-label={t("hub.hubHome.moveSectionDown", {
+                  section: t(`hub.hubHome.sections.${section.id}.title`),
+                })}
+                title={t("hub.hubHome.moveDown")}
               >
                 <Icon name="chevron-down" size="sm" />
               </button>
@@ -495,43 +506,51 @@ export function HubHome(props: HubHomeProps) {
                   checked={section.visible}
                   onChange={(event) => setVisible(section.id, event.target.checked)}
                 />
-                <span>{section.visible ? "Shown" : "Hidden"}</span>
+                <span>{section.visible ? t("hub.hubHome.shown") : t("hub.hubHome.hidden")}</span>
               </label>
             </div>
           )}
         </div>
-        {editing && <p className="hh-hint">{HUB_HOME_SECTION_LABELS[section.id].hint}</p>}
+        {editing && <p className="hh-hint">{t(`hub.hubHome.sections.${section.id}.hint`)}</p>}
         {(!editing || section.visible || section.id === "welcome" || section.id === "rules") && body}
       </section>,
     ];
   });
 
   return (
-    <section className={`hh-root${editing ? " is-editing" : ""}`} aria-label={`${props.name} Hub Home`}>
+    <section
+      className={`hh-root${editing ? " is-editing" : ""}`}
+      aria-label={t("hub.hubHome.rootLabel", { name: props.name })}
+    >
       <header className={`hh-banner${props.bannerUrl ? " has-image" : ""}`} style={bannerStyle}>
         <div className="hh-identity">
           <div className="hh-avatar" aria-hidden="true">
             {props.icon}
           </div>
           <div className="hh-title">
-            <span className="hh-kicker">Hub Home{props.category ? ` · ${props.category}` : ""}</span>
+            <span className="hh-kicker">
+              {t("hub.hubHome.kicker")}
+              {props.category ? ` · ${props.category}` : ""}
+            </span>
             <h1>{props.name}</h1>
             <p className="hh-stats">
               {props.membershipPrivate ? (
                 <span>
                   <Icon name="lock" size="sm" />
-                  Membership private
+                  {t("hub.hubHome.membershipPrivate")}
                 </span>
               ) : (
                 <>
                   <span>
                     <i className="hh-online" aria-hidden="true" />
-                    {count(props.onlineCount)} online
+                    {t("hub.hubHome.online", { online: count(props.onlineCount) })}
                   </span>
-                  <span>{count(props.memberCount)} members</span>
+                  <span>
+                    {t("hub.hubHome.memberCount", { count: props.memberCount ?? 0, members: count(props.memberCount) })}
+                  </span>
                 </>
               )}
-              <span>{props.visibility === "private" ? "Private" : "Public"}</span>
+              <span>{props.visibility === "private" ? t("hub.hubHome.private") : t("hub.hubHome.public")}</span>
               {props.roleLabel && <span>{props.roleLabel}</span>}
             </p>
           </div>
@@ -539,38 +558,38 @@ export function HubHome(props: HubHomeProps) {
         <div className="hh-actions">
           <button type="button" className="hh-btn ghost" onClick={props.onToggleMute} aria-pressed={props.muted}>
             <Icon name="bell" size="sm" />
-            {props.muted ? "Muted" : "Notifications on"}
+            {props.muted ? t("hub.hubHome.muted") : t("hub.hubHome.notificationsOn")}
           </button>
           <button type="button" className="hh-btn" onClick={props.onInvite}>
             <Icon name="user-plus" size="sm" />
-            Invite
+            {t("hub.hubHome.invite")}
           </button>
           {props.canCustomize && !editing && props.onOpenInsights && (
             <button type="button" className="hh-btn" onClick={props.onOpenInsights}>
               <Icon name="bar-chart" size="sm" />
-              Insights
+              {t("hub.hubHome.insightsButton")}
             </button>
           )}
           {props.canCustomize && !editing && (
             <button type="button" className="hh-btn" onClick={startEditing}>
               <Icon name="sliders" size="sm" />
-              Customize
+              {t("hub.hubHome.customize")}
             </button>
           )}
           {joinable && !editing && (
             <button type="button" className="hh-btn primary" onClick={() => props.onJoinVoice(joinable.roomId)}>
               <Icon name="mic" size="sm" />
-              Join {joinable.name}
+              {t("hub.hubHome.joinRoom", { name: joinable.name })}
             </button>
           )}
         </div>
       </header>
 
       {editing && (
-        <div className="hh-editbar" role="region" aria-label="Customize Hub Home">
+        <div className="hh-editbar" role="region" aria-label={t("hub.hubHome.customizeTitle")}>
           <div>
-            <strong>Customize Hub Home</strong>
-            <span>Choose which sections everyone sees and in what order. Catch up is different for each member.</span>
+            <strong>{t("hub.hubHome.customizeTitle")}</strong>
+            <span>{t("hub.hubHome.customizeHint")}</span>
             {saveError && (
               <span className="hh-error" role="alert">
                 {saveError}
@@ -579,10 +598,10 @@ export function HubHome(props: HubHomeProps) {
           </div>
           <div className="hh-editbar-actions">
             <button type="button" className="hh-btn" onClick={cancelEditing} disabled={saving}>
-              Cancel
+              {t("hub.hubHome.cancel")}
             </button>
             <button type="button" className="hh-btn primary" onClick={() => void save()} disabled={saving || !dirty}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("hub.hubHome.saving") : t("hub.hubHome.save")}
             </button>
           </div>
         </div>
@@ -593,9 +612,7 @@ export function HubHome(props: HubHomeProps) {
       <div className="hh-sections">{rendered}</div>
       {!editing && rendered.length === 0 && (
         <p className="hh-quiet hh-nothing">
-          {props.canCustomize
-            ? "Every section is hidden. Use Customize to show some."
-            : "This Hub has not set up its Home yet."}
+          {props.canCustomize ? t("hub.hubHome.allHidden") : t("hub.hubHome.notSetUp")}
         </p>
       )}
     </section>

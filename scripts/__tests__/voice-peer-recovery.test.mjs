@@ -107,8 +107,9 @@ test("local voice processors never leak raw audio during startup or processor fa
   assert.match(app, /processingKeepAlive\.connect\(context\.destination\)/);
   assert.doesNotMatch(app, /noiseSuppression: fallbackMode/);
   assert.doesNotMatch(app, /enabled automatically/);
-  assert.match(app, /so Standard is being used/);
-  assert.match(app, /browser processing is being used/);
+  assert.match(app, /fallBackToStandard\(t\("voice\.engine\.clearVoiceFallbackStandard"\)\)/);
+  assert.match(app, /fallBackToStandard\(t\("voice\.engine\.deepFilterFallbackStandard"\)\)/);
+  assert.match(app, /setAudioSettingsNotice\(t\("voice\.engine\.localNoiseFallbackBrowser"\)\)/);
 });
 
 test("voice activation threshold controls the outgoing audio-thread track", () => {
@@ -169,13 +170,24 @@ test("local processing does not stack browser noise suppression or automatic gai
 test("voice channel exposes a direct noise-suppression mode switch", () => {
   assert.match(app, /const cycleNoiseSuppression = \(\) =>/);
   assert.match(app, /const modes: NoiseSuppressionMode\[\] = \["off", "strong", "ai", "deepfilter"\]/);
-  assert.match(app, /\["strong", "Standard", "ClearVoice"/);
-  assert.match(app, /\[\s*"ai",\s*"DeCave ClearVoice",\s*"Noise Suppression by DeCave"/);
+  // Settings → Voice & video labels: Off / Standard / DeCave ClearVoice, each with its own description.
+  const modes = JSON.parse(fs.readFileSync(path.join(root, "shared/i18n/locales/en/settings.json"), "utf8")).voice.noise
+    .modes;
+  assert.deepEqual(
+    ["off", "strong", "ai"].map((mode) => modes[mode].label),
+    ["Off", "Standard", "DeCave ClearVoice"],
+  );
+  const descriptions = Object.values(modes).map((mode) => `${mode.subtitle} ${mode.description}`);
+  assert.equal(new Set(descriptions).size, descriptions.length, "every mode is described differently");
+  assert.doesNotMatch(modes.strong.subtitle, /ClearVoice/, "Standard is not called ClearVoice");
   assert.doesNotMatch(app, /\["standard", "Standard"/);
   assert.doesNotMatch(app, /Active path:/);
   assert.doesNotMatch(app, /ClearVoice DSP/);
   assert.match(app, /className=\{`voice-channel-icon-button voice-noise-button/);
   assert.match(app, /voice-noise-mode-badge/);
   assert.match(app, /onClick=\{cycleNoiseSuppression\}/);
-  assert.match(app, /Noise suppression: \$\{noiseSuppressionLabel\(activeNoiseSuppressionMode\)\}/);
+  assert.match(
+    app,
+    /t\("hub\.voiceControls\.noiseLabel", \{ mode: noiseSuppressionLabel\(activeNoiseSuppressionMode\) \}\)/,
+  );
 });

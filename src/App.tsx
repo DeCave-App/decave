@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
+import { apiErrorMessage, type ApiErrorBody } from "./i18n/apiError";
 import { isRoomMuted, useRoomMute } from "./app/hooks/useRoomMute";
 import type { VoiceActivationGateMetrics } from "./audio/clearvoice/VoiceActivationGate";
 import type { HubTemplateId } from "../shared/hub-templates";
@@ -105,7 +107,6 @@ import type {
   NotificationSettings,
   PrivacySettings,
   SoundSettings,
-  SettingsSnapshot,
   AdminDashboardTab,
   WorkspaceHistoryEntry,
   GlobalCommandItem,
@@ -128,7 +129,7 @@ import {
 import { HTTP_URL, hubShareCodeFromLocation } from "./app/env";
 import { SCREEN_SHARE_PROFILES, microphoneErrorMessage } from "./app/voice";
 import { type HomeQuickLink, loadHomeQuickLinks, loadHomeLayout } from "./app/home-dashboard";
-import { formatTimestamp } from "./app/locale";
+import { formatTimestamp } from "./i18n/format";
 import { formatActivityElapsed, clamp } from "./app/format";
 import { hasDesktopActivityBridge, setDesktopStreamerMode, setDesktopVoiceOverlayState } from "./app/desktop";
 import { isStreamerServer, streamerLocalMediaPath, streamerMediaUrl } from "./app/streamer";
@@ -165,7 +166,6 @@ import type { RealtimeAppHandlers } from "./realtime/events";
 import { createVoiceEngine } from "./voice/engine";
 import { ResourceContextMenu } from "./app/views/ResourceContextMenu";
 import { UserContextMenu } from "./app/views/UserContextMenu";
-import { SettingsCloseConfirmDialog } from "./app/views/SettingsCloseConfirmDialog";
 import { FeedbackDialog } from "./app/views/FeedbackDialog";
 import { GroupMembersDialog } from "./app/views/GroupMembersDialog";
 import { NewConversationDialog } from "./app/views/NewConversationDialog";
@@ -249,7 +249,6 @@ import { useComposerState } from "./app/state/composer";
 import { useForumRoomUiState } from "./app/state/forum-room-ui";
 import { useVoiceCallState } from "./app/state/voice-call";
 import { useCallMediaState } from "./app/state/call-media";
-import { useSettingsDirtyTracking } from "./app/hooks/useSettingsDirtyTracking";
 import { useGlobalShortcuts } from "./app/hooks/useGlobalShortcuts";
 import { PollComposerDialog } from "./app/views/PollComposerDialog";
 import { AccountDangerDialog } from "./app/views/AccountDangerDialog";
@@ -257,6 +256,7 @@ import { StreamFocusOverlay } from "./app/views/StreamFocusOverlay";
 import { InboxPanel } from "./app/views/InboxPanel";
 import { MessageSearchDialog } from "./app/views/MessageSearchDialog";
 import { RoomEmptyHero } from "./app/views/RoomEmptyHero";
+import { roomWorkspaceStyle } from "./features/room-settings/roomStyle";
 import { AppBottomBar } from "./app/views/AppBottomBar";
 import { OwnerSecurityDialog } from "./app/views/OwnerSecurityDialog";
 import { SquadMatchPopup } from "./app/views/SquadMatchPopup";
@@ -283,7 +283,13 @@ import { useScreenWatchReporter } from "./app/hooks/useScreenWatchReporter";
 import { dmE2ee, useDmE2ee } from "./e2ee/dm-e2ee-client";
 import { DmEncryptionDialogs } from "./e2ee/DmEncryptionUi";
 
+/** The server's error in the UI language, or the given text when the response carried none. */
+function apiErrorText(data: ApiErrorBody | null | undefined, fallback: string): string {
+  return data?.code || data?.error ? apiErrorMessage(data, "common.unknown") : fallback;
+}
+
 function App() {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   useInjectedStyle("decave-polished-skins-v1", POLISHED_SKINS_CSS);
   useInjectedStyle("decave-reference-ui-v2", REFERENCE_UI_CSS);
 
@@ -320,7 +326,6 @@ function App() {
   const [commandPaletteQuery, setCommandPaletteQuery] = useState("");
   const [commandPaletteIndex, setCommandPaletteIndex] = useState(0);
   const [showInbox, setShowInbox] = useState(false);
-  const [settingsHydrationVersion, setSettingsHydrationVersion] = useState(0);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const profileMedia = useProfileMediaState();
   const [profileAvatarError, setProfileAvatarError] = useState("");
@@ -857,8 +862,6 @@ function App() {
   const requestAiNoiseFallbackRef = useRef<(reason: string) => void>(() => {});
   const micTestAudioRef = useRef<SinkableAudioElement | null>(null);
   const micTestActiveRef = useRef(false);
-  const settingsSnapshotRef = useRef<SettingsSnapshot | null>(null);
-  const settingsHydratingRef = useRef(false);
   const accessibilityScaleUserRef = useRef<string | null>(null);
   const activitySettingsRef = useRef<ActivitySettings>(preferences.activitySettings);
   const steamIntegrationRef = useRef<SteamIntegrationState>(gameActivity.steamIntegration);
@@ -975,7 +978,7 @@ function App() {
     const urls = text.match(/https:\/\/[^\s<>]+/gi) ?? [];
     for (const rawUrl of Array.from(new Set(urls)).slice(0, 8)) {
       const url = rawUrl.replace(/[),.;!?]+$/, "");
-      appendSessionRecap({ kind: "shared-link", url, label: "Link shared in Hub" });
+      appendSessionRecap({ kind: "shared-link", url, label: t("common.app.linkShared") });
     }
   };
 
@@ -1181,16 +1184,6 @@ function App() {
     customStatusEditing,
   ]);
 
-  useSettingsDirtyTracking({
-    preferences,
-    showSettings,
-    settingsWindow,
-    profileFields,
-    audioSettings,
-    settingsSnapshotRef,
-    settingsHydratingRef,
-  });
-
   usePreferencePersistence({
     preferences,
   });
@@ -1376,16 +1369,13 @@ function App() {
           target.pathname !== "/api/account/faceit/connect" &&
           !/^\/api\/account\/twitch(?:\/(?:connect|recheck))?$/.test(target.pathname))
       ) {
-        throw new Error("Invalid Streamer request.");
+        throw new Error(t("common.app.streamerInvalidRequest"));
       }
       const response = await authorizedFetch(target.toString(), init);
       const data: unknown = await response.json().catch(() => null);
       if (!response.ok) {
-        const error =
-          data && typeof data === "object" && typeof (data as Record<string, unknown>).error === "string"
-            ? ((data as Record<string, unknown>).error as string)
-            : "Could not load Streamer Mode.";
-        throw new Error(error);
+        const body = data && typeof data === "object" ? (data as ApiErrorBody) : null;
+        throw new Error(apiErrorText(body, t("common.app.streamerLoadFailed")));
       }
       return data as T;
     },
@@ -1497,7 +1487,7 @@ function App() {
         if (response.status === 401 && !stopped) {
           await logout({ signedOutElsewhere: true });
           if (!stopped) {
-            setAuthError("Your DeCave account was signed in on another browser or desktop app.");
+            setAuthError(t("common.app.signedInElsewhere"));
           }
         }
       } catch {
@@ -1753,7 +1743,7 @@ function App() {
       if (loadGeneration !== dmHistoryLoadGenerationRef.current || activeDmUserRef.current?.id !== user.id) return;
       if (!response.ok) {
         setDmMessages([]);
-        setDmError(data.error || "Could not open private messages.");
+        setDmError(apiErrorText(data, t("chat.social.openFailed")));
         return;
       }
       const firstDmPage = await dmE2ee.openAll(Array.isArray(data.messages) ? data.messages : [], user.id);
@@ -1773,7 +1763,7 @@ function App() {
       if (loadGeneration !== dmHistoryLoadGenerationRef.current || activeDmUserRef.current?.id !== user.id) return;
       console.error("Could not load private messages:", error);
       setDmMessages([]);
-      setDmError("Could not load private messages.");
+      setDmError(t("chat.social.loadFailed"));
     }
   };
   openDirectMessageRef.current = openDirectMessage;
@@ -2036,9 +2026,7 @@ function App() {
             selectedInput &&
             !devices.some((device) => device.kind === "audioinput" && device.deviceId === selectedInput)
           ) {
-            audioSetup.setAudioSettingsError(
-              "Your selected microphone is no longer available. Choose another input device.",
-            );
+            audioSetup.setAudioSettingsError(t("common.app.microphoneMissing"));
             audioSetup.setMicrophoneCaptureState("error");
             requestMicrophoneRecoveryRef.current("selected microphone was disconnected");
           }
@@ -2047,9 +2035,7 @@ function App() {
             selectedOutput &&
             !devices.some((device) => device.kind === "audiooutput" && device.deviceId === selectedOutput)
           ) {
-            audioSetup.setAudioOutputError(
-              "Your selected output is no longer available. Using the system default output.",
-            );
+            audioSetup.setAudioOutputError(t("common.app.outputMissing"));
             void applyOutputDevice("");
             const next = { ...audioSettingsRef.current, outputDeviceId: "" };
             audioSettingsRef.current = next;
@@ -2061,41 +2047,6 @@ function App() {
     mediaDevices.addEventListener("devicechange", handleDeviceChange);
     return () => mediaDevices.removeEventListener("devicechange", handleDeviceChange);
   }, []);
-
-  const captureSettingsSnapshot = (): SettingsSnapshot => ({
-    profileBio: profileFields.profileBio,
-    profileStatus: profileFields.profileStatus,
-    profileStatusText: profileFields.profileStatusText,
-    profileAccent: profileFields.profileAccent,
-    profileDisplayName: profileFields.profileDisplayName,
-    profilePronouns: profileFields.profilePronouns,
-    appSkin: preferences.appSkin,
-    extraSettings: { ...preferences.extraSettings, quietHours: { ...preferences.extraSettings.quietHours } },
-    notificationPreset: preferences.notificationPreset,
-    notificationSettings: { ...preferences.notificationSettings },
-    soundSettings: { ...preferences.soundSettings },
-    privacySettings: { ...preferences.privacySettings },
-    accessibilityTextScale: preferences.accessibilityTextScale,
-    audioSettings: { ...audioSettingsRef.current },
-    activitySettings: {
-      ...preferences.activitySettings,
-      excludedGames: [...preferences.activitySettings.excludedGames],
-    },
-    language: preferences.accountPreferences.language,
-    timeFormat: preferences.accountPreferences.timeFormat,
-    loginAlerts: preferences.accountPreferences.loginAlerts,
-    activityVisibility: preferences.accountPreferences.activityVisibility,
-    notifyLevels: preferences.notifyLevels,
-    desktopSystemSettings: { ...preferences.desktopSystemSettings },
-    desktopKeybinds: { ...preferences.desktopKeybinds },
-  });
-
-  useEffect(() => {
-    if (!showSettings || !settingsHydratingRef.current) return;
-    settingsSnapshotRef.current = captureSettingsSnapshot();
-    settingsHydratingRef.current = false;
-    settingsWindow.setSettingsDirty(false);
-  }, [settingsHydrationVersion, showSettings]);
 
   const closePrimaryTransientOverlays = () => {
     setShowFeedback(false);
@@ -2142,20 +2093,7 @@ function App() {
     setCustomStatusEditing(true);
   };
 
-  const keepSettingsChangesAndClose = async () => {
-    const saved = await settingsActions.saveAllSettings();
-    if (saved) settingsActions.finishCloseSettings();
-  };
-
-  const saveSettingsChanges = async () => {
-    await settingsActions.saveAllSettings();
-  };
-
   const closeSettings = () => {
-    if (settingsWindow.settingsDirty) {
-      settingsWindow.setSettingsCloseConfirm(true);
-      return;
-    }
     settingsActions.finishCloseSettings();
   };
 
@@ -2257,10 +2195,10 @@ function App() {
   const loadIceServers = async (): Promise<RTCIceServer[]> => {
     try {
       const response = await authorizedFetch(`${HTTP_URL}/api/rtc/ice-servers`);
-      if (!response.ok) throw new Error("Could not load the approved ICE configuration.");
+      if (!response.ok) throw new Error(t("common.app.iceLoadFailed"));
       const data = (await response.json()) as { iceServers?: RTCIceServer[]; error?: string };
       if (!Array.isArray(data.iceServers) || data.iceServers.length === 0) {
-        throw new Error(data.error || "No approved ICE configuration is available.");
+        throw new Error(apiErrorText(data, t("common.app.iceMissing")));
       }
       iceServersRef.current = data.iceServers;
       return data.iceServers;
@@ -2509,7 +2447,6 @@ function App() {
 
   const pageNavigation = createPageNavigation({
     setShowSettings,
-    setSettingsHydrationVersion,
     setShowAdminDashboard,
     setShowHome,
     setShowServerBrowser,
@@ -2522,8 +2459,6 @@ function App() {
     setGroupMessages,
     setFriendRequestNotice,
     setDmNotice,
-    settingsSnapshotRef,
-    settingsHydratingRef,
     activeDmUserRef,
     activeGroupChatRef,
     refreshActivityState: activityActions.refreshActivityState,
@@ -2533,12 +2468,10 @@ function App() {
     loadSocialState: friendActions.loadSocialState,
     loadDmConversations: directMessages.loadDmConversations,
     loadGroupChats: directMessages.loadGroupChats,
-    captureSettingsSnapshot,
     closePrimaryTransientOverlays,
     refreshAudioDevices,
     loadAccountPreferences: accountActions.loadAccountPreferences,
     loadDesktopIntegrationSettings: accountActions.loadDesktopIntegrationSettings,
-    settingsWindow,
     audioSetup,
     hubPanels,
   });
@@ -2546,7 +2479,6 @@ function App() {
   const settingsActions = createSettingsActions({
     currentUser,
     setShowSettings,
-    setProfileAvatarError,
     setCustomStatusEditing,
     customStatusDraft,
     customStatusSaving,
@@ -2554,24 +2486,14 @@ function App() {
     setCustomStatusError,
     mutedUserIds,
     setMutedUserIds,
-    setAudioSettings,
-    localMicStreamRef,
     micTestActiveRef,
-    settingsSnapshotRef,
-    settingsHydratingRef,
     audioSettingsRef,
-    chooseAppSkin,
     authorizedFetch,
     setCurrentUserFromResponse,
-    captureSettingsSnapshot,
     stopMicTest,
-    saveAudioSettings,
-    rebuildMicrophoneIfActive,
     saveRemoteAccountPreferences: accountActions.saveRemoteAccountPreferences,
-    settingsWindow,
     profileFields,
     preferences,
-    audioSetup,
   });
 
   const joinVoice = async () => {
@@ -2622,8 +2544,8 @@ function App() {
     if (preferences.privacySettings.streamerMode || was === autoStreamerActive) return;
     setStreamerToast(
       autoStreamerActive
-        ? `Streamer mode is on while ${captureApps[0] ?? "your streaming app"} is running.`
-        : "Your streaming app closed, so Streamer mode is off again.",
+        ? t("common.app.streamerAutoOn", { app: captureApps[0] ?? t("common.app.streamerAutoOnFallback") })
+        : t("common.app.streamerAutoOff"),
     );
   }, [autoStreamerActive]);
 
@@ -3476,8 +3398,8 @@ function App() {
       <div className="username-screen vadrion-auth-screen" data-skin={displaySkin}>
         <div className="vadrion-connecting-card">
           <DeCaveBrand />
-          <div className="vadrion-kicker">VOICE · HUBS · ROOMS</div>
-          <p>Connecting to DeCave...</p>
+          <div className="vadrion-kicker">{t("common.app.loadingKicker")}</div>
+          <p>{t("common.app.connecting")}</p>
         </div>
       </div>
     );
@@ -3519,8 +3441,8 @@ function App() {
       <div className="username-screen vadrion-auth-screen" data-skin={displaySkin}>
         <div className="vadrion-connecting-card">
           <DeCaveBrand />
-          <div className="vadrion-kicker">VOICE · HUBS · ROOMS</div>
-          <p>Loading your DeCave space...</p>
+          <div className="vadrion-kicker">{t("common.app.loadingKicker")}</div>
+          <p>{t("common.app.loadingSpace")}</p>
         </div>
       </div>
     );
@@ -3698,7 +3620,7 @@ function App() {
       id: "nav-home",
       group: "Go to",
       icon: "home",
-      label: "Home",
+      label: t("common.rail.home"),
       meta: "",
       keywords: "workspace dashboard overview",
       run: pageNavigation.openHomeWorkspace,
@@ -3707,7 +3629,7 @@ function App() {
       id: "nav-hubs",
       group: "Go to",
       icon: "hash",
-      label: "Hubs",
+      label: t("common.app.commandHubs"),
       meta: "",
       keywords: "workspace rooms voice communities",
       run: pageNavigation.openHubsWorkspace,
@@ -3716,7 +3638,7 @@ function App() {
       id: "nav-dm",
       group: "Go to",
       icon: "message",
-      label: "Direct Messages",
+      label: t("common.bottomBar.directMessages"),
       meta: "",
       keywords: "workspace dm chat private",
       run: pageNavigation.openDirectMessagesWorkspace,
@@ -3725,7 +3647,7 @@ function App() {
       id: "nav-friends",
       group: "Go to",
       icon: "users",
-      label: "Friends",
+      label: t("common.rail.friends"),
       meta: "",
       keywords: "workspace people crew requests",
       run: pageNavigation.openFriendsWorkspace,
@@ -3734,7 +3656,7 @@ function App() {
       id: "nav-discover",
       group: "Go to",
       icon: "compass",
-      label: "Discover Hubs",
+      label: t("common.bottomBar.discoverHubs"),
       meta: "",
       keywords: "workspace browse public communities",
       run: openServerBrowser,
@@ -3743,7 +3665,7 @@ function App() {
       id: "nav-settings",
       group: "Go to",
       icon: "settings",
-      label: "Settings",
+      label: t("common.rail.settings"),
       meta: "",
       keywords: "workspace preferences audio appearance notifications",
       run: pageNavigation.openSettings,
@@ -3754,7 +3676,7 @@ function App() {
             id: "nav-admin",
             group: "Go to" as const,
             icon: "shield" as IconName,
-            label: "Admin & Security",
+            label: t("common.admin.title"),
             meta: "",
             keywords: "workspace accounts audit usage events",
             run: adminActions.openAdminDashboard,
@@ -3766,7 +3688,7 @@ function App() {
       group: "Your Hubs" as const,
       imageUrl: server.iconUrl ? `${HTTP_URL}${server.iconUrl}` : null,
       label: server.name,
-      meta: "Hub",
+      meta: t("common.app.commandHubMeta"),
       keywords: `${server.description ?? ""} ${server.category ?? ""} ${(server.tags ?? []).join(" ")}`,
       run: () => {
         pageNavigation.openHubsWorkspace();
@@ -3794,7 +3716,7 @@ function App() {
       imageUrl: friend.avatarUrl ?? null,
       online: friend.online === true,
       label: friend.username,
-      meta: friend.online ? "Online" : "Offline",
+      meta: friend.online ? t("common.presence.online") : t("common.presence.offline"),
       keywords: "friend person dm",
       run: () => void openDirectMessage(friend),
     })),
@@ -3955,8 +3877,7 @@ function App() {
       { method: "POST" },
     );
     const rollback = (await response.json()) as DiscordImportRollbackResult & ApiError;
-    if (!response.ok || !rollback.importId)
-      throw new Error(rollback.error || "The reviewed import could not be rolled back.");
+    if (!response.ok || !rollback.importId) throw new Error(apiErrorText(rollback, t("hub.import.rollbackFailed")));
     await loadServers();
     return rollback;
   };
@@ -4027,7 +3948,7 @@ function App() {
           kind: room.type === "forum" ? "forum" : "text",
           unread,
           mentions,
-          detail: preview?.unread ? `New in "${preview.title}"` : undefined,
+          detail: preview?.unread ? t("hub.home.newInForum", { title: preview.title }) : undefined,
         },
       ];
     })
@@ -4101,6 +4022,7 @@ function App() {
     launchSessionKit,
     removeSessionKit,
     runSquadPreset,
+    updateQuietPresence,
   } = createSessionActions({
     setQuietPresence,
     quietPresence,
@@ -4235,8 +4157,8 @@ function App() {
         <button
           type="button"
           className="dc-hub-rail-restore"
-          title="Show Hub sidebar"
-          aria-label="Show Hub sidebar"
+          title={t("hub.sidebar.show")}
+          aria-label={t("hub.sidebar.show")}
           onClick={() => {
             setHubRailCollapsed(false);
             try {
@@ -4251,8 +4173,12 @@ function App() {
         desktopUpdateState.availableVersion !== dismissedUpdateVersion && (
           <div className="dc-update-ready-banner" role="status" data-update-surface="ready">
             <span>
-              <strong>Update ready · DeCave {desktopUpdateState.availableVersion ?? "update"}</strong>
-              <small>Installed version {desktopUpdateState.currentVersion}. Restart to apply the update.</small>
+              <strong>
+                {t("common.app.updateReady", {
+                  version: desktopUpdateState.availableVersion ?? t("common.app.updateFallback"),
+                })}
+              </strong>
+              <small>{t("common.app.updateInstalled", { version: desktopUpdateState.currentVersion })}</small>
               {desktopUpdateNotice && (
                 <small className="dc-update-error" role="alert">
                   {desktopUpdateNotice}
@@ -4265,14 +4191,14 @@ function App() {
               disabled={desktopUpdateAction === "restarting"}
               onClick={handleRestartDesktopToUpdate}
             >
-              {desktopUpdateAction === "restarting" ? "Restarting…" : "Restart to update"}
+              {desktopUpdateAction === "restarting" ? t("common.app.restarting") : t("common.app.restartToUpdate")}
             </button>
             <button
               type="button"
               className="modal-secondary"
               onClick={() => setDismissedUpdateVersion(desktopUpdateState.availableVersion)}
             >
-              Later
+              {t("common.app.later")}
             </button>
           </div>
         )}
@@ -4300,12 +4226,12 @@ function App() {
             onClick={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            aria-label="My reports"
+            aria-label={t("common.app.myReports")}
           >
             <MyReportsPanel request={authorizedFetch} />
             <div className="dc-report-actions ds-modal-actions">
               <button type="button" className="ds-btn" onClick={() => setShowMyReports(false)}>
-                Close
+                {t("common.actions.close")}
               </button>
             </div>
           </div>
@@ -4451,11 +4377,14 @@ function App() {
         data-current-hub-id={currentServer.id}
         data-current-channel-id={currentChannel.id}
         data-hub-home={primaryHubsActive && hubHomeActive ? "true" : undefined}
-        style={{ position: "relative" }}
+        style={{
+          position: "relative",
+          ...(primaryHubsActive && !hubHomeActive ? roomWorkspaceStyle(currentChannel, HTTP_URL) : {}),
+        }}
         {...hiddenWorkspaceProps}
       >
         {showHome && (
-          <section className="dc-workspace-page dc-home-page" aria-label="DeCave Home">
+          <section className="dc-workspace-page dc-home-page" aria-label={t("common.app.homeLabel")}>
             {
               <HomePage
                 currentUser={currentUser}
@@ -4559,7 +4488,7 @@ function App() {
                     disabled={olderHistoryBusy}
                     onClick={(event) => void loadOlderHistory("channel", event.currentTarget.parentElement)}
                   >
-                    {olderHistoryBusy ? "Loading…" : "Load older messages"}
+                    {olderHistoryBusy ? t("common.status.loading") : t("chat.social.loadOlder")}
                   </button>
                 )}
                 {isStreamerHub && hubPanels.showStreamerOverview ? (
@@ -4921,18 +4850,18 @@ function App() {
       {dmDeleteConfirm && (
         <div className="modal-overlay" onClick={() => setDmDeleteConfirm(null)}>
           <div className="modal" onClick={(event) => event.stopPropagation()} style={{ width: "min(440px, 92vw)" }}>
-            <h2>Delete this DM?</h2>
-            <p>This removes the message for both people. This cannot be undone.</p>
+            <h2>{t("chat.social.deleteDmTitle")}</h2>
+            <p>{t("chat.social.deleteDmBody")}</p>
             <div className="modal-buttons ds-modal-actions">
               <button type="button" className="ds-btn" onClick={() => setDmDeleteConfirm(null)}>
-                Cancel
+                {t("common.actions.cancel")}
               </button>
               <button
                 type="button"
                 className="ds-btn ds-btn-danger"
                 onClick={() => void directMessages.deleteDirectMessage()}
               >
-                Delete Message
+                {t("chat.social.deleteDmConfirm")}
               </button>
             </div>
           </div>
@@ -4941,21 +4870,18 @@ function App() {
       {dmConversationDeleteConfirm && (
         <div className="modal-overlay" onClick={() => setDmConversationDeleteConfirm(null)}>
           <div className="modal" onClick={(event) => event.stopPropagation()} style={{ width: "min(470px, 92vw)" }}>
-            <h2>Delete conversation with {dmConversationDeleteConfirm.username}?</h2>
-            <p>
-              This clears the conversation from your DeCave account only. It does not erase the other person's copy. If
-              either of you sends a new DM later, the conversation will appear again.
-            </p>
+            <h2>{t("chat.social.deleteConversationTitle", { name: dmConversationDeleteConfirm.username })}</h2>
+            <p>{t("chat.social.deleteConversationBody")}</p>
             <div className="modal-buttons ds-modal-actions">
               <button type="button" className="ds-btn" onClick={() => setDmConversationDeleteConfirm(null)}>
-                Cancel
+                {t("common.actions.cancel")}
               </button>
               <button
                 type="button"
                 className="ds-btn ds-btn-danger"
                 onClick={() => void directMessages.deleteDmConversation()}
               >
-                Delete Conversation
+                {t("chat.social.deleteConversationConfirm")}
               </button>
             </div>
           </div>
@@ -5112,13 +5038,13 @@ function App() {
             <Icon name="screen" />
           </div>
           <div>
-            <strong>Streamer mode</strong>
+            <strong>{t("common.app.streamerToastTitle")}</strong>
             <span>{streamerToast}</span>
           </div>
           <button
             type="button"
             className="ds-btn ds-btn-ghost ds-icon-btn ds-btn-sm dismiss"
-            aria-label="Dismiss"
+            aria-label={t("common.actions.dismiss")}
             onClick={() => setStreamerToast("")}
           >
             <Icon name="close" />
@@ -5199,9 +5125,9 @@ function App() {
           sendSocket={sendSocket}
           applyOutputDevice={applyOutputDevice}
           changeInputVolume={changeInputVolume}
-          saveSettingsChanges={saveSettingsChanges}
           closeSettings={closeSettings}
           resetVoiceUserVolumes={resetVoiceUserVolumes}
+          changeVoiceUserVolume={changeVoiceUserVolume}
           saveAudioSettings={saveAudioSettings}
           rebuildMicrophoneIfActive={rebuildMicrophoneIfActive}
           startMicTest={startMicTest}
@@ -5217,14 +5143,8 @@ function App() {
           settingsActions={settingsActions}
           profileMediaActions={profileMediaActions}
           activityActions={activityActions}
-        />
-      )}
-      {settingsWindow.settingsCloseConfirm && (
-        <SettingsCloseConfirmDialog
-          settingsSaving={settingsWindow.settingsSaving}
-          setSettingsCloseConfirm={settingsWindow.setSettingsCloseConfirm}
-          discardSettingsChanges={settingsActions.discardSettingsChanges}
-          keepSettingsChangesAndClose={keepSettingsChangesAndClose}
+          quietPresence={quietPresence}
+          updateQuietPresence={updateQuietPresence}
         />
       )}
       {showServerBrowser && (
@@ -5265,11 +5185,11 @@ function App() {
             <div className="dc-account-danger-icon">
               <Icon name="crown" />
             </div>
-            <h2>Transfer Hub ownership first</h2>
-            <p>Transfer ownership of all Hubs you own before deleting your account.</p>
+            <h2>{t("common.app.ownershipTitle")}</h2>
+            <p>{t("common.app.ownershipBody")}</p>
             {deleteOwnershipBlock.length > 0 && (
               <div className="ds-list dc-owned-hubs-list">
-                <span className="ds-section-label">Owned Hubs</span>
+                <span className="ds-section-label">{t("common.admin.accounts.ownedHubs")}</span>
                 {deleteOwnershipBlock.map((name) => (
                   <div key={name} className="ds-row ds-row-boxed">
                     <Icon name="crown" size="sm" />
@@ -5280,7 +5200,7 @@ function App() {
             )}
             <div className="modal-actions ds-modal-actions">
               <button type="button" className="ds-btn ds-btn-primary" onClick={() => setDeleteOwnershipBlock(null)}>
-                Got it
+                {t("common.app.gotIt")}
               </button>
             </div>
           </div>
@@ -5625,6 +5545,10 @@ function App() {
                   ? { policy: managedRoom.postPolicy ?? "everyone", roleIds: managedRoom.postRoleIds ?? [] }
                   : undefined
               }
+              initialStyle={{
+                accent: managedRoom.accent ?? null,
+                backgroundUrl: managedRoom.backgroundUrl ? `${HTTP_URL}${managedRoom.backgroundUrl}` : null,
+              }}
               hubName={currentServer.name}
               values={{
                 name: manageChannelName,

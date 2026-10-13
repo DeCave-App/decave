@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { hubEventToIcs, type HubEvent } from "../../../shared/hub-events";
 import { downloadHubEventIcs, downloadIcsText, type EventsApiContext } from "./api";
 import { formatCountdown, formatTimeRange, DEFAULT_EVENT_DURATION_MS } from "./model";
 import { RsvpControl } from "./RsvpControl";
 import "../shared/shared.css";
 import "./events.css";
-import { localeForLanguage } from "../../app/locale";
+import { formatDateParts } from "../shared/dateParts";
 
 export type EventChatCardProps = {
   messageId: string;
@@ -24,6 +25,7 @@ export type EventChatCardProps = {
 
 /** Chat card for `__DECAVE_EVENT__` messages: countdown, RSVP (API events) and .ics. */
 export function EventChatCard(props: EventChatCardProps) {
+  const { t } = useTranslation(["events"]);
   const { event } = props;
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState("");
@@ -65,23 +67,23 @@ export function EventChatCard(props: EventChatCardProps) {
           title,
         );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not download the calendar file.");
+      setError(err instanceof Error ? err.message : t("events.api.icsFailed"));
     }
   };
 
   return (
     <div className={`dc-event-card evx-chat-card${cancelled ? " cancelled" : ""}`}>
       <div className="dc-event-date">
-        <strong>{valid ? date.toLocaleDateString(localeForLanguage(), { day: "2-digit" }) : "?"}</strong>
-        <span>{valid ? date.toLocaleDateString(localeForLanguage(), { month: "short" }).toUpperCase() : "EVENT"}</span>
+        <strong>{valid ? formatDateParts(date, { day: "2-digit" }) : "?"}</strong>
+        <span>{valid ? formatDateParts(date, { month: "short" }).toUpperCase() : t("events.card.dateFallback")}</span>
       </div>
       <div className="dc-event-copy">
         <div className="dc-poll-kicker">
-          HUB EVENT
-          {live && <span className="evx-badge live">Live now</span>}
-          {cancelled && <span className="evx-badge cancelled">Cancelled</span>}
+          {t("events.card.kicker")}
+          {live && <span className="evx-badge live">{t("events.status.live")}</span>}
+          {cancelled && <span className="evx-badge cancelled">{t("events.kind.cancelled")}</span>}
           {!live && !ended && !cancelled && valid && <span className="evx-badge">{formatCountdown(start, now)}</span>}
-          {ended && !cancelled && <span className="evx-badge">Ended</span>}
+          {ended && !cancelled && <span className="evx-badge">{t("events.status.ended")}</span>}
         </div>
         <button type="button" className="evx-chat-title" onClick={props.onOpen}>
           {title}
@@ -95,17 +97,17 @@ export function EventChatCard(props: EventChatCardProps) {
             event={event}
             api={props.api}
             onChanged={props.onChanged}
-            disabledReason={ended && event.recurrence === "none" ? "This event has ended" : undefined}
+            disabledReason={ended && event.recurrence === "none" ? t("events.rsvp.ended") : undefined}
           />
         )}
         <div className="evx-chat-actions">
           {valid && !cancelled && (
             <button type="button" className="dcx-btn" onClick={() => void addToCalendar()}>
-              Add to calendar
+              {t("events.card.addToCalendar")}
             </button>
           )}
           <button type="button" className="dcx-btn" onClick={props.onOpen}>
-            Details
+            {t("events.card.details")}
           </button>
         </div>
         {error && (

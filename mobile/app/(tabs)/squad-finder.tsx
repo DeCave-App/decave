@@ -19,6 +19,8 @@ import { apiJson } from "@/src/lib/api";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
 import type { GroupChat } from "@/src/types";
+import { useTranslation } from "react-i18next";
+import { i18next } from "@/src/i18n";
 
 type SquadSearch = {
   id: string;
@@ -79,7 +81,19 @@ const LANGUAGES = [
 ];
 const REGIONS = ["Europe", "North America", "South America", "Asia", "Oceania", "Middle East", "Africa"];
 
+type SquadField = "platform" | "region" | "language";
+
+// Platform, language and region values are stored in English; these show them in
+// the UI language (same keys as the web app). Values without a translation show as stored.
+const translateUntyped = (key: string) => (i18next.t as unknown as (key: string) => string)(key);
+
+function squadValueLabel(field: SquadField, value: string): string {
+  const key = `common.squad.${field}.${value.replace(/[^A-Za-z]/g, "")}`;
+  return i18next.exists(key) ? translateUntyped(key) : value;
+}
+
 export default function SquadFinderScreen() {
+  const { t } = useTranslation(["social", "common"]);
   const { token } = useSession();
   const [game, setGame] = useState(GAMES[0]);
   const [platform, setPlatform] = useState(PLATFORMS[0]);
@@ -111,7 +125,7 @@ export default function SquadFinderScreen() {
         setGame((value) => (catalog.games.includes(value) ? value : catalog.games[0]));
       }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not load Squad Finder.");
+      setNotice(error instanceof Error ? error.message : t("social.mobile.squadFinder.couldNotLoadSquadFinder"));
     }
   };
   // Poll only while visible; NotificationProvider keeps watching for matches on other tabs.
@@ -144,10 +158,10 @@ export default function SquadFinderScreen() {
       );
       setCurrent(data.current);
       setMatches(data.matches || []);
-      setNotice(data.matches?.length ? "Compatible squads found." : "Searching for compatible players…");
+      setNotice(data.matches?.length ? t("social.mobile.squadFinder.compatibleSquadsFound") : t("social.mobile.squadFinder.searchingForCompatiblePlayers"));
       emitSquadSearchChanged();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not start search.");
+      setNotice(error instanceof Error ? error.message : t("social.mobile.squadFinder.couldNotStartSearch"));
     } finally {
       setBusy(false);
     }
@@ -159,10 +173,10 @@ export default function SquadFinderScreen() {
       await apiJson("/api/squad-finder", { method: "DELETE" }, token);
       setCurrent(null);
       setMatches([]);
-      setNotice("Search stopped.");
+      setNotice(t("social.mobile.squadFinder.searchStopped"));
       emitSquadSearchChanged();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not stop search.");
+      setNotice(error instanceof Error ? error.message : t("social.mobile.squadFinder.couldNotStopSearch"));
     } finally {
       setBusy(false);
     }
@@ -179,19 +193,19 @@ export default function SquadFinderScreen() {
       setCurrent(null);
       setMatches([]);
       router.replace(
-        `/voice/${data.channelId}?hubId=${data.hubId}&name=${encodeURIComponent(data.channelName || "Squad Lounge")}&squad=1`,
+        `/voice/${data.channelId}?hubId=${data.hubId}&name=${encodeURIComponent(data.channelName || t("social.mobile.squadFinder.squadLounge"))}&squad=1`,
       );
     } catch (error) {
       const key = match.groupId || match.id;
       if (autoJoinedRef.current === key && autoRetriedRef.current !== key) {
         autoRetriedRef.current = key;
         autoJoinedRef.current = null;
-        setNotice("Couldn't join that squad, retrying…");
+        setNotice(t("social.mobile.squadFinder.couldnTJoinThatSquad"));
       } else
         setNotice(
           error instanceof Error
-            ? `${error.message} Tap Join to try again.`
-            : "Could not join squad. Tap Join to try again.",
+            ? t("social.mobile.squadFinder.messageTapJoinToTry", { message: error.message })
+            : t("social.mobile.squadFinder.couldNotJoinSquadTap"),
         );
     } finally {
       setBusy(false);
@@ -222,9 +236,9 @@ export default function SquadFinderScreen() {
         token,
       );
       setSuggestion("");
-      setNotice("Submitted for review. It will appear after an owner approves it.");
+      setNotice(t("social.mobile.squadFinder.submittedForReviewItWill"));
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not submit that game.");
+      setNotice(error instanceof Error ? error.message : t("social.mobile.squadFinder.couldNotSubmitThatGame"));
     } finally {
       setBusy(false);
     }
@@ -235,9 +249,9 @@ export default function SquadFinderScreen() {
       <View style={styles.top}>
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>
-            LIVE MATCHMAKING
+            {t("social.mobile.squadFinder.liveMatchmaking")}
           </Text>
-          <Text style={styles.title}>Find a Squad</Text>
+          <Text style={styles.title}>{t("common.squad.title")}</Text>
         </View>
         <Ionicons name="people-circle-outline" size={24} color={colors.violet} />
       </View>
@@ -258,10 +272,10 @@ export default function SquadFinderScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>Players only match when all five required criteria are the same.</Text>
+        <Text style={styles.intro}>{t("social.mobile.squadFinder.playersOnlyMatchWhenAll")}</Text>
         <Choice
           icon="game-controller-outline"
-          title="GAME"
+          title={t("social.mobile.squadFinder.game")}
           values={games}
           value={game}
           disabled={!!current}
@@ -269,14 +283,14 @@ export default function SquadFinderScreen() {
         />
         <View style={styles.suggest}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.suggestTitle}>Can’t find your game?</Text>
-            <Text style={styles.help}>Suggest it for owner review.</Text>
+            <Text style={styles.suggestTitle}>{t("common.squad.suggestTitle")}</Text>
+            <Text style={styles.help}>{t("social.mobile.squadFinder.suggestItForOwnerReview")}</Text>
           </View>
           <TextInput
             value={suggestion}
             onChangeText={setSuggestion}
             maxLength={60}
-            placeholder="Game name"
+            placeholder={t("social.mobile.squadFinder.gameName")}
             placeholderTextColor={colors.faint}
             style={styles.suggestInput}
           />
@@ -286,29 +300,32 @@ export default function SquadFinderScreen() {
             style={[styles.suggestButton, (busy || !suggestion.trim()) && styles.disabled]}
             onPress={() => void suggest()}
           >
-            <Text style={styles.suggestButtonText}>Submit</Text>
+            <Text style={styles.suggestButtonText}>{t("common.squad.submit")}</Text>
           </Pressable>
         </View>
         <Choice
           icon="hardware-chip-outline"
-          title="PLATFORM"
+          title={t("social.mobile.squadFinder.platform")}
           values={PLATFORMS}
+          field="platform"
           value={platform}
           disabled={!!current}
           onChange={setPlatform}
         />
         <Choice
           icon="language-outline"
-          title="LANGUAGE"
+          title={t("social.mobile.squadFinder.language")}
           values={LANGUAGES}
+          field="language"
           value={language}
           disabled={!!current}
           onChange={setLanguage}
         />
         <Choice
           icon="globe-outline"
-          title="REGION"
+          title={t("social.mobile.squadFinder.region")}
           values={REGIONS}
+          field="region"
           value={region}
           disabled={!!current}
           onChange={setRegion}
@@ -318,8 +335,8 @@ export default function SquadFinderScreen() {
             <Ionicons name="mic-outline" size={19} color={microphoneRequired ? colors.cyan : colors.muted} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.micTitle}>Microphone required</Text>
-            <Text style={styles.help}>Choose whether squad members must use a microphone.</Text>
+            <Text style={styles.micTitle}>{t("common.squad.micRequired")}</Text>
+            <Text style={styles.help}>{t("social.mobile.squadFinder.chooseWhetherSquadMembersMust")}</Text>
           </View>
           <View style={micOptionStyles.options}>
             <Pressable
@@ -329,7 +346,7 @@ export default function SquadFinderScreen() {
               style={[micOptionStyles.choice, microphoneRequired && micOptionStyles.active]}
               onPress={() => setMicrophoneRequired(true)}
             >
-              <Text style={[micOptionStyles.text, microphoneRequired && micOptionStyles.textActive]}>Yes</Text>
+              <Text style={[micOptionStyles.text, microphoneRequired && micOptionStyles.textActive]}>{t("common.squad.yes")}</Text>
             </Pressable>
             <Pressable
               disabled={!!current}
@@ -338,7 +355,7 @@ export default function SquadFinderScreen() {
               style={[micOptionStyles.choice, !microphoneRequired && micOptionStyles.active]}
               onPress={() => setMicrophoneRequired(false)}
             >
-              <Text style={[micOptionStyles.text, !microphoneRequired && micOptionStyles.textActive]}>No</Text>
+              <Text style={[micOptionStyles.text, !microphoneRequired && micOptionStyles.textActive]}>{t("common.squad.no")}</Text>
             </Pressable>
           </View>
         </View>
@@ -347,8 +364,8 @@ export default function SquadFinderScreen() {
             <Ionicons name="flash-outline" size={19} color={autoJoin ? colors.cyan : colors.muted} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.micTitle}>Auto-join first match</Text>
-            <Text style={styles.help}>Jump straight into the squad's voice room when one is found.</Text>
+            <Text style={styles.micTitle}>{t("social.mobile.squadFinder.autoJoinFirstMatch")}</Text>
+            <Text style={styles.help}>{t("social.mobile.squadFinder.jumpStraightIntoTheSquad")}</Text>
           </View>
           <Switch value={autoJoin} onValueChange={setAutoJoin} trackColor={{ true: colors.violet }} />
         </View>
@@ -360,7 +377,7 @@ export default function SquadFinderScreen() {
             onPress={() => void start()}
           >
             {busy ? <ActivityIndicator color="#fff" /> : <Ionicons name="search-outline" size={18} color="#fff" />}
-            <Text style={styles.primaryText}>Start search</Text>
+            <Text style={styles.primaryText}>{t("social.mobile.squadFinder.startSearch")}</Text>
           </Pressable>
         )}
         {!!notice && <Text style={styles.notice}>{notice}</Text>}
@@ -368,34 +385,34 @@ export default function SquadFinderScreen() {
           <View style={styles.live}>
             <View style={styles.dot} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.liveTitle}>Search running</Text>
+              <Text style={styles.liveTitle}>{t("common.squad.running")}</Text>
               <Text style={styles.liveText}>
-                {current.game} · {current.platform} · {current.language} · {current.region}
+                {current.game} · {squadValueLabel("platform", current.platform)} · {squadValueLabel("language", current.language)} · {squadValueLabel("region", current.region)}
               </Text>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Refresh matches" onPress={() => void load()}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.squad.refresh")} onPress={() => void load()}>
               <Ionicons name="refresh-outline" size={19} color={colors.cyan} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
               disabled={busy}
-              accessibilityLabel="Cancel search"
+              accessibilityLabel={t("common.squad.cancel")}
               style={[liveActionStyles.cancel, busy && styles.disabled]}
               onPress={() => void stop()}
             >
               <Ionicons name="close" size={15} color="#FF9AAA" />
-              <Text style={liveActionStyles.cancelText}>Cancel</Text>
+              <Text style={liveActionStyles.cancelText}>{t("common.actions.cancel")}</Text>
             </Pressable>
           </View>
         )}
         {current && (
           <>
-            <Text style={styles.matchesTitle}>POSSIBLE GROUPS</Text>
+            <Text style={styles.matchesTitle}>{t("social.mobile.squadFinder.possibleGroups")}</Text>
             {matches.length === 0 ? (
               <View style={styles.empty}>
                 <Ionicons name="hourglass-outline" size={26} color={colors.faint} />
-                <Text style={styles.emptyTitle}>Waiting for compatible players</Text>
-                <Text style={styles.help}>Results refresh automatically while your search is active.</Text>
+                <Text style={styles.emptyTitle}>{t("social.mobile.squadFinder.waitingForCompatiblePlayers")}</Text>
+                <Text style={styles.help}>{t("social.mobile.squadFinder.resultsRefreshAutomaticallyWhileYour")}</Text>
               </View>
             ) : (
               matches.map((match) => (
@@ -404,12 +421,12 @@ export default function SquadFinderScreen() {
                     <Ionicons name="people-outline" size={20} color={colors.cyan} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.matchTitle}>{match.owner?.username || `${match.game} Squad`}</Text>
+                    <Text style={styles.matchTitle}>{match.owner?.username || t("social.mobile.squadFinder.gameSquad", { game: match.game })}</Text>
                     <Text style={styles.matchText}>
-                      {match.memberCount}/4 players · {match.platform} · {match.region}
+                      {t("social.mobile.squadFinder.membercount4PlayersPlatformRegion", { memberCount: match.memberCount, platform: squadValueLabel("platform", match.platform), region: squadValueLabel("region", match.region) })}
                     </Text>
                     <Text style={styles.matchText}>
-                      {match.language} · Mic {match.microphoneRequired ? "required" : "optional"}
+                      {t(match.microphoneRequired ? "social.mobile.squadFinder.micRequired" : "social.mobile.squadFinder.micOptional", { language: squadValueLabel("language", match.language) })}
                     </Text>
                   </View>
                   <Pressable
@@ -418,7 +435,7 @@ export default function SquadFinderScreen() {
                     style={styles.join}
                     onPress={() => void join(match)}
                   >
-                    <Text style={styles.joinText}>Join</Text>
+                    <Text style={styles.joinText}>{t("common.actions.join")}</Text>
                   </Pressable>
                 </View>
               ))
@@ -436,6 +453,7 @@ function Choice({
   title,
   values,
   value,
+  field,
   disabled,
   onChange,
 }: {
@@ -443,15 +461,19 @@ function Choice({
   title: string;
   values: string[];
   value: string;
+  /** Stored values shown through their translated labels. */
+  field?: SquadField;
   disabled: boolean;
   onChange: (value: string) => void;
 }) {
+  const label = (item: string) => (field ? squadValueLabel(field, item) : item);
+  const { t } = useTranslation(["social"]);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? values.filter((item) => item.toLowerCase().includes(q)) : values;
-  }, [query, values]);
+    return q ? values.filter((item) => label(item).toLowerCase().includes(q)) : values;
+  }, [query, values, field]);
   const pick = (item: string) => {
     onChange(item);
     setOpen(false);
@@ -462,7 +484,7 @@ function Choice({
       <Pressable
         disabled={disabled}
         accessibilityRole="button"
-        accessibilityLabel={`${title}: ${value}`}
+        accessibilityLabel={`${title}: ${label(value)}`}
         accessibilityState={{ expanded: open, disabled }}
         onPress={() => setOpen((v) => !v)}
         style={({ pressed }) => [
@@ -478,7 +500,7 @@ function Choice({
         <View style={{ flex: 1 }}>
           <Text style={styles.section}>{title}</Text>
           <Text style={pickerStyles.value} numberOfLines={1}>
-            {value}
+            {label(value)}
           </Text>
         </View>
         <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={colors.muted} />
@@ -491,13 +513,13 @@ function Choice({
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder={`Search ${title.toLowerCase()}`}
+                placeholder={t("social.mobile.squadFinder.searchValue", { value: title.toLowerCase() })}
                 placeholderTextColor={colors.faint}
                 autoCorrect={false}
                 style={pickerStyles.searchInput}
               />
               {!!query && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery("")}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t("social.mobile.squadFinder.clearSearch")} onPress={() => setQuery("")}>
                   <Ionicons name="close-circle" size={16} color={colors.faint} />
                 </Pressable>
               )}
@@ -510,7 +532,7 @@ function Choice({
             keyboardShouldPersistTaps="handled"
           >
             {filtered.length === 0 ? (
-              <Text style={[styles.help, { padding: 12 }]}>No matches.</Text>
+              <Text style={[styles.help, { padding: 12 }]}>{t("social.mobile.squadFinder.noMatches")}</Text>
             ) : (
               filtered.map((item) => (
                 <Pressable
@@ -524,7 +546,7 @@ function Choice({
                     pressed && { opacity: 0.7 },
                   ]}
                 >
-                  <Text style={[pickerStyles.rowText, item === value && { color: colors.cyan }]}>{item}</Text>
+                  <Text style={[pickerStyles.rowText, item === value && { color: colors.cyan }]}>{label(item)}</Text>
                   {item === value && <Ionicons name="checkmark" size={16} color={colors.cyan} />}
                 </Pressable>
               ))

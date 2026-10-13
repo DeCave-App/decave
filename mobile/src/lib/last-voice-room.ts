@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { t } from "i18next";
 
 export type LastVoiceRoom = { channelId: number; hubId: number; name: string; squad?: boolean };
 
@@ -91,18 +92,18 @@ export function voiceRoomHref(room: LastVoiceRoom): string {
 export async function roomNameFor(channelId: number | null): Promise<string> {
   const requestedGeneration = generation;
   const saved = await loadLastVoiceRoom();
-  if (requestedGeneration !== generation) return "Voice room";
+  if (requestedGeneration !== generation) return t("hub.sidebar.voiceRoom");
   if (saved && saved.channelId === channelId) return saved.name;
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       stop();
-      resolve("Voice room");
+      resolve(t("hub.sidebar.voiceRoom"));
     }, 4000);
     const stop = onLastVoiceRoomSaved((room) => {
       if (requestedGeneration !== generation) {
         clearTimeout(timer);
         stop();
-        resolve("Voice room");
+        resolve(t("hub.sidebar.voiceRoom"));
         return;
       }
       if (room.channelId !== channelId) return;

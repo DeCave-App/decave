@@ -1,0 +1,1550 @@
+{
+  "noHubs": {
+    "kicker": "INÍCIO DO DECAVE",
+    "title": "Você pode entrar em um Hub quando quiser",
+    "body": "Sua conta está pronta. Você pode usar o Início, os Amigos e as DMs sem entrar em um Hub. Crie um ou descubra Hubs públicos quando quiser.",
+    "create": "+ Criar Hub",
+    "discover": "Descobrir Hubs públicos",
+    "friends": "Amigos",
+    "emptyHubName": "Nenhum Hub ainda"
+  },
+  "streamFocus": {
+    "close": "Fechar transmissão",
+    "popOut": "Destacar",
+    "fullscreen": "Tela cheia do navegador"
+  },
+  "voiceMini": {
+    "return": "Voltar para a sala de voz",
+    "drag": "Arrastar janela de voz",
+    "activeRoom": "Sala de voz ativa:{{room}}"
+  },
+  "header": {
+    "switchHub": "Trocar de Hub",
+    "labelOverview": "Hubs · {{hub}} · Visão geral",
+    "labelHome": "Hubs · {{hub}} · Início do Hub",
+    "labelRoom": "Hubs · {{hub}} · {{room}}",
+    "hubPicker": "Hub",
+    "roomPicker": "Sala",
+    "switchRoom": "Trocar de sala em{{hub}}",
+    "voicePrefix": "V"
+  },
+  "roomActions": {
+    "leaveSquad": "Sair da sala temporária do Squad",
+    "leave": "↪ Sair",
+    "searchMessages": "Buscar mensagens",
+    "manageRoom": "Gerenciar sala",
+    "showVoiceControls": "Mostrar controles de voz",
+    "openRoomChat": "Abrir chat da sala",
+    "voiceToggle": "◉ Voz",
+    "chatToggle": "💬 Chat",
+    "pinned": "Mensagens fixadas",
+    "pinnedCountTitle": "Mensagens fixadas ({{pinned}})",
+    "pinnedCountLabel": "Mensagens fixadas, {{pinned}}",
+    "unmuteRoom": "Remover silêncio de #{{room}}",
+    "muteRoom": "Silenciar #{{room}}"
+  },
+  "onboarding": {
+    "title": "Boas-vindas ao DeCave",
+    "lead": "Crie um Hub, entre em uma comunidade pública ou pule esta etapa e faça isso depois.",
+    "skip": "Pular por enquanto",
+    "search": "Buscar Hubs",
+    "loading": "Carregando Hubs públicos…",
+    "noResults": "Nenhum Hub público corresponde à sua busca.",
+    "cardPrivate": "Lista de membros privada · {{category}}",
+    "card_one": "{{count}} membro · {{online}} online · {{category}}",
+    "card_many": "{{count}} membros · {{online}} online · {{category}}",
+    "card_other": "{{count}} membros · {{online}} online · {{category}}",
+    "defaultCategory": "Games",
+    "joined": "Já entrou"
+  },
+  "contextMenu": {
+    "copyShareLink": "Copiar link de compartilhamento",
+    "hubKind": "HUB",
+    "textRoomKind": "SALA de texto",
+    "voiceRoomKind": "SALA de voz",
+    "forumRoomKind": "SALA de fórum",
+    "unmuteHub": "Remover silêncio do Hub",
+    "muteHub": "Silenciar Hub",
+    "unmuteRoom": "Remover silêncio da sala",
+    "muteRoom": "Silenciar sala",
+    "editHub": "Editar Hub",
+    "editRoom": "Editar sala"
+  },
+  "home": {
+    "roleLabel": "Você é {{role}}",
+    "newInForum": "Novo em “{{title}}”"
+  },
+  "sidebar": {
+    "membershipPrivate": "Lista de membros privada",
+    "official": "Oficial",
+    "private": "Privado",
+    "leave": "Sair do Hub",
+    "membersTitle": "Membros do Hub",
+    "searchMembers": "Buscar membros do Hub",
+    "filterRole": "Filtrar membros do Hub por cargo",
+    "allRoles": "Todos os cargos",
+    "owners": "Donos",
+    "admins": "Admins",
+    "moderators": "Moderadores",
+    "membersFilter": "Membros",
+    "noMembers": "Nenhum membro corresponde a estes filtros.",
+    "navigation": "Navegação do Hub",
+    "show": "Mostrar barra lateral do Hub",
+    "hide": "Ocultar barra lateral do Hub",
+    "online_one": "{{value}} online",
+    "online_many": "{{value}} online",
+    "online_other": "{{value}} online",
+    "members_one": "{{value}} membro",
+    "members_many": "{{value}} membros",
+    "members_other": "{{value}} membros",
+    "roleTitle": "Cargo {{role}}",
+    "memberMeta": "{{role}} · {{presence}}",
+    "membersCount": "Membros ({{members}})",
+    "membersTooltip": "Membros · {{members}}",
+    "calendar": "Calendário",
+    "calendarUpcoming_one": "Calendário, {{count}} próximo",
+    "calendarUpcoming_many": "Calendário, {{count}} próximos",
+    "calendarUpcoming_other": "Calendário, {{count}} próximos",
+    "calendarCount": "Calendário ({{upcoming}})",
+    "manage": "Gerenciar Hub",
+    "voiceRoom": "Sala de voz",
+    "boxes": {
+      "forums": "Fóruns",
+      "voice": "Voz",
+      "rooms": "Salas"
+    },
+    "aria": {
+      "private": "privada",
+      "mentions_one": "{{count}} menção",
+      "mentions_many": "{{count}} menções",
+      "mentions_other": "{{count}} menções",
+      "unread_one": "{{count}} não lida",
+      "unread_many": "{{count}} não lidas",
+      "unread_other": "{{count}} não lidas",
+      "forum": "fórum",
+      "newestThread": "tópico mais recente {{title}}",
+      "new": "novo",
+      "voiceRoom": "sala de voz",
+      "connectedCount_one": "{{count}} conectado",
+      "connectedCount_many": "{{count}} conectados",
+      "connectedCount_other": "{{count}} conectados",
+      "someoneSharing": "alguém está compartilhando a tela",
+      "youAreConnected": "você está conectado",
+      "empty": "vazia"
+    },
+    "ownerOnlyPosting": "Só o dono do Hub pode postar",
+    "privateRoom": "Sala privada",
+    "forum": {
+      "new": "Novo",
+      "replies_one": "{{count}} resposta",
+      "replies_many": "{{count}} respostas",
+      "replies_other": "{{count}} respostas",
+      "noThreads": "Nenhum tópico ainda",
+      "openToSee": "Abra para ver os tópicos"
+    },
+    "voice": {
+      "doubleClickToJoin": "{{name}} · clique duas vezes para entrar",
+      "youreHere": "Você está aqui · ",
+      "inVoice_one": "{{people}} na voz",
+      "inVoice_many": "{{people}} na voz",
+      "inVoice_other": "{{people}} na voz",
+      "sharing": " · compartilhando",
+      "peopleIn": "Em {{name}}",
+      "deafened": " (áudio desativado)",
+      "muted": " (silenciado)",
+      "sharingScreen": " · compartilhando tela",
+      "live": "AO VIVO"
+    },
+    "dismiss": "Dispensar",
+    "hubHome": "Início do Hub",
+    "homeBadge_one": "{{count}} sala com mensagens novas",
+    "homeBadge_many": "{{count}} salas com mensagens novas",
+    "homeBadge_other": "{{count}} salas com mensagens novas",
+    "empty": {
+      "manager": "Este Hub ainda não tem salas.",
+      "member": "Nenhuma sala que você possa ver ainda."
+    },
+    "createRoom": "Criar uma sala",
+    "createForum": "Criar fórum",
+    "createVoiceRoom": "Criar sala de voz",
+    "createRoomIn": "Criar sala em {{box}}"
+  },
+  "voiceControls": {
+    "latencyTitle": "Latência de ida e volta da voz medida",
+    "toggleSoundboard": "Abrir/fechar soundboard",
+    "cameraBackground": "Fundo da câmera",
+    "effectOff": "Desligado",
+    "effectBlur": "Desfocar",
+    "effectReplace": "Trocar fundo",
+    "startCamera": "Ligar câmera",
+    "qualityAuto": "Auto",
+    "startSharing": "Começar a compartilhar",
+    "settings": "Configurações de voz e áudio",
+    "disconnectLabel": "Desconectar da voz",
+    "disconnect": "Desconectar",
+    "label": "Controles de voz de {{hub}} · {{room}}",
+    "connected": "Voz conectada",
+    "room": "Sala de voz",
+    "connectingEllipsis": "Conectando…",
+    "live": "Ao vivo",
+    "serverMutedDeafened": "Silenciado pela moderação · Áudio desativado pela moderação",
+    "serverMuted": "Silenciado pela moderação",
+    "serverDeafened": "Áudio desativado pela moderação",
+    "inputZero": "O volume de entrada do microfone está em 0%",
+    "holdToTalk": "Segure {{key}} para falar",
+    "connectedCount_one": "{{count}} conectado",
+    "connectedCount_many": "{{count}} conectados",
+    "connectedCount_other": "{{count}} conectados",
+    "unmute": "Ativar microfone",
+    "mute": "Desativar microfone",
+    "serverMutedTitle": "Um moderador do Hub silenciou seu microfone.",
+    "serverDeafenedTitle": "Um moderador do Hub desativou seu áudio.",
+    "noiseLabel": "Supressão de ruído: {{mode}}. Clique para trocar de modo.",
+    "noiseTooltip": "Supressão de ruído: {{mode}} · Clique para trocar",
+    "soundboard": "Soundboard",
+    "cameraOff": "Desligar câmera",
+    "cameraOn": "Ligar câmera",
+    "cameraOffShort": "Desligar câm.",
+    "camera": "Câmera",
+    "stopScreenShare": "Parar de compartilhar a tela",
+    "shareScreen": "Compartilhar tela",
+    "stopSharing": "Parar de compartilhar",
+    "stopShareShort": "Parar",
+    "shareScreenShort": "Compartilhar",
+    "resolution": "Resolução e taxa de quadros",
+    "systemAudio": "Áudio do sistema",
+    "systemAudioHint": "Compartilhar o som do computador com os espectadores",
+    "settingsShort": "Configurações de voz",
+    "leave": "Sair da voz",
+    "connecting": "Conectando…",
+    "switch": "Trocar de sala",
+    "join": "Entrar na voz",
+    "quality": "{{resolution}} · {{fps}} FPS"
+  },
+  "voiceStage": {
+    "uploadSound": "Enviar som",
+    "deleteSound": "Excluir som",
+    "soundboardEmpty": "Envie sons curtos em MP3, WAV, OGG, M4A ou WebM para este Hub.",
+    "layoutLabel": "Layout da tela compartilhada",
+    "layoutFocus": "Foco",
+    "layoutGrid": "Grade",
+    "fullscreen": "Tela cheia",
+    "previewDisabled": "Prévia desativada",
+    "startWatching": "Assistir",
+    "stopWatching": "Parar de assistir",
+    "participantsHint": "Os participantes vão aparecer aqui conforme se conectarem.",
+    "inVoice_one": "{{count}} na voz",
+    "inVoice_many": "{{count}} na voz",
+    "inVoice_other": "{{count}} na voz",
+    "empty": "Vazia",
+    "soundboardTitle_one": "Soundboard · {{count}} som compartilhado",
+    "soundboardTitle_many": "Soundboard · {{count}} sons compartilhados",
+    "soundboardTitle_other": "Soundboard · {{count}} sons compartilhados",
+    "soundboardScope": "Disponível para todos os membros em todas as salas de voz de {{hub}}.",
+    "playSound": "Tocar {{name}}",
+    "joinToPlay": "Entre nesta sala de voz para tocar sons",
+    "deleteSoundNamed": "Excluir {{name}}",
+    "peopleSharing_one": "{{count}} pessoa compartilhando",
+    "peopleSharing_many": "{{count}} pessoas compartilhando",
+    "peopleSharing_other": "{{count}} pessoas compartilhando",
+    "youScreenShare": "Você · tela compartilhada",
+    "youScreenShareTitle": "Você · Tela compartilhada",
+    "userScreenShare": "{{name}} · tela compartilhada",
+    "userScreenShareTitle": "{{name}} · Tela compartilhada",
+    "isSharing": "{{name}} está compartilhando a tela",
+    "state": "{{state}}",
+    "stateSharing": "{{state}} · Compartilhando tela",
+    "deafened": "Áudio desativado",
+    "muted": "Silenciado",
+    "speaking": "Falando",
+    "micActive": "Microfone ativo",
+    "youCamera": "Você · Câmera",
+    "userCamera": "{{name}} · Câmera",
+    "connectingTo": "Conectando a {{room}}…"
+  },
+  "import": {
+    "rollbackFailed": "Não foi possível desfazer a importação revisada."
+  },
+  "actions": {
+    "calendar": {
+      "memberFallback": "Membro do Hub"
+    },
+    "create": {
+      "nameMissing": "Digite um nome para o Hub."
+    },
+    "import": {
+      "templateUrlInvalid": "Digite uma URL de modelo de servidor do Discord compatível.",
+      "previewOffline": "Não foi possível conectar ao DeCave para pré-visualizar este modelo."
+    },
+    "share": {
+      "opening": "Abrindo Hub compartilhado…",
+      "opened": "{{name}} aberto.",
+      "offline": "Não foi possível conectar a este Hub compartilhado.",
+      "inviteCopied": "Convite de uso único copiado para {{name}}."
+    },
+    "leave": {
+      "confirm": "Sair do Hub “{{name}}”?"
+    },
+    "room": {
+      "nameMissing": "Digite um nome para a sala.",
+      "unidentified": "Não foi possível identificar a sala. Abra as configurações da sala de novo e tente outra vez.",
+      "confirmDelete": "Excluir a sala “{{name}}”?\n\nAs mensagens salvas nesta sala também serão excluídas."
+    },
+    "members": {
+      "loadFailed": "Não foi possível carregar os membros do Hub.",
+      "confirmRemove": "Remover {{username}} de “{{hub}}”?"
+    },
+    "media": {
+      "iconTooLarge": "O ícone é grande demais.",
+      "bannerTooLarge": "O banner é grande demais.",
+      "headerTooLarge": "A imagem do cabeçalho é grande demais.",
+      "chatBackgroundTooLarge": "O fundo do chat é grande demais.",
+      "notImage": "Escolha um arquivo de imagem.",
+      "confirmRemoveBanner": "Remover o banner da barra lateral? Isso exclui a imagem deste Hub.",
+      "confirmRemoveHeader": "Remover a imagem do cabeçalho? Isso exclui a imagem deste Hub.",
+      "confirmRemoveChatBackground": "Remover o fundo do chat? Isso exclui a imagem deste Hub.",
+      "loadFeaturesFailed": "Não foi possível carregar os apps e a mídia do Hub."
+    },
+    "assets": {
+      "emoteNamePrompt": "Nome do emote",
+      "stickerNamePrompt": "Nome da figurinha",
+      "confirmDeleteEmote": "Excluir o emote “{{name}}”?",
+      "confirmDeleteSticker": "Excluir a figurinha “{{name}}”?"
+    },
+    "invite": {
+      "useFailed": "Não foi possível usar o convite."
+    },
+    "moderation": {
+      "confirmKick": "EXPULSAR {{username}}?",
+      "confirmBan": "BANIR {{username}}?",
+      "confirmTimeout": "CASTIGAR {{username}}?"
+    },
+    "settings": {
+      "nameMissing": "Digite um nome para o Hub."
+    },
+    "delete": {
+      "ownerOnly": "Só o dono do Hub pode excluir este Hub.",
+      "confirm": "Excluir o Hub “{{name}}”?\n\nIsso também exclui todas as salas e mensagens salvas dele."
+    },
+    "preview": {
+      "unreadable": "Não foi possível ler a prévia deste Hub."
+    },
+    "browser": {
+      "invalidResponse": "Resposta inválida da lista de Hubs.",
+      "offline": "Não foi possível conectar à lista de Hubs."
+    },
+    "squad": {
+      "confirmLeave": "Sair de {{name}}? A sala temporária é excluída depois que o último membro sair.",
+      "readyTitle": "Squad pronto",
+      "readyBody_one": "{{count}}/4 jogador disponível para {{game}}.",
+      "readyBody_many": "{{count}}/4 jogadores disponíveis para {{game}}.",
+      "readyBody_other": "{{count}}/4 jogadores disponíveis para {{game}}.",
+      "offline": "Não foi possível conectar ao Squad Finder.",
+      "gameNameMissing": "Digite primeiro o nome do jogo que falta.",
+      "gameSubmitted": "Enviado para análise. Ele vai aparecer depois que um dono aprovar.",
+      "gameSubmitFailed": "Não foi possível enviar a sugestão de jogo.",
+      "matchesFound": "Squads compatíveis encontrados.",
+      "searching": "Procurando jogadores compatíveis…",
+      "startFailed": "Não foi possível iniciar o Squad Finder.",
+      "stopped": "Busca interrompida."
+    },
+    "realtime": {
+      "voiceRoomDeleted": "Esta sala de voz foi excluída. Escolha outra sala para continuar.",
+      "accessRevoked": "Seu acesso a este Hub foi revogado."
+    }
+  },
+  "createHub": {
+    "iconWrongType": "Escolha uma imagem PNG, JPG, WebP ou GIF.",
+    "iconTooLarge": "O ícone precisa ter 3 MB ou menos.",
+    "kicker": "Novo Hub",
+    "title": "Criar um Hub",
+    "intro": "Dê um nome, escolha quem pode entrar e um layout inicial. Você será o dono, e tudo pode ser alterado depois.",
+    "close": "Fechar",
+    "basics": "Básico",
+    "uploadIcon": "Enviar ícone do Hub",
+    "iconPreview": "Prévia do ícone do Hub",
+    "nameLabel": "Nome do Hub",
+    "namePlaceholder": "ex.: Squad de sexta à noite",
+    "iconFile": "Ícone: {{name}}",
+    "removeIcon": "Remover",
+    "iconHint": "Ícone opcional: PNG, JPG, WebP ou GIF quadrado de até 3 MB.",
+    "whoCanJoin": "Quem pode entrar",
+    "visibility": {
+      "private": {
+        "title": "Privado",
+        "description": "Só quem você convidar ou a quem der acesso pode entrar."
+      },
+      "public": {
+        "title": "Público",
+        "description": "Aparece em Descobrir para que qualquer pessoa encontre e entre."
+      }
+    },
+    "importDiscord": "Importar estrutura de um modelo do Discord",
+    "startingTemplate": "Modelo inicial",
+    "templateAria_one": "Modelo {{name}}: {{description}} {{count}} sala.",
+    "templateAria_many": "Modelo {{name}}: {{description}} {{count}} salas.",
+    "templateAria_other": "Modelo {{name}}: {{description}} {{count}} salas.",
+    "roomCount_one": "{{count}} sala",
+    "roomCount_many": "{{count}} salas",
+    "roomCount_other": "{{count}} salas",
+    "whatYouGet": "O que vem incluído",
+    "previewStats": "{{text}} salas de texto, {{voice}} de voz e {{forum}} de fórum",
+    "privateRoom": "Sala privada",
+    "enterName": "Digite um nome para continuar.",
+    "cancel": "Cancelar",
+    "creating": "Criando…",
+    "create": "Criar Hub"
+  },
+  "manageHub": {
+    "nav": {
+      "overview": {
+        "label": "Visão geral",
+        "description": "Estatísticas e ações rápidas deste Hub."
+      },
+      "profile": {
+        "label": "Perfil e aparência",
+        "description": "Nome, ícone, banner, tema e detalhes de descoberta."
+      },
+      "roles": {
+        "label": "Cargos e permissões",
+        "description": "Crie cargos e escolha exatamente o que cada um pode fazer."
+      },
+      "members": {
+        "label": "Membros",
+        "description": "Encontre membros, atribua cargos e use as ações de moderação."
+      },
+      "invites": {
+        "label": "Convites",
+        "description": "Compartilhe links de convite de uso único com pessoas novas."
+      },
+      "rooms": {
+        "label": "Salas",
+        "description": "Ordene as salas e abra as configurações delas."
+      },
+      "events": {
+        "label": "Eventos",
+        "description": "O calendário do Hub e quem pode agendar eventos."
+      },
+      "moderation": {
+        "label": "Moderação e segurança",
+        "description": "Modo lento, emotes e figurinhas personalizados e o registro de auditoria."
+      },
+      "bots": {
+        "label": "Bots",
+        "description": "Crie bots que dão boas-vindas, respondem a comandos e distribuem cargos."
+      },
+      "danger": {
+        "label": "Zona de perigo",
+        "description": "Ações irreversíveis para este Hub."
+      }
+    },
+    "groups": {
+      "hub": "Hub",
+      "people": "Pessoas",
+      "content": "Conteúdo",
+      "advanced": "Avançado"
+    },
+    "unsavedChanges": "Alterações não salvas",
+    "saving": "Salvando…",
+    "unsavedNotice": "Você tem alterações não salvas",
+    "reset": "Redefinir",
+    "saveChanges": "Salvar alterações",
+    "sectionsLabel": "Seções de Gerenciar Hub",
+    "title": "Gerenciar Hub",
+    "section": "Seção",
+    "close": "Fechar Gerenciar Hub",
+    "publicHub": "Hub público",
+    "privateHub": "Hub privado",
+    "stats": {
+      "members": "Membros",
+      "online": "Online",
+      "rooms": "Salas",
+      "customRoles": "Cargos personalizados"
+    },
+    "quickActions": "Ações rápidas",
+    "createRoom": "Criar sala",
+    "invitePeople": "Convidar pessoas",
+    "editRoles": "Editar cargos",
+    "manageMembers": "Gerenciar membros",
+    "openCalendar": "Abrir calendário",
+    "editProfile": "Editar perfil",
+    "importDiscord": {
+      "title": "Importar do Discord",
+      "description": "Revise um modelo do Discord antes de adicionar as salas e os cargos dele."
+    },
+    "uploading": "Enviando…",
+    "profile": {
+      "legend": "Perfil e aparência",
+      "identity": "Identidade",
+      "name": "Nome do Hub",
+      "nameRequired": "O nome do Hub é obrigatório.",
+      "icon": "Ícone do Hub",
+      "iconHint": "PNG, JPEG ou WebP. Aplicado assim que o envio termina.",
+      "uploadIcon": "Enviar ícone",
+      "fallbackIcon": "Emoji ou letras alternativos",
+      "fallbackIconHint": "Aparece quando não há ícone enviado.",
+      "description": "Descrição",
+      "descriptionPlaceholder": "Sobre o que é este Hub?",
+      "category": "Categoria",
+      "categoryPlaceholder": "Corrida, MMO, Comunidade",
+      "tags": "Tags",
+      "tagsPlaceholder": "corrida, BR, casual"
+    },
+    "visibility": {
+      "title": "Visibilidade",
+      "ownerOnly": "Só o dono do Hub pode mudar a visibilidade.",
+      "label": "Visibilidade do Hub",
+      "public": "Público",
+      "publicHint": "Qualquer pessoa pode encontrar este Hub em Descobrir e entrar.",
+      "private": "Privado",
+      "privateHint": "Só pessoas convidadas podem entrar."
+    },
+    "appearance": {
+      "title": "Aparência",
+      "theme": "Tema",
+      "themeHint": "Predefinição de cores usada em todo o Hub.",
+      "themes": {
+        "midnight": "Meia-noite",
+        "ocean": "Oceano",
+        "forest": "Floresta",
+        "ember": "Brasa"
+      },
+      "accent": "Cor de destaque",
+      "accentHint": "Usada nos destaques e no anel do ícone.",
+      "ring": "Destacar anel do ícone",
+      "ringHint": "Desenha a cor de destaque em volta do ícone do Hub."
+    },
+    "media": {
+      "change": "Trocar",
+      "remove": "Remover",
+      "show": "Mostrar",
+      "banner": {
+        "current": "Banner atual da barra lateral",
+        "none": "Sem banner",
+        "title": "Banner da barra lateral",
+        "hint": "Preenche a barra lateral do Hub atrás da lista de salas. {{spec}}.",
+        "add": "Adicionar banner",
+        "on": "Escurecido para facilitar a leitura.",
+        "off": "Adicione um banner para ativar isto."
+      },
+      "header": {
+        "current": "Imagem de cabeçalho atual",
+        "none": "Sem cabeçalho",
+        "title": "Imagem de cabeçalho",
+        "hint": "Imagem larga no topo do Início do Hub e da Visão geral do streamer, mostrada inteira. Sem ela, o banner da barra lateral é usado. {{spec}}.",
+        "add": "Adicionar cabeçalho"
+      },
+      "chat": {
+        "current": "Fundo atual do chat",
+        "none": "Sem foto",
+        "title": "Fundo do chat",
+        "hint": "Atrás da lista de mensagens, escurecido automaticamente. {{spec}}.",
+        "add": "Adicionar foto",
+        "on": "Aparece em todas as salas deste Hub.",
+        "off": "Adicione uma foto para ativar isto."
+      }
+    },
+    "invites": {
+      "title": "Link de convite de uso único",
+      "description": "Cada link funciona uma vez e expira após 24 horas. Use para quem ainda não é seu amigo.",
+      "label": "Link de convite",
+      "generating": "Gerando convite seguro…",
+      "placeholder": "Gere um link para compartilhar",
+      "copy": "Copiar link",
+      "generate": "Gerar",
+      "another": "Gerar outro link"
+    },
+    "rooms": {
+      "empty": "Este Hub ainda não tem salas.",
+      "groups": {
+        "text": "Salas de texto",
+        "forum": "Salas de fórum",
+        "voice": "Salas de voz"
+      },
+      "private": "Privada",
+      "public": "Pública",
+      "moveUp": "Mover {{name}} para cima",
+      "moveDown": "Mover {{name}} para baixo",
+      "settings": "Configurações"
+    },
+    "events": {
+      "calendar": "Calendário do Hub",
+      "calendarHint": "Veja os próximos eventos e as presenças e agende novos.",
+      "create": "Criar evento",
+      "whoTitle": "Quem pode criar eventos",
+      "whoDescription": "Os eventos são postados em uma sala de texto, então qualquer pessoa que pode postar em uma sala de texto pode agendar eventos nela. Para limitar quem cria eventos, deixe as salas privadas na página Salas e dê acesso a membros específicos.",
+      "noPermission": "Uma permissão específica para “criar eventos” ainda não está disponível."
+    },
+    "moderation": {
+      "legend": "Configurações de moderação",
+      "slowMode": "Modo lento",
+      "slowModeHint": "Segundos que os membros precisam esperar entre mensagens (0–120). A equipe fica isenta.",
+      "assets": "Emotes e figurinhas",
+      "assetsHint": "Imagens personalizadas que os membros podem usar neste Hub.",
+      "uploadEmote": "Enviar emote",
+      "uploadSticker": "Enviar figurinha",
+      "emote": "Emote",
+      "sticker": "Figurinha",
+      "deleteAsset": "Excluir {{name}}",
+      "delete": "Excluir",
+      "audit": "Registro de auditoria",
+      "auditHint": "Alterações recentes em configurações, cargos e membros.",
+      "refresh": "Atualizar",
+      "loadAudit": "Carregar registro de auditoria"
+    },
+    "botsUnavailable": "Bots estão disponíveis para donos e admins do Hub.",
+    "danger": {
+      "title": "Excluir este Hub",
+      "description": "Exclui permanentemente o Hub, todas as salas e todas as mensagens salvas. Isso não pode ser desfeito.",
+      "delete": "Excluir Hub",
+      "confirmTitle": "Excluir {{name}}?",
+      "confirmDescription": "Isso exclui permanentemente o Hub, todas as salas dele e todas as mensagens salvas."
+    },
+    "members": {
+      "actions": "Ações",
+      "actionsFor": "Ações para {{name}}",
+      "timeout": "Castigar por 10 minutos",
+      "remove": "Remover do Hub",
+      "ban": "Banir membro",
+      "search": "Buscar membros",
+      "filter": "Filtrar por cargo",
+      "filters": {
+        "all": "Todos os cargos",
+        "owner": "Dono",
+        "admin": "Admins",
+        "member": "Membros"
+      },
+      "caption": "Membros do Hub",
+      "columns": {
+        "member": "Membro",
+        "roles": "Cargos",
+        "access": "Nível de acesso",
+        "customRole": "Cargo personalizado"
+      },
+      "loading": "Carregando membros…",
+      "noMatch": "Nenhum membro corresponde aos seus filtros.",
+      "you": " (você)",
+      "joined": "Entrou em {{date}}",
+      "roles": {
+        "owner": "Dono",
+        "admin": "Admin",
+        "member": "Membro"
+      },
+      "accessFor": "Nível de acesso de {{name}}",
+      "customRoleFor": "Cargo personalizado de {{name}}",
+      "noCustomRole": "Sem cargo personalizado",
+      "count_one": "{{shown}} de {{count}} membro",
+      "count_many": "{{shown}} de {{count}} membros",
+      "count_other": "{{shown}} de {{count}} membros",
+      "showMore_one": "Mostrar mais {{count}}",
+      "showMore_many": "Mostrar mais {{count}}",
+      "showMore_other": "Mostrar mais {{count}}",
+      "addFriends": "Adicionar amigos",
+      "addFriendsHint": "Amigos que ainda não estão neste Hub podem ser adicionados diretamente.",
+      "searchFriends": "Buscar amigos",
+      "loadingFriends": "Carregando amigos…",
+      "noFriends": "Nenhum amigo disponível para adicionar.",
+      "friendNotInHub": "Amigo · fora deste Hub",
+      "addToHub": "Adicionar ao Hub"
+    },
+    "roles": {
+      "groups": {
+        "general": "Geral",
+        "moderation": "Moderação",
+        "voice": "Voz"
+      },
+      "permissions": {
+        "manageRooms": {
+          "label": "Gerenciar salas",
+          "description": "Criar, editar, reordenar e excluir salas, incluindo o acesso a salas privadas."
+        },
+        "manageEvents": {
+          "label": "Gerenciar eventos",
+          "description": "Criar, editar e cancelar eventos do calendário do Hub."
+        },
+        "manageBots": {
+          "label": "Gerenciar bots",
+          "description": "Criar, publicar e desligar bots do Hub. Gerenciar salas inclui isto."
+        },
+        "createInvites": {
+          "label": "Criar convites",
+          "description": "Gerar links de convite para pessoas de fora do Hub."
+        },
+        "viewAudit": {
+          "label": "Ver registro de auditoria",
+          "description": "Ver quem alterou configurações e cargos do Hub e as ações de moderação."
+        },
+        "moderateMessages": {
+          "label": "Moderar mensagens",
+          "description": "Excluir ou fixar mensagens e postagens do fórum de outras pessoas."
+        },
+        "moderateMembers": {
+          "label": "Moderar membros",
+          "description": "Castigar, remover e banir membros abaixo do nível de admin."
+        },
+        "voiceModerate": {
+          "label": "Moderar voz",
+          "description": "Silenciar ou desconectar pessoas nas salas de voz."
+        }
+      },
+      "saveFailed": "Não foi possível salvar o cargo.",
+      "deleteFailed": "Não foi possível excluir o cargo.",
+      "listLabel": "Cargos",
+      "owner": "Dono",
+      "ownerHint": "Todas as permissões",
+      "admin": "Admin",
+      "adminHint": "Tudo, exceto a posse do Hub",
+      "createNew": "+ Criar cargo",
+      "ownerOnly": "Só o dono do Hub pode criar ou editar cargos.",
+      "empty": "Este Hub ainda não tem cargos personalizados.",
+      "editRole": "Editar {{name}}",
+      "newRole": "Novo cargo",
+      "details": "Detalhes do cargo",
+      "memberCount_one": "{{count}} membro tem este cargo. Atribua em Membros.",
+      "memberCount_many": "{{count}} membros têm este cargo. Atribua em Membros.",
+      "memberCount_other": "{{count}} membros têm este cargo. Atribua em Membros.",
+      "name": "Nome",
+      "namePlaceholder": "Moderador",
+      "color": "Cor",
+      "icon": "Ícone",
+      "suggestedIcons": "Ícones de cargo sugeridos",
+      "useIcon": "Usar {{icon}} como ícone do cargo",
+      "delete": "Excluir cargo",
+      "unsaved": "Alterações de cargo não salvas",
+      "create": "Criar cargo",
+      "draft": "Rascunho de novo cargo",
+      "save": "Salvar cargo",
+      "confirmTitle": "Excluir {{name}}?",
+      "confirmDescription": "Os membros perdem este cargo e as permissões dele na hora. As regras de postagem do fórum que o usam vão deixar de valer para qualquer pessoa."
+    }
+  },
+  "hubHome": {
+    "countdown": {
+      "now": "Rolando agora",
+      "minutes": "Em {{minutes}} min",
+      "hours": "Em {{hours}} h {{minutes}} min",
+      "tomorrow": "Amanhã",
+      "days_one": "Em {{count}} dia",
+      "days_many": "Em {{count}} dias",
+      "days_other": "Em {{count}} dias"
+    },
+    "saveFailed": "Não foi possível salvar o Início do Hub.",
+    "welcomeLabel": "Mensagem de boas-vindas",
+    "welcomePlaceholder": "Diga oi, explique para que serve este Hub e por onde as pessoas novas devem começar.",
+    "rulesLabel": "Regras, uma por linha",
+    "rulesPlaceholder": "Seja respeitoso. Nada de assédio.\nClipes vão na sala de clipes.\nMicrofone obrigatório nos Squads de ranqueada.",
+    "rulesCount_one": "Uma regra por linha · até {{count}} regra",
+    "rulesCount_many": "Uma regra por linha · até {{count}} regras",
+    "rulesCount_other": "Uma regra por linha · até {{count}} regras",
+    "liveVoice": "● Voz ao vivo",
+    "andMore_one": " e mais {{count}}",
+    "andMore_many": " e mais {{count}}",
+    "andMore_other": " e mais {{count}}",
+    "sharingScreen": " · compartilhando tela",
+    "open": "Abrir",
+    "join": "Entrar",
+    "nextEvent": "Próximo evento · {{when}}",
+    "going_one": "{{count}} vai",
+    "going_many": "{{count}} vão",
+    "going_other": "{{count}} vão",
+    "rsvp": {
+      "going": "Você vai",
+      "maybe": "Você talvez vá",
+      "none": "Sem resposta ainda"
+    },
+    "details": "Detalhes",
+    "quiet": {
+      "title": "Está tudo quieto agora",
+      "detail": "Ninguém está na voz e nada está agendado."
+    },
+    "scheduleEvent": "Agendar um evento",
+    "catchUp": {
+      "mentions_one": "{{count}} menção",
+      "mentions_many": "{{count}} menções",
+      "mentions_other": "{{count}} menções",
+      "unread_one": "{{count}} mensagem nova",
+      "unread_many": "{{count}} mensagens novas",
+      "unread_other": "{{count}} mensagens novas",
+      "activity": "Nova atividade",
+      "empty": "Você está em dia. As mensagens novas deste Hub aparecem aqui.",
+      "titleWithCount": "Fique em dia · {{n}}"
+    },
+    "about": {
+      "manageHint": "Adicione uma descrição em Gerenciar Hub para que os novos membros saibam para que serve este Hub.",
+      "empty": "Este Hub ainda não adicionou uma descrição."
+    },
+    "events": {
+      "empty": "Nenhum evento futuro.",
+      "scheduleOne": "Agendar um"
+    },
+    "members": {
+      "hidden": "Oculto: este Hub mantém a lista de membros privada.",
+      "friendsHere_one": " · {{count}} amigo aqui",
+      "friendsHere_many": " · {{count}} amigos aqui",
+      "friendsHere_other": " · {{count}} amigos aqui"
+    },
+    "online": "{{online}} online",
+    "memberCount_one": "{{members}} membro",
+    "memberCount_many": "{{members}} membros",
+    "memberCount_other": "{{members}} membros",
+    "links": {
+      "markAllRead": "Marcar tudo como lido",
+      "edit": "Editar",
+      "calendar": "Calendário",
+      "seeAll": "Ver tudo"
+    },
+    "sections": {
+      "welcome": {
+        "title": "Mensagem de boas-vindas",
+        "hint": "Um recado curto que você escreve para todos que abrem o Hub."
+      },
+      "now": {
+        "title": "Rolando agora",
+        "hint": "Salas de voz ao vivo e o próximo evento."
+      },
+      "catchUp": {
+        "title": "Fique em dia",
+        "hint": "Salas com mensagens novas, diferentes para cada membro."
+      },
+      "about": {
+        "title": "Sobre",
+        "hint": "A descrição e as tags do Hub."
+      },
+      "rules": {
+        "title": "Regras",
+        "hint": "Uma regra por linha, numeradas automaticamente."
+      },
+      "events": {
+        "title": "Próximos eventos",
+        "hint": "Os próximos eventos do calendário do Hub."
+      },
+      "members": {
+        "title": "Membros",
+        "hint": "Quem está aqui e quantos estão online."
+      }
+    },
+    "moveSectionUp": "Mover {{section}} para cima",
+    "moveSectionDown": "Mover {{section}} para baixo",
+    "moveUp": "Mover para cima",
+    "moveDown": "Mover para baixo",
+    "shown": "Visível",
+    "hidden": "Oculta",
+    "rootLabel": "Início do Hub {{name}}",
+    "kicker": "Início do Hub",
+    "membershipPrivate": "Lista de membros privada",
+    "private": "Privado",
+    "public": "Público",
+    "muted": "Silenciado",
+    "notificationsOn": "Notificações ativadas",
+    "invite": "Convidar",
+    "insights": {
+      "loadFailed": "Não foi possível carregar as estatísticas.",
+      "kicker": "Estatísticas do Hub · só donos e admins",
+      "loading": "Carregando…",
+      "members": "Membros",
+      "joinedThisWeek_one": "+{{count}} esta semana",
+      "joinedThisWeek_many": "+{{count}} esta semana",
+      "joinedThisWeek_other": "+{{count}} esta semana",
+      "noNewMembers": "Nenhum membro novo esta semana",
+      "messagesThisWeek": "Mensagens esta semana",
+      "vsLastWeek": "{{change}} em relação à semana passada",
+      "changeNew": "Novo",
+      "changeSame": "Igual",
+      "peopleWhoTalked": "Pessoas que conversaram",
+      "busiestTime": "Horário mais movimentado",
+      "busiestHint": "Últimos 30 dias, no seu horário",
+      "perDay": "Mensagens por dia, últimos 14 dias",
+      "byHour": "Mensagens por hora do dia, últimos 30 dias (no seu horário)",
+      "barLabel_one": "{{label}}: {{count}} mensagem",
+      "barLabel_many": "{{label}}: {{count}} mensagens",
+      "barLabel_other": "{{label}}: {{count}} mensagens",
+      "barTip_one": "mensagem · {{label}}",
+      "barTip_many": "mensagens · {{label}}",
+      "barTip_other": "mensagens · {{label}}",
+      "rooms": "Salas, últimos 30 dias",
+      "roomMessages_one": "{{count}} mensagem",
+      "roomMessages_many": "{{count}} mensagens",
+      "roomMessages_other": "{{count}} mensagens",
+      "quietRoom": "#{{name}} não teve mensagens este mês. Considere juntá-la com outra ou renomeá-la.",
+      "quietRooms_one": "{{count}} sala não teve mensagens este mês. Considere juntá-la com outra ou renomeá-la.",
+      "quietRooms_many": "{{count}} salas não tiveram mensagens este mês. Considere juntá-las ou renomeá-las.",
+      "quietRooms_other": "{{count}} salas não tiveram mensagens este mês. Considere juntá-las ou renomeá-las.",
+      "mostActive": "Mais ativos, últimos 30 dias",
+      "nobody": "Ninguém escreveu ainda."
+    },
+    "customize": "Personalizar",
+    "insightsButton": "Estatísticas",
+    "joinRoom": "Entrar em {{name}}",
+    "customizeTitle": "Personalizar o Início do Hub",
+    "customizeHint": "Escolha quais seções todos veem e em que ordem. Fique em dia é diferente para cada membro.",
+    "cancel": "Cancelar",
+    "saving": "Salvando…",
+    "save": "Salvar",
+    "allHidden": "Todas as seções estão ocultas. Use Personalizar para mostrar algumas.",
+    "notSetUp": "Este Hub ainda não configurou o Início.",
+    "close": "Fechar",
+    "setup": {
+      "title": "Configure seu Hub",
+      "progress": "{{done}} de {{total}} concluídos. Só donos e admins veem isto.",
+      "progressLabel": "Progresso da configuração",
+      "hide": "Ocultar",
+      "done": "Concluído",
+      "steps": {
+        "describe": {
+          "title": "Diga para que serve seu Hub",
+          "detail": "Uma descrição curta aparece em Descobrir e no Início do Hub.",
+          "action": "Adicionar descrição"
+        },
+        "artwork": {
+          "title": "Adicione um ícone ou banner",
+          "detail": "Ajuda as pessoas a reconhecerem seu Hub na barra superior e em Descobrir.",
+          "action": "Adicionar arte"
+        },
+        "welcome": {
+          "title": "Escreva uma mensagem de boas-vindas",
+          "detail": "A primeira coisa que os novos membros leem no Início do Hub.",
+          "action": "Escrever boas-vindas"
+        },
+        "rules": {
+          "title": "Defina algumas regras",
+          "detail": "Regras claras facilitam a moderação.",
+          "action": "Adicionar regras"
+        },
+        "rooms": {
+          "title": "Crie salas para seus assuntos",
+          "detail": "Por exemplo #lfg, #clipes ou #ajuda ao lado de #geral.",
+          "action": "Criar uma sala"
+        },
+        "event": {
+          "title": "Planeje seu primeiro evento",
+          "detail": "Noites de jogo e torneios trazem as pessoas de volta.",
+          "action": "Criar evento"
+        },
+        "invite": {
+          "title": "Convide seus primeiros membros",
+          "detail": "Compartilhe o link de convite com amigos.",
+          "action": "Copiar link de convite"
+        }
+      }
+    }
+  },
+  "switcher": {
+    "mentions_one": "{{count}} menção",
+    "mentions_many": "{{count}} menções",
+    "mentions_other": "{{count}} menções",
+    "unread_one": "{{count}} não lida",
+    "unread_many": "{{count}} não lidas",
+    "unread_other": "{{count}} não lidas",
+    "label": "Hubs",
+    "mutedSuffix": " · silenciado",
+    "unreadSuffix_one": " · {{count}} não lida",
+    "unreadSuffix_many": " · {{count}} não lidas",
+    "unreadSuffix_other": " · {{count}} não lidas",
+    "open": "Abrir {{name}}",
+    "moreHubs_one": "Mais {{count}} Hub",
+    "moreHubs_many": "Mais {{count}} Hubs",
+    "moreHubs_other": "Mais {{count}} Hubs",
+    "unreadMessages": "mensagens não lidas",
+    "create": "Criar Hub",
+    "add": "Adicionar",
+    "moreMenu": "Mais Hubs"
+  },
+  "voicePanel": {
+    "connecting": "Conectando…",
+    "connected": "Voz conectada",
+    "connectedPing": "Voz conectada · {{ms}} ms",
+    "serverMuted": "Silenciado pela moderação",
+    "unmute": "Ativar microfone",
+    "mute": "Desativar microfone",
+    "serverDeafened": "Áudio desativado pela moderação",
+    "undeafen": "Ativar áudio",
+    "deafen": "Desativar áudio",
+    "region": "Conexão de voz",
+    "openRoom": "Abrir sala de voz",
+    "peopleInVoice_one": "{{count}} pessoa na voz",
+    "peopleInVoice_many": "{{count}} pessoas na voz",
+    "peopleInVoice_other": "{{count}} pessoas na voz",
+    "stopScreenSharing": "Parar de compartilhar a tela",
+    "shareScreen": "Compartilhar tela",
+    "stopSharing": "Parar de compartilhar",
+    "disconnectFromVoice": "Desconectar da voz",
+    "disconnect": "Desconectar"
+  },
+  "composerPlus": {
+    "label": "Adicionar à mensagem"
+  },
+  "roomSettings": {
+    "tabs": {
+      "general": "Geral",
+      "permissions": "Permissões",
+      "forum": "Fórum"
+    },
+    "createTitle": "Criar sala",
+    "title": "Configurações da sala",
+    "newRoomIn": "Nova sala em <strong>{{hub}}</strong>",
+    "untitled": "Sala sem título",
+    "close": "Fechar configurações da sala",
+    "sections": "Seções das configurações da sala",
+    "name": "Nome da sala",
+    "namePlaceholder": "ex.: chat-geral",
+    "icon": {
+      "label": "Ícone ou emoji",
+      "suggested": "Ícones sugeridos",
+      "use": "Usar {{icon}} como ícone",
+      "fewer": "Menos ícones",
+      "more": "Mais ícones",
+      "searchPlaceholder": "Buscar ícones, ex.: regras, clipes, cs, música",
+      "search": "Buscar ícones",
+      "useNamed": "Usar {{icon}} ({{name}}) como ícone",
+      "noMatch": "Nenhum ícone encontrado. Você pode digitar ou colar qualquer emoji na caixa."
+    },
+    "iconGroups": {
+      "chat": "Chat",
+      "info": "Info",
+      "gaming": "Games",
+      "esports": "Esports",
+      "voice": "Voz e mídia",
+      "creative": "Criativo",
+      "community": "Comunidade",
+      "food": "Comida",
+      "nature": "Animais e natureza",
+      "symbols": "Símbolos"
+    },
+    "type": {
+      "label": "Tipo de sala",
+      "fixed": "O tipo não pode ser alterado depois que a sala é criada.",
+      "setAtCreation": "Definido quando a sala foi criada.",
+      "text": {
+        "label": "Texto",
+        "description": "Conversas, links e mídia."
+      },
+      "voice": {
+        "label": "Voz",
+        "description": "Converse, compartilhe sua tela e transmita."
+      },
+      "forum": {
+        "label": "Fórum",
+        "description": "Postagens organizadas com respostas e tags."
+      }
+    },
+    "post": {
+      "label": "Quem pode postar",
+      "hint": "Todos na sala ainda podem ler e reagir.",
+      "everyone": {
+        "label": "Todos",
+        "description": "Qualquer pessoa que pode ver a sala."
+      },
+      "staff": {
+        "label": "Só a equipe (só leitura)",
+        "description": "O dono, os admins e os moderadores."
+      },
+      "roles": {
+        "label": "Cargos selecionados",
+        "description": "A equipe e os membros com um cargo que você escolher."
+      },
+      "noRoles": "Este Hub ainda não tem cargos personalizados."
+    },
+    "userLimit": {
+      "label": "Máximo de jogadores",
+      "hint": "0 significa sem limite. O dono e os admins ainda podem entrar em uma sala cheia."
+    },
+    "delete": {
+      "title": "Excluir sala",
+      "description": "Remove permanentemente a sala e todas as mensagens salvas nela.",
+      "action": "Excluir sala",
+      "confirmTitle": "Excluir sala?",
+      "confirmDescription": "Isso exclui permanentemente a sala e todas as mensagens salvas nela. Isso não pode ser desfeito.",
+      "confirmWord": "excluir"
+    },
+    "visibility": {
+      "label": "Visibilidade da sala",
+      "public": "Pública",
+      "publicHint": "Todos os membros do Hub podem ver e entrar nesta sala.",
+      "private": "Privada",
+      "privateHint": "Só membros selecionados, além do dono e dos admins do Hub."
+    },
+    "access": {
+      "title": "Acesso dos membros",
+      "selected_one": "{{count}} membro selecionado. Donos e admins sempre têm acesso.",
+      "selected_many": "{{count}} membros selecionados. Donos e admins sempre têm acesso.",
+      "selected_other": "{{count}} membros selecionados. Donos e admins sempre têm acesso.",
+      "search": "Buscar membros",
+      "searchPlaceholder": "Buscar membros do Hub",
+      "you": " (você)",
+      "ownerAlways": "Dono · sempre tem acesso",
+      "adminAlways": "Admin · sempre tem acesso",
+      "alwaysAria": "{{name}} sempre tem acesso",
+      "has": "Tem acesso",
+      "none": "Sem acesso",
+      "toggleAria": "Acesso à sala para {{name}}",
+      "noOthers": "Ainda não há outros membros neste Hub.",
+      "noMatch": "Nenhum membro corresponde à sua busca.",
+      "forumTabHint": "As permissões de postagem deste fórum ficam na <tab>aba Fórum</tab>."
+    },
+    "forum": {
+      "warnings": {
+        "noRoles": "“Só cargos selecionados” está escolhido, mas nenhum cargo foi selecionado — só o dono e os admins vão poder postar.",
+        "emptyRoles_one": "{{names}} ainda não tem membros, então ninguém ganha acesso para postar por ele.",
+        "emptyRoles_many": "{{names}} ainda não têm membros, então ninguém ganha acesso para postar por eles.",
+        "emptyRoles_other": "{{names}} ainda não têm membros, então ninguém ganha acesso para postar por eles.",
+        "noMembers": "“Só membros selecionados” está escolhido, mas nenhum membro foi selecionado — só o dono e os admins vão poder postar."
+      },
+      "guidelines": "Regras para postar",
+      "guidelinesHint": "Aparecem para as pessoas antes de criarem uma postagem.",
+      "guidelinesPlaceholder": "Conte o tema, as regras e o que uma postagem útil deve incluir.",
+      "policyLabel": "Quem pode postar",
+      "policyHint": "Todos ainda podem ler e responder onde têm acesso.",
+      "policies": {
+        "everyone": "Todos no Hub",
+        "staff": "Dono, admins e moderadores",
+        "roles": "Só cargos selecionados",
+        "members": "Só membros selecionados"
+      },
+      "rolesAllowed": "Cargos que podem postar",
+      "roleMembers_one": "{{count}} membro",
+      "roleMembers_many": "{{count}} membros",
+      "roleMembers_other": "{{count}} membros",
+      "noRoles": "Este Hub ainda não tem cargos personalizados. Crie em Gerenciar Hub → Cargos.",
+      "membersAllowed": "Membros que podem postar",
+      "alwaysAllowed": "{{role}} · sempre pode postar"
+    },
+    "roles": {
+      "owner": "dono",
+      "admin": "admin",
+      "member": "membro"
+    },
+    "tags": {
+      "title": "Tags de postagem",
+      "description": "Os moderadores definem as tags que as pessoas podem escolher ao postar. Use as setas para definir a ordem.",
+      "new": "Nova tag",
+      "placeholder": "Adicione uma tag, ex.: Pergunta",
+      "add": "Adicionar tag",
+      "count_one": "{{count}}/{{max}} tag",
+      "count_many": "{{count}}/{{max}} tags",
+      "count_other": "{{count}}/{{max}} tags",
+      "list": "Tags do fórum",
+      "moveUp": "Mover {{tag}} para cima",
+      "moveDown": "Mover {{tag}} para baixo",
+      "removeTag": "Remover {{tag}}",
+      "remove": "Remover",
+      "unsupported": "Listas de tags de moderador ainda não estão disponíveis neste servidor. As postagens ainda podem usar tags livres."
+    },
+    "cancel": "Cancelar",
+    "creating": "Criando…",
+    "saving": "Salvando…",
+    "saveChanges": "Salvar alterações",
+    "style": {
+      "tooLarge": "O fundo da sala é grande demais (máx. 8 MB).",
+      "notImage": "Escolha um arquivo de imagem.",
+      "title": "Estilo",
+      "hint": "Dê a esta sala uma cor e um fundo próprios. Vazio usa os do Hub.",
+      "previewRoom": "sala",
+      "previewSend": "Enviar",
+      "accent": "Cor de destaque",
+      "accents": "Cores de destaque",
+      "hubAccent": "Destaque do Hub",
+      "swatches": {
+        "violet": "Violeta",
+        "blue": "Azul",
+        "cyan": "Ciano",
+        "teal": "Verde-azulado",
+        "green": "Verde",
+        "lime": "Lima",
+        "yellow": "Amarelo",
+        "amber": "Âmbar",
+        "orange": "Laranja",
+        "red": "Vermelho",
+        "pink": "Rosa",
+        "steel": "Aço"
+      },
+      "custom": "Cor personalizada",
+      "background": "Fundo",
+      "backgroundHint": "{{spec}}. PNG, JPG, WebP ou GIF de até 8 MB.",
+      "replace": "Substituir",
+      "upload": "Enviar",
+      "remove": "Remover"
+    }
+  },
+  "pins": {
+    "kinds": {
+      "forumPost": "Postagem do fórum",
+      "event": "Evento",
+      "poll": "Enquete",
+      "bot": "Mensagem de bot",
+      "gif": "GIF",
+      "sticker": "Figurinha",
+      "image": "Imagem",
+      "file": "Arquivo",
+      "message": "Mensagem"
+    },
+    "kindsWithDetail": {
+      "forumPost": "Postagem do fórum: {{detail}}",
+      "event": "Evento: {{detail}}",
+      "poll": "Enquete: {{detail}}",
+      "bot": "Mensagem de bot: {{detail}}",
+      "gif": "GIF: {{detail}}",
+      "sticker": "Figurinha: {{detail}}",
+      "image": "Imagem · {{detail}}",
+      "file": "Arquivo · {{detail}}",
+      "message": "Mensagem: {{detail}}"
+    },
+    "loadFailed": "Não foi possível carregar as mensagens fixadas.",
+    "title": "Mensagens fixadas",
+    "titleWithCount": "Mensagens fixadas · {{n}}",
+    "close": "Fechar",
+    "loading": "Carregando…",
+    "empty": "Nenhuma mensagem fixada ainda",
+    "emptyCanPin": "Fixe uma mensagem importante pelo menu dela para que todos a encontrem aqui.",
+    "emptyMember": "Os admins podem fixar mensagens importantes para que todos as encontrem aqui.",
+    "jumpTitle": "Mostrar esta mensagem na sala",
+    "jump": "Ir",
+    "less": "Menos",
+    "readAll": "Ler tudo",
+    "unpinning": "Desafixando…",
+    "unpin": "Desafixar"
+  },
+  "templates": {
+    "names": {
+      "blank": "Em branco",
+      "friends": "Amigos / Resenha",
+      "gaming": "Games",
+      "community": "Comunidade",
+      "creator": "Criador",
+      "esports": "Esports / Clã",
+      "development": "Desenvolvimento",
+      "support": "Suporte",
+      "project": "Projeto / Equipe",
+      "streamer": "Modo Streamer · Layout de visão geral"
+    },
+    "descriptions": {
+      "blank": "Um ponto de partida limpo para a estrutura do seu Hub.",
+      "friends": "Um espaço leve para amigos, chat e mídia compartilhada.",
+      "gaming": "Salas para encontrar parceiros de time, compartilhar clipes e organizar Squads.",
+      "community": "Um Hub público organizado com informações, discussões, eventos e voz.",
+      "creator": "Reúna conteúdo, feedback, sugestões e o chat da comunidade.",
+      "esports": "Coordene line-ups, scrims, estratégia, clipes e o trabalho privado da equipe.",
+      "development": "Um espaço focado em projeto para bugs, lançamentos, ideias e voz da equipe.",
+      "support": "Ajude os usuários a encontrar respostas, relatar problemas e falar com o suporte.",
+      "project": "Organize atualizações, tarefas, documentos, prazos e salas da equipe.",
+      "streamer": "Visão geral do criador, sessões da comunidade, eventos e um banner de altura total no Hub."
+    },
+    "rooms": {
+      "general": "geral",
+      "generalVoice": "Voz geral",
+      "offTopic": "off-topic",
+      "mediaMemes": "mídia-memes",
+      "lounge": "Lounge",
+      "lfg": "LFG",
+      "gameDiscussion": "papo-de-jogo",
+      "clips": "clipes",
+      "screenshots": "prints",
+      "gamingRoom": "Sala de jogo",
+      "squad1": "Squad 1",
+      "squad2": "Squad 2",
+      "afk": "AFK",
+      "welcome": "boas-vindas",
+      "announcements": "anúncios",
+      "rules": "regras",
+      "media": "mídia",
+      "discussions": "discussões",
+      "events": "eventos",
+      "communityVoice": "Voz da comunidade",
+      "uploads": "uploads",
+      "feedback": "feedback",
+      "suggestions": "sugestões",
+      "communityChat": "chat-da-comunidade",
+      "creatorRoom": "Sala do criador",
+      "roster": "line-up",
+      "scrims": "scrims",
+      "strategy": "estratégia",
+      "staff": "equipe",
+      "development": "desenvolvimento",
+      "bugs": "bugs",
+      "featureRequests": "pedidos-de-recursos",
+      "releases": "lançamentos",
+      "showcase": "vitrine",
+      "teamVoice": "Voz da equipe",
+      "faq": "FAQ",
+      "help": "ajuda",
+      "knownIssues": "problemas-conhecidos",
+      "generalDiscussion": "discussão-geral",
+      "staffSupport": "suporte-da-equipe",
+      "updates": "atualizações",
+      "tasks": "tarefas",
+      "docsFiles": "docs-arquivos",
+      "deadlines": "prazos",
+      "teamRoom": "Sala da equipe",
+      "streamerRoom": "Sala do streamer"
+    },
+    "categories": {
+      "general": "GERAL",
+      "voice": "VOZ",
+      "social": "SOCIAL",
+      "community": "COMUNIDADE",
+      "media": "MÍDIA",
+      "information": "INFORMAÇÕES",
+      "content": "CONTEÚDO",
+      "competitive": "COMPETITIVO",
+      "staff": "EQUIPE",
+      "development": "DESENVOLVIMENTO",
+      "support": "SUPORTE",
+      "project": "PROJETO",
+      "streamerHub": "HUB DO STREAMER",
+      "voiceRooms": "SALAS DE VOZ"
+    }
+  },
+  "media": {
+    "banner": {
+      "hint": "Recomendado: {{width}}×{{height}} px, vertical (mínimo {{minWidth}}×{{minHeight}})"
+    },
+    "chatBackground": {
+      "hint": "Recomendado: {{width}}×{{height}} px, horizontal (mínimo {{minWidth}}×{{minHeight}})"
+    },
+    "header": {
+      "hint": "Recomendado: {{width}}×{{height}} px; qualquer imagem larga de 4:3 a 4:1 funciona (pelo menos {{minWidth}} px de largura)"
+    }
+  },
+  "mobile": {
+    "hubs": {
+      "couldNotLoadHubs": "Não foi possível carregar os Hubs.",
+      "couldNotCreateHub": "Não foi possível criar o Hub.",
+      "couldNotJoinHub": "Não foi possível entrar no Hub.",
+      "couldNotUseThatInvite": "Não foi possível usar esse convite.",
+      "yourCommunities": "SUAS COMUNIDADES",
+      "roomsVoiceAndThePeople": "Salas, voz e a galera com quem você joga.",
+      "createOrJoinAHub": "Criar ou entrar em um Hub",
+      "searchYourHubs": "Buscar seus Hubs",
+      "findAPublicHub": "Encontrar um Hub público",
+      "memberships": "PARTICIPAÇÕES",
+      "publicHubs": "HUBS PÚBLICOS",
+      "noMatchingHubs": "Nenhum Hub encontrado",
+      "noPublicHubsRightNow": "Nenhum Hub público agora",
+      "tryAnotherNameCategoryOr": "Tente outro nome, categoria ou tag.",
+      "createYourOwnHubOr": "Crie seu próprio Hub ou descubra uma comunidade pública.",
+      "publicCommunitiesWillAppearHere": "As comunidades públicas vão aparecer aqui quando estiverem disponíveis.",
+      "joinAHub": "Entrar em um Hub",
+      "newCommunity": "NOVA COMUNIDADE",
+      "hubName": "NOME DO HUB",
+      "giveYourHubAName": "Dê um nome ao seu Hub",
+      "privacy": "PRIVACIDADE",
+      "inviteOnly": "Só com convite",
+      "discoverable": "Visível em Descobrir",
+      "haveAnInvite": "TEM UM CONVITE?",
+      "inviteCodeOrLink": "Código ou link do convite",
+      "joinWithInvite": "Entrar com convite",
+      "joining": "Entrando…",
+      "onlinecountOnline": "{{onlineCount}} online",
+      "categoryMembers": "{{category}} · {{count}} membros"
+    },
+    "hub": {
+      "couldNotLoadThisHub": "Não foi possível carregar este Hub.",
+      "couldNotLoadHubMembers": "Não foi possível carregar os membros do Hub.",
+      "couldNotUpdateTheHub": "Não foi possível atualizar o Hub.",
+      "couldNotLoadRoomAccess": "Não foi possível carregar o acesso às salas.",
+      "couldNotSaveTheRoom": "Não foi possível salvar a sala.",
+      "couldNotMoveTheRoom": "Não foi possível mover a sala.",
+      "deleteName": "Excluir {{name}}?",
+      "messagesSavedInThisRoom": "As mensagens salvas nesta sala também podem ser removidas. Isso não pode ser desfeito.",
+      "couldNotDeleteTheRoom": "Não foi possível excluir a sala.",
+      "tryAgain": "Tentar novamente",
+      "goBack": "Voltar",
+      "manageThisHub": "Gerenciar este Hub",
+      "editHubDetailsCreateRooms": "Edite os detalhes do Hub, crie salas e gerencie as salas existentes.",
+      "textRooms": "SALAS DE TEXTO",
+      "noTextRoomsInThis": "Nenhuma sala de texto neste Hub.",
+      "forums": "FÓRUNS",
+      "noForumsInThisHub": "Nenhum fórum neste Hub.",
+      "voiceRooms": "SALAS DE VOZ",
+      "noVoiceRoomsInThis": "Nenhuma sala de voz neste Hub.",
+      "pickARoomToStart": "Escolha uma sala para começar a conversar",
+      "onlineMembers": "{{online}} online · {{count}} membros",
+      "withRole": "{{summary}} · {{role}}"
+    },
+    "hubAdmin": {
+      "hubSettingsUpdated": "Configurações do Hub atualizadas.",
+      "memberAdded": "Membro adicionado.",
+      "makeUsernameAnAdmin": "Tornar {{username}} admin?",
+      "removeAdminAccessFromUsername": "Remover o acesso de admin de {{username}}?",
+      "adminsCanManageRoomsAnd": "Admins podem gerenciar salas e moderar membros do Hub.",
+      "theyWillBecomeARegular": "A pessoa vai virar um membro comum e perder as permissões de gerenciamento do Hub.",
+      "makeAdmin": "Tornar admin",
+      "removeAdmin": "Remover admin",
+      "removeMember": "Remover membro?",
+      "removeUsernameFromThisHub": "Remover {{username}} deste Hub?",
+      "thisRemovesTheMemberAnd": "Isso remove o membro e impede que ele volte até o banimento ser revogado.",
+      "thisActionIsRecordedIn": "Esta ação fica registrada no registro de auditoria do Hub.",
+      "inviteWasCreatedButThe": "O convite foi criado, mas o servidor não retornou link/código.",
+      "oneTimeInviteCreated24": "Convite de uso único criado (24 horas, um uso). ",
+      "theImageIsDeletedAnd": "A imagem é excluída e some para todos neste Hub.",
+      "sidebarBannerRemoved": "Banner da barra lateral removido.",
+      "chatBackgroundRemoved": "Fundo do chat removido.",
+      "photoLibraryPermissionIsRequired": "É preciso permissão de acesso às fotos.",
+      "couldNotUploadHubImage": "Não foi possível enviar a imagem do Hub.",
+      "deleteAsset": "Excluir recurso?",
+      "deleteName": "Excluir {{name}}?",
+      "deleteBot": "Excluir bot?",
+      "loadingHubManagement": "Carregando o gerenciamento do Hub…",
+      "hubControl": "CONTROLE DO HUB",
+      "manageName": "Gerenciar {{name}}",
+      "hubProfileDiscovery": "PERFIL E DESCOBERTA DO HUB",
+      "changeHubImage": "Trocar imagem do Hub",
+      "fillsTheHubSidebarBehind": "Preenche a barra lateral do Hub atrás da lista de salas.",
+      "behindTheMessageListDimmed": "Atrás da lista de mensagens, escurecido automaticamente.",
+      "accentRrggbb": "Destaque (#RRGGBB)",
+      "tagsCommaSeparatedMax6": "Tags (separadas por vírgula, máx. 6)",
+      "slowModeSeconds0120": "Segundos do modo lento (0–120)",
+      "roomsPrivateAccess": "SALAS E ACESSO PRIVADO",
+      "createEditReorderOrDelete": "Crie, edite, reordene ou exclua salas de texto, voz e fórum, defina ícones de sala e escolha membros para salas privadas.",
+      "botBuilder": "CRIADOR DE BOTS",
+      "turnBotsOnOrOff": "Ligue ou desligue bots, veja a atividade deles ou comece por um modelo. Edite as regras no desktop ou na web.",
+      "invites": "CONVITES",
+      "createOneTimeInvite": "Criar convite de uso único",
+      "expiresAfter24HoursAnd": "Expira após 24 horas e pode ser usado uma vez.",
+      "membersCount": "MEMBROS · {{count}}",
+      "usernameOrDecaveId": "Nome de usuário ou ID do DeCave",
+      "addMember": "Adicionar membro",
+      "changeUsernameSRoleCurrent": "Mudar o cargo de {{username}}. Cargo atual: {{role}}",
+      "removeUsername": "Remover {{username}}",
+      "n10mTimeout": "Castigo de 10 min",
+      "kick": "Expulsar",
+      "ban": "Banir",
+      "customRoles": "CARGOS PERSONALIZADOS",
+      "roleName": "Nome do cargo",
+      "noExtraPermissions": "Sem permissões extras",
+      "emotesStickers": "EMOTES E FIGURINHAS",
+      "assetNameOptional": "Nome do recurso (opcional)",
+      "noCustomAssets": "Nenhum recurso personalizado.",
+      "deleteAsset2": "Excluir recurso",
+      "hubBots": "BOTS DO HUB",
+      "botName": "Nome do bot",
+      "createBot": "Criar bot",
+      "copyThisTokenNowIt": "COPIE ESTE TOKEN AGORA — ELE SÓ APARECE UMA VEZ",
+      "noHubBots": "Nenhum bot no Hub.",
+      "enabled": "ATIVADO",
+      "disabled": "DESATIVADO",
+      "pauseName": "Pausar {{name}}",
+      "resumeName": "Retomar {{name}}",
+      "deleteName2": "Excluir {{name}}",
+      "auditLog": "REGISTRO DE AUDITORIA",
+      "system": "Sistema",
+      "saveHubSettings": "Salvar configurações do Hub",
+      "permissions": {
+        "voiceModerate": "Moderação de voz",
+        "viewAudit": "Ver auditoria"
+      },
+      "loadFailed": "Não foi possível carregar o gerenciamento do Hub.",
+      "updateFailed": "Não foi possível atualizar o Hub.",
+      "visibilityFailed": "Não foi possível atualizar a visibilidade do Hub.",
+      "addMemberFailed": "Não foi possível adicionar o membro.",
+      "roleFailed": "Não foi possível atualizar o cargo.",
+      "removeMemberFailed": "Não foi possível remover o membro.",
+      "moderation": {
+        "timeout": "Castigar por 10 minutos",
+        "timeoutConfirm": "Castigar {{username}} por 10 minutos?",
+        "kickConfirm": "Expulsar {{username}}?",
+        "banConfirm": "Banir {{username}}?",
+        "timeoutFailed": "Não foi possível castigar o membro.",
+        "kickFailed": "Não foi possível expulsar o membro.",
+        "banFailed": "Não foi possível banir o membro."
+      },
+      "inviteTitle": "Entre em {{hub}} no DeCave",
+      "inviteTitleFallback": "Entre no meu Hub no DeCave",
+      "inviteFailed": "Não foi possível criar o convite.",
+      "artworkFailed": "Não foi possível atualizar a arte do Hub.",
+      "removeBanner": "Remover o banner da barra lateral?",
+      "removeChatBackground": "Remover o fundo do chat?",
+      "removeBannerFailed": "Não foi possível remover o banner da barra lateral.",
+      "removeChatBackgroundFailed": "Não foi possível remover o fundo do chat.",
+      "iconUpdated": "Imagem de perfil do Hub atualizada.",
+      "bannerUpdated": "Banner da barra lateral atualizado.",
+      "chatBackgroundUpdated": "Fundo do chat atualizado.",
+      "uploadImageFailed": "Não foi possível enviar a imagem do Hub.",
+      "createRoleFailed": "Não foi possível criar o cargo personalizado.",
+      "assignRoleFailed": "Não foi possível atribuir o cargo personalizado.",
+      "emoteTooLarge": "O emote é grande demais.",
+      "stickerTooLarge": "A figurinha é grande demais.",
+      "uploadEmoteFailed": "Não foi possível enviar o emote.",
+      "uploadStickerFailed": "Não foi possível enviar a figurinha.",
+      "deleteAssetFailed": "Não foi possível excluir o recurso.",
+      "createBotFailed": "Não foi possível criar o bot do Hub.",
+      "updateBotFailed": "Não foi possível atualizar o bot.",
+      "deleteBotFailed": "Não foi possível excluir o bot.",
+      "bannerNote": "Escurecido para facilitar a leitura.",
+      "bannerNoteEmpty": "Adicione um banner para ativar isto.",
+      "chatNote": "Aparece em todas as salas deste Hub.",
+      "chatNoteEmpty": "Adicione uma foto para ativar isto.",
+      "recentEvents_one": "{{count}} evento recente",
+      "recentEvents_many": "{{count}} eventos recentes",
+      "recentEvents_other": "{{count}} eventos recentes",
+      "mediaCurrent": "{{item}} atual",
+      "mediaRemove": "Remover {{item}}",
+      "mediaShow": "Mostrar {{item}}"
+    },
+    "join": {
+      "couldnTUseThisInvite": "Não foi possível usar este convite.",
+      "inviteDidnTWork": "O convite não funcionou",
+      "goHome": "Ir para o início",
+      "joiningHub": "Entrando no Hub…"
+    },
+    "rooms": {
+      "add": "Adicionar sala",
+      "draft": "Rascunho",
+      "connected": "Conectado · toque para os controles de voz",
+      "voiceJoin": "Sala de voz · toque para entrar",
+      "textRoom": "Sala de texto",
+      "edit": "Editar {{name}}"
+    },
+    "manage": {
+      "kicker": "GERENCIAMENTO DO HUB",
+      "title": "Gerenciar {{name}}",
+      "visibilityOwner": "Só o dono do Hub pode mudar a visibilidade pública/privada.",
+      "visibilityPublic": "Este Hub é público. Só o dono pode mudar a visibilidade.",
+      "visibilityPrivate": "Este Hub é privado. Só o dono pode mudar a visibilidade.",
+      "rooms": "SALAS",
+      "createRoom": "Criar uma nova sala",
+      "createRoomHint": "Adicione outra sala de texto ou de voz a este Hub.",
+      "save": "Salvar alterações do Hub"
+    },
+    "roomEditor": {
+      "kickerEdit": "CONFIGURAÇÕES DA SALA",
+      "kickerNew": "NOVA SALA",
+      "titleNew": "Criar uma sala",
+      "placeholder": {
+        "text": "geral",
+        "voice": "Voz de jogo",
+        "forum": "guias"
+      },
+      "icon": "Ícone da sala",
+      "noIcon": "Sem ícone",
+      "useIcon": "Usar {{icon}} como ícone da sala",
+      "emojiPlaceholder": "Ou digite qualquer emoji",
+      "hubAccent": "Usar o destaque do Hub",
+      "swatchAccent": "Destaque {{color}}",
+      "guidelines": "Regras do fórum",
+      "guidelinesPlaceholder": "O que as pessoas devem postar aqui?",
+      "postPolicy": "Quem pode criar postagens",
+      "policyEveryone": "Todos",
+      "policyStaff": "Dono e admins",
+      "policyLimitedRoles": "Só cargos selecionados podem postar. Essa lista fica como está; escolha uma opção acima para substituí-la.",
+      "policyLimitedMembers": "Só membros selecionados podem postar. Essa lista fica como está; escolha uma opção acima para substituí-la.",
+      "privateHint": "O dono e os admins sempre têm acesso. Escolha abaixo quais membros comuns do Hub podem entrar.",
+      "access": "ACESSO À SALA",
+      "selected_one": "{{count}} selecionado",
+      "selected_many": "{{count}} selecionados",
+      "selected_other": "{{count}} selecionados",
+      "noMembers": "Nenhum membro comum para selecionar",
+      "noMembersHint": "A sala continua acessível para o dono e os admins do Hub.",
+      "noMatch": "Nenhum membro encontrado",
+      "noMatchHint": "Tente outro nome de usuário.",
+      "save": "Salvar sala",
+      "create": "Criar sala"
+    }
+  },
+  "hubCategories": {
+    "gaming": "Games",
+    "community": "Comunidade",
+    "racing": "Corrida",
+    "creative": "Criatividade",
+    "music": "Música"
+  }
+}

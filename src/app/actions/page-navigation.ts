@@ -1,22 +1,12 @@
 // Opening the main pages: Settings, Home, Hubs, Messages, Friends, Squad Finder.
 
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
-import type {
-  SocialUser,
-  GroupChatMessage,
-  GroupChat,
-  DmNotice,
-  SteamIntegrationState,
-  ActivityState,
-  SettingsSnapshot,
-} from "../types";
-import type { SettingsWindowState } from "../state/settings-window";
+import type { SocialUser, GroupChatMessage, GroupChat, DmNotice, SteamIntegrationState, ActivityState } from "../types";
 import type { AudioSetupState } from "../state/audio-setup";
 import type { HubPanelsState } from "../state/hub-panels";
 
 export type PageNavigationDeps = {
   setShowSettings: Dispatch<SetStateAction<boolean>>;
-  setSettingsHydrationVersion: Dispatch<SetStateAction<number>>;
   setShowAdminDashboard: Dispatch<SetStateAction<boolean>>;
   setShowHome: Dispatch<SetStateAction<boolean>>;
   setShowServerBrowser: Dispatch<SetStateAction<boolean>>;
@@ -29,8 +19,6 @@ export type PageNavigationDeps = {
   setGroupMessages: Dispatch<SetStateAction<GroupChatMessage[]>>;
   setFriendRequestNotice: Dispatch<SetStateAction<SocialUser | null>>;
   setDmNotice: Dispatch<SetStateAction<DmNotice | null>>;
-  settingsSnapshotRef: MutableRefObject<SettingsSnapshot | null>;
-  settingsHydratingRef: MutableRefObject<boolean>;
   activeDmUserRef: MutableRefObject<SocialUser | null>;
   activeGroupChatRef: MutableRefObject<GroupChat | null>;
   refreshActivityState: () => Promise<ActivityState | null>;
@@ -40,12 +28,10 @@ export type PageNavigationDeps = {
   loadSocialState: () => Promise<void>;
   loadDmConversations: () => Promise<void>;
   loadGroupChats: () => Promise<void>;
-  captureSettingsSnapshot: () => SettingsSnapshot;
   closePrimaryTransientOverlays: () => void;
   refreshAudioDevices: () => Promise<void>;
   loadAccountPreferences: () => Promise<void>;
   loadDesktopIntegrationSettings: () => Promise<void>;
-  settingsWindow: SettingsWindowState;
   audioSetup: AudioSetupState;
   hubPanels: HubPanelsState;
 };
@@ -54,7 +40,6 @@ export type PageNavigationDeps = {
 export function createPageNavigation(deps: PageNavigationDeps) {
   const {
     setShowSettings,
-    setSettingsHydrationVersion,
     setShowAdminDashboard,
     setShowHome,
     setShowServerBrowser,
@@ -67,8 +52,6 @@ export function createPageNavigation(deps: PageNavigationDeps) {
     setGroupMessages,
     setFriendRequestNotice,
     setDmNotice,
-    settingsSnapshotRef,
-    settingsHydratingRef,
     activeDmUserRef,
     activeGroupChatRef,
     refreshActivityState,
@@ -78,18 +61,15 @@ export function createPageNavigation(deps: PageNavigationDeps) {
     loadSocialState,
     loadDmConversations,
     loadGroupChats,
-    captureSettingsSnapshot,
     closePrimaryTransientOverlays,
     refreshAudioDevices,
     loadAccountPreferences,
     loadDesktopIntegrationSettings,
-    settingsWindow,
     audioSetup,
     hubPanels,
   } = deps;
   const { setShowHubMembersPanel, setShowHubHome, setShowHubCalendarPanel } = hubPanels;
   const { setAudioSettingsError, setAudioSettingsNotice } = audioSetup;
-  const { setSettingsDirty, setSettingsCloseConfirm } = settingsWindow;
 
   const openSettings = () => {
     closePrimaryTransientOverlays();
@@ -97,16 +77,10 @@ export function createPageNavigation(deps: PageNavigationDeps) {
     setShowSocial(false);
     setShowServerBrowser(false);
     setShowAdminDashboard(false);
-    settingsHydratingRef.current = true;
-    settingsSnapshotRef.current = captureSettingsSnapshot();
-    setSettingsDirty(false);
-    setSettingsCloseConfirm(false);
     setAudioSettingsError("");
     setAudioSettingsNotice("");
     setShowSettings(true);
-    void Promise.allSettled([loadAccountPreferences(), loadDesktopIntegrationSettings()]).finally(() => {
-      setSettingsHydrationVersion((version) => version + 1);
-    });
+    void Promise.allSettled([loadAccountPreferences(), loadDesktopIntegrationSettings()]);
     void refreshAudioDevices();
     void refreshActivityState();
     void refreshSteamIntegration();

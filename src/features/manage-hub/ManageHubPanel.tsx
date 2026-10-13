@@ -1,5 +1,8 @@
-import { hubMediaHint } from "../../../shared/hub-media-specs";
+import { hubMediaHintMessage } from "./hubMediaText";
 import { useId, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { DEFAULT_HUB_CATEGORY } from "../../../shared/hub-categories";
+import { hubCategoryField, hubCategoryInput, hubCategoryText } from "../../i18n/hubCategory";
 import { useDialogA11y } from "../shared/useDialogA11y";
 import { TypeToConfirmDialog } from "../shared/TypeToConfirmDialog";
 import { MembersSection } from "./MembersSection";
@@ -10,59 +13,28 @@ import "../room-settings/room-settings.css";
 import "./manage-hub.css";
 import { Icon } from "../../components/Icon";
 import { BotsSection } from "../bots";
-import { localeForLanguage, preferredTimeOptions } from "../../app/locale";
+import { formatDate } from "../../i18n/format";
 
 type NavItem = {
   id: ManageHubSectionId;
-  label: string;
-  description: string;
   group: "hub" | "people" | "content" | "advanced";
 };
 
+// Labels and descriptions: hub.manageHub.nav.<id>.label / .description.
 const NAV: NavItem[] = [
-  { id: "overview", label: "Overview", description: "Stats and quick actions for this Hub.", group: "hub" },
-  {
-    id: "profile",
-    label: "Profile & appearance",
-    description: "Name, icon, banner, theme and discovery details.",
-    group: "hub",
-  },
-  {
-    id: "roles",
-    label: "Roles & permissions",
-    description: "Create roles and choose exactly what each one can do.",
-    group: "people",
-  },
-  {
-    id: "members",
-    label: "Members",
-    description: "Find members, assign roles and take moderation actions.",
-    group: "people",
-  },
-  { id: "invites", label: "Invites", description: "Share one-time invite links with new people.", group: "people" },
-  { id: "rooms", label: "Rooms", description: "Order rooms and open their settings.", group: "content" },
-  { id: "events", label: "Events", description: "The Hub calendar and who can schedule events.", group: "content" },
-  {
-    id: "moderation",
-    label: "Moderation & safety",
-    description: "Slow mode, custom emotes and stickers, and the audit log.",
-    group: "advanced",
-  },
-  {
-    id: "bots",
-    label: "Bots",
-    description: "Build bots that greet, answer commands and hand out roles.",
-    group: "advanced",
-  },
-  { id: "danger", label: "Danger zone", description: "Irreversible actions for this Hub.", group: "advanced" },
+  { id: "overview", group: "hub" },
+  { id: "profile", group: "hub" },
+  { id: "roles", group: "people" },
+  { id: "members", group: "people" },
+  { id: "invites", group: "people" },
+  { id: "rooms", group: "content" },
+  { id: "events", group: "content" },
+  { id: "moderation", group: "advanced" },
+  { id: "bots", group: "advanced" },
+  { id: "danger", group: "advanced" },
 ];
 
-const GROUP_LABELS: Record<NavItem["group"], string> = {
-  hub: "Hub",
-  people: "People",
-  content: "Content",
-  advanced: "Advanced",
-};
+const GROUPS: NavItem["group"][] = ["hub", "people", "content", "advanced"];
 
 const PROFILE_KEYS: Array<keyof HubProfileValues> = [
   "name",
@@ -137,6 +109,7 @@ function FileButton({
 }
 
 export function ManageHubPanel(props: ManageHubPanelProps) {
+  const { t } = useTranslation(["hub"]);
   const { server, values, set, apiBaseUrl, isOwner, canManage, error, renderAvatar, onClose } = props;
   const canManageBots = canManage || props.canManageBots === true;
   const [section, setSection] = useState<ManageHubSectionId>("overview");
@@ -159,7 +132,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
       useBannerBackground: server.useBannerBackground === true,
       useChatBackground: server.useChatBackground === true,
       iconRing: server.iconRing === true,
-      category: server.category ?? "Gaming",
+      category: server.category ?? DEFAULT_HUB_CATEGORY,
       tags: (server.tags ?? []).join(", "),
       slowMode: server.slowModeSeconds ?? 0,
     }),
@@ -192,9 +165,9 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
     const byType = (type: HubRoom["type"]) =>
       server.channels.filter((room) => room.type === type).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     return [
-      { type: "text" as const, label: "Text rooms", items: byType("text") },
-      { type: "forum" as const, label: "Forum rooms", items: byType("forum") },
-      { type: "voice" as const, label: "Voice rooms", items: byType("voice") },
+      { type: "text" as const, items: byType("text") },
+      { type: "forum" as const, items: byType("forum") },
+      { type: "voice" as const, items: byType("voice") },
     ].filter((group) => group.items.length > 0);
   }, [server.channels]);
 
@@ -205,11 +178,11 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
 
   const dirtyBar = (keys: Array<keyof HubProfileValues>, dirty: boolean): ReactNode =>
     dirty && canManage ? (
-      <div className="dcx-dirtybar" role="region" aria-label="Unsaved changes">
-        <span aria-live="polite">{saving ? "Saving…" : "You have unsaved changes"}</span>
+      <div className="dcx-dirtybar" role="region" aria-label={t("hub.manageHub.unsavedChanges")}>
+        <span aria-live="polite">{saving ? t("hub.manageHub.saving") : t("hub.manageHub.unsavedNotice")}</span>
         <div>
           <button type="button" className="dcx-btn dcx-btn-ghost" disabled={saving} onClick={() => resetKeys(keys)}>
-            Reset
+            {t("hub.manageHub.reset")}
           </button>
           <button
             type="button"
@@ -217,7 +190,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
             disabled={saving || props.mediaBusy || !values.name.trim()}
             onClick={() => void save()}
           >
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("hub.manageHub.saving") : t("hub.manageHub.saveChanges")}
           </button>
         </div>
       </div>
@@ -247,18 +220,18 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
         tabIndex={-1}
         style={{ "--dch-accent": values.accent } as CSSProperties}
       >
-        <aside className="dch-nav" aria-label="Manage Hub sections">
+        <aside className="dch-nav" aria-label={t("hub.manageHub.sectionsLabel")}>
           <div className="dch-nav-hub">
             <div className={`dch-hub-icon${values.iconRing ? " has-ring" : ""}`} aria-hidden="true">
               {iconPreview}
             </div>
             <div>
-              <h2 id={titleId}>Manage Hub</h2>
+              <h2 id={titleId}>{t("hub.manageHub.title")}</h2>
               <p>{server.name}</p>
             </div>
           </div>
           <label className="dcx-sr-only" htmlFor={f("section-select")}>
-            Section
+            {t("hub.manageHub.section")}
           </label>
           <select
             id={f("section-select")}
@@ -268,19 +241,19 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
           >
             {visibleNav.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.label}
+                {t(`hub.manageHub.nav.${item.id}.label`)}
                 {dirtyBySection[item.id] ? " •" : ""}
               </option>
             ))}
           </select>
           <nav className="dch-nav-list">
-            {(Object.keys(GROUP_LABELS) as NavItem["group"][]).map((group) => {
+            {GROUPS.map((group) => {
               const items = visibleNav.filter((item) => item.group === group);
               if (!items.length) return null;
               return (
                 <div key={group} className="dch-nav-group" role="group" aria-labelledby={f(`grp-${group}`)}>
                   <div className="dch-nav-group-label" id={f(`grp-${group}`)}>
-                    {GROUP_LABELS[group]}
+                    {t(`hub.manageHub.groups.${group}`)}
                   </div>
                   {items.map((item) => (
                     <button
@@ -290,8 +263,10 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       aria-current={item.id === current.id ? "page" : undefined}
                       onClick={() => setSection(item.id)}
                     >
-                      <span>{item.label}</span>
-                      {dirtyBySection[item.id] && <i className="dch-dirty-dot" aria-label="Unsaved changes" />}
+                      <span>{t(`hub.manageHub.nav.${item.id}.label`)}</span>
+                      {dirtyBySection[item.id] && (
+                        <i className="dch-dirty-dot" aria-label={t("hub.manageHub.unsavedChanges")} />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -303,14 +278,14 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
         <main className="dch-main">
           <header className="dch-main-head">
             <div>
-              <h3>{current.label}</h3>
-              <p>{current.description}</p>
+              <h3>{t(`hub.manageHub.nav.${current.id}.label`)}</h3>
+              <p>{t(`hub.manageHub.nav.${current.id}.description`)}</p>
             </div>
             <button
               type="button"
               className="dcx-btn dcx-btn-ghost dch-close"
               onClick={onClose}
-              aria-label="Close Manage Hub"
+              aria-label={t("hub.manageHub.close")}
             >
               <Icon name="close" />
             </button>
@@ -339,37 +314,37 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                 <div>
                   <strong>{server.name}</strong>
                   <small>
-                    {server.visibility === "public" ? "Public Hub" : "Private Hub"}
-                    {server.category ? ` · ${server.category}` : ""}
+                    {server.visibility === "public" ? t("hub.manageHub.publicHub") : t("hub.manageHub.privateHub")}
+                    {server.category ? ` · ${hubCategoryText(server.category)}` : ""}
                   </small>
                 </div>
               </div>
               <dl className="dch-stats">
                 <div>
-                  <dt>Members</dt>
+                  <dt>{t("hub.manageHub.stats.members")}</dt>
                   <dd>{memberCount}</dd>
                 </div>
                 <div>
-                  <dt>Online</dt>
+                  <dt>{t("hub.manageHub.stats.online")}</dt>
                   <dd>{onlineCount}</dd>
                 </div>
                 <div>
-                  <dt>Rooms</dt>
+                  <dt>{t("hub.manageHub.stats.rooms")}</dt>
                   <dd>{server.channels.length}</dd>
                 </div>
                 <div>
-                  <dt>Custom roles</dt>
+                  <dt>{t("hub.manageHub.stats.customRoles")}</dt>
                   <dd>{props.roles.length}</dd>
                 </div>
               </dl>
               <section className="dcx-card">
                 <div className="dcx-card-head">
-                  <h4>Quick actions</h4>
+                  <h4>{t("hub.manageHub.quickActions")}</h4>
                 </div>
                 <div className="dch-quick">
                   {canManage && (
                     <button type="button" className="dcx-btn" onClick={props.onCreateRoom}>
-                      Create room
+                      {t("hub.manageHub.createRoom")}
                     </button>
                   )}
                   <button
@@ -380,27 +355,27 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       if (!props.inviteUrl) props.onCreateInvite();
                     }}
                   >
-                    Invite people
+                    {t("hub.manageHub.invitePeople")}
                   </button>
                   <button type="button" className="dcx-btn" onClick={() => setSection("roles")}>
-                    Edit roles
+                    {t("hub.manageHub.editRoles")}
                   </button>
                   <button type="button" className="dcx-btn" onClick={() => setSection("members")}>
-                    Manage members
+                    {t("hub.manageHub.manageMembers")}
                   </button>
                   <button type="button" className="dcx-btn" onClick={props.onOpenCalendar}>
-                    Open calendar
+                    {t("hub.manageHub.openCalendar")}
                   </button>
                   <button type="button" className="dcx-btn" onClick={() => setSection("profile")}>
-                    Edit profile
+                    {t("hub.manageHub.editProfile")}
                   </button>
                 </div>
               </section>
               {props.importPanel && (
                 <section className="dcx-card">
                   <div className="dcx-card-head">
-                    <h4>Import from Discord</h4>
-                    <p>Review a Discord template before adding its rooms and roles.</p>
+                    <h4>{t("hub.manageHub.importDiscord.title")}</h4>
+                    <p>{t("hub.manageHub.importDiscord.description")}</p>
                   </div>
                   <div className="dch-pad">{props.importPanel}</div>
                 </section>
@@ -410,14 +385,14 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
 
           {current.id === "profile" && (
             <fieldset className="dch-fieldset" disabled={!canManage}>
-              <legend className="dcx-sr-only">Profile and appearance</legend>
+              <legend className="dcx-sr-only">{t("hub.manageHub.profile.legend")}</legend>
               <section className="dcx-card">
                 <div className="dcx-card-head">
-                  <h4>Identity</h4>
+                  <h4>{t("hub.manageHub.profile.identity")}</h4>
                 </div>
                 <div className="dcx-row-stack">
                   <label className="dcx-field-label" htmlFor={f("name")}>
-                    Hub name
+                    {t("hub.manageHub.profile.name")}
                   </label>
                   <input
                     id={f("name")}
@@ -427,7 +402,9 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                     onChange={(event) => set.name(event.target.value)}
                     aria-invalid={!values.name.trim()}
                   />
-                  {!values.name.trim() && <span className="dch-field-error">A Hub name is required.</span>}
+                  {!values.name.trim() && (
+                    <span className="dch-field-error">{t("hub.manageHub.profile.nameRequired")}</span>
+                  )}
                 </div>
                 <div className="dcx-row">
                   <div className="dch-member">
@@ -435,13 +412,13 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       {iconPreview}
                     </div>
                     <div className="dcx-row-copy">
-                      <strong>Hub icon</strong>
-                      <small>PNG, JPEG or WebP. Applies immediately after upload.</small>
+                      <strong>{t("hub.manageHub.profile.icon")}</strong>
+                      <small>{t("hub.manageHub.profile.iconHint")}</small>
                     </div>
                   </div>
                   <div className="dcx-row-control">
                     <FileButton
-                      label={props.mediaBusy ? "Uploading…" : "Upload icon"}
+                      label={props.mediaBusy ? t("hub.manageHub.uploading") : t("hub.manageHub.profile.uploadIcon")}
                       accept="image/png,image/jpeg,image/webp"
                       disabled={props.mediaBusy}
                       onFile={(file) => props.onUploadMedia("icon", file)}
@@ -450,8 +427,8 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                 </div>
                 <div className="dcx-row">
                   <div className="dcx-row-copy">
-                    <label htmlFor={f("icon")}>Fallback emoji or letters</label>
-                    <small>Shown when there’s no uploaded icon.</small>
+                    <label htmlFor={f("icon")}>{t("hub.manageHub.profile.fallbackIcon")}</label>
+                    <small>{t("hub.manageHub.profile.fallbackIconHint")}</small>
                   </div>
                   <div className="dcx-row-control">
                     <input
@@ -465,7 +442,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                 </div>
                 <div className="dcx-row-stack">
                   <label className="dcx-field-label" htmlFor={f("description")}>
-                    Description
+                    {t("hub.manageHub.profile.description")}
                   </label>
                   <textarea
                     id={f("description")}
@@ -473,29 +450,29 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                     rows={3}
                     maxLength={300}
                     value={values.description}
-                    placeholder="What is this Hub about?"
+                    placeholder={t("hub.manageHub.profile.descriptionPlaceholder")}
                     onChange={(event) => set.description(event.target.value)}
                   />
                 </div>
                 <div className="dch-grid-2">
                   <div className="dch-field">
-                    <label htmlFor={f("category")}>Category</label>
+                    <label htmlFor={f("category")}>{t("hub.manageHub.profile.category")}</label>
                     <input
                       id={f("category")}
                       className="dcx-input"
-                      value={values.category}
+                      value={hubCategoryField(values.category)}
                       maxLength={40}
-                      placeholder="Racing, MMO, Community"
-                      onChange={(event) => set.category(event.target.value)}
+                      placeholder={t("hub.manageHub.profile.categoryPlaceholder")}
+                      onChange={(event) => set.category(hubCategoryInput(event.target.value))}
                     />
                   </div>
                   <div className="dch-field">
-                    <label htmlFor={f("tags")}>Tags</label>
+                    <label htmlFor={f("tags")}>{t("hub.manageHub.profile.tags")}</label>
                     <input
                       id={f("tags")}
                       className="dcx-input"
                       value={values.tags}
-                      placeholder="racing, EU, casual"
+                      placeholder={t("hub.manageHub.profile.tagsPlaceholder")}
                       onChange={(event) => set.tags(event.target.value)}
                     />
                   </div>
@@ -504,13 +481,13 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
 
               <section className="dcx-card">
                 <div className="dcx-card-head">
-                  <h4>Visibility</h4>
-                  {!isOwner && <p>Only the Hub owner can change visibility.</p>}
+                  <h4>{t("hub.manageHub.visibility.title")}</h4>
+                  {!isOwner && <p>{t("hub.manageHub.visibility.ownerOnly")}</p>}
                 </div>
                 <div
                   className="dcr-choice-grid dcr-choice-grid-2 dcr-pad"
                   role="radiogroup"
-                  aria-label="Hub visibility"
+                  aria-label={t("hub.manageHub.visibility.label")}
                 >
                   <label className={`dcr-choice${values.visibility === "public" ? " is-selected" : ""}`}>
                     <input
@@ -521,8 +498,8 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       onChange={() => set.visibility("public")}
                     />
                     <span>
-                      <strong>Public</strong>
-                      <small>Anyone can find this Hub in Discover and join.</small>
+                      <strong>{t("hub.manageHub.visibility.public")}</strong>
+                      <small>{t("hub.manageHub.visibility.publicHint")}</small>
                     </span>
                   </label>
                   <label className={`dcr-choice${values.visibility === "private" ? " is-selected" : ""}`}>
@@ -534,8 +511,8 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       onChange={() => set.visibility("private")}
                     />
                     <span>
-                      <strong>Private</strong>
-                      <small>Only invited people can join.</small>
+                      <strong>{t("hub.manageHub.visibility.private")}</strong>
+                      <small>{t("hub.manageHub.visibility.privateHint")}</small>
                     </span>
                   </label>
                 </div>
@@ -543,12 +520,12 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
 
               <section className="dcx-card">
                 <div className="dcx-card-head">
-                  <h4>Appearance</h4>
+                  <h4>{t("hub.manageHub.appearance.title")}</h4>
                 </div>
                 <div className="dcx-row">
                   <div className="dcx-row-copy">
-                    <label htmlFor={f("theme")}>Theme</label>
-                    <small>Color preset used across this Hub.</small>
+                    <label htmlFor={f("theme")}>{t("hub.manageHub.appearance.theme")}</label>
+                    <small>{t("hub.manageHub.appearance.themeHint")}</small>
                   </div>
                   <div className="dcx-row-control">
                     <select
@@ -557,17 +534,17 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       value={values.theme}
                       onChange={(event) => set.theme(event.target.value as HubProfileValues["theme"])}
                     >
-                      <option value="midnight">Midnight</option>
-                      <option value="ocean">Ocean</option>
-                      <option value="forest">Forest</option>
-                      <option value="ember">Ember</option>
+                      <option value="midnight">{t("hub.manageHub.appearance.themes.midnight")}</option>
+                      <option value="ocean">{t("hub.manageHub.appearance.themes.ocean")}</option>
+                      <option value="forest">{t("hub.manageHub.appearance.themes.forest")}</option>
+                      <option value="ember">{t("hub.manageHub.appearance.themes.ember")}</option>
                     </select>
                   </div>
                 </div>
                 <div className="dcx-row">
                   <div className="dcx-row-copy">
-                    <label htmlFor={f("accent")}>Accent color</label>
-                    <small>Used for highlights and the icon ring.</small>
+                    <label htmlFor={f("accent")}>{t("hub.manageHub.appearance.accent")}</label>
+                    <small>{t("hub.manageHub.appearance.accentHint")}</small>
                   </div>
                   <div className="dcx-row-control">
                     <input
@@ -581,8 +558,8 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                 </div>
                 <div className="dcx-row">
                   <div className="dcx-row-copy">
-                    <label htmlFor={f("ring")}>Highlight icon ring</label>
-                    <small id={f("ring-d")}>Draw the accent color around the Hub icon.</small>
+                    <label htmlFor={f("ring")}>{t("hub.manageHub.appearance.ring")}</label>
+                    <small id={f("ring-d")}>{t("hub.manageHub.appearance.ringHint")}</small>
                   </div>
                   <div className="dcx-row-control">
                     <Switch
@@ -598,19 +575,25 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                     <div className="dch-media-head">
                       <div className="dch-media-prev is-side">
                         {server.bannerUrl ? (
-                          <img src={`${apiBaseUrl}${server.bannerUrl}`} alt="Current sidebar banner" />
+                          <img src={`${apiBaseUrl}${server.bannerUrl}`} alt={t("hub.manageHub.media.banner.current")} />
                         ) : (
-                          <span>No banner</span>
+                          <span>{t("hub.manageHub.media.banner.none")}</span>
                         )}
                       </div>
                       <div className="dcx-row-copy">
-                        <strong>Sidebar banner</strong>
-                        <small>Fills the Hub sidebar behind the room list. {hubMediaHint("banner")}.</small>
+                        <strong>{t("hub.manageHub.media.banner.title")}</strong>
+                        <small>{t("hub.manageHub.media.banner.hint", { spec: hubMediaHintMessage("banner") })}</small>
                       </div>
                     </div>
                     <div className="dch-media-actions">
                       <FileButton
-                        label={props.mediaBusy ? "Uploading…" : server.bannerUrl ? "Change" : "Add banner"}
+                        label={
+                          props.mediaBusy
+                            ? t("hub.manageHub.uploading")
+                            : server.bannerUrl
+                              ? t("hub.manageHub.media.change")
+                              : t("hub.manageHub.media.banner.add")
+                        }
                         accept="image/png,image/jpeg,image/webp,image/gif"
                         disabled={props.mediaBusy}
                         onFile={(file) => props.onUploadMedia("banner", file)}
@@ -622,12 +605,12 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                           disabled={props.mediaBusy}
                           onClick={() => props.onRemoveMedia("banner")}
                         >
-                          Remove
+                          {t("hub.manageHub.media.remove")}
                         </button>
                       )}
                       <span className="dch-media-spacer" />
                       <label htmlFor={f("bannerbg")} className="dch-media-show">
-                        Show
+                        {t("hub.manageHub.media.show")}
                       </label>
                       <Switch
                         id={f("bannerbg")}
@@ -638,29 +621,32 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       />
                     </div>
                     <small id={f("bannerbg-d")} className="dch-media-note">
-                      {server.bannerUrl ? "Dimmed for readability." : "Add a banner to turn this on."}
+                      {server.bannerUrl ? t("hub.manageHub.media.banner.on") : t("hub.manageHub.media.banner.off")}
                     </small>
                   </div>
                   <div className="dch-media-card">
                     <div className="dch-media-head">
                       <div className="dch-media-prev is-wide">
                         {server.headerUrl ? (
-                          <img src={`${apiBaseUrl}${server.headerUrl}`} alt="Current header image" />
+                          <img src={`${apiBaseUrl}${server.headerUrl}`} alt={t("hub.manageHub.media.header.current")} />
                         ) : (
-                          <span>No header</span>
+                          <span>{t("hub.manageHub.media.header.none")}</span>
                         )}
                       </div>
                       <div className="dcx-row-copy">
-                        <strong>Header image</strong>
-                        <small>
-                          Wide image at the top of Hub Home and the Streamer Overview, shown whole. Without one, the
-                          sidebar banner is used. {hubMediaHint("header")}.
-                        </small>
+                        <strong>{t("hub.manageHub.media.header.title")}</strong>
+                        <small>{t("hub.manageHub.media.header.hint", { spec: hubMediaHintMessage("header") })}</small>
                       </div>
                     </div>
                     <div className="dch-media-actions">
                       <FileButton
-                        label={props.mediaBusy ? "Uploading…" : server.headerUrl ? "Change" : "Add header"}
+                        label={
+                          props.mediaBusy
+                            ? t("hub.manageHub.uploading")
+                            : server.headerUrl
+                              ? t("hub.manageHub.media.change")
+                              : t("hub.manageHub.media.header.add")
+                        }
                         accept="image/png,image/jpeg,image/webp,image/gif"
                         disabled={props.mediaBusy}
                         onFile={(file) => props.onUploadMedia("header", file)}
@@ -672,7 +658,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                           disabled={props.mediaBusy}
                           onClick={() => props.onRemoveMedia("header")}
                         >
-                          Remove
+                          {t("hub.manageHub.media.remove")}
                         </button>
                       )}
                     </div>
@@ -681,19 +667,30 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                     <div className="dch-media-head">
                       <div className="dch-media-prev is-wide">
                         {server.chatBackgroundUrl ? (
-                          <img src={`${apiBaseUrl}${server.chatBackgroundUrl}`} alt="Current chat background" />
+                          <img
+                            src={`${apiBaseUrl}${server.chatBackgroundUrl}`}
+                            alt={t("hub.manageHub.media.chat.current")}
+                          />
                         ) : (
-                          <span>No photo</span>
+                          <span>{t("hub.manageHub.media.chat.none")}</span>
                         )}
                       </div>
                       <div className="dcx-row-copy">
-                        <strong>Chat background</strong>
-                        <small>Behind the message list, dimmed automatically. {hubMediaHint("chat-background")}.</small>
+                        <strong>{t("hub.manageHub.media.chat.title")}</strong>
+                        <small>
+                          {t("hub.manageHub.media.chat.hint", { spec: hubMediaHintMessage("chat-background") })}
+                        </small>
                       </div>
                     </div>
                     <div className="dch-media-actions">
                       <FileButton
-                        label={props.mediaBusy ? "Uploading…" : server.chatBackgroundUrl ? "Change" : "Add photo"}
+                        label={
+                          props.mediaBusy
+                            ? t("hub.manageHub.uploading")
+                            : server.chatBackgroundUrl
+                              ? t("hub.manageHub.media.change")
+                              : t("hub.manageHub.media.chat.add")
+                        }
                         accept="image/png,image/jpeg,image/webp,image/gif"
                         disabled={props.mediaBusy}
                         onFile={(file) => props.onUploadMedia("chat-background", file)}
@@ -705,12 +702,12 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                           disabled={props.mediaBusy}
                           onClick={() => props.onRemoveMedia("chat-background")}
                         >
-                          Remove
+                          {t("hub.manageHub.media.remove")}
                         </button>
                       )}
                       <span className="dch-media-spacer" />
                       <label htmlFor={f("chatbg")} className="dch-media-show">
-                        Show
+                        {t("hub.manageHub.media.show")}
                       </label>
                       <Switch
                         id={f("chatbg")}
@@ -721,7 +718,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       />
                     </div>
                     <small id={f("chatbg-d")} className="dch-media-note">
-                      {server.chatBackgroundUrl ? "Shown in every room of this Hub." : "Add a photo to turn this on."}
+                      {server.chatBackgroundUrl ? t("hub.manageHub.media.chat.on") : t("hub.manageHub.media.chat.off")}
                     </small>
                   </div>
                 </div>
@@ -773,12 +770,12 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
           {current.id === "invites" && (
             <section className="dcx-card">
               <div className="dcx-card-head">
-                <h4>One-time invite link</h4>
-                <p>Each link works once and expires after 24 hours. Use it for people who aren’t your friends yet.</p>
+                <h4>{t("hub.manageHub.invites.title")}</h4>
+                <p>{t("hub.manageHub.invites.description")}</p>
               </div>
               <div className="dcx-row-stack">
                 <label className="dcx-sr-only" htmlFor={f("invite")}>
-                  Invite link
+                  {t("hub.manageHub.invites.label")}
                 </label>
                 <div className="dch-invite">
                   <input
@@ -786,7 +783,9 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                     className="dcx-input"
                     readOnly
                     value={props.inviteUrl}
-                    placeholder={props.inviteBusy ? "Generating secure invite…" : "Generate a link to share"}
+                    placeholder={
+                      props.inviteBusy ? t("hub.manageHub.invites.generating") : t("hub.manageHub.invites.placeholder")
+                    }
                     onFocus={(event) => event.currentTarget.select()}
                   />
                   {props.inviteUrl ? (
@@ -796,7 +795,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       disabled={props.inviteBusy}
                       onClick={props.onCopyInvite}
                     >
-                      Copy link
+                      {t("hub.manageHub.invites.copy")}
                     </button>
                   ) : (
                     <button
@@ -805,7 +804,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       disabled={props.inviteBusy}
                       onClick={props.onCreateInvite}
                     >
-                      Generate
+                      {t("hub.manageHub.invites.generate")}
                     </button>
                   )}
                 </div>
@@ -817,7 +816,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       disabled={props.inviteBusy}
                       onClick={props.onCreateInvite}
                     >
-                      Generate another link
+                      {t("hub.manageHub.invites.another")}
                     </button>
                   </div>
                 )}
@@ -830,15 +829,19 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
               {canManage && (
                 <div className="dch-section-actions">
                   <button type="button" className="dcx-btn dcx-btn-primary" onClick={props.onCreateRoom}>
-                    Create room
+                    {t("hub.manageHub.createRoom")}
                   </button>
                 </div>
               )}
-              {rooms.length === 0 && <p className="dcx-hint">This Hub has no rooms yet.</p>}
+              {rooms.length === 0 && <p className="dcx-hint">{t("hub.manageHub.rooms.empty")}</p>}
               {rooms.map((group) => (
-                <section className="dcx-card" key={group.type} aria-label={group.label}>
+                <section
+                  className="dcx-card"
+                  key={group.type}
+                  aria-label={t(`hub.manageHub.rooms.groups.${group.type}`)}
+                >
                   <div className="dcx-card-head">
-                    <h4>{group.label}</h4>
+                    <h4>{t(`hub.manageHub.rooms.groups.${group.type}`)}</h4>
                   </div>
                   <ol className="dch-room-list">
                     {group.items.map((room, index) => (
@@ -850,7 +853,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                           <div className="dcx-row-copy">
                             <strong>{room.name}</strong>
                             <small>
-                              {room.private ? "Private" : "Public"}
+                              {room.private ? t("hub.manageHub.rooms.private") : t("hub.manageHub.rooms.public")}
                               {room.category ? ` · ${room.category}` : ""}
                             </small>
                           </div>
@@ -862,7 +865,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                               className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                               disabled={index === 0}
                               onClick={() => props.onReorderRoom(room.id, group.items[index - 1].id)}
-                              aria-label={`Move ${room.name} up`}
+                              aria-label={t("hub.manageHub.rooms.moveUp", { name: room.name })}
                             >
                               ↑
                             </button>
@@ -871,7 +874,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                               className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                               disabled={index === group.items.length - 1}
                               onClick={() => props.onReorderRoom(room.id, group.items[index + 1].id)}
-                              aria-label={`Move ${room.name} down`}
+                              aria-label={t("hub.manageHub.rooms.moveDown", { name: room.name })}
                             >
                               ↓
                             </button>
@@ -880,7 +883,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                               className="dcx-btn dcx-btn-sm"
                               onClick={() => props.onOpenRoomSettings(room)}
                             >
-                              Settings
+                              {t("hub.manageHub.rooms.settings")}
                             </button>
                           </div>
                         )}
@@ -897,32 +900,26 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
               <section className="dcx-card">
                 <div className="dcx-row">
                   <div className="dcx-row-copy">
-                    <strong>Hub calendar</strong>
-                    <small>See upcoming events, RSVPs and schedule new ones.</small>
+                    <strong>{t("hub.manageHub.events.calendar")}</strong>
+                    <small>{t("hub.manageHub.events.calendarHint")}</small>
                   </div>
                   <div className="dcx-row-control">
                     <button type="button" className="dcx-btn" onClick={props.onOpenCalendar}>
-                      Open calendar
+                      {t("hub.manageHub.openCalendar")}
                     </button>
                     <button type="button" className="dcx-btn dcx-btn-primary" onClick={props.onCreateEvent}>
-                      Create event
+                      {t("hub.manageHub.events.create")}
                     </button>
                   </div>
                 </div>
               </section>
               <section className="dcx-card">
                 <div className="dcx-card-head">
-                  <h4>Who can create events</h4>
-                  <p>
-                    Events are posted into a text room, so anyone who can post in a text room can schedule events there.
-                    To limit who creates events, make rooms private on the Rooms page and grant access to specific
-                    members.
-                  </p>
+                  <h4>{t("hub.manageHub.events.whoTitle")}</h4>
+                  <p>{t("hub.manageHub.events.whoDescription")}</p>
                 </div>
                 <div className="dcx-row-stack">
-                  <div className="dcx-notice dcx-notice-info">
-                    A dedicated “create events” permission isn’t available yet.
-                  </div>
+                  <div className="dcx-notice dcx-notice-info">{t("hub.manageHub.events.noPermission")}</div>
                 </div>
               </section>
             </>
@@ -931,14 +928,12 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
           {current.id === "moderation" && (
             <>
               <fieldset className="dch-fieldset" disabled={!canManage}>
-                <legend className="dcx-sr-only">Moderation settings</legend>
+                <legend className="dcx-sr-only">{t("hub.manageHub.moderation.legend")}</legend>
                 <section className="dcx-card">
                   <div className="dcx-row">
                     <div className="dcx-row-copy">
-                      <label htmlFor={f("slow")}>Slow mode</label>
-                      <small id={f("slow-d")}>
-                        Seconds members must wait between messages (0–120). Staff are exempt.
-                      </small>
+                      <label htmlFor={f("slow")}>{t("hub.manageHub.moderation.slowMode")}</label>
+                      <small id={f("slow-d")}>{t("hub.manageHub.moderation.slowModeHint")}</small>
                     </div>
                     <div className="dcx-row-control">
                       <input
@@ -959,19 +954,19 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
               {canManage && (
                 <section className="dcx-card">
                   <div className="dcx-card-head">
-                    <h4>Emotes & stickers</h4>
-                    <p>Custom images members can use in this Hub.</p>
+                    <h4>{t("hub.manageHub.moderation.assets")}</h4>
+                    <p>{t("hub.manageHub.moderation.assetsHint")}</p>
                   </div>
                   <div className="dcx-row-stack">
                     <div className="dch-quick">
                       <FileButton
-                        label="Upload emote"
+                        label={t("hub.manageHub.moderation.uploadEmote")}
                         accept="image/png,image/jpeg,image/webp,image/gif"
                         disabled={props.assetBusy}
                         onFile={(file) => props.onUploadAsset("emote", file)}
                       />
                       <FileButton
-                        label="Upload sticker"
+                        label={t("hub.manageHub.moderation.uploadSticker")}
                         accept="image/png,image/jpeg,image/webp,image/gif"
                         disabled={props.assetBusy}
                         onFile={(file) => props.onUploadAsset("sticker", file)}
@@ -984,7 +979,11 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                         <img className="dch-asset" src={`${apiBaseUrl}${asset.url}`} alt="" />
                         <div className="dcx-row-copy">
                           <strong>:{asset.name}:</strong>
-                          <small>{asset.kind === "emote" ? "Emote" : "Sticker"}</small>
+                          <small>
+                            {asset.kind === "emote"
+                              ? t("hub.manageHub.moderation.emote")
+                              : t("hub.manageHub.moderation.sticker")}
+                          </small>
                         </div>
                       </div>
                       <div className="dcx-row-control">
@@ -992,9 +991,9 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                           type="button"
                           className="dcx-btn dcx-btn-danger dcx-btn-sm"
                           onClick={() => props.onDeleteAsset(asset)}
-                          aria-label={`Delete ${asset.name}`}
+                          aria-label={t("hub.manageHub.moderation.deleteAsset", { name: asset.name })}
                         >
-                          Delete
+                          {t("hub.manageHub.moderation.delete")}
                         </button>
                       </div>
                     </div>
@@ -1004,12 +1003,14 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
               <section className="dcx-card">
                 <div className="dcx-row">
                   <div className="dcx-row-copy">
-                    <strong>Audit log</strong>
-                    <small>Recent changes to settings, roles and members.</small>
+                    <strong>{t("hub.manageHub.moderation.audit")}</strong>
+                    <small>{t("hub.manageHub.moderation.auditHint")}</small>
                   </div>
                   <div className="dcx-row-control">
                     <button type="button" className="dcx-btn dcx-btn-sm" onClick={props.onLoadAudit}>
-                      {props.auditLog.length ? "Refresh" : "Load audit log"}
+                      {props.auditLog.length
+                        ? t("hub.manageHub.moderation.refresh")
+                        : t("hub.manageHub.moderation.loadAudit")}
                     </button>
                   </div>
                 </div>
@@ -1019,9 +1020,7 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                       <strong>{entry.action}</strong>
                       {entry.detail && <small>{entry.detail}</small>}
                     </div>
-                    <small className="dcx-hint">
-                      {new Date(entry.timestamp).toLocaleString(localeForLanguage(), preferredTimeOptions())}
-                    </small>
+                    <small className="dcx-hint">{formatDate(entry.timestamp, "dateTime")}</small>
                   </div>
                 ))}
               </section>
@@ -1037,22 +1036,22 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
                 rooms={server.channels}
                 roles={props.roles}
                 showTokenBots={Boolean(props.botsPanel)}
-                fallback={props.botsPanel ?? <p className="dcx-hint">Bots are available to Hub owners and admins.</p>}
+                fallback={props.botsPanel ?? <p className="dcx-hint">{t("hub.manageHub.botsUnavailable")}</p>}
               />
             ) : (
-              <p className="dcx-hint">Bots are available to Hub owners and admins.</p>
+              <p className="dcx-hint">{t("hub.manageHub.botsUnavailable")}</p>
             ))}
 
           {current.id === "danger" && isOwner && (
             <section className="dcx-card dch-danger">
               <div className="dcx-row">
                 <div className="dcx-row-copy">
-                  <strong>Delete this Hub</strong>
-                  <small>Permanently deletes the Hub, every room and all saved messages. This can’t be undone.</small>
+                  <strong>{t("hub.manageHub.danger.title")}</strong>
+                  <small>{t("hub.manageHub.danger.description")}</small>
                 </div>
                 <div className="dcx-row-control">
                   <button type="button" className="dcx-btn dcx-btn-danger" onClick={() => setConfirmDelete(true)}>
-                    Delete Hub
+                    {t("hub.manageHub.danger.delete")}
                   </button>
                 </div>
               </div>
@@ -1063,10 +1062,10 @@ export function ManageHubPanel(props: ManageHubPanelProps) {
 
       {confirmDelete && (
         <TypeToConfirmDialog
-          title={`Delete ${server.name}?`}
-          description="This permanently deletes the Hub, all of its rooms and every saved message."
+          title={t("hub.manageHub.danger.confirmTitle", { name: server.name })}
+          description={t("hub.manageHub.danger.confirmDescription")}
           confirmText={server.name}
-          actionLabel="Delete Hub"
+          actionLabel={t("hub.manageHub.danger.delete")}
           busy={deleting}
           onCancel={() => setConfirmDelete(false)}
           onConfirm={async () => {

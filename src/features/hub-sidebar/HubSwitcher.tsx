@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/Icon";
 import { pillsThatFit, type HubSwitcherFit } from "./hubSwitcherFit";
 import "./hubSwitcher.css";
@@ -11,6 +12,7 @@ export type HubSwitcherItem = {
   iconUrl?: string | null;
   accent?: string;
   iconRing?: boolean;
+  /** Role name in the UI language, shown in the tooltip, e.g. "owner". */
   role?: string | null;
   muted: boolean;
   unread: number;
@@ -29,14 +31,15 @@ const MORE_BUTTON = 46; // "+N" button width + gap
 const ADD_BUTTON = 38; // "Create Hub" button width + gap
 
 function HubBadge({ hub }: { hub: HubSwitcherItem }) {
+  const { t } = useTranslation(["hub"]);
   if (hub.mentions > 0)
     return (
-      <b className="dc-hub-unread-badge mention" aria-label={`${hub.mentions} mentions`}>
+      <b className="dc-hub-unread-badge mention" aria-label={t("hub.switcher.mentions", { count: hub.mentions })}>
         {hub.mentions > 99 ? "99+" : hub.mentions}
       </b>
     );
   if (hub.unread > 0 && !hub.muted)
-    return <b className="dc-hub-unread-badge dot" aria-label={`${hub.unread} unread`} />;
+    return <b className="dc-hub-unread-badge dot" aria-label={t("hub.switcher.unread", { count: hub.unread })} />;
   return null;
 }
 
@@ -53,6 +56,7 @@ function HubGlyph({ hub }: { hub: HubSwitcherItem }) {
  * so no Hub is ever scrolled out of sight on smaller windows.
  */
 export function HubSwitcher(props: HubSwitcherProps) {
+  const { t } = useTranslation(["hub"]);
   const rowRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
   const [sizeTick, setSizeTick] = useState(0);
@@ -142,7 +146,7 @@ export function HubSwitcher(props: HubSwitcherProps) {
     <div
       ref={rowRef}
       className="vadrion-top-actions dc-top-hub-switcher"
-      aria-label="Hubs"
+      aria-label={t("hub.switcher.label")}
       data-navigation-surface="hubs"
       data-fit={fit.mode}
     >
@@ -156,8 +160,8 @@ export function HubSwitcher(props: HubSwitcherProps) {
             className={`dc-top-hub-button${active ? " active" : ""}${hub.iconRing ? " custom-ring" : ""}${hub.muted ? " muted" : ""}`}
             onClick={() => props.onSelect(hub.id)}
             onContextMenu={(event) => props.onContextMenu(event, hub.id)}
-            title={`${hub.name}${hub.role ? ` (${hub.role})` : ""}${hub.muted ? " · muted" : ""}${hub.unread ? ` · ${hub.unread} unread` : ""}`}
-            aria-label={`Open ${hub.name}`}
+            title={`${hub.name}${hub.role ? ` (${hub.role})` : ""}${hub.muted ? t("hub.switcher.mutedSuffix") : ""}${hub.unread ? t("hub.switcher.unreadSuffix", { count: hub.unread }) : ""}`}
+            aria-label={t("hub.switcher.open", { name: hub.name })}
             aria-pressed={active}
             aria-current={active ? "page" : undefined}
             data-hub-id={hub.id}
@@ -176,8 +180,15 @@ export function HubSwitcher(props: HubSwitcherProps) {
           className="dc-top-hub-more"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          aria-label={`${hidden.length} more Hubs${hiddenMentions ? `, ${hiddenMentions} mentions` : hiddenUnread ? ", unread messages" : ""}`}
-          title={`${hidden.length} more Hubs`}
+          aria-label={[
+            t("hub.switcher.moreHubs", { count: hidden.length }),
+            ...(hiddenMentions
+              ? [t("hub.switcher.mentions", { count: hiddenMentions })]
+              : hiddenUnread
+                ? [t("hub.switcher.unreadMessages")]
+                : []),
+          ].join(", ")}
+          title={t("hub.switcher.moreHubs", { count: hidden.length })}
           onClick={openMenu}
         >
           +{hidden.length}
@@ -191,18 +202,18 @@ export function HubSwitcher(props: HubSwitcherProps) {
       <button
         type="button"
         className="dc-top-hub-add"
-        title="Create Hub"
-        aria-label="Create Hub"
+        title={t("hub.switcher.create")}
+        aria-label={t("hub.switcher.create")}
         onClick={props.onCreate}
       >
         <Icon name="plus" />
-        <small>Add</small>
+        <small>{t("hub.switcher.add")}</small>
       </button>
       {menuOpen && hidden.length > 0 && menuPos && (
         <div
           className="dc-hub-more-menu"
           role="menu"
-          aria-label="More Hubs"
+          aria-label={t("hub.switcher.moreMenu")}
           style={{ top: menuPos.top, left: menuPos.left }}
         >
           {hidden.map((hub) => (

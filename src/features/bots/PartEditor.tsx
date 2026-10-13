@@ -1,10 +1,12 @@
 // One trigger, condition or action: a type dropdown plus its catalogue fields.
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { CATALOGUE, type BotCatalogueEntry } from "../../../shared/bots/catalogue.ts";
 import type { BotRuleError } from "../../../shared/bots/schema.ts";
 import type { BotTrigger } from "../../../shared/bots/types.ts";
 import { FieldInput, type FieldEnv } from "./FieldInput";
 import { fieldError } from "./model.ts";
+import { entryDescription, entryLabel } from "./catalogueText";
 import { ScheduleInput } from "./ScheduleInput";
 
 export type PartKind = keyof typeof CATALOGUE;
@@ -24,6 +26,7 @@ type Props = {
 };
 
 export function PartEditor({ kind, value, path, errors, env, onChange, onTypeChange, tools }: Props) {
+  const { t } = useTranslation(["bots"]);
   const catalogue = CATALOGUE[kind] as Record<string, BotCatalogueEntry>;
   const entry = catalogue[value.type];
   const partError = errors.find((e) => e.path === path)?.message;
@@ -32,17 +35,17 @@ export function PartEditor({ kind, value, path, errors, env, onChange, onTypeCha
       <div className="bb-part-head">
         <select
           className="dcx-input bb-type"
-          aria-label={kind === "triggers" ? "Trigger" : kind === "conditions" ? "Condition" : "Action"}
+          aria-label={t(`bots.part.${kind}`)}
           value={value.type}
           onChange={(e) => onTypeChange(e.target.value)}
         >
           {Object.entries(catalogue).map(([type, item]) => (
             <option key={type} value={type}>
-              {item.label}
+              {entryLabel(kind, type, item)}
             </option>
           ))}
         </select>
-        {entry && <small className="bb-hint bb-part-desc">{entry.description}</small>}
+        {entry && <small className="bb-hint bb-part-desc">{entryDescription(kind, value.type, entry)}</small>}
         {tools && <span className="bb-part-tools">{tools}</span>}
       </div>
       {entry && entry.fields.length > 0 && (
@@ -59,6 +62,7 @@ export function PartEditor({ kind, value, path, errors, env, onChange, onTypeCha
               <FieldInput
                 key={field.key}
                 field={field}
+                part={{ kind, type: value.type }}
                 value={value[field.key]}
                 env={env}
                 error={fieldError(errors, path, field.key)}

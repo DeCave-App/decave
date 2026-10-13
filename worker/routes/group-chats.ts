@@ -13,7 +13,7 @@ import {
   publicIdOf,
 } from "../db";
 import { groupChatForClient, groupChatMessagesForClient } from "../lib/social";
-import { json, bodyJson, idFromPath } from "../lib/http";
+import { json, bodyJson, idFromPath, apiError, apiErrorLegacy } from "../lib/http";
 import { isBlockedEitherDirection } from "../trust-safety";
 import { connectedUserIds, realtimeBroadcast } from "../lib/realtime";
 import { ensureSquadFinderSchema } from "../lib/squad";
@@ -68,15 +68,15 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     const memberIds = [...new Set(resolvedMembers.map((value) => value.id))];
 
     if (memberIds.length < 2) {
-      return json({ error: "Choose at least two friends for a group chat." }, 400);
+      return apiError("groupChats.chooseTwoFriends", 400);
     }
 
     for (const memberId of memberIds) {
       if (await isBlockedEitherDirection(env.DB, user.id, memberId)) {
-        return json({ error: "A blocked user cannot be added to a group chat." }, 403);
+        return apiError("groupChats.blockedCannotAdd", 403);
       }
       if (!(await usersAreFriends(env.DB, user.id, memberId))) {
-        return json({ error: "Group chats can only include your friends." }, 403);
+        return apiError("groupChats.friendsOnly", 403);
       }
     }
 
@@ -112,10 +112,10 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     if (user instanceof Response) return user;
     const groupId = decodeURIComponent(groupBase[1]);
     if (!(await isGroupChatMember(env.DB, groupId, user.id))) {
-      return json({ error: "You are not a member of this group chat." }, 403);
+      return apiError("groupChats.notMember", 403);
     }
     const group = await groupChatForClient(env, groupId, true, user.id);
-    if (!group) return json({ error: "Group chat not found." }, 404);
+    if (!group) return apiError("groupChats.notFound", 404);
     return json({
       group,
       messages: await groupChatMessagesForClient(env, groupId, new URL(request.url).searchParams.get("before")),
@@ -131,8 +131,8 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     const group = await env.DB.prepare("SELECT * FROM decave_group_chats WHERE id=?")
       .bind(groupId)
       .first<GroupChatRow>();
-    if (!group) return json({ error: "Group chat not found." }, 404);
-    if (group.owner_user_id !== user.id) return json({ error: "Only the group owner can delete this group." }, 403);
+    if (!group) return apiError("groupChats.notFound", 404);
+    if (group.owner_user_id !== user.id) return apiError("groupChats.ownerOnlyDelete", 403);
     const memberIds = await groupChatMemberIds(env.DB, groupId);
     const squadRoom = await env.DB.prepare("SELECT hub_id FROM decave_squad_rooms WHERE group_id=?")
       .bind(groupId)
@@ -178,9 +178,9 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     const group = await env.DB.prepare("SELECT * FROM decave_group_chats WHERE id=?")
       .bind(groupId)
       .first<GroupChatRow>();
-    if (!group) return json({ error: "Group chat not found." }, 404);
+    if (!group) return apiError("groupChats.notFound", 404);
     if (!(await isGroupChatMember(env.DB, groupId, user.id))) {
-      return json({ error: "You are not a member of this group chat." }, 403);
+      return apiError("groupChats.notMember", 403);
     }
 
     const message = await env.DB.prepare(
@@ -188,9 +188,9 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     )
       .bind(messageId, groupId)
       .first<{ from_user_id: string }>();
-    if (!message) return json({ error: "Message not found." }, 404);
+    if (!message) return apiError("common.messageNotFound", 404);
     if (message.from_user_id !== user.id && group.owner_user_id !== user.id) {
-      return json({ error: "Only the message author or group owner can delete this message." }, 403);
+      return apiError("groupChats.deleteMessageDenied", 403);
     }
 
     await env.DB.batch([
@@ -209,28 +209,28 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     const groupId = decodeURIComponent(groupMembers[1]);
     await ensureGroupChatSchema(env.DB);
     if (!(await isGroupChatMember(env.DB, groupId, user.id))) {
-      return json({ error: "You are not a member of this group chat." }, 403);
+      return apiError("groupChats.notMember", 403);
     }
 
     const body = await bodyJson(request);
     const targetReference = typeof body.userId === "string" ? body.userId.trim() : "";
     const targetUser = targetReference ? await userByReference(env.DB, targetReference) : null;
     const targetId = targetUser?.id ?? "";
-    if (!targetId || targetId === user.id) return json({ error: "Choose a friend to add." }, 400);
+    if (!targetId || targetId === user.id) return apiError("groupChats.chooseFriend", 400);
     if (await isBlockedEitherDirection(env.DB, user.id, targetId)) {
-      return json({ error: "This user is blocked. Unblock them before adding them to a group." }, 403);
+      return apiError("groupChats.blockedUnblockFirst", 403);
     }
     if (!(await usersAreFriends(env.DB, user.id, targetId))) {
-      return json({ error: "You can only add one of your friends." }, 403);
+      return apiError("groupChats.addFriendsOnly", 403);
     }
     if (await isGroupChatMember(env.DB, groupId, targetId)) {
-      return json({ error: "That friend is already in the group." }, 409);
+      return apiError("groupChats.alreadyMember", 409);
     }
 
     const target = await env.DB.prepare("SELECT id FROM decave_users WHERE id=?")
       .bind(targetId)
       .first<{ id: string }>();
-    if (!target) return json({ error: "User not found." }, 404);
+    if (!target) return apiError("groupChats.userNotFound", 404);
 
     // An encrypted group stays encrypted: someone joining needs a key first.
     if (dmE2eeEnabled(env)) {
@@ -238,13 +238,7 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
         .bind(groupId)
         .first<{ e2ee_since: string | null }>();
       if (group?.e2ee_since && !(await currentDmKey(env.DB, targetId))) {
-        return json(
-          {
-            error: "This group is end-to-end encrypted. Your friend needs to open an up-to-date DeCave first.",
-            code: "DM_E2EE_MEMBER_NO_KEY",
-          },
-          409,
-        );
+        return apiErrorLegacy("DM_E2EE_MEMBER_NO_KEY", "groupChats.memberNoKey", 409);
       }
     }
 
@@ -263,15 +257,15 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     ]);
     if (Number(addResults[0]?.meta?.changes ?? 0) === 0) {
       if (await isGroupChatMember(env.DB, groupId, targetId)) {
-        return json({ error: "That friend is already in the group." }, 409);
+        return apiError("groupChats.alreadyMember", 409);
       }
       const count = await env.DB.prepare("SELECT COUNT(*) AS count FROM decave_group_chat_members WHERE group_id=?")
         .bind(groupId)
         .first<{ count: number }>();
       if (Number(count?.count ?? 0) >= 20) {
-        return json({ error: "Group chats are limited to 20 members." }, 400);
+        return apiError("groupChats.memberLimit", 400);
       }
-      return json({ error: "Group chat is no longer available." }, 404);
+      return apiError("groupChats.unavailable", 404);
     }
 
     const memberIds = await groupChatMemberIds(env.DB, groupId);
@@ -291,27 +285,27 @@ export async function handleGroupChatRoutes({ request, env, p, method }: ApiCont
     const targetReference = decodeURIComponent(groupMember[2]);
     const targetUser = await userByReference(env.DB, targetReference);
     const targetId = targetUser?.id ?? "";
-    if (!targetId) return json({ error: "That user is not in the group." }, 404);
+    if (!targetId) return apiError("groupChats.userNotInGroup", 404);
     await ensureGroupChatSchema(env.DB);
 
     const group = await env.DB.prepare("SELECT * FROM decave_group_chats WHERE id=?")
       .bind(groupId)
       .first<GroupChatRow>();
-    if (!group) return json({ error: "Group chat not found." }, 404);
+    if (!group) return apiError("groupChats.notFound", 404);
     if (!(await isGroupChatMember(env.DB, groupId, user.id))) {
-      return json({ error: "You are not a member of this group chat." }, 403);
+      return apiError("groupChats.notMember", 403);
     }
     if (!(await isGroupChatMember(env.DB, groupId, targetId))) {
-      return json({ error: "That user is not in the group." }, 404);
+      return apiError("groupChats.userNotInGroup", 404);
     }
     if (targetId !== user.id && group.owner_user_id !== user.id) {
-      return json({ error: "Only the group owner can remove another member." }, 403);
+      return apiError("groupChats.ownerOnlyRemove", 403);
     }
 
     const beforeIds = await groupChatMemberIds(env.DB, groupId);
     if (targetId === group.owner_user_id) {
       if (beforeIds.length > 1) {
-        return json({ error: "The group owner cannot leave while other members remain." }, 400);
+        return apiError("groupChats.ownerCannotLeave", 400);
       }
       await env.DB.batch([
         env.DB.prepare("DELETE FROM decave_group_chat_messages WHERE group_id=?").bind(groupId),

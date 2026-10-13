@@ -8,6 +8,7 @@ import {
   type DragEvent,
   type KeyboardEvent,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { useDialogA11y } from "../shared/useDialogA11y";
 import {
   FORUM_LFG_LIMITS,
@@ -59,14 +60,18 @@ export type ForumComposeModalProps = {
 };
 
 const MAX_TAGS = FORUM_TAG_LIMITS.maxTagsPerPost;
-const POLL_DURATIONS: { label: string; ms: number }[] = [
-  { label: "No end", ms: 0 },
-  { label: "1 hour", ms: 3_600_000 },
-  { label: "1 day", ms: 86_400_000 },
-  { label: "3 days", ms: 3 * 86_400_000 },
-  { label: "1 week", ms: 7 * 86_400_000 },
-  { label: "30 days", ms: FORUM_POLL_LIMITS.maxDurationMs },
-];
+const POLL_DURATIONS = [
+  { id: "none", ms: 0 },
+  { id: "h1", ms: 3_600_000 },
+  { id: "d1", ms: 86_400_000 },
+  { id: "d3", ms: 3 * 86_400_000 },
+  { id: "w1", ms: 7 * 86_400_000 },
+  { id: "d30", ms: FORUM_POLL_LIMITS.maxDurationMs },
+] as const;
+/** A URL shape, the same in every language. */
+const LINK_URL_EXAMPLE = "https://";
+/** Toolbar letters for bold, italic, strikethrough and heading (the same in every language, like the markdown). */
+const GLYPHS = { bold: "B", italic: "I", strike: "S", heading: "H" };
 const PLATFORMS = ["PC", "PlayStation", "Xbox", "Switch", "Mobile", "Cross-play"];
 const EMOJIS = [
   "😀",
@@ -164,6 +169,7 @@ function restoreDraft(raw: unknown): Draft | null {
 const isImage = (file: File) => /^image\/(png|jpeg|webp|gif)$/.test(file.type);
 
 export function ForumComposeModal(props: ForumComposeModalProps) {
+  const { t } = useTranslation(["forum"]);
   const dialogRef = useDialogA11y<HTMLDivElement>(props.onClose);
   const titleId = useId();
   const fieldId = useId();
@@ -215,26 +221,28 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
   const cleanPollOptions = draft.pollOptions.map((option) => option.trim()).filter(Boolean);
 
   const errors = {
-    title: !draft.title.trim() ? "Add a title." : "",
-    body: !bodyOptional && !draft.body.trim() ? "Write something in the post body." : "",
+    title: !draft.title.trim() ? t("forum.compose.errors.title") : "",
+    body: !bodyOptional && !draft.body.trim() ? t("forum.compose.errors.body") : "",
     poll:
       type !== "poll"
         ? ""
         : cleanPollOptions.length < FORUM_POLL_LIMITS.minOptions
-          ? "Add at least two options."
+          ? t("forum.compose.errors.pollOptions")
           : new Set(cleanPollOptions.map((option) => option.toLowerCase())).size !== cleanPollOptions.length
-            ? "Options must be different."
+            ? t("forum.compose.errors.pollDuplicate")
             : "",
-    lfgGame: type === "lfg" && !draft.lfgGame.trim() ? "Which game are you playing?" : "",
+    lfgGame: type === "lfg" && !draft.lfgGame.trim() ? t("forum.compose.errors.lfgGame") : "",
     lfgStart:
-      type === "lfg" && draft.lfgStart && !(new Date(draft.lfgStart).getTime() > 0) ? "Pick a valid start time." : "",
+      type === "lfg" && draft.lfgStart && !(new Date(draft.lfgStart).getTime() > 0)
+        ? t("forum.compose.errors.lfgStart")
+        : "",
     media:
       type !== "media"
         ? ""
         : !draft.mediaUrl && !draft.attachment
-          ? "Add a clip link or upload a file."
+          ? t("forum.compose.errors.media")
           : draft.mediaUrl && !draft.mediaUrl.startsWith("/uploads/") && !/^https:\/\/\S+$/.test(draft.mediaUrl)
-            ? "Links must start with https://."
+            ? t("forum.compose.errors.mediaHttps")
             : "",
   };
   const errorList = Object.values(errors).filter(Boolean);
@@ -252,7 +260,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
     const tag = tagDraft.replace(/,/g, " ").replace(/\s+/g, " ").trim().slice(0, FORUM_TAG_LIMITS.maxTagLength);
     if (!tag) return;
     if (draft.tags.length >= MAX_TAGS) {
-      setError(`Posts can have at most ${MAX_TAGS} tags.`);
+      setError(t("forum.compose.errors.tags", { count: MAX_TAGS }));
       return;
     }
     if (!draft.tags.some((item) => item.toLowerCase() === tag.toLowerCase())) set("tags", [...draft.tags, tag]);
@@ -321,35 +329,35 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
     const selected = draft.body.slice(start, end);
     if (selected.includes("\n") || !selected) {
       const lead = start > 0 && draft.body[start - 1] !== "\n" ? "\n" : "";
-      wrapSelection(`${lead}\`\`\`\n`, "\n```\n", "code");
-    } else wrapSelection("`", "`", "code");
+      wrapSelection(`${lead}\`\`\`\n`, "\n```\n", t("forum.compose.placeholder.code"));
+    } else wrapSelection("`", "`", t("forum.compose.placeholder.code"));
   };
   const confirmLink = () => {
     let url: URL;
     try {
       url = new URL(linkUrl.trim());
     } catch {
-      setError("Enter a valid https:// link.");
+      setError(t("forum.compose.errors.link"));
       return;
     }
     if (url.protocol !== "https:") {
-      setError("Links must use https://.");
+      setError(t("forum.compose.errors.linkHttps"));
       return;
     }
     setError("");
     setLinkOpen(false);
     setLinkUrl("");
-    wrapSelection("[", `](${url.toString()})`, "link text");
+    wrapSelection("[", `](${url.toString()})`, t("forum.compose.placeholder.link"));
   };
   const onEditorKey = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (!(event.ctrlKey || event.metaKey)) return;
     const key = event.key.toLowerCase();
     if (key === "b") {
       event.preventDefault();
-      wrapSelection("**", "**", "bold text");
+      wrapSelection("**", "**", t("forum.compose.placeholder.bold"));
     } else if (key === "i") {
       event.preventDefault();
-      wrapSelection("*", "*", "italic text");
+      wrapSelection("*", "*", t("forum.compose.placeholder.italic"));
     } else if (key === "k") {
       event.preventDefault();
       rememberSelection();
@@ -363,7 +371,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
   // ---------- uploads ----------
   const upload = async (file: File, kind: "icon" | "file" | "image" | "media") => {
     if ((kind === "icon" || kind === "image") && !isImage(file)) {
-      setError("Choose a PNG, JPEG, WebP, or GIF image.");
+      setError(t("forum.compose.errors.imageType"));
       return;
     }
     setUploading(kind);
@@ -371,11 +379,13 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
     try {
       const result = await uploadForumFile(props.fetcher, props.apiBase, props.roomId, file);
       if (kind === "icon") {
-        if (!props.resolveIconUrl(result.url)) throw new Error("That image cannot be used as a cover.");
+        if (!props.resolveIconUrl(result.url)) throw new Error(t("forum.compose.errors.cover"));
         set("iconUrl", result.url);
       } else if (kind === "image") {
-        if (!props.resolveIconUrl(result.url)) throw new Error("That image cannot be shown inline; attach it instead.");
-        insertText(`![${file.name.replace(/[[\]()]/g, "").slice(0, 40) || "image"}](${result.url})`);
+        if (!props.resolveIconUrl(result.url)) throw new Error(t("forum.compose.errors.inline"));
+        insertText(
+          `![${file.name.replace(/[[\]()]/g, "").slice(0, 40) || t("forum.compose.placeholder.image")}](${result.url})`,
+        );
       } else if (kind === "media") {
         setDraft((current) => ({
           ...current,
@@ -384,7 +394,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
         }));
       } else set("attachment", result);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Upload failed.");
+      setError(uploadError instanceof Error ? uploadError.message : t("forum.compose.errors.upload"));
     } finally {
       setUploading("");
     }
@@ -457,12 +467,11 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
     setError("");
     try {
       const text = encodeForumPost(buildPayload(Date.now()));
-      if (!(await props.publish(text, draft.attachment)))
-        throw new Error("Realtime is reconnecting. Try again in a moment.");
+      if (!(await props.publish(text, draft.attachment))) throw new Error(t("forum.view.reconnecting"));
       saveForumDraft(props.viewerId ?? "", props.roomId, null, forumDraftVersion);
       props.onPublished();
     } catch (publishError) {
-      setError(publishError instanceof Error ? publishError.message : "Could not publish the post.");
+      setError(publishError instanceof Error ? publishError.message : t("forum.compose.errors.publish"));
     } finally {
       setPublishing(false);
     }
@@ -489,7 +498,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
     ) : null;
 
   const previewCard = (
-    <article className="fx-compose-preview" aria-label="Post preview">
+    <article className="fx-compose-preview" aria-label={t("forum.compose.postPreview")}>
       <div className="fx-compose-preview-head">
         {iconPreview ? (
           <img src={iconPreview} alt="" />
@@ -500,7 +509,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
         )}
         <div>
           <TypeBadge type={type} />
-          <h3>{previewPayload.title || <span className="fx-muted">Your title appears here</span>}</h3>
+          <h3>{previewPayload.title || <span className="fx-muted">{t("forum.compose.titlePreview")}</span>}</h3>
         </div>
       </div>
       {previewPayload.tags.length > 0 && (
@@ -516,7 +525,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
       {previewPayload.body ? (
         <div className="fx-thread-body">{renderForumMarkdown(previewPayload.body, resolveImage)}</div>
       ) : (
-        !bodyOptional && <p className="fx-muted">Nothing to preview yet.</p>
+        !bodyOptional && <p className="fx-muted">{t("forum.compose.nothing")}</p>
       )}
       {draft.attachment && <p className="fx-muted">📎 {draft.attachment.name}</p>}
     </article>
@@ -540,23 +549,28 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
       >
         <header className="fx-compose-head">
           <div>
-            <span className="fx-kicker">New post · #{props.roomName}</span>
-            <h2 id={titleId}>Create a post</h2>
+            <span className="fx-kicker">{t("forum.compose.kicker", { room: props.roomName })}</span>
+            <h2 id={titleId}>{t("forum.compose.title")}</h2>
           </div>
           <div className="fx-compose-head-side">
             {restored ? (
               <span className="fx-draft-note" role="status">
-                Draft restored ·{" "}
+                {t("forum.compose.restored")}{" "}
                 <button type="button" className="fx-link-btn" onClick={discardDraft}>
-                  Discard
+                  {t("forum.compose.discard")}
                 </button>
               </span>
             ) : savedAt ? (
               <span className="fx-draft-note muted" role="status">
-                Draft saved
+                {t("forum.compose.saved")}
               </span>
             ) : null}
-            <button type="button" className="dcx-btn dcx-btn-ghost fx-close" aria-label="Close" onClick={props.onClose}>
+            <button
+              type="button"
+              className="dcx-btn dcx-btn-ghost fx-close"
+              aria-label={t("forum.compose.close")}
+              onClick={props.onClose}
+            >
               <Icon name="close" size="sm" />
             </button>
           </div>
@@ -570,7 +584,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
             </p>
             <footer className="fx-compose-foot">
               <button type="button" className="dcx-btn" onClick={props.onClose}>
-                Close
+                {t("forum.compose.close")}
               </button>
             </footer>
           </div>
@@ -583,7 +597,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
               void publish();
             }}
           >
-            <div className="fx-type-picker" role="radiogroup" aria-label="Post type">
+            <div className="fx-type-picker" role="radiogroup" aria-label={t("forum.compose.type")}>
               {FORUM_POST_TYPES.map((value) => {
                 const item = FORUM_TYPE_META[value];
                 return (
@@ -605,15 +619,14 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
               })}
             </div>
             <p className="fx-type-hint">
-              {meta.hint}
-              {type === "question" ? " — you can mark a reply as the solution." : ""}
+              {type === "question" ? t("forum.compose.questionHint", { hint: meta.hint }) : meta.hint}
             </p>
 
             <div className="fx-compose-grid">
               <div className="fx-compose-main">
                 <div className="fx-field">
                   <div className="fx-field-label">
-                    <label htmlFor={`${fieldId}-title`}>Title</label>
+                    <label htmlFor={`${fieldId}-title`}>{t("forum.compose.titleLabel")}</label>
                   </div>
                   <input
                     id={`${fieldId}-title`}
@@ -625,10 +638,10 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                     onBlur={() => touch("title")}
                     placeholder={
                       type === "question"
-                        ? "What do you need help with?"
+                        ? t("forum.compose.titlePlaceholder.question")
                         : type === "lfg"
-                          ? "e.g. Ranked duos tonight, chill vibes"
-                          : "A clear, searchable title"
+                          ? t("forum.compose.titlePlaceholder.lfg")
+                          : t("forum.compose.titlePlaceholder.default")
                     }
                     aria-invalid={show("title") && Boolean(errors.title)}
                     aria-describedby={show("title") && errors.title ? `${fieldId}-title-err` : undefined}
@@ -638,7 +651,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
 
                 <div className="fx-field">
                   <div className="fx-field-label">
-                    <span id={`${fieldId}-tags`}>Tags</span>
+                    <span id={`${fieldId}-tags`}>{t("forum.compose.tags")}</span>
                     <small>
                       {draft.tags.length}/{MAX_TAGS}
                     </small>
@@ -675,7 +688,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                           onChange={(event) => setTagDraft(event.target.value)}
                           onKeyDown={onTagKey}
                           onBlur={commitTagDraft}
-                          placeholder={draft.tags.length ? "Add tag" : "Type a tag and press Enter"}
+                          placeholder={draft.tags.length ? t("forum.compose.addTag") : t("forum.compose.tagHint")}
                         />
                       )}
                     </div>
@@ -684,15 +697,15 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
 
                 {type === "poll" && (
                   <fieldset className="fx-field fx-typed-panel">
-                    <legend>Poll options</legend>
+                    <legend>{t("forum.poll.options")}</legend>
                     {draft.pollOptions.map((option, index) => (
                       <div key={index} className="fx-poll-edit-row">
                         <span aria-hidden="true">{index + 1}</span>
                         <input
                           value={option}
                           maxLength={FORUM_POLL_LIMITS.maxOptionLength}
-                          aria-label={`Option ${index + 1}`}
-                          placeholder={`Option ${index + 1}`}
+                          aria-label={t("forum.compose.option", { number: index + 1 })}
+                          placeholder={t("forum.compose.option", { number: index + 1 })}
                           onBlur={() => touch("poll")}
                           onChange={(event) =>
                             set(
@@ -715,7 +728,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                           <button
                             type="button"
                             className="dcx-btn dcx-btn-ghost dcx-btn-sm"
-                            aria-label={`Remove option ${index + 1}`}
+                            aria-label={t("forum.compose.removeOption", { number: index + 1 })}
                             onClick={() =>
                               set(
                                 "pollOptions",
@@ -734,7 +747,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                         className="dcx-btn dcx-btn-ghost dcx-btn-sm fx-add-option"
                         onClick={() => set("pollOptions", [...draft.pollOptions, ""])}
                       >
-                        + Add option
+                        {t("forum.compose.addOption")}
                       </button>
                     )}
                     <div className="fx-inline-fields">
@@ -745,17 +758,17 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                           onChange={(event) => set("pollMulti", event.target.checked)}
                         />
                         <span aria-hidden="true" />
-                        Allow multiple choices
+                        {t("forum.compose.multi")}
                       </label>
                       <label className="fx-select-label">
-                        Ends after
+                        {t("forum.compose.endsAfter")}
                         <select
                           value={draft.pollDurationMs}
                           onChange={(event) => set("pollDurationMs", Number(event.target.value))}
                         >
                           {POLL_DURATIONS.map((item) => (
                             <option key={item.ms} value={item.ms}>
-                              {item.label}
+                              {t(`forum.compose.pollDuration.${item.id}`)}
                             </option>
                           ))}
                         </select>
@@ -767,26 +780,26 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
 
                 {type === "lfg" && (
                   <fieldset className="fx-field fx-typed-panel fx-lfg-edit">
-                    <legend>Group details</legend>
+                    <legend>{t("forum.compose.group")}</legend>
                     <label>
-                      Game
+                      {t("forum.lfg.game")}
                       <input
                         value={draft.lfgGame}
                         maxLength={FORUM_LFG_LIMITS.maxGameLength}
                         onChange={(event) => set("lfgGame", event.target.value)}
                         onBlur={() => touch("lfgGame")}
-                        placeholder="e.g. Valorant"
+                        placeholder={t("forum.compose.gamePlaceholder")}
                         aria-invalid={show("lfgGame") && Boolean(errors.lfgGame)}
                       />
                     </label>
                     <label>
-                      Platform
+                      {t("forum.lfg.platform")}
                       <input
                         value={draft.lfgPlatform}
                         list={`${fieldId}-platforms`}
                         maxLength={FORUM_LFG_LIMITS.maxPlatformLength}
                         onChange={(event) => set("lfgPlatform", event.target.value)}
-                        placeholder="PC, PlayStation…"
+                        placeholder={t("forum.compose.platformPlaceholder")}
                       />
                     </label>
                     <datalist id={`${fieldId}-platforms`}>
@@ -795,11 +808,11 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                       ))}
                     </datalist>
                     <label>
-                      Players needed
+                      {t("forum.compose.players")}
                       <span className="fx-stepper">
                         <button
                           type="button"
-                          aria-label="Fewer players"
+                          aria-label={t("forum.compose.fewer")}
                           onClick={() => set("lfgSlots", Math.max(FORUM_LFG_LIMITS.minSlots, draft.lfgSlots - 1))}
                         >
                           −
@@ -821,7 +834,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                         />
                         <button
                           type="button"
-                          aria-label="More players"
+                          aria-label={t("forum.compose.more")}
                           onClick={() => set("lfgSlots", Math.min(FORUM_LFG_LIMITS.maxSlots, draft.lfgSlots + 1))}
                         >
                           +
@@ -829,7 +842,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                       </span>
                     </label>
                     <label>
-                      Start time (optional)
+                      {t("forum.compose.startTime")}
                       <input
                         type="datetime-local"
                         value={draft.lfgStart}
@@ -844,17 +857,19 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
 
                 {type === "media" && (
                   <fieldset className="fx-field fx-typed-panel">
-                    <legend>Clip or media</legend>
+                    <legend>{t("forum.compose.media")}</legend>
                     {draft.mediaUrl.startsWith("/uploads/") ? (
                       <div className="fx-asset">
                         <span aria-hidden="true">🎬</span>
-                        <span>Uploaded {draft.mediaMime || "file"}</span>
+                        <span>
+                          {t("forum.compose.uploaded", { type: draft.mediaMime || t("forum.compose.fileWord") })}
+                        </span>
                         <button
                           type="button"
                           className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                           onClick={() => setDraft((current) => ({ ...current, mediaUrl: "", mediaMime: "" }))}
                         >
-                          Remove
+                          {t("forum.view.remove")}
                         </button>
                       </div>
                     ) : (
@@ -869,17 +884,17 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                             setDraft((current) => ({ ...current, mediaUrl: event.target.value.trim(), mediaMime: "" }))
                           }
                           onBlur={() => touch("media")}
-                          placeholder="https://example.com/clip"
-                          aria-label="Media link"
+                          placeholder={t("forum.compose.mediaPlaceholder")}
+                          aria-label={t("forum.compose.mediaLink")}
                         />
-                        <span className="fx-muted">or</span>
+                        <span className="fx-muted">{t("forum.compose.or")}</span>
                         <button
                           type="button"
                           className="dcx-btn dcx-btn-sm"
                           disabled={Boolean(uploading)}
                           onClick={() => mediaInputRef.current?.click()}
                         >
-                          Upload
+                          {t("forum.compose.upload")}
                         </button>
                       </div>
                     )}
@@ -900,8 +915,10 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
 
                 <div className="fx-field">
                   <div className="fx-field-label">
-                    <label htmlFor={`${fieldId}-body`}>{bodyOptional ? "Description (optional)" : "Post"}</label>
-                    <div className="fx-tabs" role="tablist" aria-label="Editor mode">
+                    <label htmlFor={`${fieldId}-body`}>
+                      {bodyOptional ? t("forum.compose.description") : t("forum.compose.post")}
+                    </label>
+                    <div className="fx-tabs" role="tablist" aria-label={t("forum.compose.mode")}>
                       <button
                         type="button"
                         role="tab"
@@ -909,7 +926,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                         className={tab === "write" ? "active" : ""}
                         onClick={() => setTab("write")}
                       >
-                        Write
+                        {t("forum.compose.write")}
                       </button>
                       <button
                         type="button"
@@ -918,7 +935,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                         className={tab === "preview" ? "active" : ""}
                         onClick={() => setTab("preview")}
                       >
-                        Preview
+                        {t("forum.compose.preview")}
                       </button>
                     </div>
                   </div>
@@ -938,82 +955,89 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                     <div
                       className="fx-editor-tools"
                       role="toolbar"
-                      aria-label="Formatting"
+                      aria-label={t("forum.compose.formatting")}
                       onMouseDown={rememberSelection}
                     >
                       <button
                         type="button"
-                        aria-label="Bold (Ctrl+B)"
-                        title="Bold (Ctrl+B)"
-                        onClick={() => wrapSelection("**", "**", "bold text")}
+                        aria-label={t("forum.compose.tool.bold")}
+                        title={t("forum.compose.tool.bold")}
+                        onClick={() => wrapSelection("**", "**", t("forum.compose.placeholder.bold"))}
                       >
-                        <b>B</b>
+                        <b>{GLYPHS.bold}</b>
                       </button>
                       <button
                         type="button"
-                        aria-label="Italic (Ctrl+I)"
-                        title="Italic (Ctrl+I)"
-                        onClick={() => wrapSelection("*", "*", "italic text")}
+                        aria-label={t("forum.compose.tool.italic")}
+                        title={t("forum.compose.tool.italic")}
+                        onClick={() => wrapSelection("*", "*", t("forum.compose.placeholder.italic"))}
                       >
-                        <i>I</i>
+                        <i>{GLYPHS.italic}</i>
                       </button>
                       <button
                         type="button"
-                        aria-label="Strikethrough"
-                        title="Strikethrough"
-                        onClick={() => wrapSelection("~~", "~~", "struck text")}
+                        aria-label={t("forum.compose.tool.strike")}
+                        title={t("forum.compose.tool.strike")}
+                        onClick={() => wrapSelection("~~", "~~", t("forum.compose.placeholder.strike"))}
                       >
-                        <s>S</s>
+                        <s>{GLYPHS.strike}</s>
                       </button>
                       <span className="fx-tool-sep" aria-hidden="true" />
                       <button
                         type="button"
-                        aria-label="Heading"
-                        title="Heading"
-                        onClick={() => prefixLines(() => "## ", "Heading")}
+                        aria-label={t("forum.compose.tool.heading")}
+                        title={t("forum.compose.tool.heading")}
+                        onClick={() => prefixLines(() => "## ", t("forum.compose.placeholder.heading"))}
                       >
-                        H
+                        {GLYPHS.heading}
                       </button>
                       <button
                         type="button"
-                        aria-label="Bulleted list"
-                        title="Bulleted list"
-                        onClick={() => prefixLines(() => "- ", "List item")}
+                        aria-label={t("forum.compose.tool.bullets")}
+                        title={t("forum.compose.tool.bullets")}
+                        onClick={() => prefixLines(() => "- ", t("forum.compose.placeholder.listItem"))}
                       >
                         •≡
                       </button>
                       <button
                         type="button"
-                        aria-label="Numbered list"
-                        title="Numbered list"
-                        onClick={() => prefixLines((index) => `${index + 1}. `, "List item")}
+                        aria-label={t("forum.compose.tool.numbers")}
+                        title={t("forum.compose.tool.numbers")}
+                        onClick={() =>
+                          prefixLines((index) => `${index + 1}. `, t("forum.compose.placeholder.listItem"))
+                        }
                       >
                         1≡
                       </button>
                       <button
                         type="button"
-                        aria-label="Quote"
-                        title="Quote"
-                        onClick={() => prefixLines(() => "> ", "Quote")}
+                        aria-label={t("forum.compose.tool.quote")}
+                        title={t("forum.compose.tool.quote")}
+                        onClick={() => prefixLines(() => "> ", t("forum.compose.placeholder.quote"))}
                       >
                         ❝
                       </button>
-                      <button type="button" aria-label="Code" title="Code" onClick={insertCodeBlock}>
+                      <button
+                        type="button"
+                        aria-label={t("forum.compose.tool.code")}
+                        title={t("forum.compose.tool.code")}
+                        onClick={insertCodeBlock}
+                      >
                         {"</>"}
                       </button>
                       <button
                         type="button"
-                        aria-label="Spoiler"
-                        title="Spoiler"
-                        onClick={() => wrapSelection("||", "||", "spoiler")}
+                        aria-label={t("forum.compose.tool.spoiler")}
+                        title={t("forum.compose.tool.spoiler")}
+                        onClick={() => wrapSelection("||", "||", t("forum.compose.placeholder.spoiler"))}
                       >
                         ▒
                       </button>
                       <span className="fx-tool-sep" aria-hidden="true" />
                       <button
                         type="button"
-                        aria-label="Insert link (Ctrl+K)"
-                        title="Insert link (Ctrl+K)"
+                        aria-label={t("forum.compose.tool.link")}
+                        title={t("forum.compose.tool.link")}
                         aria-expanded={linkOpen}
                         onClick={() => {
                           setLinkOpen((value) => !value);
@@ -1025,8 +1049,8 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                       <span className="fx-popover-anchor">
                         <button
                           type="button"
-                          aria-label="Emoji"
-                          title="Emoji"
+                          aria-label={t("forum.compose.tool.emoji")}
+                          title={t("forum.compose.tool.emoji")}
                           aria-expanded={emojiOpen}
                           onClick={() => {
                             setEmojiOpen((value) => !value);
@@ -1036,7 +1060,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                           ☺
                         </button>
                         {emojiOpen && (
-                          <div className="fx-emoji-pop" role="menu" aria-label="Emoji">
+                          <div className="fx-emoji-pop" role="menu" aria-label={t("forum.compose.tool.emoji")}>
                             {EMOJIS.map((emoji) => (
                               <button
                                 key={emoji}
@@ -1055,8 +1079,8 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                       </span>
                       <button
                         type="button"
-                        aria-label="Insert image"
-                        title="Insert image (or paste / drop)"
+                        aria-label={t("forum.compose.tool.image")}
+                        title={t("forum.compose.tool.imageTitle")}
                         disabled={Boolean(uploading)}
                         onClick={() => imageInputRef.current?.click()}
                       >
@@ -1064,8 +1088,8 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                       </button>
                       <button
                         type="button"
-                        aria-label="Attach a file"
-                        title="Attach a file"
+                        aria-label={t("forum.view.attach")}
+                        title={t("forum.view.attach")}
                         disabled={Boolean(uploading)}
                         onClick={() => fileInputRef.current?.click()}
                       >
@@ -1100,8 +1124,8 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                           type="url"
                           value={linkUrl}
                           onChange={(event) => setLinkUrl(event.target.value)}
-                          placeholder="https://"
-                          aria-label="Link URL"
+                          placeholder={LINK_URL_EXAMPLE}
+                          aria-label={t("forum.compose.linkUrl")}
                           onKeyDown={(event) => {
                             if (event.key === "Enter") {
                               event.preventDefault();
@@ -1113,14 +1137,14 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                           }}
                         />
                         <button type="button" className="dcx-btn dcx-btn-sm dcx-btn-primary" onClick={confirmLink}>
-                          Insert
+                          {t("forum.compose.insert")}
                         </button>
                         <button
                           type="button"
                           className="dcx-btn dcx-btn-sm dcx-btn-ghost"
                           onClick={() => setLinkOpen(false)}
                         >
-                          Cancel
+                          {t("forum.view.cancel")}
                         </button>
                       </div>
                     )}
@@ -1141,8 +1165,8 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                         onPaste={onPaste}
                         placeholder={
                           type === "guide"
-                            ? "## Step 1\nExplain each step… Paste or drop screenshots right here."
-                            : "Share the details. Markdown works, and you can paste or drop images."
+                            ? t("forum.compose.bodyPlaceholder.guide")
+                            : t("forum.compose.bodyPlaceholder.default")
                         }
                         aria-invalid={show("body") && Boolean(errors.body)}
                         aria-describedby={show("body") && errors.body ? `${fieldId}-body-err` : undefined}
@@ -1152,13 +1176,13 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                         {draft.body.trim() ? (
                           renderForumMarkdown(draft.body, resolveImage)
                         ) : (
-                          <p className="fx-muted">Nothing to preview yet.</p>
+                          <p className="fx-muted">{t("forum.compose.nothing")}</p>
                         )}
                       </div>
                     )}
                     {dragging && (
                       <div className="fx-drop-hint" aria-hidden="true">
-                        Drop to upload
+                        {t("forum.compose.drop")}
                       </div>
                     )}
                   </div>
@@ -1169,7 +1193,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                   <div className="fx-compose-assets">
                     {uploading && (
                       <span className="fx-muted" role="status">
-                        Uploading {uploading === "icon" ? "cover" : uploading}…
+                        {t(`forum.compose.uploading.${uploading}`)}
                       </span>
                     )}
                     {draft.attachment && (
@@ -1181,7 +1205,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                           className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                           onClick={() => set("attachment", null)}
                         >
-                          Remove
+                          {t("forum.view.remove")}
                         </button>
                       </span>
                     )}
@@ -1189,16 +1213,16 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                 )}
               </div>
 
-              <aside className="fx-compose-side" aria-label="Preview and options">
+              <aside className="fx-compose-side" aria-label={t("forum.compose.side")}>
                 <section className="fx-side-card">
-                  <h3 className="fx-side-title">Live preview</h3>
+                  <h3 className="fx-side-title">{t("forum.compose.livePreview")}</h3>
                   {previewCard}
                 </section>
                 <section className="fx-side-card">
-                  <h3 className="fx-side-title">Cover</h3>
+                  <h3 className="fx-side-title">{t("forum.compose.cover")}</h3>
                   <div className="fx-cover-row">
                     {iconPreview ? (
-                      <img src={iconPreview} alt="Cover preview" />
+                      <img src={iconPreview} alt={t("forum.compose.coverPreview")} />
                     ) : (
                       <span className="fx-cover-empty" aria-hidden="true">
                         {meta.icon}
@@ -1211,7 +1235,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                         disabled={Boolean(uploading)}
                         onClick={() => iconInputRef.current?.click()}
                       >
-                        {iconPreview ? "Change" : "Upload image"}
+                        {iconPreview ? t("forum.compose.change") : t("forum.compose.uploadImage")}
                       </button>
                       {iconPreview && (
                         <button
@@ -1219,10 +1243,10 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                           className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                           onClick={() => set("iconUrl", "")}
                         >
-                          Remove
+                          {t("forum.view.remove")}
                         </button>
                       )}
-                      <small className="fx-hint">Shown as the post icon in the list.</small>
+                      <small className="fx-hint">{t("forum.compose.coverHint")}</small>
                     </div>
                     <input
                       ref={iconInputRef}
@@ -1239,7 +1263,7 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                 </section>
                 {props.canLockReplies && (
                   <section className="fx-side-card">
-                    <h3 className="fx-side-title">Options</h3>
+                    <h3 className="fx-side-title">{t("forum.compose.options")}</h3>
                     <label className="fx-switch">
                       <input
                         type="checkbox"
@@ -1247,18 +1271,16 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                         onChange={(event) => set("repliesLocked", !event.target.checked)}
                       />
                       <span aria-hidden="true" />
-                      Allow replies
+                      {t("forum.compose.allowReplies")}
                     </label>
                     <small className="fx-hint">
-                      {draft.repliesLocked
-                        ? "The post is created locked; only moderators can reply."
-                        : "Turn off for announcements."}
+                      {draft.repliesLocked ? t("forum.compose.lockedHint") : t("forum.compose.repliesHint")}
                     </small>
                   </section>
                 )}
                 {props.guidelines && (
                   <details className="fx-guidelines fx-side-card">
-                    <summary>Posting guidelines</summary>
+                    <summary>{t("forum.view.guidelines")}</summary>
                     <p>{props.guidelines}</p>
                   </details>
                 )}
@@ -1268,10 +1290,10 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
             <footer className="fx-compose-foot fx-compose-sticky">
               <div className="fx-foot-meta">
                 <span className={draft.title.length > FORUM_TITLE_MAX - 15 ? "warn" : ""}>
-                  Title {draft.title.length}/{FORUM_TITLE_MAX}
+                  {t("forum.compose.titleCount", { count: draft.title.length, max: FORUM_TITLE_MAX })}
                 </span>
                 <span className={draft.body.length > FORUM_BODY_MAX - 200 ? "warn" : ""}>
-                  Body {draft.body.length}/{FORUM_BODY_MAX}
+                  {t("forum.compose.bodyCount", { count: draft.body.length, max: FORUM_BODY_MAX })}
                 </span>
                 {error ? (
                   <span className="fx-error" role="alert">
@@ -1282,12 +1304,12 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                     {errorList[0]}
                   </span>
                 ) : (
-                  <span className="fx-muted fx-kbd-hint">Ctrl+Enter to publish</span>
+                  <span className="fx-muted fx-kbd-hint">{t("forum.compose.shortcut")}</span>
                 )}
               </div>
               <div className="fx-foot-actions">
                 <button type="button" className="dcx-btn" onClick={props.onClose}>
-                  Cancel
+                  {t("forum.view.cancel")}
                 </button>
                 <button
                   type="submit"
@@ -1296,10 +1318,10 @@ export function ForumComposeModal(props: ForumComposeModalProps) {
                   aria-disabled={!valid}
                 >
                   {publishing ? (
-                    "Publishing…"
+                    t("forum.compose.publishing")
                   ) : (
                     <>
-                      <span aria-hidden="true">{meta.icon}</span> Publish
+                      <span aria-hidden="true">{meta.icon}</span> {t("forum.compose.publish")}
                     </>
                   )}
                 </button>

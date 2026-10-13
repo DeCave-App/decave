@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import "../shared/shared.css";
 import "./home.css";
 import { Icon } from "../../components/Icon";
-import { localeForLanguage } from "../../app/locale";
+import { formatDateParts } from "../shared/dateParts";
 
 export type HomeFriendEntry = {
   id: string;
@@ -53,12 +54,12 @@ export type HomeActiveVoice = {
   onOpen: () => void;
 };
 
-function greeting(date = new Date()) {
+function greetingKey(date = new Date()) {
   const h = date.getHours();
-  if (h < 5) return "Late night grind";
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 5) return "chat.home.hero.greeting.lateNight" as const;
+  if (h < 12) return "chat.home.hero.greeting.morning" as const;
+  if (h < 18) return "chat.home.hero.greeting.afternoon" as const;
+  return "chat.home.hero.greeting.evening" as const;
 }
 
 export function HomeEmpty({
@@ -100,19 +101,20 @@ export type HomeDashboardHeroProps = {
 };
 
 export function HomeDashboardHero(props: HomeDashboardHeroProps) {
+  const { t } = useTranslation(["chat"]);
   const subline = props.activeVoice
-    ? `You're connected to ${props.activeVoice.roomName}. Your crew is waiting.`
+    ? t("chat.home.hero.inVoice", { room: props.activeVoice.roomName })
     : props.friendsOnline > 0
-      ? `${props.friendsOnline} friend${props.friendsOnline === 1 ? " is" : "s are"} online right now.`
-      : "Ready when you are. Pick up where you left off.";
+      ? t("chat.home.hero.friendsOnline", { count: props.friendsOnline })
+      : t("chat.home.hero.ready");
   return (
     <header className="hdx-hero">
       <div className="hdx-hero-main">
         <div className="hdx-avatar">{props.avatar}</div>
         <div className="hdx-hero-copy">
-          <span className="hdx-kicker">My Cave · Personal dashboard</span>
+          <span className="hdx-kicker">{t("chat.home.hero.kicker")}</span>
           <h1>
-            {greeting()}, <em>{props.username}</em>
+            <Trans t={t} i18nKey={greetingKey()} values={{ name: props.username }} components={{ em: <em /> }} />
           </h1>
           <p>{subline}</p>
         </div>
@@ -133,6 +135,7 @@ export function HomeJumpBackWidget(props: {
   onFindSquad: () => void;
   onOpenSettings: () => void;
 }) {
+  const { t } = useTranslation(["chat"]);
   return (
     <div className="hdx-quick">
       {props.activeVoice && (
@@ -143,13 +146,16 @@ export function HomeJumpBackWidget(props: {
           <span className="hdx-cta-copy">
             <small>
               <i className="hdx-dot" aria-hidden="true" />
-              Connected to voice
+              {t("chat.home.jumpBack.connectedToVoice")}
             </small>
             <strong>{props.activeVoice.roomName}</strong>
             <em>{props.activeVoice.hubName}</em>
           </span>
           {props.activeVoice.people.length > 0 && (
-            <span className="hdx-stack" aria-label={`${props.activeVoice.people.length} in room`}>
+            <span
+              className="hdx-stack"
+              aria-label={t("chat.home.jumpBack.inRoom", { count: props.activeVoice.people.length })}
+            >
               {props.activeVoice.people.slice(0, 4).map((person) => (
                 <span key={person.id} title={person.name}>
                   {person.avatar}
@@ -166,7 +172,7 @@ export function HomeJumpBackWidget(props: {
             {props.lastSession.roomIcon}
           </span>
           <span className="hdx-cta-copy">
-            <small>Jump back in</small>
+            <small>{t("chat.home.jumpBack.jumpBackIn")}</small>
             <strong>{props.lastSession.roomName}</strong>
             <em>{props.lastSession.hubName}</em>
           </span>
@@ -180,9 +186,9 @@ export function HomeJumpBackWidget(props: {
             🧭
           </span>
           <span className="hdx-cta-copy">
-            <small>Get started</small>
-            <strong>Discover Hubs</strong>
-            <em>Find a community for your games</em>
+            <small>{t("chat.home.jumpBack.getStarted")}</small>
+            <strong>{t("chat.home.jumpBack.discoverHubs")}</strong>
+            <em>{t("chat.home.jumpBack.discoverHint")}</em>
           </span>
           <span className="hdx-cta-arrow" aria-hidden="true">
             →
@@ -191,19 +197,19 @@ export function HomeJumpBackWidget(props: {
       )}
       <div className="hdx-mini-actions">
         <button type="button" className="dcx-btn" onClick={props.onOpenFriends}>
-          Friends
+          {t("chat.home.jumpBack.friends")}
         </button>
         <button type="button" className="dcx-btn" onClick={props.onDiscover}>
-          Discover
+          {t("chat.home.jumpBack.discover")}
         </button>
         <button type="button" className="dcx-btn" onClick={props.onFindSquad}>
-          Find a Squad
+          {t("chat.home.jumpBack.findSquad")}
         </button>
         <button type="button" className="dcx-btn" onClick={props.onCreateHub}>
-          ＋ Create Hub
+          {t("chat.home.jumpBack.createHub")}
         </button>
         <button type="button" className="dcx-btn" onClick={props.onOpenSettings}>
-          Settings
+          {t("chat.home.jumpBack.settings")}
         </button>
       </div>
     </div>
@@ -217,13 +223,14 @@ export function HomeStatsWidget(props: {
   onOpenHubs: () => void;
   onOpenDms: () => void;
 }) {
+  const { t } = useTranslation(["chat"]);
   const { stats } = props;
   const tiles = [
     {
       key: "friends",
       icon: "users" as const,
       value: stats.friendsOnline,
-      label: "Friends online",
+      label: t("chat.home.stats.friendsOnline"),
       onClick: props.onOpenFriends,
       hot: stats.friendsOnline > 0,
     },
@@ -231,7 +238,7 @@ export function HomeStatsWidget(props: {
       key: "voice",
       icon: "mic" as const,
       value: stats.inVoice,
-      label: "People in voice",
+      label: t("chat.home.stats.inVoice"),
       onClick: props.onOpenVoice,
       hot: stats.inVoice > 0,
     },
@@ -239,7 +246,7 @@ export function HomeStatsWidget(props: {
       key: "hubs",
       icon: "castle" as const,
       value: stats.hubs,
-      label: "Your Hubs",
+      label: t("chat.home.stats.hubs"),
       onClick: props.onOpenHubs,
       hot: false,
     },
@@ -247,7 +254,7 @@ export function HomeStatsWidget(props: {
       key: "dms",
       icon: "mail" as const,
       value: stats.unreadDms,
-      label: "Unread DMs",
+      label: t("chat.home.stats.unreadDms"),
       onClick: props.onOpenDms,
       hot: stats.unreadDms > 0,
     },
@@ -276,27 +283,33 @@ export function HomeFriendsWidget({
   friends: HomeFriendEntry[];
   onOpenFriends: () => void;
 }) {
+  const { t } = useTranslation(["chat"]);
   if (!friends.length)
     return (
       <HomeEmpty
         icon={<Icon name="users" />}
-        title="Nobody online yet"
-        hint="Friends light up here as soon as they connect."
-        action={{ label: "Add friends", onClick: onOpenFriends }}
+        title={t("chat.home.friends.emptyTitle")}
+        hint={t("chat.home.friends.emptyHint")}
+        action={{ label: t("chat.home.friends.add"), onClick: onOpenFriends }}
       />
     );
   return (
     <ul className="hdx-rows">
       {friends.slice(0, 8).map((friend) => (
         <li key={friend.id}>
-          <button type="button" className="hdx-row-btn" onClick={friend.onOpen} title={`Message ${friend.username}`}>
+          <button
+            type="button"
+            className="hdx-row-btn"
+            onClick={friend.onOpen}
+            title={t("chat.home.friends.message", { name: friend.username })}
+          >
             <span className="hdx-friend-avatar">
               {friend.avatar}
               <i aria-hidden="true" />
             </span>
             <span className="hdx-row-copy">
               <strong>{friend.username}</strong>
-              <small>{friend.activity || "Online"}</small>
+              <small>{friend.activity || t("chat.home.friends.online")}</small>
             </span>
           </button>
         </li>
@@ -306,13 +319,14 @@ export function HomeFriendsWidget({
 }
 
 export function HomeVoiceRoomsWidget({ rooms, onDiscover }: { rooms: HomeVoiceRoomEntry[]; onDiscover: () => void }) {
+  const { t } = useTranslation(["chat"]);
   if (!rooms.length)
     return (
       <HomeEmpty
         icon={<Icon name="headphones" />}
-        title="No voice rooms"
-        hint="Join or create a Hub to hang out in voice."
-        action={{ label: "Discover Hubs", onClick: onDiscover }}
+        title={t("chat.home.voice.emptyTitle")}
+        hint={t("chat.home.voice.emptyHint")}
+        action={{ label: t("chat.home.jumpBack.discoverHubs"), onClick: onDiscover }}
       />
     );
   return (
@@ -324,14 +338,14 @@ export function HomeVoiceRoomsWidget({ rooms, onDiscover }: { rooms: HomeVoiceRo
           </span>
           <span className="hdx-row-copy">
             <strong>{room.roomName}</strong>
-            <small>{room.current ? `Connected · ${room.hubName}` : room.hubName}</small>
+            <small>{room.current ? t("chat.home.voice.connected", { hub: room.hubName }) : room.hubName}</small>
           </span>
           <button
             type="button"
             className={`dcx-btn hdx-join${room.current ? "" : " dcx-btn-primary"}`}
             onClick={room.onJoin}
           >
-            {room.current ? "Open" : "Join"}
+            {room.current ? t("chat.home.voice.open") : t("chat.home.voice.join")}
           </button>
         </li>
       ))}
@@ -348,6 +362,7 @@ export function HomeEventsWidget({
   busy: boolean;
   notice?: string;
 }) {
+  const { t } = useTranslation(["chat"]);
   return (
     <>
       {events.length ? (
@@ -363,13 +378,14 @@ export function HomeEventsWidget({
                   onClick={event.onOpen}
                 >
                   <span className="hdx-date">
-                    <strong>{d.toLocaleDateString(localeForLanguage(), { day: "2-digit" })}</strong>
-                    <small>{d.toLocaleDateString(localeForLanguage(), { month: "short" }).toUpperCase()}</small>
+                    <strong>{formatDateParts(d, { day: "2-digit" })}</strong>
+                    <small>{formatDateParts(d, { month: "short" }).toUpperCase()}</small>
                   </span>
                   <span className="hdx-row-copy">
                     <strong>{event.title}</strong>
                     <small>
-                      {event.hubName} · {event.live ? <b className="hdx-live-pill">Live now</b> : event.when}
+                      {event.hubName} ·{" "}
+                      {event.live ? <b className="hdx-live-pill">{t("chat.home.events.liveNow")}</b> : event.when}
                     </small>
                   </span>
                 </button>
@@ -380,14 +396,14 @@ export function HomeEventsWidget({
       ) : busy ? (
         <HomeEmpty
           icon={<Icon name="refresh" />}
-          title="Syncing events"
-          hint="Checking your Hubs for scheduled sessions."
+          title={t("chat.home.events.syncingTitle")}
+          hint={t("chat.home.events.syncingHint")}
         />
       ) : (
         <HomeEmpty
           icon={<Icon name="calendar" />}
-          title="Nothing scheduled"
-          hint="Raid nights, tournaments and hangouts from your Hubs show up here."
+          title={t("chat.home.events.emptyTitle")}
+          hint={t("chat.home.events.emptyHint")}
         />
       )}
       {notice && (
@@ -400,13 +416,14 @@ export function HomeEventsWidget({
 }
 
 export function HomeHubsWidget({ hubs, onCreateHub }: { hubs: HomeHubEntry[]; onCreateHub: () => void }) {
+  const { t } = useTranslation(["chat"]);
   if (!hubs.length)
     return (
       <HomeEmpty
         icon={<Icon name="compass" />}
-        title="No Hubs yet"
-        hint="Create your own or find a community to join."
-        action={{ label: "＋ Create Hub", onClick: onCreateHub }}
+        title={t("chat.home.hubs.emptyTitle")}
+        hint={t("chat.home.hubs.emptyHint")}
+        action={{ label: t("chat.home.jumpBack.createHub"), onClick: onCreateHub }}
       />
     );
   return (
@@ -420,7 +437,11 @@ export function HomeHubsWidget({ hubs, onCreateHub }: { hubs: HomeHubEntry[]; on
             </span>
             <span className="hdx-row-copy">
               <strong>{hub.name}</strong>
-              <small>{hub.online === null ? "Membership private" : `${hub.online} online`}</small>
+              <small>
+                {hub.online === null
+                  ? t("chat.home.hubs.membershipPrivate")
+                  : t("chat.home.hubs.online", { count: hub.online })}
+              </small>
             </span>
           </button>
         </li>
@@ -430,13 +451,14 @@ export function HomeHubsWidget({ hubs, onCreateHub }: { hubs: HomeHubEntry[]; on
 }
 
 export function HomeMessagesWidget({ messages, onOpenDms }: { messages: HomeMessageEntry[]; onOpenDms: () => void }) {
+  const { t } = useTranslation(["chat"]);
   if (!messages.length)
     return (
       <HomeEmpty
         icon={<Icon name="mail" />}
-        title="No recent DMs"
-        hint="Your latest conversations stay close here."
-        action={{ label: "Open messages", onClick: onOpenDms }}
+        title={t("chat.home.messages.emptyTitle")}
+        hint={t("chat.home.messages.emptyHint")}
+        action={{ label: t("chat.home.messages.open"), onClick: onOpenDms }}
       />
     );
   return (
@@ -468,12 +490,13 @@ export function HomeNowPlayingWidget({
   source: string;
   elapsed: string;
 }) {
+  const { t } = useTranslation(["chat"]);
   if (!game)
     return (
       <HomeEmpty
         icon={<Icon name="gamepad" />}
-        title="No game detected"
-        hint="Launch a supported game and DeCave updates this automatically."
+        title={t("chat.home.nowPlaying.emptyTitle")}
+        hint={t("chat.home.nowPlaying.emptyHint")}
       />
     );
   return (
@@ -482,7 +505,7 @@ export function HomeNowPlayingWidget({
       <span className="hdx-row-copy">
         <small className="hdx-playing-kicker">
           <i className="hdx-dot" aria-hidden="true" />
-          Playing now
+          {t("chat.home.nowPlaying.kicker")}
         </small>
         <strong>{game}</strong>
         <small>
@@ -507,6 +530,7 @@ export function HomeProfileWidget({
   color: string;
   onEdit: () => void;
 }) {
+  const { t } = useTranslation(["chat"]);
   return (
     <div className="hdx-profile">
       <span className="hdx-friend-avatar plain">
@@ -518,7 +542,7 @@ export function HomeProfileWidget({
         <small>{status}</small>
       </span>
       <button type="button" className="hdx-link" onClick={onEdit}>
-        Edit
+        {t("chat.home.profile.edit")}
       </button>
     </div>
   );
@@ -540,20 +564,21 @@ export function HomeClockWidget({ hour12 }: { hour12?: boolean }) {
       <strong>
         <time dateTime={now.toISOString()}>{time}</time>
       </strong>
-      <small>{now.toLocaleDateString(localeForLanguage(), { weekday: "long", month: "long", day: "numeric" })}</small>
+      <small>{formatDateParts(now, { weekday: "long", month: "long", day: "numeric" })}</small>
     </div>
   );
 }
 
 export function HomeNotesWidget({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const { t } = useTranslation(["chat"]);
   return (
     <textarea
       className="hdx-notes dcx-input"
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      placeholder="Keep a quick note here…"
+      placeholder={t("chat.home.notes.placeholder")}
       maxLength={1200}
-      aria-label="Notes"
+      aria-label={t("chat.home.notes.label")}
     />
   );
 }

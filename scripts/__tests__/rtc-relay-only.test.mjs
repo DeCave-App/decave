@@ -50,14 +50,18 @@ test("clients drop the STUN-only fallback and refuse to connect without TURN", (
       file.startsWith("mobile/") ? /hasRelayIceServer\(/ : /hasUsableRelayIceServers\(/,
       `${file} must validate the configured relay servers`,
     );
-    assert.match(source, /RELAY_UNAVAILABLE_MESSAGE/, `${file} must surface the relay-unavailable error`);
+    assert.match(
+      source,
+      file.startsWith("mobile/") ? /RELAY_UNAVAILABLE_MESSAGE/ : /[rR]elayUnavailable(?:Message|Text)\(\)/,
+      `${file} must surface the relay-unavailable error`,
+    );
     assert.match(source, /isRelayIceCandidate\(/, `${file} must filter ICE candidates`);
   }
   const engine = read("src/voice/engine.ts");
   assert.match(engine, /if \(!hasUsableRelayIceServers\(iceServersRef\.current\)\)/);
   assert.match(
     engine,
-    /if \(!hasUsableRelayIceServers\(servers\)\) throw new Error\(VOICE_RELAY_UNAVAILABLE_MESSAGE\)/,
+    /if \(!hasUsableRelayIceServers\(servers\)\) throw new Error\(voiceRelayUnavailableMessage\(\)\)/,
   );
   assert.match(engine, /if \(!event\.candidate \|\| !isRelayIceCandidate\(event\.candidate\)\) return;/);
   assert.match(engine, /if \(!isRelayIceCandidate\(candidate\)\) return;/);
@@ -65,7 +69,7 @@ test("clients drop the STUN-only fallback and refuse to connect without TURN", (
   const directCall = read("src/components/DirectCallOverlay.tsx");
   assert.match(
     directCall,
-    /if \(!hasUsableRelayIceServers\(iceRef\.current\)\) throw new Error\(CALL_RELAY_UNAVAILABLE_MESSAGE\)/,
+    /if \(!hasUsableRelayIceServers\(iceRef\.current\)\) throw new Error\(callRelayUnavailableMessage\(\)\)/,
   );
   assert.match(directCall, /iceTransportPolicy: "relay"/);
 
@@ -134,6 +138,24 @@ for (const [name, relay] of [
     assert.equal(relay.isRelayIceCandidate({ candidate: "" }), true);
   });
 }
+
+test("web relay-unavailable errors come from the catalogs", () => {
+  const voice = JSON.parse(read("shared/i18n/locales/en/voice.json"));
+  const dm = JSON.parse(read("shared/i18n/locales/en/dm.json"));
+  assert.equal(
+    voice.engine.relayUnavailable,
+    "Voice is temporarily unavailable. We couldn't reach the secure voice relay. Please try again in a few minutes.",
+  );
+  assert.equal(
+    dm.call.relayUnavailable,
+    "Calls are temporarily unavailable. We couldn't reach the secure call relay. Please try again in a few minutes.",
+  );
+  assert.equal(voice.engine.screenRelayUnavailable, webRelay.RELAY_UNAVAILABLE_MESSAGE);
+  const appVoice = read("src/app/voice.ts");
+  assert.match(appVoice, /VOICE_RELAY_UNAVAILABLE_KEY = "voice\.engine\.relayUnavailable"/);
+  assert.match(appVoice, /CALL_RELAY_UNAVAILABLE_KEY = "dm\.call\.relayUnavailable"/);
+  assert.match(read("src/voice/screen-sfu/sfu-session.ts"), /"voice\.engine\.screenRelayUnavailable"/);
+});
 
 test("mobile relay policy mirrors the web policy", () => {
   const strip = (source) => source.replace(/\r\n/g, "\n").replace(/^\/\/.*\n/gm, "");

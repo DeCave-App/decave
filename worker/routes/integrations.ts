@@ -2,16 +2,16 @@
 // link.
 
 import { requireUser } from "../lib/sessions";
-import { json } from "../lib/http";
+import { apiError, json, type ErrorCode } from "../lib/http";
 import {
   ensureActivitySchema,
   steamOpenIdUrl,
-  steamCallbackPage,
   verifySteamOpenIdCallback,
   steamPlayerSummary,
   type SteamLinkRow,
 } from "../lib/activity";
 import { createRawToken, nowIso } from "../db";
+import { linkPageLocale, linkResultPage } from "../lib/link-pages";
 import type { ApiContext } from "./context";
 
 /** Path the clients load GIF media through, so viewers never contact GIPHY. */
@@ -54,8 +54,8 @@ export function giphyMediaTarget(value: string | null | undefined): URL | null {
   return new URL(`https://${hostname}/${segments.join("/")}`);
 }
 
-function giphyMediaError(message: string, status: number): Response {
-  return json({ error: message }, status, { "Cache-Control": "no-store" });
+function giphyMediaError(code: ErrorCode, status: number): Response {
+  return apiError(code, status, undefined, { "Cache-Control": "no-store" });
 }
 
 /** Caps a body stream at GIPHY_MEDIA_MAX_BYTES, erroring the stream past it. */
@@ -88,7 +88,7 @@ async function proxyGiphyMedia(target: URL): Promise<Response> {
         cf: { cacheEverything: true, cacheTtl: GIPHY_MEDIA_CACHE_SECONDS },
       });
     } catch {
-      return giphyMediaError("Could not load the GIF.", 502);
+      return giphyMediaError("gifs.loadFailed", 502);
     }
 
     if (upstream.status >= 300 && upstream.status < 400) {
@@ -100,25 +100,25 @@ async function proxyGiphyMedia(target: URL): Promise<Response> {
         next = null;
       }
       void upstream.body?.cancel();
-      if (!next) return giphyMediaError("The GIF redirected to an unapproved host.", 502);
+      if (!next) return giphyMediaError("gifs.unapprovedRedirect", 502);
       current = next;
       continue;
     }
 
     if (!upstream.ok || !upstream.body) {
       void upstream.body?.cancel();
-      return giphyMediaError("The GIF is unavailable.", upstream.status === 404 ? 404 : 502);
+      return giphyMediaError("gifs.unavailable", upstream.status === 404 ? 404 : 502);
     }
     const contentType = (upstream.headers.get("Content-Type") ?? "").split(";", 1)[0]!.trim().toLowerCase();
     if (!GIPHY_MEDIA_CONTENT_TYPES.has(contentType)) {
       void upstream.body.cancel();
-      return giphyMediaError("The GIF has an unsupported media type.", 502);
+      return giphyMediaError("gifs.unsupportedType", 502);
     }
     const lengthHeader = upstream.headers.get("Content-Length");
     const length = lengthHeader && /^\d+$/.test(lengthHeader) ? Number(lengthHeader) : null;
     if (length !== null && length > GIPHY_MEDIA_MAX_BYTES) {
       void upstream.body.cancel();
-      return giphyMediaError("The GIF is too large.", 502);
+      return giphyMediaError("gifs.tooLarge", 502);
     }
 
     const headers = new Headers({
@@ -132,7 +132,7 @@ async function proxyGiphyMedia(target: URL): Promise<Response> {
     if (length !== null) headers.set("Content-Length", String(length));
     return new Response(cappedBody(upstream.body), { status: 200, headers });
   }
-  return giphyMediaError("The GIF redirected too many times.", 502);
+  return giphyMediaError("gifs.tooManyRedirects", 502);
 }
 
 export async function handleGiphyRoutes({ request, env, url, p, method }: ApiContext): Promise<Response | null> {
@@ -141,7 +141,7 @@ export async function handleGiphyRoutes({ request, env, url, p, method }: ApiCon
     if (user instanceof Response) return user;
     void user;
     const target = giphyMediaTarget(url.searchParams.get("u"));
-    if (!target) return giphyMediaError("That GIF address is not allowed.", 400);
+    if (!target) return giphyMediaError("gifs.addressNotAllowed", 400);
     return proxyGiphyMedia(target);
   }
 
@@ -151,7 +151,7 @@ export async function handleGiphyRoutes({ request, env, url, p, method }: ApiCon
     void user;
 
     const apiKey = env.GIPHY_API_KEY?.trim() ?? "";
-    if (!apiKey) return json({ error: "GIPHY is not configured on this DeCave deployment." }, 503);
+    if (!apiKey) return apiError("gifs.notConfigured", 503);
 
     const query = (url.searchParams.get("q") ?? "").trim().slice(0, 80);
     const endpoint = query ? "search" : "trending";
@@ -169,7 +169,7 @@ export async function handleGiphyRoutes({ request, env, url, p, method }: ApiCon
         headers: { Accept: "application/json" },
       });
       if (!response.ok) {
-        return json({ error: "GIPHY search is temporarily unavailable." }, 502);
+        return apiError("gifs.searchUnavailable", 502);
       }
       const payload = (await response.json()) as {
         data?: Array<{
@@ -203,7 +203,7 @@ export async function handleGiphyRoutes({ request, env, url, p, method }: ApiCon
       });
       return json({ gifs }, 200, { "Cache-Control": "private, no-store" });
     } catch {
-      return json({ error: "Could not connect to GIPHY." }, 502);
+      return apiError("gifs.connectFailed", 502);
     }
   }
 
@@ -237,7 +237,7 @@ export async function handleSteamRoutes({ request, env, url, p, method }: ApiCon
       : null;
     if (!claimedState) {
       if (state) await env.DB.prepare("DELETE FROM decave_steam_link_states WHERE state=?").bind(state).run();
-      return steamCallbackPage("Steam link expired", "Start the Steam connection again from DeCave.", false);
+      return linkResultPage(await linkPageLocale(env.DB, request, null), "steam", "expired");
     }
 
     // Steam returns through a top-level cross-site GET, so only the browser's
@@ -249,28 +249,21 @@ export async function handleSteamRoutes({ request, env, url, p, method }: ApiCon
     const browserRequest = new Request(request.url, { method: "GET", headers: browserHeaders });
     const browserUser = await requireUser(browserRequest, env);
     if (browserUser instanceof Response || browserUser.id !== claimedState.user_id) {
-      return steamCallbackPage(
-        "Sign in to finish Steam linking",
-        "Steam was not linked. Open DeCave in this browser, sign in to the same account that started linking, then start Steam connection again from Settings → Activity.",
-        false,
-        true,
-      );
+      return linkResultPage(await linkPageLocale(env.DB, request, claimedState.user_id), "steam", "signIn", {
+        showOpenDeCaveLink: true,
+      });
     }
 
     const steamId = await verifySteamOpenIdCallback(url);
     if (!steamId) {
-      return steamCallbackPage("Steam verification failed", "Steam did not return a valid identity response.", false);
+      return linkResultPage(await linkPageLocale(env.DB, request, claimedState.user_id), "steam", "failed");
     }
 
     const alreadyLinked = await env.DB.prepare("SELECT user_id FROM decave_steam_links WHERE steam_id=?")
       .bind(steamId)
       .first<{ user_id: string }>();
     if (alreadyLinked && alreadyLinked.user_id !== claimedState.user_id) {
-      return steamCallbackPage(
-        "Steam account already linked",
-        "That Steam account is connected to another DeCave account.",
-        false,
-      );
+      return linkResultPage(await linkPageLocale(env.DB, request, claimedState.user_id), "steam", "taken");
     }
 
     const summary = await steamPlayerSummary(env, steamId);
@@ -296,7 +289,7 @@ export async function handleSteamRoutes({ request, env, url, p, method }: ApiCon
         stamp,
       )
       .run();
-    return steamCallbackPage("Steam connected", "Your Steam account is now linked to DeCave.", true);
+    return linkResultPage(await linkPageLocale(env.DB, request, claimedState.user_id), "steam", "linked");
   }
 
   if (method === "GET" && p === "/api/integrations/steam/status") {

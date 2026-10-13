@@ -15,6 +15,7 @@ import {
 } from "./voice-transport";
 import { isRelayIceCandidate } from "./relay-policy";
 import { inputMeterLevelDb } from "./input-meter";
+import { t } from "./i18n";
 import clearVoiceWorkletPath from "../audio/clearvoice/ClearVoiceProcessor.worklet.ts?worker&url";
 import voiceActivationWorkletPath from "../audio/clearvoice/VoiceActivationProcessor.worklet.ts?worker&url";
 import { createClearVoiceAiRuntime, type ClearVoiceAiRuntime } from "../audio/clearvoice/ClearVoiceAiRuntime";
@@ -48,7 +49,7 @@ import {
   SCREEN_PREVIEW_DOWNSCALE,
   SCREEN_PREVIEW_FPS,
   SCREEN_SHARE_PROFILES,
-  VOICE_RELAY_UNAVAILABLE_MESSAGE,
+  voiceRelayUnavailableMessage,
   microphoneErrorMessage,
   screenBitratePerViewer,
 } from "../app/voice";
@@ -432,7 +433,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
   const setAudioSink = async (element: SinkableAudioElement, outputDeviceId: string): Promise<boolean> => {
     if (typeof element.setSinkId !== "function") {
       if (outputDeviceId) {
-        setAudioOutputError("This desktop runtime cannot select an output device. Using the system default.");
+        setAudioOutputError(t("voice.engine.outputSelectionUnsupported"));
         if (audioSettingsRef.current.outputDeviceId === outputDeviceId) {
           const next = { ...audioSettingsRef.current, outputDeviceId: "" };
           audioSettingsRef.current = next;
@@ -447,7 +448,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         return true;
       } catch (error) {
         console.warn("Could not select the system default audio output:", error);
-        setAudioOutputError("Audio output is unavailable. Check your speakers or headset.");
+        setAudioOutputError(t("voice.engine.outputUnavailable"));
         return false;
       }
     }
@@ -458,7 +459,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       console.warn("Could not select audio output device; falling back to the system default:", error);
       try {
         await element.setSinkId("");
-        setAudioOutputError("The selected output is unavailable. Using the system default output.");
+        setAudioOutputError(t("voice.engine.selectedOutputUnavailable"));
         if (audioSettingsRef.current.outputDeviceId === outputDeviceId) {
           const next = { ...audioSettingsRef.current, outputDeviceId: "" };
           audioSettingsRef.current = next;
@@ -466,7 +467,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         }
       } catch (fallbackError) {
         console.warn("Could not restore the system default audio output:", fallbackError);
-        setAudioOutputError("Audio output is unavailable. Check your speakers or headset.");
+        setAudioOutputError(t("voice.engine.outputUnavailable"));
       }
       return false;
     }
@@ -565,7 +566,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
 
     if (needsClearVoice || needsVoiceActivation || needsClearVoiceAi) {
       if (!context.audioWorklet || typeof AudioWorkletNode === "undefined") {
-        throw new Error("DeCave local noise suppression is not supported by this browser.");
+        throw new Error(t("voice.engine.localNoiseUnsupported"));
       }
     }
     if (needsClearVoice && !clearVoiceModuleLoadedRef.current) {
@@ -819,9 +820,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         return await ensureAudioContext(false, true);
       } catch (voiceActivationError) {
         console.warn("Audio-thread voice activation unavailable; using a fail-open microphone:", voiceActivationError);
-        setAudioSettingsNotice(
-          "Voice activation is unavailable on this device, so the microphone is using a safe always-on fallback.",
-        );
+        setAudioSettingsNotice(t("voice.engine.voiceActivationUnavailable"));
         return ensureAudioContext(false, false);
       }
     };
@@ -836,9 +835,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         console.warn("ClearVoice unavailable; falling back to browser processing:", clearVoiceError);
         effectiveMode = "off";
         browserFallback = true;
-        setAudioSettingsNotice(
-          "Local noise processing is unavailable on this device, so browser processing is being used.",
-        );
+        setAudioSettingsNotice(t("voice.engine.localNoiseFallbackBrowser"));
         return ensureBrowserContext();
       }
     };
@@ -849,9 +846,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
           clearVoiceAiRuntime = await createClearVoiceAiRuntime(context, { targetSpeaker: true });
         } catch (clearVoiceAiError) {
           console.warn("ClearVoice V6 unavailable; falling back to Standard:", clearVoiceAiError);
-          context = await fallBackToStandard(
-            "DeCave ClearVoice could not start on this device, so Standard is being used.",
-          );
+          context = await fallBackToStandard(t("voice.engine.clearVoiceFallbackStandard"));
         }
       } else if (effectiveMode === "deepfilter") {
         context = await ensureAudioContext(false, true);
@@ -859,9 +854,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
           deepFilterRuntime = await createDeepFilterRuntime(context);
         } catch (deepFilterError) {
           console.warn("DeepFilterNet unavailable; falling back to Standard:", deepFilterError);
-          context = await fallBackToStandard(
-            "DeepFilterNet could not start on this device, so Standard is being used.",
-          );
+          context = await fallBackToStandard(t("voice.engine.deepFilterFallbackStandard"));
         }
       } else {
         context = await ensureAudioContext(effectiveMode === "standard" || effectiveMode === "strong");
@@ -871,9 +864,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         console.warn("Local noise processing unavailable; falling back to browser processing:", error);
         effectiveMode = "off";
         browserFallback = true;
-        setAudioSettingsNotice(
-          "Local noise processing is unavailable on this device, so browser processing is being used.",
-        );
+        setAudioSettingsNotice(t("voice.engine.localNoiseFallbackBrowser"));
       }
       context = await ensureBrowserContext();
     }
@@ -1177,8 +1168,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
             if (voiceActivationNodeRef.current === voiceActivation) voiceActivationNodeRef.current = null;
             setAudioSettingsNotice(
               customProcessor
-                ? "Voice activation stopped unexpectedly; DeCave kept the processed microphone path active."
-                : "Voice activation stopped unexpectedly, so DeCave switched to a safe always-on microphone.",
+                ? t("voice.engine.voiceActivationStoppedProcessed")
+                : t("voice.engine.voiceActivationStoppedAlwaysOn"),
             );
           } catch (error) {
             requestMicrophoneRecoveryRef.current(
@@ -1189,7 +1180,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         processedTrack = destination.stream.getAudioTracks()[0];
         if (!processedTrack) {
           for (const track of raw.getTracks()) track.stop();
-          throw new Error("Could not create the processed microphone track.");
+          throw new Error(t("voice.engine.processedTrackFailed"));
         }
         processed = new MediaStream([processedTrack]);
       } else {
@@ -1198,7 +1189,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         processedTrack = raw.getAudioTracks()[0];
         if (!processedTrack) {
           for (const track of raw.getTracks()) track.stop();
-          throw new Error("Could not create the microphone track.");
+          throw new Error(t("voice.engine.trackFailed"));
         }
         processed = raw;
       }
@@ -1226,7 +1217,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         const peersUpdated = await replaceMicrophoneTrackForPeers(previousTrackId, processedTrack, processed, () =>
           isCurrentGeneration(serial, microphoneBuildSerialRef.current),
         );
-        if (!peersUpdated) throw new Error("The current voice peers could not accept the new microphone.");
+        if (!peersUpdated) throw new Error(t("voice.engine.peersRejectedMicrophone"));
         peerReplacementCommitted = true;
       }
       assertBuildIsCurrent();
@@ -1350,9 +1341,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       setVoiceError("");
     } catch (error) {
       console.error("Could not recover the voice microphone pipeline:", error);
-      setVoiceError(
-        error instanceof Error ? error.message : "The microphone stopped and could not recover automatically.",
-      );
+      setVoiceError(error instanceof Error ? error.message : t("voice.engine.microphoneRecoveryFailed"));
     } finally {
       microphoneRecoveryBusyRef.current = false;
     }
@@ -1380,13 +1369,13 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         await buildMicrophonePipeline({ ...audioSettingsRef.current, noiseSuppression: "strong" }, useBrowser);
         setAudioSettingsNotice(
           useBrowser
-            ? "Local noise processing stopped; browser noise suppression is keeping your microphone available."
-            : "DeCave ClearVoice stopped; Standard noise suppression is keeping your microphone available.",
+            ? t("voice.engine.noiseProcessingStoppedBrowser")
+            : t("voice.engine.noiseProcessingStoppedStandard"),
         );
       } catch (error) {
         // A settings change or leaving the call owns the newer graph.
         if (microphoneBuildSerialRef.current === failedSerial + 1) {
-          setAudioSettingsError("Noise suppression could not recover. Reselect your microphone in Voice & Audio.");
+          setAudioSettingsError(t("voice.engine.noiseRecoveryFailed"));
           console.error("Noise suppression recovery failed:", error);
         }
       } finally {
@@ -1830,8 +1819,8 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     }
 
     if (!hasUsableRelayIceServers(iceServersRef.current)) {
-      setVoiceError(VOICE_RELAY_UNAVAILABLE_MESSAGE);
-      throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
+      setVoiceError(voiceRelayUnavailableMessage());
+      throw new Error(voiceRelayUnavailableMessage());
     }
     // Relay-only: media always flows through TURN so peers never learn each
     // other's IP addresses. ICE restarts gather fresh relay candidates.
@@ -1965,7 +1954,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         if (session.restartAttempts >= 3) {
           console.warn(`Voice peer recovery exhausted for ${participant.connectionId}: ${reason}`);
           closePeer(participant.connectionId);
-          setVoiceError("Voice connection could not recover automatically. Reconnecting the peer…");
+          setVoiceError(t("voice.engine.peerRecoveryFailed"));
           const live = voiceParticipantsRef.current.find((item) => item.connectionId === participant.connectionId);
           if (live) window.setTimeout(() => ensurePeer(live), 750);
           return;
@@ -2358,9 +2347,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       voiceJoinAttemptRef.current === attempt &&
       isCurrentGeneration(generation, voiceJoinGenerationRef.current) &&
       !controller.signal.aborted;
-    const joinDeadlineError = new Error(
-      "Voice join timed out before the connection was ready. Check your connection, and microphone permissions, then try again.",
-    );
+    const joinDeadlineError = new Error(t("voice.engine.joinTimedOut"));
     let rejectJoinDeadline: (reason?: unknown) => void = () => {};
     const joinDeadline = new Promise<never>((_, reject) => {
       rejectJoinDeadline = reject;
@@ -2389,7 +2376,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
         cancelVoiceJoinAttempt();
         cleanupVoiceLocal(false);
         setVoiceStatus("Disconnected");
-        setVoiceError("The voice server did not acknowledge the join. Check your connection and try again.");
+        setVoiceError(t("voice.engine.joinNotAcknowledged"));
       }, DESKTOP_VOICE_JOIN_TIMEOUT_MS);
     };
     const abortPromise = new Promise<never>((_, reject) => {
@@ -2433,18 +2420,18 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       // joining a room where no peer connection can be built.
       const relayReady = loadIceServers().then(
         (servers) => {
-          if (!hasUsableRelayIceServers(servers)) throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
+          if (!hasUsableRelayIceServers(servers)) throw new Error(voiceRelayUnavailableMessage());
           return servers;
         },
         () => {
-          throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
+          throw new Error(voiceRelayUnavailableMessage());
         },
       );
       const [, iceServers] = await cancellable(Promise.all([microphoneReady, relayReady]));
       if (!isAttemptCurrent()) throw createAbortError("The voice join was cancelled.");
       // Voice is relay-only. A STUN-only list (TURN not configured) can never
       // connect, so fail the join visibly instead of joining a silent room.
-      if (!hasUsableRelayIceServers(iceServers)) throw new Error(VOICE_RELAY_UNAVAILABLE_MESSAGE);
+      if (!hasUsableRelayIceServers(iceServers)) throw new Error(voiceRelayUnavailableMessage());
       if (!sendSocket({ type: "VOICE_JOIN", channelId })) throw new Error("WebSocket is not connected");
       armVoiceJoinAcknowledgementTimeout();
     } catch (error) {
@@ -2469,11 +2456,11 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
 
   const playSoundboardSound = (sound: SoundboardSound) => {
     if (voiceChannelRef.current === null) {
-      setSoundboardNotice("Join a voice room to use the soundboard.");
+      setSoundboardNotice(t("voice.engine.soundboardJoinFirst"));
       return;
     }
     if (!sendSocket({ type: "VOICE_SOUNDBOARD_PLAY", soundId: sound.id })) {
-      setSoundboardNotice("Voice connection is not ready.");
+      setSoundboardNotice(t("voice.engine.soundboardNotReady"));
     }
   };
 
@@ -2484,9 +2471,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
     const popup = window.open("about:blank", "decave-stream", "width=1100,height=700,resizable=yes");
     if (!popup) {
       setVoiceError(
-        hasDesktopActivityBridge()
-          ? "DeCave Desktop could not open the stream window. Update/restart the desktop client and try again."
-          : "Pop-up blocked. Allow pop-ups for DeCave to use Pop Out.",
+        hasDesktopActivityBridge() ? t("voice.engine.popOutDesktopFailed") : t("voice.engine.popOutBlocked"),
       );
       return;
     }
@@ -2548,7 +2533,7 @@ export function createVoiceEngine(deps: VoiceEngineDeps) {
       console.error("Could not restore voice after realtime reconnect:", error);
       voiceReconnectChannelRef.current = null;
       setVoiceStatus("Disconnected");
-      setVoiceError(error instanceof Error ? error.message : "Voice could not reconnect automatically.");
+      setVoiceError(error instanceof Error ? error.message : t("voice.engine.reconnectFailed"));
     }
   };
 

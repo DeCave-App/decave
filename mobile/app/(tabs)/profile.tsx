@@ -21,39 +21,32 @@ import { absoluteMediaUrl, apiJson } from "@/src/lib/api";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
 import type { AccountUser, PresenceStatus } from "@/src/types";
+import { useTranslation } from "react-i18next";
+import { dateLocale } from "@/src/lib/date-locale";
 
+// Labels come from statusCopy() in the screen, in the UI language.
 const statusOptions: Array<{
   value: PresenceStatus;
-  label: string;
-  detail: string;
   icon: string;
   tone: "green" | "yellow" | "red" | "muted";
 }> = [
   {
     value: "online",
-    label: "Online",
-    detail: "Available",
     icon: "ellipse",
     tone: "green",
   },
   {
     value: "idle",
-    label: "Idle",
-    detail: "Away for a bit",
     icon: "moon",
     tone: "yellow",
   },
   {
     value: "dnd",
-    label: "Do Not Disturb",
-    detail: "Minimize interruptions",
     icon: "remove-circle",
     tone: "red",
   },
   {
     value: "invisible",
-    label: "Invisible",
-    detail: "Appear offline",
     icon: "eye-off",
     tone: "muted",
   },
@@ -61,31 +54,47 @@ const statusOptions: Array<{
 
 type EditablePresenceField = "statusText" | "displayName" | "pronouns"; // DECAVE_PARITY_PROFILE_INTERNAL
 
-const editableFields: Record<
-  EditablePresenceField,
-  { title: string; placeholder: string; maxLength: number; icon: string }
-> = {
+// Titles and placeholders come from fieldCopy in the screen, in the UI language.
+const editableFields: Record<EditablePresenceField, { maxLength: number; icon: string }> = {
   statusText: {
-    title: "Custom status",
-    placeholder: "What’s happening?",
     maxLength: 80,
     icon: "chatbubble-ellipses-outline",
   },
   displayName: {
-    title: "Display name",
-    placeholder: "How your name shows to others",
     maxLength: 32,
     icon: "person-outline",
   },
   pronouns: {
-    title: "Pronouns",
-    placeholder: "e.g. she/her, he/him, they/them",
     maxLength: 24,
     icon: "pricetag-outline",
   },
 };
 
 export default function ProfileScreen() {
+  const { t } = useTranslation(["settings", "common"]);
+  const statusCopy: Record<PresenceStatus, { label: string; detail: string }> = {
+    online: { label: t("common.presence.online"), detail: t("settings.mobile.profile.status.onlineDetail") },
+    idle: { label: t("common.presence.idle"), detail: t("settings.mobile.profile.status.idleDetail") },
+    dnd: { label: t("common.presence.dnd"), detail: t("settings.mobile.profile.status.dndDetail") },
+    invisible: { label: t("common.presence.invisible"), detail: t("settings.mobile.profile.status.invisibleDetail") },
+  };
+  const fieldCopy: Record<EditablePresenceField, { title: string; placeholder: string; editTitle: string }> = {
+    statusText: {
+      title: t("settings.profile.customStatus"),
+      placeholder: t("settings.mobile.profile.fields.statusTextPlaceholder"),
+      editTitle: t("settings.mobile.profile.fields.statusTextEdit"),
+    },
+    displayName: {
+      title: t("settings.profile.displayName"),
+      placeholder: t("settings.mobile.profile.fields.displayNamePlaceholder"),
+      editTitle: t("settings.mobile.profile.fields.displayNameEdit"),
+    },
+    pronouns: {
+      title: t("settings.profile.pronouns"),
+      placeholder: t("settings.mobile.profile.fields.pronounsPlaceholder"),
+      editTitle: t("settings.mobile.profile.fields.pronounsEdit"),
+    },
+  };
   const { user, token, refreshUser, logout } = useSession();
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState("");
@@ -120,7 +129,7 @@ export default function ProfileScreen() {
       setNotice(
         error instanceof Error
           ? error.message
-          : "Could not update status.",
+          : t("settings.mobile.profile.couldNotUpdateStatus"),
       );
     }
   };
@@ -172,20 +181,19 @@ export default function ProfileScreen() {
       await refreshUser();
       setEditingField(null);
       setEditValue("");
-      setNotice("Profile updated.");
+      setNotice(t("settings.mobile.profile.profileUpdated"));
     } catch (error) {
       setNotice(
         error instanceof Error
           ? error.message
-          : "Could not update profile.",
+          : t("settings.mobile.profile.couldNotUpdateProfile"),
       );
     } finally {
       setSavingField(false);
     }
   };
 
-  const editingConfig = editableFields[editingField ?? "statusText"];
-  const editingTitle = editingConfig.title;
+  const editingConfig = { ...editableFields[editingField ?? "statusText"], ...fieldCopy[editingField ?? "statusText"] };
   const editingPlaceholder =
     editingField === "displayName" ? user.username : editingConfig.placeholder;
   const bannerUri = absoluteMediaUrl(user.bannerUrl);
@@ -211,8 +219,8 @@ export default function ProfileScreen() {
       >
         <View style={styles.headingRow}>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>YOUR ACCOUNT</Text>
-            <Text style={styles.title}>Profile</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("settings.mobile.profile.yourAccount")}</Text>
+            <Text style={styles.title}>{t("settings.profile.photoTitle")}</Text>
           </View>
         </View>
 
@@ -223,7 +231,7 @@ export default function ProfileScreen() {
                 source={{ uri: bannerUri }}
                 style={StyleSheet.absoluteFill}
                 resizeMode="cover"
-                accessibilityLabel="Profile banner"
+                accessibilityLabel={t("settings.mobile.profile.profileBanner")}
               />
             ) : (
               <>
@@ -244,7 +252,7 @@ export default function ProfileScreen() {
               </View>
               <View
                 style={[styles.presenceBadge, { backgroundColor: presenceColor(currentStatus.tone) }]}
-                accessibilityLabel={`Status: ${currentStatus.label}`}
+                accessibilityLabel={t("settings.mobile.profile.statusLabel", { label: statusCopy[currentStatus.value].label })}
               />
             </View>
 
@@ -256,30 +264,30 @@ export default function ProfileScreen() {
               {user.pronouns?.trim() ? ` · ${user.pronouns.trim()}` : ""}
             </Text>
             {!!memberSince && (
-              <Text style={styles.memberSince}>Member since {memberSince}</Text>
+              <Text style={styles.memberSince}>{t("settings.mobile.profile.memberSinceMembersince", { memberSince })}</Text>
             )}
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={user.statusText ? `Custom status: ${user.statusText}. Edit` : "Set a custom status"}
+              accessibilityLabel={user.statusText ? t("settings.mobile.profile.customStatusStatustextEdit", { statusText: user.statusText }) : t("settings.mobile.profile.setACustomStatus")}
               style={({ pressed }) => [styles.customStatus, pressed && styles.statusPressed]}
               onPress={() => openEditor("statusText")}
             >
               <Ionicons name="chatbubble-ellipses-outline" size={15} color={user.statusText ? colors.cyan : colors.faint} />
               <Text style={[styles.customStatusText, !user.statusText && styles.customStatusPlaceholder]} numberOfLines={1}>
-                {user.statusText || "Set a custom status…"}
+                {user.statusText || t("common.userMenu.setStatus")}
               </Text>
               <Ionicons name="pencil" size={13} color={colors.faint} />
             </Pressable>
 
             <View style={styles.idRow}>
-              <Text style={styles.idLabel}>ID</Text>
+              <Text style={styles.idLabel}>{t("settings.mobile.profile.id")}</Text>
               <Text style={styles.id} selectable numberOfLines={1}>
                 {user.id}
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={copied ? "DeCave ID copied" : "Copy DeCave ID"}
+                accessibilityLabel={copied ? t("settings.mobile.profile.decaveIdCopied") : t("settings.account.copyDecaveId")}
                 hitSlop={8}
                 onPress={copyId}
               >
@@ -297,8 +305,8 @@ export default function ProfileScreen() {
             onPress={() => setStatusOpen((value) => !value)}
           >
             <Ionicons name={currentStatus.icon as any} size={15} color={presenceColor(currentStatus.tone)} style={styles.menuRowIcon} />
-            <Text style={styles.menuRowTitle}>Status</Text>
-            <Text style={styles.menuRowValue} numberOfLines={1}>{currentStatus.label}</Text>
+            <Text style={styles.menuRowTitle}>{t("settings.anchors.status.label")}</Text>
+            <Text style={styles.menuRowValue} numberOfLines={1}>{statusCopy[currentStatus.value].label}</Text>
             <Ionicons name={statusOpen ? "chevron-up" : "chevron-down"} size={17} color={colors.faint} />
           </Pressable>
           {statusOpen && statusOptions.map((option) => {
@@ -313,8 +321,8 @@ export default function ProfileScreen() {
               >
                 <View style={[styles.statusDot, { backgroundColor: presenceColor(option.tone) }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.statusText, active && styles.statusTextActive]}>{option.label}</Text>
-                  <Text style={styles.statusDetail}>{option.detail}</Text>
+                  <Text style={[styles.statusText, active && styles.statusTextActive]}>{statusCopy[option.value].label}</Text>
+                  <Text style={styles.statusDetail}>{statusCopy[option.value].detail}</Text>
                 </View>
                 {active && <Ionicons name="checkmark" size={17} color={colors.cyan} />}
               </Pressable>
@@ -326,7 +334,7 @@ export default function ProfileScreen() {
             onPress={() => router.push("/settings")}
           >
             <Ionicons name="settings-outline" size={17} color={colors.cyan} style={styles.menuRowIcon} />
-            <Text style={[styles.menuRowTitle, { flex: 1 }]}>Settings</Text>
+            <Text style={[styles.menuRowTitle, { flex: 1 }]}>{t("settings.window.title")}</Text>
             <Ionicons name="chevron-forward" size={17} color={colors.faint} />
           </Pressable>
           <Pressable
@@ -335,7 +343,7 @@ export default function ProfileScreen() {
             onPress={() => void logout()}
           >
             <Ionicons name="log-out-outline" size={17} color={colors.red} style={styles.menuRowIcon} />
-            <Text style={[styles.menuRowTitle, { flex: 1, color: colors.red }]}>Log out</Text>
+            <Text style={[styles.menuRowTitle, { flex: 1, color: colors.red }]}>{t("common.logout.confirm")}</Text>
           </Pressable>
         </View>
 
@@ -343,18 +351,18 @@ export default function ProfileScreen() {
           <View
             style={[
               styles.notice,
-              notice === "Profile updated." && styles.noticeSuccess,
+              notice === t("settings.mobile.profile.profileUpdated") && styles.noticeSuccess,
             ]}
           >
             <Ionicons
               name={
-                notice === "Profile updated."
+                notice === t("settings.mobile.profile.profileUpdated")
                   ? "checkmark-circle-outline"
                   : "alert-circle-outline"
               }
               size={16}
               color={
-                notice === "Profile updated."
+                notice === t("settings.mobile.profile.profileUpdated")
                   ? colors.green
                   : colors.yellow
               }
@@ -362,7 +370,7 @@ export default function ProfileScreen() {
             <Text
               style={[
                 styles.noticeText,
-                notice === "Profile updated." &&
+                notice === t("settings.mobile.profile.profileUpdated") &&
                   styles.noticeTextSuccess,
               ]}
             >
@@ -371,19 +379,19 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        <SectionHeader label="PROFILE DETAILS" />
+        <SectionHeader label={t("settings.mobile.profile.profileDetails")} />
 
         <View style={styles.info}>
           <EditableInfo
             icon={editableFields.displayName.icon}
-            label="Display name"
-            value={user.displayName?.trim() || `Not set (shows ${user.username})`}
+            label={t("settings.anchors.displayName.label")}
+            value={user.displayName?.trim() || t("settings.mobile.profile.notSetShowsUsername", { username: user.username })}
             onPress={() => openEditor("displayName")}
           />
           <EditableInfo
             icon={editableFields.pronouns.icon}
-            label="Pronouns"
-            value={user.pronouns?.trim() || "Not set"}
+            label={t("settings.profile.pronouns")}
+            value={user.pronouns?.trim() || t("settings.mobile.profile.notSet")}
             onPress={() => openEditor("pronouns")}
             last
           />
@@ -409,12 +417,12 @@ export default function ProfileScreen() {
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.modalKicker}>PROFILE</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.modalKicker}>{t("settings.mobile.profile.profile")}</Text>
                 <Text style={styles.modalTitle}>
-                  Edit {editingTitle}
+                  {editingConfig.editTitle}
                 </Text>
               </View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Close"
+              <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")}
                 style={styles.modalClose}
                 onPress={closeEditor}
               >
@@ -449,7 +457,7 @@ export default function ProfileScreen() {
                 onPress={() => void savePresenceField("")}
                 disabled={savingField}
               >
-                <Text style={styles.modalSecondaryText}>Clear</Text>
+                <Text style={styles.modalSecondaryText}>{t("common.actions.clear")}</Text>
               </Pressable>
 
               <Pressable accessibilityRole="button"
@@ -457,7 +465,7 @@ export default function ProfileScreen() {
                 onPress={closeEditor}
                 disabled={savingField}
               >
-                <Text style={styles.modalSecondaryText}>Cancel</Text>
+                <Text style={styles.modalSecondaryText}>{t("common.actions.cancel")}</Text>
               </Pressable>
 
               <Pressable accessibilityRole="button"
@@ -477,7 +485,7 @@ export default function ProfileScreen() {
                       size={16}
                       color="#fff"
                     />
-                    <Text style={styles.modalSaveText}>Save</Text>
+                    <Text style={styles.modalSaveText}>{t("common.actions.save")}</Text>
                   </>
                 )}
               </Pressable>
@@ -502,7 +510,7 @@ function formatMemberSince(value: string | null | undefined): string {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString(dateLocale(), { month: "short", day: "numeric", year: "numeric" });
 }
 
 function SectionHeader({ label }: { label: string }) {
@@ -527,12 +535,13 @@ function EditableInfo({
   onPress: () => void;
   last?: boolean;
 }) {
+  const { t } = useTranslation(["settings"]);
   return (
     <Pressable
       style={[styles.infoRow, last && styles.infoRowLast]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Edit ${label}`}
+      accessibilityLabel={t("settings.mobile.profile.editLabel", { label })}
     >
       <View style={styles.infoIcon}>
         <Ionicons

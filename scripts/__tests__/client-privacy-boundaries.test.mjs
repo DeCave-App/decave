@@ -9,6 +9,10 @@ import ts from "typescript";
 register("../test-support/cloudflare-workers-test-loader.mjs", import.meta.url);
 
 const { AccountSessionGuard, commitForSession } = await import("../../src/app/account-session-guard.ts");
+// Event API messages come from the English catalogs.
+await import("../test-support/i18n-english.mjs");
+// Mobile attachment errors come from the English catalogs too.
+await import("../test-support/mobile-i18n-english.mjs");
 const { listHubEvents } = await import("../../src/features/events/api.ts");
 const { loadAuthenticatedAttachmentImage } = await import("../../mobile/src/lib/legacy-attachment-download.ts");
 const { enqueuePushAction, processPendingPushActions } = await import("../../mobile/src/lib/push-revocation-queue.ts");

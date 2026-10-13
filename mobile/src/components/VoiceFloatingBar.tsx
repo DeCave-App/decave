@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { router, usePathname } from "expo-router";
 import { Avatar } from "@/src/components/Avatar";
 import { impactHaptic, tapHaptic } from "@/src/lib/haptics";
@@ -22,6 +23,7 @@ function signalBars(pingMs: number | null): number | null {
  * Tap the bar to open the full voice room.
  */
 export function VoiceFloatingBar({ location, style }: { location?: string | null; style?: object }) {
+  const { t } = useTranslation(["common", "hub", "voice"]);
   const pathname = usePathname();
   const {
     voiceChannelId,
@@ -62,8 +64,14 @@ export function VoiceFloatingBar({ location, style }: { location?: string | null
   const failed = recoveryState === "failed";
   const bars = reconnecting ? null : signalBars(pingMs);
   const matchingRoom = room?.channelId === voiceChannelId ? room : null;
-  const title = failed ? "Connection lost" : reconnecting ? "Reconnecting…" : speakers.length ? `${speakers.map((p) => p.username).join(", ")} talking` : "Voice connected";
-  const place = location || matchingRoom?.name || "Voice room";
+  const title = failed
+    ? t("voice.mobile.bar.lost")
+    : reconnecting
+      ? t("voice.mobile.bar.reconnecting")
+      : speakers.length
+        ? t("voice.mobile.bar.talking", { names: speakers.map((p) => p.username).join(", ") })
+        : t("hub.voicePanel.connected");
+  const place = location || matchingRoom?.name || t("hub.sidebar.voiceRoom");
   const micLocked = serverMuted || serverDeafened;
 
   const open = () => {
@@ -74,7 +82,7 @@ export function VoiceFloatingBar({ location, style }: { location?: string | null
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${title}, ${place}. Open voice room`}
+      accessibilityLabel={t("voice.mobile.bar.label", { title, place })}
       onPress={open}
       style={[styles.bar, style]}
     >
@@ -95,7 +103,7 @@ export function VoiceFloatingBar({ location, style }: { location?: string | null
         </Text>
         <View style={styles.placeRow}>
           {bars != null && (
-            <View style={styles.bars} accessibilityLabel={`Signal ${bars} of 3`}>
+            <View style={styles.bars} accessibilityLabel={t("voice.mobile.bar.signal", { bars })}>
               {[1, 2, 3].map((n) => (
                 <View key={n} style={[styles.signalBar, { height: 3 + n * 3 }, n <= bars && { backgroundColor: bars === 1 ? colors.yellow : colors.green }]} />
               ))}
@@ -108,7 +116,7 @@ export function VoiceFloatingBar({ location, style }: { location?: string | null
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={muted ? "Unmute microphone" : "Mute microphone"}
+        accessibilityLabel={muted ? t("common.profileMenu.unmuteMic") : t("common.profileMenu.muteMic")}
         accessibilityState={{ disabled: micLocked, selected: muted }}
         disabled={micLocked}
         hitSlop={4}
@@ -122,8 +130,8 @@ export function VoiceFloatingBar({ location, style }: { location?: string | null
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={deafened ? "Undeafen" : "Deafen"}
-        accessibilityHint="Silences everyone in the room for you, and mutes your microphone"
+        accessibilityLabel={deafened ? t("common.profileMenu.undeafen") : t("common.profileMenu.deafen")}
+        accessibilityHint={t("voice.mobile.bar.deafenHint")}
         accessibilityState={{ disabled: serverDeafened, selected: deafened }}
         disabled={serverDeafened}
         hitSlop={4}
@@ -137,7 +145,7 @@ export function VoiceFloatingBar({ location, style }: { location?: string | null
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Leave voice room"
+        accessibilityLabel={t("voice.mobile.bar.leave")}
         hitSlop={4}
         onPress={() => {
           impactHaptic();

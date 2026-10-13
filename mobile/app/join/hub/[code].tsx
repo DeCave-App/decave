@@ -8,9 +8,11 @@ import { successHaptic } from "@/src/lib/haptics";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
 import type { Hub } from "@/src/types";
+import { useTranslation } from "react-i18next";
 
 /** Opened from https://app.de-cave.com/join/hub/<code> or decave://join/hub/<code>. */
 export default function JoinHubInviteScreen() {
+  const { t } = useTranslation(["hub"]);
   const { code } = useLocalSearchParams<{ code: string }>();
   const { token, user, loading } = useSession();
   const [error, setError] = useState("");
@@ -25,7 +27,7 @@ export default function JoinHubInviteScreen() {
         router.replace(`/hub/${hub.id}`);
       })
       .catch((cause) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "Couldn't use this invite.");
+        if (!cancelled) setError(cause instanceof Error ? cause.message : t("hub.mobile.join.couldnTUseThisInvite"));
       });
     return () => {
       cancelled = true;
@@ -40,16 +42,16 @@ export default function JoinHubInviteScreen() {
         {error ? (
           <>
             <Ionicons name="alert-circle-outline" size={40} color={colors.red} />
-            <Text style={styles.title}>Invite didn't work</Text>
+            <Text style={styles.title}>{t("hub.mobile.join.inviteDidnTWork")}</Text>
             <Text style={styles.text}>{error}</Text>
             <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.replace("/home")}>
-              <Text style={styles.buttonText}>Go home</Text>
+              <Text style={styles.buttonText}>{t("hub.mobile.join.goHome")}</Text>
             </Pressable>
           </>
         ) : (
           <>
             <ActivityIndicator color={colors.cyan} size="large" />
-            <Text style={styles.title}>Joining Hub…</Text>
+            <Text style={styles.title}>{t("hub.mobile.join.joiningHub")}</Text>
           </>
         )}
       </View>

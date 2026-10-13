@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { apiJson } from "@/src/lib/api";
@@ -23,6 +24,7 @@ export function ComposerMediaSheet({
   onPickCamera?: () => void;
   onGif: (gif: GiphyGif) => void;
 }) {
+  const { t } = useTranslation(["chat"]);
   const [query, setQuery] = useState("");
   const [gifs, setGifs] = useState<GiphyGif[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +43,7 @@ export function ComposerMediaSheet({
           setError("");
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Couldn't load GIFs.");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("chat.mobile.media.gifLoadFailed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -61,20 +63,20 @@ export function ComposerMediaSheet({
           {onPickLibrary && onPickCamera && <View style={styles.actions}>
             <Pressable accessibilityRole="button" style={({ pressed }) => [styles.action, pressed && styles.pressed]} onPress={onPickLibrary}>
               <Ionicons name="images-outline" size={22} color={colors.cyan} />
-              <Text style={styles.actionText}>Photos</Text>
+              <Text style={styles.actionText}>{t("chat.mobile.media.photos")}</Text>
             </Pressable>
             <Pressable accessibilityRole="button" style={({ pressed }) => [styles.action, pressed && styles.pressed]} onPress={onPickCamera}>
               <Ionicons name="camera-outline" size={22} color={colors.cyan} />
-              <Text style={styles.actionText}>Camera</Text>
+              <Text style={styles.actionText}>{t("chat.mobile.media.camera")}</Text>
             </Pressable>
           </View>}
 
           <View style={styles.search}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.gifTag}>GIF</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.gifTag}>{t("chat.composer.gif")}</Text>
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search GIPHY"
+              placeholder={t("chat.mobile.media.searchGiphy")}
               placeholderTextColor={colors.faint}
               style={styles.searchInput}
               autoCorrect={false}
@@ -93,7 +95,7 @@ export function ComposerMediaSheet({
             contentContainerStyle={{ gap: 6, paddingBottom: 8 }}
             style={{ flexGrow: 0, maxHeight: 320 }}
             renderItem={({ item }) => (
-              <Pressable accessibilityRole="button" accessibilityLabel={item.title || "GIF"} style={styles.gif} onPress={() => onGif(item)}>
+              <Pressable accessibilityRole="button" accessibilityLabel={item.title || t("chat.composer.gif")} style={styles.gif} onPress={() => onGif(item)}>
                 {(() => {
                   const source = giphyImageSource(item.previewUrl, token) ?? giphyImageSource(item.url, token);
                   return source ? <Image source={source} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null;
@@ -101,7 +103,7 @@ export function ComposerMediaSheet({
               </Pressable>
             )}
           />
-          <Text style={styles.powered}>Powered by GIPHY</Text>
+          <Text style={styles.powered}>{t("chat.mobile.media.poweredByGiphy")}</Text>
         </Pressable>
       </Pressable>
       </KeyboardAvoidingView>

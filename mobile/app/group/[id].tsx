@@ -21,6 +21,7 @@ import { errorHaptic, impactHaptic, tapHaptic } from "@/src/lib/haptics";
 import ReportSheet, { REPORT_CONFIRMATION_MS, type MobileReportTarget } from "@/src/components/ReportSheet";
 import { Screen } from "@/src/components/Screen";
 import { apiJson } from "@/src/lib/api";
+import { e2eeErrorText } from "@/src/lib/e2ee-error-text";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { SkeletonRows } from "@/src/components/Skeleton";
@@ -35,10 +36,13 @@ import { VoiceFloatingBar } from "@/src/components/VoiceFloatingBar";
 import { useDraftInput } from "@/src/lib/drafts";
 import { discardGroupSend, dmE2ee, groupSocketFrame, rememberGroup, useDmE2ee } from "@/src/lib/e2ee/client";
 import { GroupEncryptionBadge } from "@/src/providers/DmE2eeProvider";
+import { useTranslation } from "react-i18next";
+import { i18next } from "@/src/i18n";
+import { dateLocale } from "@/src/lib/date-locale";
 
 function previewMessage(text: string): string {
   const preview = text.replace(/\s+/g, " ").trim();
-  if (!preview) return "Message";
+  if (!preview) return i18next.t("dm.mobile.conversation.messageFallback");
   return preview.length > 88 ? `${preview.slice(0, 85)}…` : preview;
 }
 
@@ -51,6 +55,7 @@ function inSameRun(a: GroupChatMessage | undefined, b: GroupChatMessage | undefi
 }
 
 export default function GroupChatScreen() {
+  const { t } = useTranslation(["dm", "common"]);
   const params = useLocalSearchParams<{ id: string }>();
   const groupId = params.id;
   const { token, user } = useSession();
@@ -113,7 +118,7 @@ export default function GroupChatScreen() {
       setNotice("");
     } catch (error) {
       if (generation !== loadGenerationRef.current) return;
-      const message = error instanceof Error ? error.message : "Could not open group chat.";
+      const message = e2eeErrorText(error, t("dm.mobile.group.couldNotOpen"));
       setNotice(message);
       if (/not a member|not found/i.test(message)) router.back();
     } finally {
@@ -174,7 +179,7 @@ export default function GroupChatScreen() {
 
   /** The GROUP_MESSAGE frame: encrypted for every member when the group is encrypted. */
   const groupFrame = async (text: string) => {
-    if (!group) throw new Error("The group is still loading.");
+    if (!group) throw new Error(t("dm.mobile.group.theGroupIsStillLoading"));
     return groupSocketFrame(group, text, replyingTo?.id ?? null);
   };
 
@@ -186,7 +191,7 @@ export default function GroupChatScreen() {
     try {
       frame = await groupFrame(text);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not encrypt this message.");
+      setNotice(e2eeErrorText(error, t("dm.mobile.group.couldNotEncryptThisMessage")));
       return;
     }
     if (send(frame)) {
@@ -194,7 +199,7 @@ export default function GroupChatScreen() {
       setReplyingTo(null);
     } else {
       discardGroupSend(frame.clientMessageId);
-      setNotice("Realtime is reconnecting. Try again in a moment.");
+      setNotice(t("dm.mobile.conversation.realtimeIsReconnectingTryAgain"));
     }
   };
 
@@ -206,7 +211,7 @@ export default function GroupChatScreen() {
       frame = await groupFrame(text);
     } catch (error) {
       errorHaptic();
-      setNotice(error instanceof Error ? error.message : "Could not encrypt this message.");
+      setNotice(e2eeErrorText(error, t("dm.mobile.group.couldNotEncryptThisMessage")));
       return;
     }
     if (send(frame)) {
@@ -247,7 +252,7 @@ export default function GroupChatScreen() {
       );
       await load();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not add member.");
+      setNotice(e2eeErrorText(error, t("dm.mobile.group.couldNotAddMember")));
     }
   };
 
@@ -266,7 +271,7 @@ export default function GroupChatScreen() {
       }
       await load();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not remove member.");
+      setNotice(e2eeErrorText(error, t("dm.mobile.group.couldNotRemoveMember")));
     }
   };
 
@@ -275,14 +280,14 @@ export default function GroupChatScreen() {
     const canDelete = message.fromUserId === user?.id;
     if (!token || !groupId || !canDelete) return;
     Alert.alert(
-      "Delete message?",
+      t("dm.mobile.conversation.deleteMessage"),
       message.fromUserId === user?.id
-        ? "This removes your message for everyone in the group."
-        : "As group owner, you can remove this message for everyone.",
+        ? t("dm.mobile.group.thisRemovesYourMessageFor")
+        : t("dm.mobile.group.asGroupOwnerYouCan"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.actions.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common.actions.delete"),
           style: "destructive",
           onPress: () => void (async () => {
             try {
@@ -294,7 +299,7 @@ export default function GroupChatScreen() {
               );
               setMessages((current) => current.filter((item) => item.id !== message.id));
             } catch (error) {
-              setNotice(error instanceof Error ? error.message : "Could not delete message.");
+              setNotice(e2eeErrorText(error, t("dm.mobile.group.couldNotDeleteMessage")));
             }
           })(),
         },
@@ -309,18 +314,18 @@ export default function GroupChatScreen() {
     <Screen>
       <KeyboardAware style={{ flex: 1 }}>
         <View style={styles.top}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} onPress={() => router.back()}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} hitSlop={8} onPress={() => router.back()}>
             <Text style={styles.back} maxFontSizeMultiplier={1.2}>‹</Text>
           </Pressable>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.title} numberOfLines={1} maxFontSizeMultiplier={1.4}>{group?.name || "Group chat"}</Text>
+            <Text style={styles.title} numberOfLines={1} maxFontSizeMultiplier={1.4}>{group?.name || t("dm.mobile.group.groupChat")}</Text>
             <Text style={styles.status} numberOfLines={1} maxFontSizeMultiplier={1.3}>
-              {group ? `${group.memberCount} members` : connectionState === "connected" ? "Loading…" : "Connecting…"}
+              {group ? t("dm.mobile.group.membercountMembers", { memberCount: group.memberCount }) : connectionState === "connected" ? t("common.status.loading") : t("dm.mobile.conversation.connecting")}
             </Text>
           </View>
           {group ? <GroupEncryptionBadge group={group} /> : null}
           {<Pressable accessibilityRole="button" style={styles.membersButton} onPress={() => setMembersOpen(true)}>
-            <Text style={styles.membersButtonText}>Members</Text>
+            <Text style={styles.membersButtonText}>{t("dm.mobile.group.members")}</Text>
           </Pressable>}
         </View>
 
@@ -352,11 +357,11 @@ export default function GroupChatScreen() {
           ListEmptyComponent={
             !loaded ? <SkeletonRows variant="chat" rows={7} /> :
             <View style={styles.beginning}>
-              <Text style={styles.beginningTitle}>Start the group</Text>
+              <Text style={styles.beginningTitle}>{t("dm.mobile.group.startTheGroup")}</Text>
               <Text style={styles.beginningText}>
                 {group?.e2ee
-                  ? "Messages here are end-to-end encrypted: only people in the group when a message is sent can read it."
-                  : "Messages here are shared with everyone in this group chat."}
+                  ? t("dm.mobile.group.messagesHereAreEndTo")
+                  : t("dm.mobile.group.messagesHereAreSharedWith")}
               </Text>
             </View>
           }
@@ -374,7 +379,7 @@ export default function GroupChatScreen() {
                 style={[styles.message, own && styles.messageOwn, !endsRun && styles.messageInRun]}
                 delayLongPress={350}
                 onLongPress={() => { tapHaptic(); setActionMessage(item); }}
-                accessibilityHint="Long press for message actions"
+                accessibilityHint={t("dm.mobile.conversation.longPressForMessageActions")}
               >
                 {!own && startsRun && <Text style={styles.author}>{item.username}</Text>}
                 {replyTarget && (
@@ -387,10 +392,10 @@ export default function GroupChatScreen() {
                 {item.e2ee === "locked" || item.e2ee === "failed" ? (
                   <Text style={styles.e2eePlaceholder}>
                     {item.e2ee === "failed"
-                      ? "This message couldn't be decrypted."
+                      ? t("dm.e2ee.unreadable.failed")
                       : e2eeState.status === "locked"
-                        ? "Encrypted message. Unlock encrypted messages on this phone to read it."
-                        : "Encrypted message you can't read: sent before you joined, or older than your account keeps."}
+                        ? t("dm.mobile.conversation.encryptedMessageUnlockEncryptedMessages")
+                        : t("dm.mobile.group.encryptedMessageYouCanT")}
                   </Text>
                 ) : parseGif(item.text) ? (
                   <MessageImage url={parseGif(item.text)!.url} title={parseGif(item.text)!.title} token={token} authenticated={false} />
@@ -407,11 +412,11 @@ export default function GroupChatScreen() {
         {!nearBottom && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={newSinceScroll > 0 ? `${newSinceScroll} new messages. Jump to latest` : "Jump to latest messages"}
+            accessibilityLabel={newSinceScroll > 0 ? t("dm.mobile.group.newsincescrollNewMessagesJumpTo", { newSinceScroll }) : t("dm.mobile.conversation.jumpToLatestMessages")}
             onPress={() => { nearBottomRef.current = true; setNearBottom(true); listRef.current?.scrollToEnd({ animated: true }); }}
             style={{ position: "absolute", right: 16, bottom: 92, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: colors.violet }}
           >
-            <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "900" }}>{newSinceScroll > 0 ? `↓ ${newSinceScroll > 99 ? "99+" : newSinceScroll} new` : "↓ Latest"}</Text>
+            <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "900" }}>{newSinceScroll > 0 ? t("dm.mobile.group.newCount", { number: newSinceScroll > 99 ? "99+" : newSinceScroll }) : t("dm.mobile.group.latest")}</Text>
           </Pressable>
         )}
         {!!notice && <Text style={styles.notice}>{notice}</Text>}
@@ -420,10 +425,10 @@ export default function GroupChatScreen() {
           <View style={styles.replyingBanner}>
             <Text style={styles.replyingIcon}>↩</Text>
             <Text style={styles.replyingBannerText} numberOfLines={1}>
-              Replying to {replyingTo.username}: {previewMessage(replyingTo.text)}
+              {t("dm.mobile.group.replyingToUsernameValue", { username: replyingTo.username, value: previewMessage(replyingTo.text) })}
             </Text>
             <Pressable accessibilityRole="button" onPress={() => setReplyingTo(null)}>
-              <Text style={styles.replyingCancel}>Cancel</Text>
+              <Text style={styles.replyingCancel}>{t("common.actions.cancel")}</Text>
             </Pressable>
           </View>
         )}
@@ -432,17 +437,17 @@ export default function GroupChatScreen() {
         {<View style={styles.composer}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Send a GIF"
+            accessibilityLabel={t("dm.mobile.group.sendAGif")}
             onPress={() => setGifOpen(true)}
             style={{ height: 44, paddingHorizontal: 10, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: colors.panel2 }}
           >
-            <Text style={{ color: colors.lilac, fontSize: 12, fontWeight: "900" }}>GIF</Text>
+            <Text style={{ color: colors.lilac, fontSize: 12, fontWeight: "900" }}>{t("dm.mobile.group.gif")}</Text>
           </Pressable>
           <TextInput
             testID="group-composer"
             value={input}
             onChangeText={setInput}
-            placeholder={`Message ${group?.name || "group"}`}
+            placeholder={group?.name ? t("dm.mobile.group.messageNamed", { name: group.name }) : t("dm.mobile.group.messageGroup")}
             placeholderTextColor={colors.faint}
             style={styles.input}
             multiline
@@ -454,7 +459,7 @@ export default function GroupChatScreen() {
             style={[styles.send, false]}
             onPress={sendMessage}
             accessibilityRole="button"
-            accessibilityLabel="Send message"
+            accessibilityLabel={t("dm.mobile.conversation.sendMessage")}
           >
             <Text style={styles.sendText}>↑</Text>
           </Pressable>
@@ -472,8 +477,8 @@ export default function GroupChatScreen() {
           <Pressable style={styles.modal} onPress={() => {}}>
             <View style={styles.modalHead}>
               <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.modalKicker}>GROUP CHAT</Text>
-                <Text style={styles.modalTitle}>Members</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.modalKicker}>{t("dm.mobile.group.groupChat2")}</Text>
+                <Text style={styles.modalTitle}>{t("dm.mobile.group.members")}</Text>
               </View>
               <Pressable accessibilityRole="button" onPress={() => setMembersOpen(false)}>
                 <Text style={styles.close}>×</Text>
@@ -488,32 +493,32 @@ export default function GroupChatScreen() {
                   <View key={member.id} style={styles.memberRow}>
                     <Avatar username={member.username} avatarUrl={member.avatarUrl} online={member.online} size={39} />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.memberName}>{member.username}{self ? " · You" : ""}</Text>
-                      <Text style={styles.memberRole}>{owner ? "Group owner" : "Member"}</Text>
+                      <Text style={styles.memberName}>{member.username}{self ? t("dm.mobile.group.you") : ""}</Text>
+                      <Text style={styles.memberRole}>{owner ? t("dm.mobile.group.groupOwner") : t("common.roles.member")}</Text>
                     </View>
                     {self && !owner ? (
                       <Pressable accessibilityRole="button" style={styles.removeButton} onPress={() => void removeMember(member)}>
-                        <Text style={styles.removeButtonText}>Leave</Text>
+                        <Text style={styles.removeButtonText}>{t("common.actions.leave")}</Text>
                       </Pressable>
                     ) : isOwner && !self ? (
                       <Pressable accessibilityRole="button" style={styles.removeButton} onPress={() => void removeMember(member)}>
-                        <Text style={styles.removeButtonText}>Remove</Text>
+                        <Text style={styles.removeButtonText}>{t("common.actions.remove")}</Text>
                       </Pressable>
                     ) : null}
                   </View>
                 );
               })}
 
-              <Text style={styles.addSection}>ADD A FRIEND</Text>
+              <Text style={styles.addSection}>{t("dm.mobile.group.addAFriend")}</Text>
               {addableFriends.length === 0 ? (
-                <Text style={styles.noMore}>All of your friends are already in this group.</Text>
+                <Text style={styles.noMore}>{t("dm.mobile.group.allOfYourFriendsAre")}</Text>
               ) : (
                 addableFriends.map((friend) => (
                   <View key={friend.id} style={styles.memberRow}>
                     <Avatar username={friend.username} avatarUrl={friend.avatarUrl} online={friend.online} size={39} />
                     <Text style={[styles.memberName, { flex: 1 }]}>{friend.username}</Text>
                     <Pressable accessibilityRole="button" style={styles.addButton} onPress={() => void addMember(friend)}>
-                      <Text style={styles.addButtonText}>Add</Text>
+                      <Text style={styles.addButtonText}>{t("common.actions.add")}</Text>
                     </Pressable>
                   </View>
                 ))
@@ -531,19 +536,19 @@ export default function GroupChatScreen() {
             {actionMessage && (
               <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => beginReply(actionMessage)}>
                 <Text style={styles.sheetActionIcon}>↩</Text>
-                <Text style={styles.sheetActionText}>Reply</Text>
+                <Text style={styles.sheetActionText}>{t("dm.mobile.conversation.reply")}</Text>
               </Pressable>
             )}
             {actionMessage && actionMessage.fromUserId !== user?.id && (
-              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: "message", targetId: message.id, subjectUserId: message.fromUserId, subjectUsername: message.username, contextType: "group", contextId: groupId, contextLabel: group?.name || "Group chat", evidenceType: "message", evidenceText: message.e2ee === "locked" || message.e2ee === "failed" ? undefined : message.text, e2eeProof: dmE2ee.reportProof(message, "group") ?? undefined }); }}>
+              <Pressable accessibilityRole="button" style={styles.sheetAction} onPress={() => { const message = actionMessage; setActionMessage(null); setReportTarget({ targetType: "message", targetId: message.id, subjectUserId: message.fromUserId, subjectUsername: message.username, contextType: "group", contextId: groupId, contextLabel: group?.name || t("dm.mobile.group.groupChat"), evidenceType: "message", evidenceText: message.e2ee === "locked" || message.e2ee === "failed" ? undefined : message.text, e2eeProof: dmE2ee.reportProof(message, "group") ?? undefined }); }}>
                 <Text style={styles.sheetActionIcon}>⚑</Text>
-                <Text style={styles.sheetActionText}>Report message</Text>
+                <Text style={styles.sheetActionText}>{t("dm.mobile.conversation.reportMessage")}</Text>
               </Pressable>
             )}
             {actionMessage && (actionMessage.fromUserId === user?.id || isOwner) && (
               <Pressable accessibilityRole="button" style={[styles.sheetAction, styles.sheetDanger]} onPress={() => requestDeleteMessage(actionMessage)}>
                 <Text style={[styles.sheetActionIcon, { color: colors.red }]}>⌫</Text>
-                <Text style={[styles.sheetActionText, { color: colors.red }]}>Delete message</Text>
+                <Text style={[styles.sheetActionText, { color: colors.red }]}>{t("dm.mobile.conversation.deleteMessage2")}</Text>
               </Pressable>
             )}
           </Pressable>
@@ -561,7 +566,7 @@ export default function GroupChatScreen() {
 }
 
 function formatTime(value: string): string {
-  return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
 const styles = StyleSheet.create({

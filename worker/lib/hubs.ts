@@ -138,7 +138,7 @@ export async function replaceRoomMembers(
 export async function roomsForHub(db: D1Database, hubId: number, userId: string) {
   const result = await db
     .prepare(
-      `SELECT id, hub_id, name, type, category, position, private, icon, kind, user_limit, post_policy, post_role_ids_json,forum_guidelines,forum_post_policy,forum_post_role_ids_json,forum_post_member_ids_json,forum_tags_json
+      `SELECT id, hub_id, name, type, category, position, private, icon, kind, user_limit, post_policy, post_role_ids_json, accent, background_key,forum_guidelines,forum_post_policy,forum_post_role_ids_json,forum_post_member_ids_json,forum_tags_json
        FROM decave_rooms
        WHERE hub_id = ?
        ORDER BY position, id`,
@@ -162,12 +162,16 @@ export async function roomsForHub(db: D1Database, hubId: number, userId: string)
       user_limit: number | null;
       post_policy: string | null;
       post_role_ids_json: string | null;
+      accent: string | null;
+      background_key: string | null;
     }>();
   const visible = [];
-  for (const room of result.results) {
+  for (const { background_key: backgroundKey, ...room } of result.results) {
     if (await canAccessRoom(db, room, userId))
       visible.push({
         ...room,
+        accent: room.accent ?? null,
+        backgroundUrl: mediaUrl(backgroundKey),
         type: room.kind === "forum" ? "forum" : room.type,
         private: room.private === 1,
         forumGuidelines: room.forum_guidelines,

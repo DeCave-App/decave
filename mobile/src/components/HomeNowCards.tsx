@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -24,6 +25,7 @@ export function HomeNowCards({
   friends: AccountUser[];
   myUserId?: string;
 }) {
+  const { t } = useTranslation(["common"]);
   const liveRooms = useMemo(() => {
     const byChannel = new Map<number, VoiceParticipant[]>();
     for (const participant of participants) {
@@ -54,7 +56,9 @@ export function HomeNowCards({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
-          top ? `Live now: ${top.people.length} in ${top.name}, ${top.hub.name}. ${imIn ? "Open" : "Join"}` : "No one is in voice right now"
+          top
+            ? t("common.mobile.homeNow.liveLabel", { count: top.people.length, room: top.name, hub: top.hub.name, action: imIn ? t("common.actions.open") : t("common.actions.join") })
+            : t("common.mobile.homeNow.emptyLabel")
         }
         disabled={!top}
         onPress={() => {
@@ -69,7 +73,7 @@ export function HomeNowCards({
         <View style={styles.kickerRow}>
           <View style={[styles.liveDot, !top && styles.liveDotIdle]} />
           <Text maxFontSizeMultiplier={1.3} style={[styles.kicker, top && styles.kickerLive]}>
-            LIVE NOW
+            {t("common.mobile.homeNow.liveKicker")}
           </Text>
         </View>
         {top ? (
@@ -86,13 +90,13 @@ export function HomeNowCards({
               {top.name}
             </Text>
             <Text style={styles.meta} numberOfLines={1}>
-              {top.people.length} in voice · {top.hub.name}
+              {t("common.mobile.homeNow.meta", { count: top.people.length, hub: top.hub.name })}
             </Text>
             <View style={styles.footer}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.action}>{imIn ? "Open" : "Join"}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.action}>{imIn ? t("common.actions.open") : t("common.actions.join")}</Text>
               {liveRooms.length > 1 && (
                 <Text maxFontSizeMultiplier={1.3} style={styles.otherRooms} numberOfLines={1}>
-                  +{liveRooms.length - 1} more
+                  {t("common.mobile.homeNow.moreRooms", { count: liveRooms.length - 1 })}
                 </Text>
               )}
             </View>
@@ -100,16 +104,16 @@ export function HomeNowCards({
         ) : (
           <>
             <Ionicons name="volume-mute-outline" size={22} color={colors.faint} style={{ marginTop: 6 }} />
-            <Text style={styles.emptyText}>No one's in voice right now.</Text>
+            <Text style={styles.emptyText}>{t("common.mobile.homeNow.empty")}</Text>
           </>
         )}
       </Pressable>
 
-      <View style={styles.card} accessibilityLabel="Friends playing">
+      <View style={styles.card} accessibilityLabel={t("common.mobile.homeNow.friendsLabel")}>
         <View style={styles.kickerRow}>
           <Ionicons name="game-controller" size={12} color={colors.violet} />
           <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>
-            FRIENDS PLAYING
+            {t("common.mobile.homeNow.friendsKicker")}
           </Text>
         </View>
         {playing.length ? (
@@ -117,7 +121,7 @@ export function HomeNowCards({
             <Pressable
               key={friend.id}
               accessibilityRole="button"
-              accessibilityLabel={`${friend.username}, ${friend.activityText || friend.statusText}. Message`}
+              accessibilityLabel={t("common.mobile.homeNow.friendLabel", { name: friend.username, activity: friend.activityText || friend.statusText })}
               onPress={() => {
                 tapHaptic();
                 router.push(`/dm/${encodeURIComponent(friend.id)}?username=${encodeURIComponent(friend.username)}` as any);
@@ -138,7 +142,7 @@ export function HomeNowCards({
         ) : (
           <>
             <Ionicons name="moon-outline" size={22} color={colors.faint} style={{ marginTop: 6 }} />
-            <Text style={styles.emptyText}>No friends are playing yet.</Text>
+            <Text style={styles.emptyText}>{t("common.mobile.homeNow.friendsEmpty")}</Text>
           </>
         )}
       </View>

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { colors } from "@/src/theme";
 
 /**
@@ -7,6 +8,7 @@ import { colors } from "@/src/theme";
  * layout appears immediately instead of a spinner or a misleading empty state.
  */
 export function SkeletonRows({ rows = 6, variant = "list" }: { rows?: number; variant?: "list" | "chat" }) {
+  const { t } = useTranslation(["common"]);
   const pulse = useRef(new Animated.Value(0.45)).current;
   useEffect(() => {
     const loop = Animated.loop(
@@ -20,7 +22,7 @@ export function SkeletonRows({ rows = 6, variant = "list" }: { rows?: number; va
   }, [pulse]);
 
   return (
-    <Animated.View style={{ opacity: pulse }} accessibilityLabel="Loading" accessibilityRole="progressbar">
+    <Animated.View style={{ opacity: pulse }} accessibilityLabel={t("common.mobile.loading")} accessibilityRole="progressbar">
       {Array.from({ length: rows }, (_, index) => (
         <View key={index} style={[styles.row, variant === "chat" && styles.chatRow]}>
           <View style={[styles.avatar, variant === "chat" && styles.chatAvatar]} />

@@ -5,21 +5,21 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/src/components/Screen";
 import { apiJson } from "@/src/lib/api";
 import {
-  EDIT_ON_DESKTOP_NOTE,
-  PUBLISH_ON_DESKTOP_NOTE,
-  TOKEN_BOT_NOTE,
   summarizeBot,
   timeAgo,
   type BotBuilderOverview,
   type BotRun,
   type ClientBot,
 } from "@/src/lib/bots";
+import { runNoticeText } from "@/src/lib/server-notice";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
 export default function HubBotsScreen() {
+  const { t } = useTranslation(["bots", "common"]);
   const { hubId } = useLocalSearchParams<{ hubId: string }>();
   const { token } = useSession();
   const [overview, setOverview] = useState<BotBuilderOverview | null>(null);
@@ -53,7 +53,7 @@ export default function HubBotsScreen() {
       setOverview({ ...data, bots: data.bots.map((bot) => ({ ...bot, lastRunAt: byBot[bot.id]?.[0]?.created_at ?? null })) });
       setNow(Date.now());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load bots.");
+      setError(cause instanceof Error ? cause.message : t("bots.section.loadFailed"));
     }
   }, [token, hubId]);
 
@@ -74,7 +74,7 @@ export default function HubBotsScreen() {
       );
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not update the bot.");
+      setError(cause instanceof Error ? cause.message : t("bots.page.updateFailed"));
     } finally {
       setBusy("");
     }
@@ -91,10 +91,10 @@ export default function HubBotsScreen() {
         { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ name, templateId }) },
         token,
       );
-      setNotice(created.hasUnpublishedChanges ? `${name} created. ${PUBLISH_ON_DESKTOP_NOTE}.` : `${name} created.`);
+      setNotice(created.hasUnpublishedChanges ? t("bots.mobile.hubBots.createdPublishOnDesktop", { name }) : t("bots.mobile.hubBots.nameCreated", { name }));
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create the bot.");
+      setError(cause instanceof Error ? cause.message : t("bots.mobile.hubBots.couldNotCreateTheBot"));
     } finally {
       setBusy("");
     }
@@ -111,26 +111,26 @@ export default function HubBotsScreen() {
       const result = await apiJson<{ runs: BotRun[] }>(`/api/servers/${hubId}/bot-builder/${bot.id}/runs`, {}, token);
       setRuns((current) => ({ ...current, [bot.id]: result.runs }));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load activity.");
+      setError(cause instanceof Error ? cause.message : t("bots.activity.loadFailed"));
     }
   };
 
   return (
     <Screen>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" style={styles.back} onPress={() => router.back()}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} style={styles.back} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={colors.cyan} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.kicker}>HUB CONTROL</Text>
-          <Text style={styles.title}>Bots</Text>
+          <Text style={styles.kicker}>{t("bots.mobile.hubBots.hubControl")}</Text>
+          <Text style={styles.title}>{t("bots.section.title")}</Text>
         </View>
       </View>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {!!error && <Text style={styles.error}>{error}</Text>}
         {!!notice && <Text style={styles.notice}>{notice}</Text>}
-        {!overview && !error && <Text style={styles.muted}>Loading bots…</Text>}
-        {overview && overview.bots.length === 0 && <Text style={styles.muted}>No bots yet. Start from a template below.</Text>}
+        {!overview && !error && <Text style={styles.muted}>{t("bots.section.loading")}</Text>}
+        {overview && overview.bots.length === 0 && <Text style={styles.muted}>{t("bots.mobile.hubBots.noBotsYetStartFrom")}</Text>}
         {overview?.bots.map((bot) => (
           <View key={bot.id} style={styles.card}>
             <View style={styles.row}>
@@ -140,15 +140,15 @@ export default function HubBotsScreen() {
                 {bot.kind === "builder" ? (
                   <Text style={[styles.muted, bot.pausedReason && styles.warn]}>{summarizeBot(bot, now)}</Text>
                 ) : (
-                  <Text style={styles.muted}>{TOKEN_BOT_NOTE}</Text>
+                  <Text style={styles.muted}>{t("bots.mobile.hubBots.manageOnDesktop")}</Text>
                 )}
                 {bot.kind === "builder" && bot.hasUnpublishedChanges && (
-                  <Text style={styles.muted}>Unpublished changes · {EDIT_ON_DESKTOP_NOTE}</Text>
+                  <Text style={styles.muted}>{t("bots.mobile.hubBots.unpublishedEditOnDesktop")}</Text>
                 )}
               </View>
               {bot.kind === "builder" && (
                 <Switch
-                  accessibilityLabel={`${bot.name} enabled`}
+                  accessibilityLabel={t("bots.mobile.hubBots.nameEnabled", { name: bot.name })}
                   value={bot.enabled}
                   disabled={!!busy}
                   onValueChange={(value) => void setEnabled(bot, value)}
@@ -158,16 +158,16 @@ export default function HubBotsScreen() {
             {bot.kind === "builder" && (
               <>
                 <Pressable accessibilityRole="button" style={styles.link} onPress={() => void toggleActivity(bot)}>
-                  <Text style={styles.linkText}>{openId === bot.id ? "Hide activity" : "Show activity"}</Text>
+                  <Text style={styles.linkText}>{openId === bot.id ? t("bots.mobile.hubBots.hideActivity") : t("bots.mobile.hubBots.showActivity")}</Text>
                 </Pressable>
                 {openId === bot.id &&
                   ((runs[bot.id] ?? []).length === 0 ? (
-                    <Text style={styles.muted}>No runs yet.</Text>
+                    <Text style={styles.muted}>{t("bots.mobile.hubBots.noRunsYet")}</Text>
                   ) : (
                     (runs[bot.id] ?? []).slice(0, 20).map((run) => (
                       <View key={run.id} style={styles.run}>
                         <Text style={[styles.runStatus, run.status === "error" && styles.warn]}>{run.status}</Text>
-                        <Text style={[styles.muted, { flex: 1 }]} numberOfLines={2}>{run.detail || run.trigger}</Text>
+                        <Text style={[styles.muted, { flex: 1 }]} numberOfLines={2}>{(run.detail && runNoticeText(run.notice, run.detail)) || run.trigger}</Text>
                         <Text style={styles.muted}>{timeAgo(run.created_at, now)}</Text>
                       </View>
                     ))
@@ -179,8 +179,8 @@ export default function HubBotsScreen() {
 
         {overview && overview.templates.length > 0 && (
           <>
-            <Text style={styles.section}>START FROM A TEMPLATE</Text>
-            <Text style={styles.muted}>{EDIT_ON_DESKTOP_NOTE}.</Text>
+            <Text style={styles.section}>{t("bots.mobile.hubBots.startFromATemplate")}</Text>
+            <Text style={styles.muted}>{t("bots.mobile.hubBots.editOnDesktop")}</Text>
             {overview.templates.map((template) => (
               <View key={template.id} style={styles.card}>
                 <Text style={styles.name}>{template.name}</Text>
@@ -191,7 +191,7 @@ export default function HubBotsScreen() {
                   disabled={!!busy}
                   onPress={() => void createFromTemplate(template.id, template.name.slice(0, 32))}
                 >
-                  <Text style={styles.primaryText}>{busy === `template:${template.id}` ? "Creating…" : "Create bot"}</Text>
+                  <Text style={styles.primaryText}>{busy === `template:${template.id}` ? t("bots.newBot.creating") : t("bots.mobile.hubBots.createBot")}</Text>
                 </Pressable>
               </View>
             ))}

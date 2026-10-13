@@ -8,6 +8,8 @@ import ts from "typescript";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const source = fs.readFileSync(path.join(repoRoot, "mobile/src/providers/RealtimeProvider.tsx"), "utf8");
+// The provider's notices come from the English catalogs.
+const { default: mobileI18next } = await import("../test-support/mobile-i18n-english.mjs");
 
 function deferred() {
   let resolve;
@@ -126,6 +128,7 @@ function createProviderRuntime({ apiJson }) {
     },
     "@/src/lib/api": { apiJson, WS_URL: "wss://example.test/realtime" },
     "@/src/providers/SessionProvider": { useSession: () => session },
+    i18next: { t: (...args) => mobileI18next.t(...args) },
   };
   const compiled = ts.transpileModule(source, {
     compilerOptions: {

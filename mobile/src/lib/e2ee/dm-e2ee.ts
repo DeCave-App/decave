@@ -72,12 +72,40 @@ export type DmKeyring = readonly DmAccountKeys[];
 export type DmCryptoErrorCode =
   "bad-envelope" | "no-key" | "bad-signature" | "decrypt-failed" | "wrong-code" | "key-mismatch" | "bad-succession";
 
+/** Catalog keys (dm.e2ee.errors.crypto.*) of the messages people can see, for apps that translate. */
+const DM_CRYPTO_ERROR_KEYS: Readonly<Record<string, string>> = {
+  "That is not a keyring.": "notKeyring",
+  "The new key isn't signed by the old one.": "successionUnsigned",
+  "The new key doesn't match.": "successionMismatch",
+  "This could not be decrypted.": "decryptFailed",
+  "Invalid recovery code.": "invalidRecoveryCode",
+  "The recovery backup's key isn't signed by this account.": "backupUnsigned",
+  "That doesn't look like a recovery code.": "notRecoveryCode",
+  "That recovery code doesn't unlock this account.": "wrongRecoveryCode",
+  "The backup doesn't match its key.": "backupMismatch",
+  "Could not open the key from your other device.": "linkOpenFailed",
+  "The linked key doesn't match.": "linkMismatch",
+  "The sender's key doesn't match.": "senderKeyMismatch",
+  "This message's signature is not valid.": "badSignature",
+  "This message wasn't encrypted for a key this device has.": "noKeyOnDevice",
+  "This message could not be decrypted.": "messageDecryptFailed",
+  "This message doesn't belong to this conversation.": "wrongConversation",
+  "This key could not be decrypted.": "keyDecryptFailed",
+  "The revealed key is not valid.": "revealedKeyInvalid",
+  "This file could not be decrypted.": "fileDecryptFailed",
+  "Unknown sender key.": "unknownSenderKey",
+};
+
 export class DmCryptoError extends Error {
   readonly code: DmCryptoErrorCode;
+  /** Catalog key of the message (dm.e2ee.errors.crypto.*) for apps that translate, or null. */
+  readonly key: string | null;
   constructor(message: string, code: DmCryptoErrorCode) {
     super(message);
     this.name = "DmCryptoError";
     this.code = code;
+    const name = DM_CRYPTO_ERROR_KEYS[message];
+    this.key = name ? `dm.e2ee.errors.crypto.${name}` : null;
   }
 }
 

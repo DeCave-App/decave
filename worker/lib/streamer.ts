@@ -3,7 +3,7 @@
 
 import type { Env } from "./env";
 import { streamerMigrationExists, streamerHubIdsForUser } from "../streamer/index.ts";
-import { json, sameOriginWriteAllowed, requestKey } from "./http";
+import { apiError, apiErrorLegacy, sameOriginWriteAllowed, requestKey } from "./http";
 import { getHub, type ServerRole, nowIso, getRole } from "../db";
 import { getSafetyProfile } from "../trust-safety";
 import { requireUser } from "./sessions";
@@ -37,11 +37,11 @@ export async function streamerHubAccessGuard(
   userId: string,
 ): Promise<Response | null> {
   if (request.method !== "GET" && request.method !== "POST") {
-    return json({ error: "Method not supported." }, 405);
+    return apiError("streamer.methodNotSupported", 405);
   }
 
   const hub = await getHub(env.DB, hubId);
-  if (!hub) return json({ error: "Hub not found." }, 404);
+  if (!hub) return apiError("streamer.hubNotFound", 404);
   const membership = await env.DB.prepare("SELECT role FROM decave_hub_members WHERE hub_id=? AND user_id=? LIMIT 1")
     .bind(hubId, userId)
     .first<{ role: ServerRole }>();
@@ -50,31 +50,28 @@ export async function streamerHubAccessGuard(
   // performs admission, but this hook is the host's retained-ban/private-Hub
   // boundary and must not become an unconditional allow-all adapter.
   if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
-    return json({ error: "Hub not found." }, 404);
+    return apiError("streamer.hubNotFound", 404);
   }
 
   const banned = await env.DB.prepare("SELECT 1 FROM decave_bans WHERE hub_id=? AND user_id=? LIMIT 1")
     .bind(hubId, userId)
     .first();
-  if (banned) return json({ error: "You are banned from this Hub." }, 403);
+  if (banned) return apiError("streamer.banned", 403);
 
   try {
     const safety = await getSafetyProfile(env.DB, userId);
     if (!safety) {
-      return json(
-        { error: "Account safety policy is temporarily unavailable.", code: "SAFETY_POLICY_UNAVAILABLE" },
-        503,
-      );
+      return apiErrorLegacy("SAFETY_POLICY_UNAVAILABLE", "session.safetyPolicyUnavailable", 503);
     }
     if (safety.age_status === "ineligible") {
-      return json({ error: "This account is not eligible for DeCave.", code: "AGE_RESTRICTED" }, 403);
+      return apiErrorLegacy("AGE_RESTRICTED", "streamer.accountIneligible", 403);
     }
   } catch (error) {
     console.error(
       "Could not apply Streamer Hub safety admission",
       error instanceof Error ? error.name : "UnknownError",
     );
-    return json({ error: "Account safety policy is temporarily unavailable.", code: "SAFETY_POLICY_UNAVAILABLE" }, 503);
+    return apiErrorLegacy("SAFETY_POLICY_UNAVAILABLE", "session.safetyPolicyUnavailable", 503);
   }
 
   // A private Hub is admitted by its existing membership row above. Official
@@ -89,13 +86,13 @@ export async function streamerMutationGuard(
   hubId: number,
   userId: string,
 ): Promise<Response | null> {
-  if (!sameOriginWriteAllowed(request)) return json({ error: "Cross-site request blocked" }, 403);
+  if (!sameOriginWriteAllowed(request)) return apiError("streamer.crossSiteBlocked", 403);
 
   // Re-authenticate the session at the mutation boundary. This preserves the
   // host's session revocation/account-state checks even if this hook is reused.
   const user = await requireUser(request, env);
   if (user instanceof Response) return user;
-  if (user.id !== userId) return json({ error: "Authentication required" }, 401);
+  if (user.id !== userId) return apiError("session.authRequired", 401);
 
   const access = await streamerHubAccessGuard(request, env, hubId, userId);
   if (access) return access;
@@ -117,35 +114,35 @@ export async function streamerMutationGuard(
   )
     .bind(hubId, userId, nowIso())
     .first();
-  if (timeout) return json({ error: "You are timed out in this Hub." }, 403);
+  if (timeout) return apiError("streamer.timedOut", 403);
 
   let safety;
   try {
     safety = await getSafetyProfile(env.DB, userId);
   } catch (error) {
     console.error("Could not apply Streamer mutation safety", error instanceof Error ? error.name : "UnknownError");
-    return json({ error: "Account safety policy is temporarily unavailable.", code: "SAFETY_POLICY_UNAVAILABLE" }, 503);
+    return apiErrorLegacy("SAFETY_POLICY_UNAVAILABLE", "session.safetyPolicyUnavailable", 503);
   }
   if (!safety) {
-    return json({ error: "Account safety policy is temporarily unavailable.", code: "SAFETY_POLICY_UNAVAILABLE" }, 503);
+    return apiErrorLegacy("SAFETY_POLICY_UNAVAILABLE", "session.safetyPolicyUnavailable", 503);
   }
   if (safety.age_status === "ineligible") {
-    return json({ error: "This account is not eligible for DeCave.", code: "AGE_RESTRICTED" }, 403);
+    return apiErrorLegacy("AGE_RESTRICTED", "streamer.accountIneligible", 403);
   }
 
   if (
     streamerPath.endsWith("/giveaways/enter") &&
     (safety.age_status !== "eligible" || safety.age_band !== "adult" || safety.teen_safety_mode === 1)
   ) {
-    return json({ error: "Giveaway entry is available only to verified adult accounts." }, 403);
+    return apiError("streamer.giveawayAdultsOnly", 403);
   }
 
   try {
     const limited = await env.AUTH_RATE_LIMITER.limit({ key: requestKey(request, `streamer:${userId}`) });
-    if (!limited.success) return json({ error: "Too many Streamer actions. Please wait a minute." }, 429);
+    if (!limited.success) return apiError("streamer.rateLimited", 429);
   } catch (error) {
     console.error("Could not apply Streamer mutation rate limit", error instanceof Error ? error.name : "UnknownError");
-    return json({ error: "Abuse protection is temporarily unavailable." }, 503);
+    return apiError("streamer.abuseProtectionUnavailable", 503);
   }
 
   return null;

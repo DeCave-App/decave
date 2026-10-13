@@ -1,3 +1,6 @@
+import { i18next } from "../../i18n/index.ts";
+
+// Error messages are in the UI language: callers show error.message.
 export const LEGACY_ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
 const LEGACY_ATTACHMENT_PATH = "/uploads/attachments/";
 
@@ -23,13 +26,13 @@ function originFor(value: string | URL): URL {
   try {
     parsed = value instanceof URL ? new URL(value.href) : new URL(value);
   } catch {
-    throw invalid("The attachment origin is invalid.");
+    throw invalid(i18next.t("chat.media.download.originInvalid"));
   }
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-    throw invalid("The attachment origin must use HTTP(S).");
+    throw invalid(i18next.t("chat.media.download.originProtocol"));
   }
   if (parsed.username || parsed.password || parsed.search || parsed.hash) {
-    throw invalid("The attachment origin must not contain credentials or URL state.");
+    throw invalid(i18next.t("chat.media.download.originState"));
   }
   return parsed;
 }
@@ -40,13 +43,13 @@ function originFor(value: string | URL): URL {
  * a credentialed cross-origin fetch primitive.
  */
 export function validateLegacyAttachmentUrl(value: string, baseUrl: string | URL): URL {
-  if (typeof value !== "string" || !value.trim()) throw invalid("The attachment URL is empty.");
+  if (typeof value !== "string" || !value.trim()) throw invalid(i18next.t("chat.media.download.urlEmpty"));
   if (/[\\]/.test(value) || /%(?:2f|5c)/i.test(value)) {
-    throw invalid("The attachment URL contains an encoded or literal path separator.");
+    throw invalid(i18next.t("chat.media.download.urlSeparator"));
   }
   const rawPath = value.split(/[?#]/, 1)[0] ?? value;
   if (/(?:^|\/)\.{1,2}(?:\/|$)/.test(rawPath) || /%(?:2e)/i.test(rawPath)) {
-    throw invalid("The attachment URL contains traversal.");
+    throw invalid(i18next.t("chat.media.download.urlTraversal"));
   }
 
   const base = originFor(baseUrl);
@@ -54,17 +57,17 @@ export function validateLegacyAttachmentUrl(value: string, baseUrl: string | URL
   try {
     parsed = new URL(value, base.href);
   } catch {
-    throw invalid("The attachment URL is invalid.");
+    throw invalid(i18next.t("chat.media.download.urlInvalid"));
   }
-  if (parsed.origin !== base.origin) throw invalid("The attachment URL is not same-origin.");
+  if (parsed.origin !== base.origin) throw invalid(i18next.t("chat.media.download.urlCrossOrigin"));
   if (parsed.username || parsed.password || parsed.search || parsed.hash) {
-    throw invalid("The attachment URL must not contain credentials, a query, or a fragment.");
+    throw invalid(i18next.t("chat.media.download.urlState"));
   }
   if (/%(?:2e)/i.test(parsed.pathname)) {
-    throw invalid("The attachment URL contains encoded traversal.");
+    throw invalid(i18next.t("chat.media.download.urlEncodedTraversal"));
   }
   if (!parsed.pathname.startsWith(LEGACY_ATTACHMENT_PATH)) {
-    throw invalid("The attachment URL is outside the legacy attachment route.");
+    throw invalid(i18next.t("chat.media.download.urlOutsideRoute"));
   }
 
   const segments = parsed.pathname.split("/");
@@ -72,7 +75,7 @@ export function validateLegacyAttachmentUrl(value: string, baseUrl: string | URL
     segments.length <= 3 ||
     segments.some((segment, index) => index >= 3 && (segment === "" || segment === "." || segment === ".."))
   ) {
-    throw invalid("The attachment URL contains an unsafe path segment.");
+    throw invalid(i18next.t("chat.media.download.urlUnsafeSegment"));
   }
   return parsed;
 }
@@ -90,7 +93,7 @@ export function sanitizeLegacyAttachmentFilename(value: string | null | undefine
 function byteLimit(value: number | undefined): number {
   if (value === undefined) return LEGACY_ATTACHMENT_MAX_BYTES;
   if (!Number.isSafeInteger(value) || value <= 0 || value > LEGACY_ATTACHMENT_MAX_BYTES) {
-    throw new LegacyAttachmentError("too-large", "The attachment size limit is invalid.");
+    throw new LegacyAttachmentError("too-large", i18next.t("chat.media.download.limitInvalid"));
   }
   return value;
 }
@@ -118,11 +121,11 @@ export async function readBoundedLegacyAttachmentBody(
     decodedSize ?? (!contentEncoding || contentEncoding.trim().toLowerCase() === "identity" ? contentLength : null);
   if (declaredSize !== null) {
     if (!/^\d+$/.test(declaredSize.trim())) {
-      throw new LegacyAttachmentError("invalid-response", "The attachment size is invalid.");
+      throw new LegacyAttachmentError("invalid-response", i18next.t("chat.media.download.sizeInvalid"));
     }
     const announced = Number(declaredSize);
     if (!Number.isSafeInteger(announced) || announced > limit) {
-      throw new LegacyAttachmentError("too-large", "The attachment exceeds the 25 MiB limit.");
+      throw new LegacyAttachmentError("too-large", i18next.t("chat.media.download.tooLarge"));
     }
     expectedLength = announced;
   }
@@ -130,20 +133,20 @@ export async function readBoundedLegacyAttachmentBody(
   const bodyStream = response.body;
   if (!bodyStream || typeof bodyStream.getReader !== "function") {
     if (expectedLength === null) {
-      throw new LegacyAttachmentError("invalid-response", "The attachment response has no bounded body.");
+      throw new LegacyAttachmentError("invalid-response", i18next.t("chat.media.download.noBoundedBody"));
     }
     try {
       const body = new Uint8Array(await response.arrayBuffer());
       if (body.byteLength > limit) {
-        throw new LegacyAttachmentError("too-large", "The attachment exceeds the 25 MiB limit.");
+        throw new LegacyAttachmentError("too-large", i18next.t("chat.media.download.tooLarge"));
       }
       if (body.byteLength !== expectedLength) {
-        throw new LegacyAttachmentError("invalid-response", "The attachment response size was incomplete.");
+        throw new LegacyAttachmentError("invalid-response", i18next.t("chat.media.download.incomplete"));
       }
       return body;
     } catch (error) {
       if (error instanceof LegacyAttachmentError) throw error;
-      throw new LegacyAttachmentError("network-failure", "The attachment download failed.");
+      throw new LegacyAttachmentError("network-failure", i18next.t("chat.media.download.downloadFailed"));
     }
   }
 
@@ -151,7 +154,7 @@ export async function readBoundedLegacyAttachmentBody(
   try {
     reader = bodyStream.getReader() as unknown as BoundedAttachmentReader;
   } catch {
-    throw new LegacyAttachmentError("network-failure", "The attachment download failed.");
+    throw new LegacyAttachmentError("network-failure", i18next.t("chat.media.download.downloadFailed"));
   }
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -167,13 +170,13 @@ export async function readBoundedLegacyAttachmentBody(
         } catch {
           /* preserve the size failure */
         }
-        throw new LegacyAttachmentError("too-large", "The attachment exceeds the 25 MiB limit.");
+        throw new LegacyAttachmentError("too-large", i18next.t("chat.media.download.tooLarge"));
       }
       chunks.push(chunk);
     }
   } catch (error) {
     if (error instanceof LegacyAttachmentError) throw error;
-    throw new LegacyAttachmentError("network-failure", "The attachment download failed.");
+    throw new LegacyAttachmentError("network-failure", i18next.t("chat.media.download.downloadFailed"));
   } finally {
     reader.releaseLock();
   }
@@ -185,25 +188,28 @@ export async function readBoundedLegacyAttachmentBody(
     offset += chunk.byteLength;
   }
   if (expectedLength !== null && body.byteLength !== expectedLength) {
-    throw new LegacyAttachmentError("invalid-response", "The attachment response size was incomplete.");
+    throw new LegacyAttachmentError("invalid-response", i18next.t("chat.media.download.incomplete"));
   }
   return body;
 }
 
 function assertResponseForAttachment(response: Response, baseUrl: string | URL): void {
   if (response.redirected) {
-    throw new LegacyAttachmentError("invalid-response", "The attachment response was redirected.");
+    throw new LegacyAttachmentError("invalid-response", i18next.t("chat.media.download.redirected"));
   }
   if (!response.url) {
-    throw new LegacyAttachmentError("invalid-response", "The attachment response has no verified URL.");
+    throw new LegacyAttachmentError("invalid-response", i18next.t("chat.media.download.noVerifiedUrl"));
   }
   try {
     validateLegacyAttachmentUrl(response.url, baseUrl);
   } catch {
-    throw new LegacyAttachmentError("invalid-response", "The attachment response URL is not approved.");
+    throw new LegacyAttachmentError("invalid-response", i18next.t("chat.media.download.urlNotApproved"));
   }
   if (!response.ok) {
-    throw new LegacyAttachmentError("http-error", `The attachment request failed (${response.status}).`);
+    throw new LegacyAttachmentError(
+      "http-error",
+      i18next.t("chat.media.download.requestFailedStatus", { status: response.status }),
+    );
   }
 }
 
@@ -246,7 +252,7 @@ export async function downloadLegacyAttachmentDesktop(
       headers: { Accept: "application/octet-stream" },
     });
   } catch {
-    throw new LegacyAttachmentError("network-failure", "The attachment request failed.");
+    throw new LegacyAttachmentError("network-failure", i18next.t("chat.media.download.requestFailed"));
   }
   assertResponseForAttachment(response, options.baseUrl);
   const downloaded = await readBoundedLegacyAttachmentBody(response, options.maxBytes);
@@ -255,7 +261,7 @@ export async function downloadLegacyAttachmentDesktop(
     options.documentRef ?? (typeof globalThis.document !== "undefined" ? globalThis.document : undefined);
   const urlRef = options.urlRef ?? (typeof globalThis.URL !== "undefined" ? globalThis.URL : undefined);
   if (!documentRef || !urlRef) {
-    throw new LegacyAttachmentError("export-unavailable", "Desktop file export is unavailable in this environment.");
+    throw new LegacyAttachmentError("export-unavailable", i18next.t("chat.media.download.exportUnavailable"));
   }
 
   const type = options.decrypt ? options.contentType || "application/octet-stream" : contentTypeFor(response);

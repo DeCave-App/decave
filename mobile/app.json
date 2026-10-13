@@ -172,7 +172,8 @@
       "expo-quick-actions",
       "@config-plugins/react-native-callkeep",
       "./plugins/withSceneDelegate",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      "expo-localization"
     ],
     "extra": {
       "apiBaseUrl": "https://api.example.invalid",

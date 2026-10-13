@@ -4,6 +4,8 @@
 
 import { normalizeNotifyLevels, type NotifyLevels } from "./notifyLevels";
 import type { ExtraSettings } from "./extraSettings";
+import { normalizeChatPrefs, type ChatPrefs } from "./chatPrefs";
+import { normalizeDismissed } from "./checkup/dismissed";
 
 export const SYNCED_SETTINGS_VERSION = 1;
 export const SETTINGS_SYNC_STAMP_KEY = "decave_settings_synced_at_v1";
@@ -36,6 +38,10 @@ export type SyncedSettings = {
   mutedHubs?: Record<string, number>;
   /** IANA time zone, so the server can apply quiet hours to phone notifications. */
   timeZone?: string;
+  /** Your setup items dismissed on this account. */
+  checkupDismissed?: string[];
+  /** Settings → Chat. */
+  chat?: ChatPrefs;
 };
 
 export type SyncSource = {
@@ -49,6 +55,8 @@ export type SyncSource = {
   notifyLevels: NotifyLevels;
   mutedHubs: Record<string, number>;
   timeZone: string;
+  chat?: ChatPrefs;
+  checkupDismissed?: string[];
 };
 
 export function buildSyncedSettings(source: SyncSource): SyncedSettings {
@@ -79,6 +87,8 @@ export function buildSyncedSettings(source: SyncSource): SyncedSettings {
     notifyLevels: source.notifyLevels,
     mutedHubs: { ...source.mutedHubs },
     timeZone: source.timeZone,
+    ...(source.chat ? { chat: { ...source.chat } } : {}),
+    ...(source.checkupDismissed ? { checkupDismissed: [...source.checkupDismissed] } : {}),
   };
 }
 
@@ -141,6 +151,8 @@ export function readSyncedSettings(raw: unknown): SyncedSettings | null {
         )
       : undefined,
     timeZone: typeof value.timeZone === "string" ? value.timeZone.slice(0, 64) : undefined,
+    chat: obj(value.chat) ? normalizeChatPrefs(value.chat) : undefined,
+    checkupDismissed: Array.isArray(value.checkupDismissed) ? normalizeDismissed(value.checkupDismissed) : undefined,
   };
 }
 

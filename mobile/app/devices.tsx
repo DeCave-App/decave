@@ -6,36 +6,40 @@ import { Screen } from "@/src/components/Screen";
 import { apiJson } from "@/src/lib/api";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
+import { i18next } from "@/src/i18n";
+import { dateLocale } from "@/src/lib/date-locale";
+import { deviceName } from "@/src/lib/session-device";
 
 type DeviceSession = {
   id: string;
   client: "mobile" | "web" | "desktop" | "legacy";
   deviceLabel: string;
+  /** Parts of the label for showing it in the UI language (shared/session-device.ts). */
+  device?: unknown;
   createdAt: string;
   expiresAt: string;
   lastActiveAt?: string | null;
   current: boolean;
 };
 
-function plural(count: number, unit: string): string {
-  return `${count} ${unit}${count === 1 ? "" : "s"}`;
-}
-
 function activityLabel(session: DeviceSession, now = Date.now()): string {
-  if (session.current) return "Active now";
+  if (session.current) return i18next.t("settings.mobile.devices.activity.activeNow");
   const time = session.lastActiveAt ? new Date(session.lastActiveAt).getTime() : NaN;
   if (!Number.isFinite(time)) {
     const signedIn = new Date(session.createdAt).getTime();
-    return Number.isFinite(signedIn) ? `Not used since ${new Date(signedIn).toLocaleDateString()}` : "Not used recently";
+    return Number.isFinite(signedIn)
+      ? i18next.t("settings.mobile.devices.activity.notUsedSince", { date: new Date(signedIn).toLocaleDateString(dateLocale()) })
+      : i18next.t("settings.mobile.devices.activity.notUsedRecently");
   }
   const minutes = Math.max(0, Math.floor((now - time) / 60_000));
-  if (minutes < 10) return "Active now";
-  if (minutes < 60) return `Active ${plural(minutes, "minute")} ago`;
+  if (minutes < 10) return i18next.t("settings.mobile.devices.activity.activeNow");
+  if (minutes < 60) return i18next.t("settings.mobile.devices.activity.minutesAgo", { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Active ${plural(hours, "hour")} ago`;
+  if (hours < 24) return i18next.t("settings.mobile.devices.activity.hoursAgo", { count: hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `Active ${plural(days, "day")} ago`;
-  return `Not used since ${new Date(time).toLocaleDateString()}`;
+  if (days < 7) return i18next.t("settings.mobile.devices.activity.daysAgo", { count: days });
+  return i18next.t("settings.mobile.devices.activity.notUsedSince", { date: new Date(time).toLocaleDateString(dateLocale()) });
 }
 
 function clientIcon(client: DeviceSession["client"]): keyof typeof Ionicons.glyphMap {
@@ -46,6 +50,7 @@ function clientIcon(client: DeviceSession["client"]): keyof typeof Ionicons.glyp
 }
 
 export default function DevicesScreen() {
+  const { t } = useTranslation(["settings", "common"]);
   const { token, invalidate } = useSession();
   const tokenRef = useRef(token);
   tokenRef.current = token;
@@ -61,7 +66,7 @@ export default function DevicesScreen() {
       const data = await apiJson<{ sessions: DeviceSession[] }>("/api/auth/sessions", {}, token);
       setSessions(Array.isArray(data.sessions) ? data.sessions : []);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load active sessions.");
+      setError(cause instanceof Error ? cause.message : t("settings.mobile.devices.couldNotLoadActiveSessions"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -72,12 +77,12 @@ export default function DevicesScreen() {
 
   const logoutAll = () => {
     Alert.alert(
-      "Log out all sessions?",
-      "This signs your account out on mobile, browser and desktop devices.",
+      t("settings.mobile.devices.logOutAllSessions"),
+      t("settings.mobile.devices.thisSignsYourAccountOut"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.actions.cancel"), style: "cancel" },
         {
-          text: "Log out all",
+          text: t("settings.mobile.devices.logOutAll"),
           style: "destructive",
           onPress: () => void (async () => {
             const sessionToken = token;
@@ -85,10 +90,10 @@ export default function DevicesScreen() {
             try {
               await apiJson("/api/auth/logout-all", { method: "POST" }, sessionToken);
               if (tokenRef.current !== sessionToken) return;
-              const invalidated = await invalidate("All DeCave sessions were signed out.", sessionToken);
+              const invalidated = await invalidate(t("settings.mobile.devices.allSessionsSignedOut"), sessionToken);
               if (invalidated) router.replace("/login" as any);
             } catch (cause) {
-              Alert.alert("Could not log out all sessions", cause instanceof Error ? cause.message : "Try again.");
+              Alert.alert(t("settings.mobile.devices.couldNotLogOutAll"), cause instanceof Error ? cause.message : t("settings.mobile.devices.tryAgain"));
             }
           })(),
         },
@@ -98,11 +103,11 @@ export default function DevicesScreen() {
 
   const logoutSession = (session: DeviceSession) => {
     Alert.alert(
-      session.current ? "Log out this device?" : "Log out this session?",
-      `End the ${session.deviceLabel || session.client} session?`,
+      session.current ? t("settings.mobile.devices.logOutThisDevice") : t("settings.mobile.devices.logOutThisSession"),
+      t("settings.mobile.devices.endTheDevicelabelSession", { deviceLabel: deviceName(session.deviceLabel, session.device) || session.client }),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Log out", style: "destructive", onPress: () => void (async () => {
+        { text: t("common.actions.cancel"), style: "cancel" },
+        { text: t("common.logout.confirm"), style: "destructive", onPress: () => void (async () => {
           if (!token) return;
           try {
             const result = await apiJson<{ current?: boolean }>("/api/auth/sessions/revoke", {
@@ -111,13 +116,13 @@ export default function DevicesScreen() {
               body: JSON.stringify({ id: session.id }),
             }, token);
             if (result.current) {
-              await invalidate("This device was logged out.");
+              await invalidate(t("settings.mobile.devices.thisDeviceLoggedOut"));
               router.replace("/login" as any);
               return;
             }
             await load();
           } catch (cause) {
-            Alert.alert("Could not log out session", cause instanceof Error ? cause.message : "Try again.");
+            Alert.alert(t("settings.mobile.devices.couldNotLogOutSession"), cause instanceof Error ? cause.message : t("settings.mobile.devices.tryAgain"));
           }
         })() },
       ],
@@ -127,34 +132,34 @@ export default function DevicesScreen() {
   return (
     <Screen>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable>
-        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>ACCOUNT SECURITY</Text><Text style={styles.title}>Devices</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable>
+        <View style={{ flex: 1 }}><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("common.account.edit.kicker")}</Text><Text style={styles.title}>{t("settings.anchors.devices.label")}</Text></View>
         <Ionicons name="desktop-outline" size={22} color={colors.cyan} />
       </View>
       <ScrollView keyboardDismissMode="on-drag"
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={colors.cyan} />}
       >
-        <View style={styles.info}><Ionicons name="shield-checkmark-outline" size={18} color={colors.cyan} /><Text style={styles.infoText}>Mobile may stay signed in together with one web or desktop client. Web and desktop replace each other.</Text></View>
-        <Pressable accessibilityRole="button" style={styles.scan} onPress={() => router.push("/scan-login" as any)}><Ionicons name="qr-code-outline" size={19} color={colors.cyan} /><View style={{ flex: 1 }}><Text style={styles.scanTitle}>Scan QR login</Text><Text style={styles.scanText}>Sign in on web or desktop using this mobile session.</Text></View><Ionicons name="chevron-forward" size={17} color={colors.muted} /></Pressable>
+        <View style={styles.info}><Ionicons name="shield-checkmark-outline" size={18} color={colors.cyan} /><Text style={styles.infoText}>{t("settings.mobile.devices.mobileMayStaySignedIn")}</Text></View>
+        <Pressable accessibilityRole="button" style={styles.scan} onPress={() => router.push("/scan-login" as any)}><Ionicons name="qr-code-outline" size={19} color={colors.cyan} /><View style={{ flex: 1 }}><Text style={styles.scanTitle}>{t("settings.mobile.devices.scanQrLogin")}</Text><Text style={styles.scanText}>{t("settings.mobile.devices.signInOnWebOr")}</Text></View><Ionicons name="chevron-forward" size={17} color={colors.muted} /></Pressable>
         {!!error && <Text style={styles.error}>{error}</Text>}
         {loading ? <ActivityIndicator color={colors.cyan} style={{ marginTop: 24 }} /> : (
           <View style={styles.card}>
-            {sessions.length === 0 ? <Text style={styles.empty}>No active sessions were returned.</Text> : sessions.map((session, index) => (
+            {sessions.length === 0 ? <Text style={styles.empty}>{t("settings.mobile.devices.noActiveSessionsWereReturned")}</Text> : sessions.map((session, index) => (
               <View key={`${session.client}-${session.createdAt}-${index}`} style={[styles.session, index === sessions.length - 1 && styles.sessionLast]}>
                 <View style={styles.icon}><Ionicons name={clientIcon(session.client)} size={19} color={colors.cyan} /></View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <View style={styles.nameRow}><Text style={styles.name}>{session.deviceLabel || session.client}</Text>{session.current && <Text style={styles.current}>THIS DEVICE</Text>}</View>
-                  <Text style={[styles.meta, activityLabel(session) === "Active now" && styles.activeNow]}>{activityLabel(session)}</Text>
-                  <Text style={styles.meta}>{session.client.toUpperCase()} · Signed in {new Date(session.createdAt).toLocaleString()}</Text>
-                  <Text style={styles.meta}>Expires {new Date(session.expiresAt).toLocaleString()}</Text>
+                  <View style={styles.nameRow}><Text style={styles.name}>{deviceName(session.deviceLabel, session.device) || session.client}</Text>{session.current && <Text style={styles.current}>{t("settings.mobile.devices.thisDevice")}</Text>}</View>
+                  <Text style={[styles.meta, activityLabel(session) === t("settings.mobile.devices.activity.activeNow") && styles.activeNow]}>{activityLabel(session)}</Text>
+                  <Text style={styles.meta}>{t("settings.mobile.devices.clientSignedIn", { client: session.client.toUpperCase(), date: new Date(session.createdAt).toLocaleString(dateLocale()) })}</Text>
+                  <Text style={styles.meta}>{t("settings.mobile.devices.expires", { date: new Date(session.expiresAt).toLocaleString(dateLocale()) })}</Text>
                 </View>
-                <Pressable accessibilityRole="button" style={styles.sessionLogout} onPress={() => logoutSession(session)} accessibilityLabel={`Log out ${session.deviceLabel || session.client}`}><Ionicons name="log-out-outline" size={17} color={colors.red} /></Pressable>
+                <Pressable accessibilityRole="button" style={styles.sessionLogout} onPress={() => logoutSession(session)} accessibilityLabel={t("settings.mobile.devices.logOutDevicelabel", { deviceLabel: deviceName(session.deviceLabel, session.device) || session.client })}><Ionicons name="log-out-outline" size={17} color={colors.red} /></Pressable>
               </View>
             ))}
           </View>
         )}
-        <Pressable accessibilityRole="button" style={styles.danger} onPress={logoutAll}><Ionicons name="log-out-outline" size={18} color={colors.red} /><View style={{ flex: 1 }}><Text style={styles.dangerTitle}>Log out all active sessions</Text><Text style={styles.dangerText}>End every DeCave login for this account.</Text></View></Pressable>
+        <Pressable accessibilityRole="button" style={styles.danger} onPress={logoutAll}><Ionicons name="log-out-outline" size={18} color={colors.red} /><View style={{ flex: 1 }}><Text style={styles.dangerTitle}>{t("settings.mobile.devices.logOutAllActiveSessions")}</Text><Text style={styles.dangerText}>{t("settings.mobile.devices.endEveryDecaveLoginFor")}</Text></View></Pressable>
       </ScrollView>
     </Screen>
   );

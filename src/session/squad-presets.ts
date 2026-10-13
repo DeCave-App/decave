@@ -1,3 +1,4 @@
+import { i18next } from "../i18n/index.ts";
 import {
   accountStorageKey,
   browserLocalStorage,
@@ -42,21 +43,34 @@ export type SquadPreset = {
 export type SquadPresetDraft = Omit<SquadPreset, "version" | "id" | "createdAt" | "updatedAt"> &
   Partial<Pick<SquadPreset, "id" | "createdAt" | "updatedAt">>;
 
+// Labels are read when shown, so they follow the UI language.
 export const SQUAD_PRESET_EXTRA_SUPPORT = {
   playStyle: {
-    label: "Play style",
+    get label() {
+      return i18next.t("chat.session.squad.playStyle");
+    },
     status: "saved-only" as const,
-    detail: "Saved in this device; the current matcher does not filter by play style.",
+    get detail() {
+      return i18next.t("chat.session.squad.playStyleDetail");
+    },
   },
   timeWindow: {
-    label: "Time window",
+    get label() {
+      return i18next.t("chat.session.squad.timeWindow");
+    },
     status: "saved-only" as const,
-    detail: "Saved in this device; the current matcher does not filter by time window.",
+    get detail() {
+      return i18next.t("chat.session.squad.timeWindowDetail");
+    },
   },
   partySize: {
-    label: "Party size",
+    get label() {
+      return i18next.t("chat.session.squad.partySize");
+    },
     status: "saved-only" as const,
-    detail: "Saved in this device; the current matcher does not filter by party size.",
+    get detail() {
+      return i18next.t("chat.session.squad.partySizeDetail");
+    },
   },
 } as const;
 
@@ -112,7 +126,7 @@ export function normalizeSquadPreset(value: unknown, now = Date.now()): SquadPre
   return {
     version: 1,
     id: presetId,
-    name: text(raw.name, 64, "Squad preset"),
+    name: text(raw.name, 64, i18next.t("chat.session.squad.defaultName")),
     filters: {
       game: text(rawFilters.game, 100, ""),
       platform: text(rawFilters.platform, 60, "Any platform"),
@@ -147,7 +161,7 @@ export function createSquadPreset(input: SquadPresetDraft, now = Date.now()): Sq
     ) ?? {
       version: 1,
       id: randomId(),
-      name: "Squad preset",
+      name: i18next.t("chat.session.squad.defaultName"),
       filters: {
         game: "",
         platform: "Any platform",
@@ -191,10 +205,11 @@ export function toSupportedSquadSearchRequest(filters: SupportedSquadFilters): S
 
 export function unsupportedSquadPresetExtras(preset: SquadPreset): string[] {
   const extras: string[] = [];
-  if (preset.extras.playStyle !== "any") extras.push(`${SQUAD_PRESET_EXTRA_SUPPORT.playStyle.label}: saved only`);
-  if (preset.extras.timeWindow) extras.push(`${SQUAD_PRESET_EXTRA_SUPPORT.timeWindow.label}: saved only`);
+  const savedOnly = (label: string) => i18next.t("chat.session.squad.savedOnlyExtra", { label });
+  if (preset.extras.playStyle !== "any") extras.push(savedOnly(SQUAD_PRESET_EXTRA_SUPPORT.playStyle.label));
+  if (preset.extras.timeWindow) extras.push(savedOnly(SQUAD_PRESET_EXTRA_SUPPORT.timeWindow.label));
   if (preset.extras.partySize.min !== 1 || preset.extras.partySize.max !== 4)
-    extras.push(`${SQUAD_PRESET_EXTRA_SUPPORT.partySize.label}: saved only`);
+    extras.push(savedOnly(SQUAD_PRESET_EXTRA_SUPPORT.partySize.label));
   return extras;
 }
 
@@ -217,12 +232,12 @@ export function createSquadPresetRepository(
   let storageError: string | null = null;
   const load = () => {
     const result = readLocalJsonResult(storage, key, []);
-    storageError = result.ok ? null : (result.error ?? "Squad presets could not be read.");
+    storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.squad.readFailed"));
     return normalizeSquadPresets(result.value ?? [], now());
   };
   const persist = (presets: SquadPreset[]) => {
     const result = writeLocalJsonResult(storage, key, { version: 1, presets });
-    storageError = result.ok ? null : (result.error ?? "Squad presets could not be saved.");
+    storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.squad.saveFailed"));
     return { ok: result.ok, presets, ...(result.error ? { error: result.error } : {}) };
   };
   return {
@@ -235,7 +250,7 @@ export function createSquadPresetRepository(
         : createSquadPreset(candidate, timestamp);
       if (!preset) {
         const presets = load();
-        const error = "This squad preset is invalid and was not saved.";
+        const error = i18next.t("chat.session.squad.invalid");
         storageError = error;
         return { ok: false, presets, error };
       }
@@ -248,7 +263,7 @@ export function createSquadPresetRepository(
     },
     clear: () => {
       const result = removeLocalValueResult(storage, key);
-      storageError = result.ok ? null : (result.error ?? "Squad presets could not be cleared.");
+      storageError = result.ok ? null : (result.error ?? i18next.t("chat.session.squad.clearFailed"));
       return result.ok;
     },
     lastError: () => storageError,

@@ -1,5 +1,10 @@
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import type { DiscordImportPreview } from "../../../shared/discord-template";
+
+const TEMPLATE_URL_SHAPE = "https://discord.new/xxxxxxxx";
+
+type PanelStat = "categories" | "text" | "forums" | "voice" | "roles";
 
 export function DiscordImportPanel({
   preview,
@@ -14,25 +19,37 @@ export function DiscordImportPanel({
   onLoad: (value: string) => void;
   onClear: () => void;
 }) {
+  const { t } = useTranslation(["admin"]);
   const [url, setUrl] = useState("");
+  const stat = (key: PanelStat, count: number) => (
+    <span>
+      <Trans
+        t={t}
+        i18nKey={`admin.discordImport.panelStats.${key}`}
+        count={count}
+        values={{ count }}
+        components={{ b: <b /> }}
+      />
+    </span>
+  );
   return (
     <div className="dc-discord-import">
       <div className="dc-discord-import-head">
         <div>
-          <span>STRUCTURE IMPORT</span>
-          <strong>Already have a Discord server?</strong>
+          <span>{t("admin.discordImport.kicker")}</span>
+          <strong>{t("admin.discordImport.haveServer")}</strong>
         </div>
-        <small>No Discord login or message history is needed.</small>
+        <small>{t("admin.discordImport.noDiscordLogin")}</small>
       </div>
       <div className="dc-discord-import-form">
         <input
           value={url}
           onChange={(event) => setUrl(event.target.value)}
-          placeholder="https://discord.new/xxxxxxxx"
-          aria-label="Discord Server Template URL"
+          placeholder={TEMPLATE_URL_SHAPE}
+          aria-label={t("admin.discordImport.urlLabel")}
         />
         <button type="button" className="modal-secondary" disabled={busy || !url.trim()} onClick={() => onLoad(url)}>
-          {busy ? "Loading…" : "Preview import"}
+          {busy ? t("admin.discordImport.loading") : t("admin.discordImport.preview")}
         </button>
       </div>
       {error && (
@@ -45,34 +62,23 @@ export function DiscordImportPanel({
           <div className="dc-discord-import-preview-title">
             <strong>{preview.name}</strong>
             <button type="button" onClick={onClear}>
-              Clear import
+              {t("admin.discordImport.clear")}
             </button>
           </div>
           <p>{preview.description}</p>
           <div className="dc-discord-import-stats">
-            <span>
-              <b>{preview.categories}</b> categories
-            </span>
-            <span>
-              <b>{preview.rooms.filter((room) => room.type === "text").length}</b> text
-            </span>
-            <span>
-              <b>{preview.rooms.filter((room) => room.type === "forum").length}</b> forums
-            </span>
-            <span>
-              <b>{preview.rooms.filter((room) => room.type === "voice").length}</b> voice
-            </span>
-            <span>
-              <b>{preview.roles.length}</b> roles
-            </span>
+            {stat("categories", preview.categories)}
+            {stat("text", preview.rooms.filter((room) => room.type === "text").length)}
+            {stat("forums", preview.rooms.filter((room) => room.type === "forum").length)}
+            {stat("voice", preview.rooms.filter((room) => room.type === "voice").length)}
+            {stat("roles", preview.roles.length)}
           </div>
           {preview.unsupported.length > 0 && (
-            <small className="dc-discord-import-warning">Not imported: {preview.unsupported.join(", ")}</small>
+            <small className="dc-discord-import-warning">
+              {t("admin.discordImport.notImported", { items: preview.unsupported.join(", ") })}
+            </small>
           )}
-          <small className="dc-discord-import-note">
-            Users, historical messages, bots, integrations, and Discord permissions are not imported. Roles are
-            recreated as names and colors only.
-          </small>
+          <small className="dc-discord-import-note">{t("admin.discordImport.panelNote")}</small>
         </div>
       )}
     </div>

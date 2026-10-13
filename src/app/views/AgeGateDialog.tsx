@@ -1,6 +1,7 @@
 // Asks a signed-in user to confirm their age before they can continue.
 
 import type { Dispatch, SetStateAction } from "react";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   ageGateBirthDate: string;
@@ -17,17 +18,15 @@ export function AgeGateDialog({
   ageGateBusy,
   confirmAgeGate,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="modal-overlay dc-age-gate-overlay" onClick={(event) => event.stopPropagation()}>
       <div className="modal dc-age-gate-card" role="dialog" aria-modal="true" aria-labelledby="dc-age-gate-title">
-        <div className="dc-safety-kicker ds-kicker">WELCOME TO DECAVE</div>
-        <h2 id="dc-age-gate-title">Confirm your age</h2>
-        <p>
-          DeCave is only for adults aged 18 and older. Choose your birth date to finish setting up your account. We keep
-          only an age band and the verification time, not the exact date.
-        </p>
+        <div className="dc-safety-kicker ds-kicker">{t("common.ageGate.kicker")}</div>
+        <h2 id="dc-age-gate-title">{t("common.ageGate.title")}</h2>
+        <p>{t("common.ageGate.body")}</p>
         <label className="ds-field">
-          Birth date
+          {t("common.ageGate.birthDate")}
           <input
             className="ds-input"
             type="date"
@@ -48,7 +47,7 @@ export function AgeGateDialog({
           onClick={() => void confirmAgeGate()}
           disabled={ageGateBusy || !ageGateBirthDate}
         >
-          {ageGateBusy ? "Checking…" : "Continue"}
+          {ageGateBusy ? t("common.status.checking") : t("common.actions.continue")}
         </button>
       </div>
     </div>

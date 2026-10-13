@@ -11,6 +11,14 @@ import { randomBytes } from "@noble/ciphers/utils.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { base64UrlToBytes, bytesToBase64Url } from "./e2ee/dm-e2ee-format";
 import type { DmReportProof } from "./e2ee/dm-e2ee";
+import i18next from "i18next";
+import { apiErrorText, type ApiErrorBody } from "./api-error";
+
+/** "Encrypted evidence could not be uploaded." in the app language (English before i18n starts). */
+function uploadFailedText(): string {
+  const key = "errors.trustSafety.evidenceUploadFailed";
+  return i18next.isInitialized && i18next.exists(key) ? String(i18next.t(key)) : "Encrypted evidence could not be uploaded.";
+}
 
 export type ReportKey = { keyId: string; version: number; algorithm: string; publicKey: string };
 
@@ -132,8 +140,8 @@ export async function uploadEvidence(
     body: encrypted as unknown as BodyInit,
   });
   if (!response.ok) {
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error || "Encrypted evidence could not be uploaded.");
+    const data = (await response.json().catch(() => ({}))) as ApiErrorBody;
+    throw new Error(apiErrorText(data, uploadFailedText()));
   }
   return true;
 }

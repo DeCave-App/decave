@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HubEvent } from "../../../shared/hub-events";
+import { i18next } from "../../i18n/index.ts";
 import { listHubEvents, type EventsApiContext } from "./api";
 
 type HubEventsEntry = {
@@ -92,7 +93,7 @@ export function useHubEvents(ctx: EventsApiContext) {
       } catch (error) {
         if (!ownsScope(requestCtx, scopeKey)) return;
         if (generationRef.current.get(genKey) !== generation) return;
-        const message = error instanceof Error ? error.message : "Could not load events.";
+        const message = error instanceof Error ? error.message : i18next.t("events.api.loadFailed");
         setCacheState((state) => {
           if (!ownsScope(requestCtx, scopeKey)) return state;
           const current = state.scopeKey === scopeKey ? state.byHub : {};

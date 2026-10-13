@@ -1,0 +1,41 @@
+{
+  "common": {
+    "greeting": "Hi {{username}},",
+    "settingsPath": "Einstellungen > Account & Sicherheit"
+  },
+  "verify": {
+    "subject": "Bestätige deine DeCave-E-Mail",
+    "text": "Hi {{username}}, bestätige deine DeCave-E-Mail: {{link}}",
+    "heading": "Bestätige deine DeCave-E-Mail",
+    "body": "Bestätige diese E-Mail-Adresse, um deinen Account zu aktivieren.",
+    "button": "E-Mail bestätigen",
+    "expiry": "Dieser Link läuft in 24 Stunden ab."
+  },
+  "reset": {
+    "subject": "Setze dein DeCave-Passwort zurück",
+    "text": "Hi {{username}}, setze dein DeCave-Passwort zurück: {{link}}",
+    "heading": "Setze dein DeCave-Passwort zurück",
+    "body": "Wenn du ein neues Passwort angefordert hast, nutze den Button unten.",
+    "button": "Passwort zurücksetzen",
+    "expiry": "Dieser Link läuft in 30 Minuten ab."
+  },
+  "signInAlert": {
+    "subject": "Neue Anmeldung bei deinem DeCave-Account",
+    "heading": "Neue Anmeldung bei DeCave",
+    "usedOnText": "Mit deinem DeCave-Account hat sich gerade jemand angemeldet auf: {{device}}",
+    "time": "Zeitpunkt: {{when}}",
+    "usedOn": "Mit deinem Account hat sich gerade jemand angemeldet auf:",
+    "ifYou": "Wenn du das warst, musst du nichts tun.",
+    "notYouText": "Wenn du das nicht warst, sichere jetzt deinen Account (meldet alle Geräte ab und schickt dir einen Link zum Zurücksetzen des Passworts): {{link}}",
+    "turnOffText": "Du kannst diese E-Mails unter {{settingsPath}} abschalten.",
+    "button": "Das war ich nicht",
+    "footer": "Damit werden alle Geräte abgemeldet und du bekommst per E-Mail einen Link zum Zurücksetzen des Passworts. Der Link ist 7 Tage gültig. Schalte diese E-Mails unter {{settingsPath}} ab."
+  },
+  "emailChanged": {
+    "subject": "Die E-Mail-Adresse deines DeCave-Accounts wurde geändert",
+    "heading": "Deine DeCave-E-Mail-Adresse wurde geändert",
+    "changedText": "Die E-Mail-Adresse deines DeCave-Accounts wurde in {{newEmail}} geändert.",
+    "changed": "Die E-Mail-Adresse deines Accounts wurde in <strong>{{newEmail}}</strong> geändert.",
+    "notYou": "Wenn du das nicht geändert hast, melde dich bei DeCave an, ändere dein Passwort und melde unter {{settingsPath}} andere Geräte ab."
+  }
+}

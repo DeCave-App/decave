@@ -1,5 +1,6 @@
 // Draggable mini player for the voice room you are in while you look elsewhere.
 
+import { useTranslation } from "react-i18next";
 import type { CSSProperties } from "react";
 import { VoiceStrip } from "../../components/studio";
 import type { Channel, Server, VoiceParticipant } from "../types";
@@ -32,13 +33,16 @@ export function VoiceMiniPlayer({
   voiceControls,
   voiceMiniPlayer,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { handleVoiceMiniPointerDown, handleVoiceMiniPointerMove, handleVoiceMiniPointerUp } = voiceMiniPlayer;
   const { toggleMute, toggleDeafen } = voiceControls;
   const { isMuted, isDeafened, isServerMuted, isServerDeafened } = voiceCall;
   return (
     <aside
       className="dc-voice-mini-player dc-persistent-voice-surface"
-      aria-label={`Active voice room:${activeVoiceLocation.server.name} · ${activeVoiceLocation.channel.name}`}
+      aria-label={t("hub.voiceMini.activeRoom", {
+        room: `${activeVoiceLocation.server.name} · ${activeVoiceLocation.channel.name}`,
+      })}
       data-voice-surface="persistent"
       data-voice-channel-id={activeVoiceLocation.channel.id}
       data-muted={isMuted || isServerMuted ? "true" : "false"}
@@ -65,9 +69,9 @@ export function VoiceMiniPlayer({
           whiteSpace: "nowrap",
         }}
       >
-        Return to voice room
+        {t("hub.voiceMini.return")}
       </button>
-      <span className="dc-voice-mini-drag-handle" title="Drag voice window" aria-hidden="true">
+      <span className="dc-voice-mini-drag-handle" title={t("hub.voiceMini.drag")} aria-hidden="true">
         ⋮⋮
       </span>
       <VoiceStrip

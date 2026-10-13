@@ -1,0 +1,43 @@
+{
+  "tray": {
+    "open": "Abrir DeCave",
+    "toggleMute": "Silenciar / Activar micro",
+    "toggleDeafen": "Ensordecer / Activar audio",
+    "quit": "Salir de DeCave"
+  },
+  "window": {
+    "streamTitle": "Transmisión de DeCave"
+  },
+  "update": {
+    "checkFailed": "DeCave no pudo buscar actualizaciones. Revisa tu conexión e inténtalo de nuevo.",
+    "publisherUnverified": "Las actualizaciones automáticas están desactivadas porque no se pudo verificar el editor de la versión de Windows instalada.",
+    "installFailed": "DeCave no pudo completar la actualización. Inténtalo de nuevo más tarde."
+  },
+  "keybinds": {
+    "mustDiffer": "Los atajos de silenciar y ensordecer deben ser distintos.",
+    "inUse": "Uno de esos atajos ya lo usa Windows u otra app."
+  },
+  "picker": {
+    "windowTitle": "Elige qué compartir · DeCave",
+    "title": "Elige qué compartir",
+    "subtitle": "Selecciona una pantalla o ventana de aplicación para compartir pantalla en DeCave.",
+    "cancel": "Cancelar",
+    "entireScreen": "Toda la pantalla",
+    "window": "Ventana",
+    "noPreview": "Sin vista previa"
+  },
+  "turnstile": {
+    "windowTitle": "Verificación de seguridad de DeCave",
+    "invalidToken": "La verificación de seguridad devolvió un token no válido.",
+    "unsupportedAction": "Acción de verificación de seguridad no compatible.",
+    "replaced": "Una nueva solicitud ha reemplazado la verificación de seguridad.",
+    "timedOut": "Se agotó el tiempo de la verificación de seguridad.",
+    "loadFailed": "No se pudo cargar la verificación de seguridad."
+  },
+  "overlay": {
+    "voice": "Voz",
+    "unknown": "Desconocido",
+    "muted": "Silenciado",
+    "deafened": "Ensordecido"
+  }
+}

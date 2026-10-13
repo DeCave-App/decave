@@ -1,5 +1,6 @@
 // Voice controls under a connected voice room: mute, deafen, camera, screen share, soundboard, leave.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type {
@@ -74,6 +75,7 @@ export function VoiceControlsPanel({
   callMedia,
   voiceControls,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { loadSoundboardSounds, toggleMute, toggleDeafen, startCamera, stopScreenShare, startScreenShare } =
     voiceControls;
   const {
@@ -97,19 +99,24 @@ export function VoiceControlsPanel({
       data-voice-channel-id={currentChannel.id}
       data-muted={isMuted || isServerMuted ? "true" : "false"}
       data-deafened={isDeafened || isServerDeafened ? "true" : "false"}
-      aria-label={`Voice controls for ${currentServer.name} · ${currentChannel.name}`}
+      aria-label={t("hub.voiceControls.label", { hub: currentServer.name, room: currentChannel.name })}
       style={voiceControlBarStyle}
     >
       <div style={{ minWidth: "160px" }}>
         <div className="voice-status-row">
-          <div className="voice-status">{voiceChannelId === currentChannel.id ? "Voice Connected" : "Voice Room"}</div>
+          <div className="voice-status">
+            {voiceChannelId === currentChannel.id ? t("hub.voiceControls.connected") : t("hub.voiceControls.room")}
+          </div>
           {voiceChannelId === currentChannel.id && (
-            <span className={`dc-voice-quality ${voiceQuality ?? "waiting"}`} title="Measured round-trip voice latency">
+            <span
+              className={`dc-voice-quality ${voiceQuality ?? "waiting"}`}
+              title={t("hub.voiceControls.latencyTitle")}
+            >
               {ownVoiceRttMs === null
                 ? voiceStatus === "Connecting..."
-                  ? "Connecting…"
-                  : "Live"
-                : `${ownVoiceRttMs} ms`}
+                  ? t("hub.voiceControls.connectingEllipsis")
+                  : t("hub.voiceControls.live")
+                : t("common.userMenu.rttMs", { ms: ownVoiceRttMs })}
             </span>
           )}
         </div>
@@ -118,13 +125,19 @@ export function VoiceControlsPanel({
             audioOutputError ||
             cameraEffectNotice ||
             (isServerMuted || isServerDeafened
-              ? `${isServerMuted ? "Server muted" : ""}${isServerMuted && isServerDeafened ? " · " : ""}${isServerDeafened ? "Server deafened" : ""}`
+              ? isServerMuted && isServerDeafened
+                ? t("hub.voiceControls.serverMutedDeafened")
+                : isServerMuted
+                  ? t("hub.voiceControls.serverMuted")
+                  : t("hub.voiceControls.serverDeafened")
               : voiceChannelId === currentChannel.id
                 ? audioSettings.inputVolume === 0
-                  ? "Microphone input volume is 0%"
+                  ? t("hub.voiceControls.inputZero")
                   : audioSettings.pushToTalk
-                    ? `Hold ${audioSettings.pushToTalkKey.replace(/^Key/, "")} to talk`
-                    : `${voiceParticipants.filter((p) => p.channelId === currentChannel.id).length} connected`
+                    ? t("hub.voiceControls.holdToTalk", { key: audioSettings.pushToTalkKey.replace(/^Key/, "") })
+                    : t("hub.voiceControls.connectedCount", {
+                        count: voiceParticipants.filter((p) => p.channelId === currentChannel.id).length,
+                      })
                 : "")}
         </div>
       </div>
@@ -136,10 +149,28 @@ export function VoiceControlsPanel({
             className={`voice-channel-icon-button${isMuted || isServerMuted ? " active" : ""}`}
             onClick={toggleMute}
             disabled={isServerMuted}
-            aria-label={isServerMuted ? "Server muted" : isMuted ? "Unmute" : "Mute"}
+            aria-label={
+              isServerMuted
+                ? t("hub.voiceControls.serverMuted")
+                : isMuted
+                  ? t("hub.voiceControls.unmute")
+                  : t("hub.voiceControls.mute")
+            }
             aria-pressed={isMuted || isServerMuted}
-            data-tooltip={isServerMuted ? "Server muted" : isMuted ? "Unmute" : "Mute"}
-            title={isServerMuted ? "A hub moderator has server-muted you." : isMuted ? "Unmute" : "Mute"}
+            data-tooltip={
+              isServerMuted
+                ? t("hub.voiceControls.serverMuted")
+                : isMuted
+                  ? t("hub.voiceControls.unmute")
+                  : t("hub.voiceControls.mute")
+            }
+            title={
+              isServerMuted
+                ? t("hub.voiceControls.serverMutedTitle")
+                : isMuted
+                  ? t("hub.voiceControls.unmute")
+                  : t("hub.voiceControls.mute")
+            }
           >
             <Icon name={isMuted || isServerMuted ? "mic-off" : "mic"} size="lg" />
           </button>
@@ -148,10 +179,28 @@ export function VoiceControlsPanel({
             className={`voice-channel-icon-button${isDeafened || isServerDeafened ? " active" : ""}`}
             onClick={toggleDeafen}
             disabled={isServerDeafened}
-            aria-label={isServerDeafened ? "Server deafened" : isDeafened ? "Undeafen" : "Deafen"}
+            aria-label={
+              isServerDeafened
+                ? t("hub.voiceControls.serverDeafened")
+                : isDeafened
+                  ? t("common.profileMenu.undeafen")
+                  : t("common.profileMenu.deafen")
+            }
             aria-pressed={isDeafened || isServerDeafened}
-            data-tooltip={isServerDeafened ? "Server deafened" : isDeafened ? "Undeafen" : "Deafen"}
-            title={isServerDeafened ? "A hub moderator has server-deafened you." : isDeafened ? "Undeafen" : "Deafen"}
+            data-tooltip={
+              isServerDeafened
+                ? t("hub.voiceControls.serverDeafened")
+                : isDeafened
+                  ? t("common.profileMenu.undeafen")
+                  : t("common.profileMenu.deafen")
+            }
+            title={
+              isServerDeafened
+                ? t("hub.voiceControls.serverDeafenedTitle")
+                : isDeafened
+                  ? t("common.profileMenu.undeafen")
+                  : t("common.profileMenu.deafen")
+            }
           >
             <Icon name={isDeafened || isServerDeafened ? "headphones-off" : "headphones"} size="lg" />
           </button>
@@ -159,9 +208,11 @@ export function VoiceControlsPanel({
             type="button"
             className={`voice-channel-icon-button voice-noise-button${activeNoiseSuppressionMode !== "off" ? " noise-active" : ""}`}
             onClick={cycleNoiseSuppression}
-            aria-label={`Noise suppression: ${noiseSuppressionLabel(activeNoiseSuppressionMode)}. Click to switch mode.`}
-            data-tooltip={`Noise suppression: ${noiseSuppressionLabel(activeNoiseSuppressionMode)} · Click to switch`}
-            title={`Noise suppression: ${noiseSuppressionLabel(activeNoiseSuppressionMode)}. Click to switch mode.`}
+            aria-label={t("hub.voiceControls.noiseLabel", { mode: noiseSuppressionLabel(activeNoiseSuppressionMode) })}
+            data-tooltip={t("hub.voiceControls.noiseTooltip", {
+              mode: noiseSuppressionLabel(activeNoiseSuppressionMode),
+            })}
+            title={t("hub.voiceControls.noiseLabel", { mode: noiseSuppressionLabel(activeNoiseSuppressionMode) })}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -177,9 +228,9 @@ export function VoiceControlsPanel({
           <button
             type="button"
             className={`dc-bottom-soundboard-toggle${soundboardOpen ? " active" : ""}`}
-            title="Soundboard"
-            data-tooltip="Soundboard"
-            aria-label="Toggle soundboard"
+            title={t("hub.voiceControls.soundboard")}
+            data-tooltip={t("hub.voiceControls.soundboard")}
+            aria-label={t("hub.voiceControls.toggleSoundboard")}
             aria-expanded={soundboardOpen}
             onClick={() => {
               const next = !soundboardOpen;
@@ -195,8 +246,8 @@ export function VoiceControlsPanel({
               type="button"
               className="dc-media-action"
               style={voiceActionButtonStyle}
-              aria-label={isCameraOn ? "Turn camera off" : "Turn camera on"}
-              data-tooltip={isCameraOn ? "Turn camera off" : "Turn camera on"}
+              aria-label={isCameraOn ? t("hub.voiceControls.cameraOff") : t("hub.voiceControls.cameraOn")}
+              data-tooltip={isCameraOn ? t("hub.voiceControls.cameraOff") : t("hub.voiceControls.cameraOn")}
               onClick={() => {
                 if (isCameraOn) {
                   stopCamera();
@@ -208,19 +259,21 @@ export function VoiceControlsPanel({
               }}
             >
               <Icon name={isCameraOn ? "camera-off" : "video"} size="lg" />
-              <span className="dc-voice-label">{isCameraOn ? "Camera Off" : "Camera"}</span>
+              <span className="dc-voice-label">
+                {isCameraOn ? t("hub.voiceControls.cameraOffShort") : t("hub.voiceControls.camera")}
+              </span>
             </button>
             {cameraSettingsOpen && !isCameraOn && (
               <div className="camera-settings-menu">
                 <label>
-                  Camera background
+                  {t("hub.voiceControls.cameraBackground")}
                   <select
                     value={cameraEffect}
                     onChange={(event) => setCameraEffect(event.target.value as CameraEffect)}
                   >
-                    <option value="none">Off</option>
-                    <option value="blur">Blur</option>
-                    <option value="replace">Replace background</option>
+                    <option value="none">{t("hub.voiceControls.effectOff")}</option>
+                    <option value="blur">{t("hub.voiceControls.effectBlur")}</option>
+                    <option value="replace">{t("hub.voiceControls.effectReplace")}</option>
                   </select>
                 </label>
                 {cameraEffectNotice && <div className="camera-menu-notice">{cameraEffectNotice}</div>}
@@ -232,7 +285,7 @@ export function VoiceControlsPanel({
                     void startCamera();
                   }}
                 >
-                  Start Camera
+                  {t("hub.voiceControls.startCamera")}
                 </button>
               </div>
             )}
@@ -242,8 +295,8 @@ export function VoiceControlsPanel({
               type="button"
               className="dc-media-action"
               style={isScreenSharing ? voiceStopShareButtonStyle : voiceShareButtonStyle}
-              aria-label={isScreenSharing ? "Stop screen sharing" : "Share screen"}
-              data-tooltip={isScreenSharing ? "Stop sharing" : "Share screen"}
+              aria-label={isScreenSharing ? t("hub.voiceControls.stopScreenShare") : t("hub.voiceControls.shareScreen")}
+              data-tooltip={isScreenSharing ? t("hub.voiceControls.stopSharing") : t("hub.voiceControls.shareScreen")}
               onClick={() => {
                 if (isScreenSharing) {
                   stopScreenShare();
@@ -255,28 +308,34 @@ export function VoiceControlsPanel({
               }}
             >
               <Icon name="screen" size="lg" />
-              <span className="dc-voice-label">{isScreenSharing ? "Stop Share" : "Share Screen"}</span>
+              <span className="dc-voice-label">
+                {isScreenSharing ? t("hub.voiceControls.stopShareShort") : t("hub.voiceControls.shareScreenShort")}
+              </span>
             </button>
             {screenShareSettingsOpen && !isScreenSharing && (
               <div className="camera-settings-menu dc-screen-share-settings">
                 <label>
-                  Resolution &amp; frame rate
+                  {t("hub.voiceControls.resolution")}
                   <select
                     value={screenQuality}
                     onChange={(event) => setScreenQuality(event.target.value as ScreenQuality)}
                   >
-                    <option value="auto">Auto</option>
-                    <option value="720p30">720p · 30 FPS</option>
-                    <option value="1080p30">1080p · 30 FPS</option>
-                    <option value="1080p60">1080p · 60 FPS</option>
-                    <option value="1440p30">2K / 1440p · 30 FPS</option>
-                    <option value="1440p60">2K / 1440p · 60 FPS</option>
+                    <option value="auto">{t("hub.voiceControls.qualityAuto")}</option>
+                    <option value="720p30">{t("hub.voiceControls.quality", { resolution: "720p", fps: 30 })}</option>
+                    <option value="1080p30">{t("hub.voiceControls.quality", { resolution: "1080p", fps: 30 })}</option>
+                    <option value="1080p60">{t("hub.voiceControls.quality", { resolution: "1080p", fps: 60 })}</option>
+                    <option value="1440p30">
+                      {t("hub.voiceControls.quality", { resolution: "2K / 1440p", fps: 30 })}
+                    </option>
+                    <option value="1440p60">
+                      {t("hub.voiceControls.quality", { resolution: "2K / 1440p", fps: 60 })}
+                    </option>
                   </select>
                 </label>
                 <label className="camera-toggle-row">
                   <span>
-                    <b>System audio</b>
-                    <small>{"Share computer sound with viewers"}</small>
+                    <b>{t("hub.voiceControls.systemAudio")}</b>
+                    <small>{t("hub.voiceControls.systemAudioHint")}</small>
                   </span>
                   <input
                     type="checkbox"
@@ -292,7 +351,7 @@ export function VoiceControlsPanel({
                     void startScreenShare();
                   }}
                 >
-                  Start Sharing
+                  {t("hub.voiceControls.startSharing")}
                 </button>
               </div>
             )}
@@ -304,9 +363,9 @@ export function VoiceControlsPanel({
               setSettingsTab("voice");
               openSettings();
             }}
-            aria-label="Voice & audio settings"
-            data-tooltip="Voice settings"
-            title="Voice & audio settings"
+            aria-label={t("hub.voiceControls.settings")}
+            data-tooltip={t("hub.voiceControls.settingsShort")}
+            title={t("hub.voiceControls.settings")}
           >
             <Icon name="settings" size="lg" />
           </button>
@@ -315,11 +374,11 @@ export function VoiceControlsPanel({
             className="dc-voice-disconnect"
             style={voiceDisconnectButtonStyle}
             onClick={leaveVoice}
-            aria-label="Disconnect from voice"
-            data-tooltip="Leave voice"
+            aria-label={t("hub.voiceControls.disconnectLabel")}
+            data-tooltip={t("hub.voiceControls.leave")}
           >
             <Icon name="phone-off" size="lg" />
-            <span className="dc-voice-label">Disconnect</span>
+            <span className="dc-voice-label">{t("hub.voiceControls.disconnect")}</span>
           </button>
         </div>
       ) : (
@@ -329,7 +388,11 @@ export function VoiceControlsPanel({
           onClick={() => void joinVoice()}
           disabled={connectionStatus !== "Connected" || voiceStatus === "Connecting..."}
         >
-          {voiceStatus === "Connecting..." ? "Connecting..." : voiceChannelId !== null ? "Switch Voice" : "Join Voice"}
+          {voiceStatus === "Connecting..."
+            ? t("hub.voiceControls.connecting")
+            : voiceChannelId !== null
+              ? t("hub.voiceControls.switch")
+              : t("hub.voiceControls.join")}
         </button>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import type { HubCustomRole, HubFriendRow, HubMemberRow } from "./types";
-import { localeForLanguage } from "../../app/locale";
+import { formatDate } from "../../i18n/format";
 
 type MembersSectionProps = {
   members: readonly HubMemberRow[];
@@ -29,6 +30,7 @@ function MemberActions({
   onModerate: (action: "timeout" | "ban") => void;
   onRemove: () => void;
 }) {
+  const { t } = useTranslation(["hub"]);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const menuId = useId();
@@ -66,18 +68,23 @@ function MemberActions({
         aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((value) => !value)}
       >
-        Actions
+        {t("hub.manageHub.members.actions")}
       </button>
       {open && (
-        <div className="dch-menu" role="menu" id={menuId} aria-label={`Actions for ${member.username}`}>
+        <div
+          className="dch-menu"
+          role="menu"
+          id={menuId}
+          aria-label={t("hub.manageHub.members.actionsFor", { name: member.username })}
+        >
           <button type="button" role="menuitem" onClick={() => run(() => onModerate("timeout"))}>
-            Time out for 10 minutes
+            {t("hub.manageHub.members.timeout")}
           </button>
           <button type="button" role="menuitem" onClick={() => run(onRemove)}>
-            Remove from Hub
+            {t("hub.manageHub.members.remove")}
           </button>
           <button type="button" role="menuitem" className="is-danger" onClick={() => run(() => onModerate("ban"))}>
-            Ban member
+            {t("hub.manageHub.members.ban")}
           </button>
         </div>
       )}
@@ -105,6 +112,7 @@ export function MembersSection(props: MembersSectionProps) {
     onModerateMember,
     onRemoveMember,
   } = props;
+  const { t } = useTranslation(["hub"]);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   // Large Hubs: render rows in pages so the table stays responsive.
@@ -127,18 +135,18 @@ export function MembersSection(props: MembersSectionProps) {
       <section className="dcx-card">
         <div className="dch-table-tools">
           <label className="dcx-sr-only" htmlFor={`${baseId}-search`}>
-            Search members
+            {t("hub.manageHub.members.search")}
           </label>
           <input
             id={`${baseId}-search`}
             type="search"
             className="dcx-input"
-            placeholder="Search members"
+            placeholder={t("hub.manageHub.members.search")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
           <label className="dcx-sr-only" htmlFor={`${baseId}-filter`}>
-            Filter by role
+            {t("hub.manageHub.members.filter")}
           </label>
           <select
             id={`${baseId}-filter`}
@@ -146,10 +154,10 @@ export function MembersSection(props: MembersSectionProps) {
             value={roleFilter}
             onChange={(event) => setRoleFilter(event.target.value)}
           >
-            <option value="all">All roles</option>
-            <option value="owner">Owner</option>
-            <option value="admin">Admins</option>
-            <option value="member">Members</option>
+            <option value="all">{t("hub.manageHub.members.filters.all")}</option>
+            <option value="owner">{t("hub.manageHub.members.filters.owner")}</option>
+            <option value="admin">{t("hub.manageHub.members.filters.admin")}</option>
+            <option value="member">{t("hub.manageHub.members.filters.member")}</option>
             {roles.map((role) => (
               <option key={role.id} value={role.id}>
                 {role.name}
@@ -159,15 +167,15 @@ export function MembersSection(props: MembersSectionProps) {
         </div>
         <div className="dch-table-wrap">
           <table className="dch-table">
-            <caption className="dcx-sr-only">Hub members</caption>
+            <caption className="dcx-sr-only">{t("hub.manageHub.members.caption")}</caption>
             <thead>
               <tr>
-                <th scope="col">Member</th>
-                <th scope="col">Roles</th>
-                {isOwner && <th scope="col">Access level</th>}
-                {isOwner && roles.length > 0 && <th scope="col">Custom role</th>}
+                <th scope="col">{t("hub.manageHub.members.columns.member")}</th>
+                <th scope="col">{t("hub.manageHub.members.columns.roles")}</th>
+                {isOwner && <th scope="col">{t("hub.manageHub.members.columns.access")}</th>}
+                {isOwner && roles.length > 0 && <th scope="col">{t("hub.manageHub.members.columns.customRole")}</th>}
                 <th scope="col">
-                  <span className="dcx-sr-only">Actions</span>
+                  <span className="dcx-sr-only">{t("hub.manageHub.members.actions")}</span>
                 </th>
               </tr>
             </thead>
@@ -175,14 +183,14 @@ export function MembersSection(props: MembersSectionProps) {
               {loading && (
                 <tr>
                   <td colSpan={5} className="dch-empty">
-                    Loading members…
+                    {t("hub.manageHub.members.loading")}
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={5} className="dch-empty">
-                    No members match your filters.
+                    {t("hub.manageHub.members.noMatch")}
                   </td>
                 </tr>
               )}
@@ -201,10 +209,12 @@ export function MembersSection(props: MembersSectionProps) {
                           <span>
                             <strong>
                               {member.username}
-                              {isSelf ? " (you)" : ""}
+                              {isSelf ? t("hub.manageHub.members.you") : ""}
                             </strong>
                             {member.joinedAt && (
-                              <small>Joined {new Date(member.joinedAt).toLocaleDateString(localeForLanguage())}</small>
+                              <small>
+                                {t("hub.manageHub.members.joined", { date: formatDate(member.joinedAt, "medium") })}
+                              </small>
                             )}
                           </span>
                         </div>
@@ -212,7 +222,7 @@ export function MembersSection(props: MembersSectionProps) {
                       <td>
                         <div className="dch-chips">
                           <span className={`dch-chip dch-chip-${member.role}`}>
-                            {member.role === "owner" ? "Owner" : member.role === "admin" ? "Admin" : "Member"}
+                            {t(`hub.manageHub.members.roles.${member.role}`)}
                           </span>
                           {(member.customRoleIds ?? [])
                             .map((id) => roleById.get(id))
@@ -234,12 +244,12 @@ export function MembersSection(props: MembersSectionProps) {
                           {member.role !== "owner" ? (
                             <select
                               className="dcx-input dch-cell-select"
-                              aria-label={`Access level for ${member.username}`}
+                              aria-label={t("hub.manageHub.members.accessFor", { name: member.username })}
                               value={member.role}
                               onChange={(event) => onChangeMemberRole(member, event.target.value as "admin" | "member")}
                             >
-                              <option value="member">Member</option>
-                              <option value="admin">Admin</option>
+                              <option value="member">{t("hub.manageHub.members.roles.member")}</option>
+                              <option value="admin">{t("hub.manageHub.members.roles.admin")}</option>
                             </select>
                           ) : (
                             <span className="dcx-hint">—</span>
@@ -251,11 +261,11 @@ export function MembersSection(props: MembersSectionProps) {
                           {member.role !== "owner" ? (
                             <select
                               className="dcx-input dch-cell-select"
-                              aria-label={`Custom role for ${member.username}`}
+                              aria-label={t("hub.manageHub.members.customRoleFor", { name: member.username })}
                               value={member.customRoleIds?.[0] ?? ""}
                               onChange={(event) => onAssignCustomRole(member, event.target.value)}
                             >
-                              <option value="">No custom role</option>
+                              <option value="">{t("hub.manageHub.members.noCustomRole")}</option>
                               {roles.map((role) => (
                                 <option key={role.id} value={role.id}>
                                   {role.name}
@@ -283,14 +293,14 @@ export function MembersSection(props: MembersSectionProps) {
           </table>
         </div>
         <div className="dch-table-foot">
-          {filtered.length} of {members.length} member{members.length === 1 ? "" : "s"}
+          {t("hub.manageHub.members.count", { shown: filtered.length, count: members.length })}
           {filtered.length > shownRows && (
             <button
               type="button"
               className="dcx-btn dcx-btn-ghost"
               onClick={() => setShownRows((n) => n + MEMBER_ROWS_PAGE)}
             >
-              Show {Math.min(MEMBER_ROWS_PAGE, filtered.length - shownRows)} more
+              {t("hub.manageHub.members.showMore", { count: Math.min(MEMBER_ROWS_PAGE, filtered.length - shownRows) })}
             </button>
           )}
         </div>
@@ -299,29 +309,29 @@ export function MembersSection(props: MembersSectionProps) {
       {canManage && (
         <section className="dcx-card">
           <div className="dcx-card-head">
-            <h4>Add friends</h4>
-            <p>Friends who aren’t in this Hub yet can be added directly.</p>
+            <h4>{t("hub.manageHub.members.addFriends")}</h4>
+            <p>{t("hub.manageHub.members.addFriendsHint")}</p>
           </div>
           <div className="dcx-row-stack">
             <label className="dcx-sr-only" htmlFor={`${baseId}-friends`}>
-              Search friends
+              {t("hub.manageHub.members.searchFriends")}
             </label>
             <input
               id={`${baseId}-friends`}
               type="search"
               className="dcx-input"
-              placeholder="Search friends"
+              placeholder={t("hub.manageHub.members.searchFriends")}
               value={friendQuery}
               onChange={(event) => setFriendQuery(event.target.value)}
             />
           </div>
           {friendsLoading ? (
             <div className="dcx-row">
-              <small className="dcx-hint">Loading friends…</small>
+              <small className="dcx-hint">{t("hub.manageHub.members.loadingFriends")}</small>
             </div>
           ) : visibleFriends.length === 0 ? (
             <div className="dcx-row">
-              <small className="dcx-hint">No friends available to add.</small>
+              <small className="dcx-hint">{t("hub.manageHub.members.noFriends")}</small>
             </div>
           ) : (
             visibleFriends.map((friend) => (
@@ -330,12 +340,12 @@ export function MembersSection(props: MembersSectionProps) {
                   {renderAvatar(friend)}
                   <span>
                     <strong>{friend.username}</strong>
-                    <small>Friend · not in this Hub</small>
+                    <small>{t("hub.manageHub.members.friendNotInHub")}</small>
                   </span>
                 </div>
                 <div className="dcx-row-control">
                   <button type="button" className="dcx-btn dcx-btn-sm" onClick={() => onAddFriend(friend)}>
-                    Add to Hub
+                    {t("hub.manageHub.members.addToHub")}
                   </button>
                 </div>
               </div>

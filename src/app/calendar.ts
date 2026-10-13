@@ -2,6 +2,7 @@
 // and de-duplicating repeated occurrences.
 
 import type { HubCalendarEvent, Server, Channel } from "./types";
+import { i18next } from "../i18n/index.ts";
 import { parseHubCalendarEvent, parsePrefixedJson, EVENT_PREFIX } from "./message-payloads";
 import type { CalendarItem } from "../features/events";
 
@@ -33,7 +34,7 @@ export const homeCalendarEventForMessage = (
     channelId: channel.id,
     channelName: channel.name,
     createdAt,
-    authorName: authorName || "Hub member",
+    authorName: authorName || i18next.t("hub.actions.calendar.memberFallback"),
   };
 };
 

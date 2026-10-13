@@ -1,12 +1,13 @@
-// Stored media files and Hub icon, banner, header image and chat background uploads.
+// Stored media files, Hub icon, banner, header image and chat background
+// uploads, and per-room chat backgrounds.
 
 import { serveR2 } from "../lib/media";
 import { sniffedImageMime } from "../lib/upload-content-type";
-import { boundedBodyBytes, idFromPath, json } from "../lib/http";
+import { apiError, boundedBodyBytes, idFromPath, json } from "../lib/http";
 import { requireUser } from "../lib/sessions";
-import { getHub, nowIso, audit } from "../db";
+import { getHub, getRoom, hasPermission, nowIso, audit } from "../db";
 import { realtimeBroadcast } from "../lib/realtime";
-import { readImageDimensions, validateHubMediaDimensions, type HubMediaKind } from "../../shared/hub-media-specs";
+import { hubMediaDimensionProblem, readImageDimensions, type HubMediaKind } from "../../shared/hub-media-specs";
 import type { ApiContext } from "./context";
 
 export async function handleMediaRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
@@ -22,8 +23,8 @@ export async function handleMediaRoutes({ request, env, p, method }: ApiContext)
     const hubId = Number(mediaRoute[1]);
     const kind = mediaRoute[2];
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Hub not found" }, 404);
-    if (hub.owner_id !== user.id) return json({ error: "Only the Hub owner can change Hub artwork" }, 403);
+    if (!hub) return apiError("hubMedia.hubNotFound", 404);
+    if (hub.owner_id !== user.id) return apiError("hubMedia.ownerOnly", 403);
     const old = kind === "banner" ? hub.banner_key : kind === "header" ? hub.header_key : hub.chat_background_key;
     if (old) await env.MEDIA.delete(old);
     if (kind === "header")
@@ -44,25 +45,61 @@ export async function handleMediaRoutes({ request, env, p, method }: ApiContext)
     await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { hubId });
     return json({ ok: true });
   }
+  const roomBackground = idFromPath(p, /^\/api\/channels\/(\d+)\/media\/background$/);
+  if (roomBackground && (method === "POST" || method === "DELETE")) {
+    const user = await requireUser(request, env);
+    if (user instanceof Response) return user;
+    const roomId = Number(roomBackground[1]);
+    const room = await getRoom(env.DB, roomId);
+    if (!room) return apiError("hubMedia.roomNotFound", 404);
+    if (!(await hasPermission(env.DB, room.hub_id, user.id, "manageRooms")))
+      return apiError("hubMedia.manageRoomsRequired", 403);
+    const old = room.background_key ?? null;
+    let key: string | null = null;
+    if (method === "POST") {
+      const bytes = await boundedBodyBytes(request, 8 * 1024 * 1024);
+      if (!bytes || !bytes.byteLength) return apiError("hubMedia.roomBackgroundTooLarge", 413);
+      const mime = sniffedImageMime(bytes, ["image/png", "image/jpeg", "image/webp", "image/gif"]);
+      if (!mime) return apiError("hubMedia.roomBackgroundType", 400);
+      const dims = readImageDimensions(bytes);
+      const dimError = hubMediaDimensionProblem("chat-background", dims?.width ?? NaN, dims?.height ?? NaN);
+      if (dimError) return apiError(dimError.code, 400, dimError.params);
+      key = `hub-media/${room.hub_id}/room-background/${roomId}/${crypto.randomUUID()}`;
+      await env.MEDIA.put(key, bytes, { httpMetadata: { contentType: mime } });
+    }
+    await env.DB.prepare("UPDATE decave_rooms SET background_key=?,updated_at=? WHERE id=?")
+      .bind(key, nowIso(), roomId)
+      .run();
+    if (old) await env.MEDIA.delete(old);
+    await audit(
+      env.DB,
+      room.hub_id,
+      user.id,
+      `room.background.${key ? "update" : "remove"}`,
+      undefined,
+      `room ${roomId}`,
+    );
+    await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { hubId: room.hub_id });
+    return json({ url: key ? `/uploads/${key}` : null });
+  }
+
   if (method === "POST" && mediaRoute) {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const hubId = Number(mediaRoute[1]);
     const kind = mediaRoute[2];
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Hub not found" }, 404);
-    if (hub.owner_id !== user.id) return json({ error: "Only the Hub owner can change Hub artwork" }, 403);
+    if (!hub) return apiError("hubMedia.hubNotFound", 404);
+    if (hub.owner_id !== user.id) return apiError("hubMedia.ownerOnly", 403);
     const limit = kind === "icon" ? 3 * 1024 * 1024 : 8 * 1024 * 1024;
     const bytes = await boundedBodyBytes(request, limit);
-    if (!bytes || !bytes.byteLength) return json({ error: "Hub artwork exceeds the size limit" }, 413);
+    if (!bytes || !bytes.byteLength) return apiError("hubMedia.artworkTooLarge", 413);
     const mime = sniffedImageMime(bytes, ["image/png", "image/jpeg", "image/webp", "image/gif"]);
-    if (!mime) return json({ error: "Hub artwork must be PNG, JPG, WebP or GIF" }, 400);
+    if (!mime) return apiError("hubMedia.artworkType", 400);
     if (kind !== "icon") {
       const dims = readImageDimensions(bytes);
-      const dimError = dims
-        ? validateHubMediaDimensions(kind as HubMediaKind, dims.width, dims.height)
-        : validateHubMediaDimensions(kind as HubMediaKind, NaN, NaN);
-      if (dimError) return json({ error: dimError }, 400);
+      const dimError = hubMediaDimensionProblem(kind as HubMediaKind, dims?.width ?? NaN, dims?.height ?? NaN);
+      if (dimError) return apiError(dimError.code, 400, dimError.params);
     }
     const key = `hub-media/${hubId}/${kind}/${crypto.randomUUID()}`;
     await env.MEDIA.put(key, bytes, { httpMetadata: { contentType: mime } });

@@ -2,7 +2,7 @@
 
 import { requireUser } from "../lib/sessions";
 import { safeUploadedContentType, UploadTypeError } from "../lib/upload-content-type";
-import { boundedBodyBytes, json, idFromPath, bodyJson } from "../lib/http";
+import { boundedBodyBytes, json, idFromPath, bodyJson, apiError, apiErrorLegacy } from "../lib/http";
 import { connectedUserIds, realtimeBroadcast } from "../lib/realtime";
 import { type UserRow, publicUserWithPresence, presenceOnline, userByReference, nowIso, publicIdOf } from "../db";
 import { isBlockedEitherDirection } from "../trust-safety";
@@ -113,19 +113,19 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     const targetReference = decodeURIComponent(dmAttachmentRoute[1]);
     const targetUser = await userByReference(env.DB, targetReference);
     if (!targetUser || targetUser.id === user.id || targetUser.deleted_at)
-      return json({ error: "Invalid conversation." }, 400);
+      return apiError("dm.invalidConversation", 400);
     const targetId = targetUser.id;
     if (await isBlockedEitherDirection(env.DB, user.id, targetId)) {
-      return json({ error: "This user is blocked. Unblock them before starting a private conversation." }, 403);
+      return apiError("dm.blockedStart", 403);
     }
     const pair = [user.id, targetId].sort();
     const friend = await env.DB.prepare("SELECT 1 FROM decave_friendships WHERE user_a=? AND user_b=?")
       .bind(pair[0], pair[1])
       .first();
-    if (!friend) return json({ error: "Private messages are available between friends." }, 403);
+    if (!friend) return apiError("dm.friendsOnly", 403);
     const bytes = await boundedBodyBytes(request, 25 * 1024 * 1024);
-    if (!bytes) return json({ error: "Maximum attachment size is 25 MB" }, 413);
-    if (!bytes.byteLength) return json({ error: "Attachment is empty" }, 400);
+    if (!bytes) return apiError("dm.attachmentTooLarge", 413);
+    if (!bytes.byteLength) return apiError("dm.attachmentEmpty", 400);
     let name = "attachment";
     try {
       name =
@@ -138,7 +138,7 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     try {
       mime = safeUploadedContentType(request.headers.get("X-File-Type") ?? "", new Uint8Array(bytes));
     } catch (error) {
-      if (error instanceof UploadTypeError) return json({ error: error.message }, 415);
+      if (error instanceof UploadTypeError) return apiError("rooms.attachmentImageType", 415);
       throw error;
     }
     const id = crypto.randomUUID();
@@ -172,21 +172,21 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     if (user instanceof Response) return user;
     const targetReference = decodeURIComponent(dmGet[1]);
     const targetUser = await userByReference(env.DB, targetReference);
-    if (!targetUser || targetUser.deleted_at) return json({ error: "User not found" }, 404);
+    if (!targetUser || targetUser.deleted_at) return apiError("common.userNotFound", 404);
     const targetId = targetUser.id;
     if (method !== "DELETE" && (await isBlockedEitherDirection(env.DB, user.id, targetId))) {
-      return json({ error: "This user is blocked. Unblock them before starting a private conversation." }, 403);
+      return apiError("dm.blockedStart", 403);
     }
 
     if (method === "POST") {
-      if (targetId === user.id) return json({ error: "Invalid conversation." }, 400);
+      if (targetId === user.id) return apiError("dm.invalidConversation", 400);
       const pair = [user.id, targetId].sort();
       const friend = await env.DB.prepare("SELECT 1 FROM decave_friendships WHERE user_a=? AND user_b=?")
         .bind(pair[0], pair[1])
         .first();
-      if (!friend) return json({ error: "Private messages are available between friends." }, 403);
+      if (!friend) return apiError("dm.friendsOnly", 403);
       const target = await env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(targetId).first<UserRow>();
-      if (!target) return json({ error: "User not found" }, 404);
+      if (!target) return apiError("common.userNotFound", 404);
       const body = await bodyJson(request);
       const outgoing = await checkOutgoingDm(env.DB, {
         enabled: dmE2eeEnabled(env),
@@ -196,7 +196,7 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
         envelope: body.envelope,
         attachmentKeys: body.attachmentKeys,
       });
-      if (!outgoing.ok) return json({ error: outgoing.error, code: outgoing.code }, outgoing.status);
+      if (!outgoing.ok) return apiErrorLegacy(outgoing.code, outgoing.i18nKey, outgoing.status);
       const replyToId = typeof body.replyToId === "string" ? body.replyToId : null;
       if (replyToId) {
         const replyTarget = await env.DB.prepare(
@@ -207,7 +207,7 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
         )
           .bind(replyToId, user.id, targetId, targetId, user.id)
           .first();
-        if (!replyTarget) return json({ error: "The message you are replying to was not found." }, 400);
+        if (!replyTarget) return apiError("dm.replyTargetNotFound", 400);
       }
       const id = outgoing.id ?? crypto.randomUUID();
       const createdAt = nowIso();
@@ -226,11 +226,11 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
           .bind(id)
           .first();
         return duplicate
-          ? json({ error: "That message was already sent." }, 409)
-          : json({ error: "That attachment isn't available.", code: "DM_E2EE_INVALID" }, 400);
+          ? apiError("dm.alreadySent", 409)
+          : apiErrorLegacy("DM_E2EE_INVALID", "dmE2ee.attachmentUnavailable", 400);
       }
       const message = await dmMessageForClient(env, id);
-      if (!message) return json({ error: "Could not create private message." }, 500);
+      if (!message) return apiError("dm.createFailed", 500);
       await realtimeBroadcast(
         env,
         { type: "DM_MESSAGE", message, sender: { id: publicIdOf(user), username: user.username } },
@@ -240,9 +240,9 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     }
 
     if (method === "DELETE") {
-      if (targetId === user.id) return json({ error: "Invalid conversation." }, 400);
+      if (targetId === user.id) return apiError("dm.invalidConversation", 400);
       const target = await env.DB.prepare("SELECT 1 FROM decave_users WHERE id=?").bind(targetId).first();
-      if (!target) return json({ error: "User not found" }, 404);
+      if (!target) return apiError("common.userNotFound", 404);
 
       await env.DB.prepare(
         `INSERT INTO decave_dm_conversation_clears(user_id,partner_id,cleared_at)
@@ -260,9 +260,9 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     const friend = await env.DB.prepare("SELECT 1 FROM decave_friendships WHERE user_a=? AND user_b=?")
       .bind(pair[0], pair[1])
       .first();
-    if (!friend) return json({ error: "Private messages are available between friends." }, 403);
+    if (!friend) return apiError("dm.friendsOnly", 403);
     const target = await env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(targetId).first<UserRow>();
-    if (!target) return json({ error: "User not found" }, 404);
+    if (!target) return apiError("common.userNotFound", 404);
 
     const clearRow = await env.DB.prepare(
       "SELECT cleared_at FROM decave_dm_conversation_clears WHERE user_id=? AND partner_id=?",
@@ -322,9 +322,9 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
         attachment_refs: string | null;
       }>();
 
-    if (!row) return json({ error: "Message not found." }, 404);
+    if (!row) return apiError("common.messageNotFound", 404);
     if (row.from_user_id !== user.id) {
-      return json({ error: "You can only change messages you sent." }, 403);
+      return apiError("dm.notYourMessage", 403);
     }
 
     if (method === "DELETE") {
@@ -380,7 +380,7 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
         ...fileStatements,
       ]);
       if (!deletion[0]?.meta.changes) {
-        return json({ error: "This message changed while you were deleting it. Try again." }, 409);
+        return apiError("dm.changedWhileDeleting", 409);
       }
       if (keys.length) {
         const queued = await env.DB.prepare(
@@ -400,17 +400,17 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     }
 
     if (await isBlockedEitherDirection(env.DB, row.from_user_id, row.to_user_id)) {
-      return json({ error: "This user is blocked. Unblock them before starting a private conversation." }, 403);
+      return apiError("dm.blockedStart", 403);
     }
     const pair = [row.from_user_id, row.to_user_id].sort();
     const friend = await env.DB.prepare("SELECT 1 FROM decave_friendships WHERE user_a=? AND user_b=?")
       .bind(pair[0], pair[1])
       .first();
-    if (!friend) return json({ error: "Private messages are available between friends." }, 403);
+    if (!friend) return apiError("dm.friendsOnly", 403);
 
     const body = await bodyJson(request);
     const target = await env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(row.to_user_id).first<UserRow>();
-    if (!target) return json({ error: "User not found" }, 404);
+    if (!target) return apiError("common.userNotFound", 404);
     const outgoing = await checkOutgoingDm(env.DB, {
       enabled: dmE2eeEnabled(env),
       sender: user,
@@ -420,10 +420,10 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
       attachmentKeys: body.attachmentKeys,
       editing: row.id,
     });
-    if (!outgoing.ok) return json({ error: outgoing.error, code: outgoing.code }, outgoing.status);
+    if (!outgoing.ok) return apiErrorLegacy(outgoing.code, outgoing.i18nKey, outgoing.status);
     // An encrypted message is never edited back into plaintext.
     if (row.envelope && !outgoing.envelope) {
-      return json({ error: "Edits to an encrypted message must be encrypted too.", code: "DM_E2EE_REQUIRED" }, 409);
+      return apiErrorLegacy("DM_E2EE_REQUIRED", "dm.editMustBeEncrypted", 409);
     }
 
     // An edit keeps the uploads the message already listed.
@@ -436,10 +436,10 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
       envelope: outgoing.envelope,
       attachmentRefs,
     });
-    if (!updated.meta.changes) return json({ error: "That attachment isn't available.", code: "DM_E2EE_INVALID" }, 400);
+    if (!updated.meta.changes) return apiErrorLegacy("DM_E2EE_INVALID", "dmE2ee.attachmentUnavailable", 400);
 
     const message = await dmMessageForClient(env, row.id);
-    if (!message) return json({ error: "Message not found." }, 404);
+    if (!message) return apiError("common.messageNotFound", 404);
 
     await realtimeBroadcast(env, { type: "DM_EDITED", message }, { userIds: [row.from_user_id, row.to_user_id] });
 
@@ -460,12 +460,12 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
       .bind(messageId)
       .first<{ id: string; from_user_id: string; to_user_id: string; text: string | null; envelope: string | null }>();
 
-    if (!row) return json({ error: "Message not found." }, 404);
+    if (!row) return apiError("common.messageNotFound", 404);
     if (user.id !== row.from_user_id && user.id !== row.to_user_id) {
-      return json({ error: "No access to this private message." }, 403);
+      return apiError("dm.noAccess", 403);
     }
     if (await isBlockedEitherDirection(env.DB, row.from_user_id, row.to_user_id)) {
-      return json({ error: "This user is blocked. Unblock them before interacting with private messages." }, 403);
+      return apiError("dm.blockedInteract", 403);
     }
 
     const body = await bodyJson(request);
@@ -474,8 +474,8 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     // Encrypted reactions: one envelope with all of this account's reactions and
     // poll votes on the message, replacing the last one (null removes them).
     if ("envelope" in body) {
-      if (!enabled) return json({ error: "Encrypted messages aren't available yet.", code: "DM_E2EE_DISABLED" }, 409);
-      if (!row.envelope) return json({ error: "That message isn't encrypted.", code: "DM_E2EE_INVALID" }, 400);
+      if (!enabled) return apiErrorLegacy("DM_E2EE_DISABLED", "dmE2ee.disabled", 409);
+      if (!row.envelope) return apiErrorLegacy("DM_E2EE_INVALID", "dm.notEncrypted", 400);
       if (body.envelope === null) {
         await env.DB.prepare("DELETE FROM decave_dm_reaction_envelopes WHERE message_id=? AND user_id=?")
           .bind(messageId, user.id)
@@ -483,14 +483,14 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
       } else {
         const otherId = user.id === row.from_user_id ? row.to_user_id : row.from_user_id;
         const other = await env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(otherId).first<UserRow>();
-        if (!other) return json({ error: "User not found" }, 404);
+        if (!other) return apiError("common.userNotFound", 404);
         const checked = await checkReactionEnvelope(env.DB, {
           reactor: user,
           other,
           messageId,
           envelope: body.envelope,
         });
-        if (!checked.ok) return json({ error: checked.error, code: checked.code }, checked.status);
+        if (!checked.ok) return apiErrorLegacy(checked.code, checked.i18nKey, checked.status);
         await env.DB.prepare(
           `INSERT INTO decave_dm_reaction_envelopes(message_id,user_id,envelope,updated_at) VALUES(?,?,?,?)
            ON CONFLICT(message_id,user_id) DO UPDATE SET envelope=excluded.envelope, updated_at=excluded.updated_at`,
@@ -499,7 +499,7 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
           .run();
       }
       const message = await dmMessageForClient(env, messageId);
-      if (!message) return json({ error: "Message not found." }, 404);
+      if (!message) return apiError("common.messageNotFound", 404);
       await realtimeBroadcast(
         env,
         { type: "DM_REACTION_UPDATED", message },
@@ -509,13 +509,10 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     }
 
     const emoji = typeof body.emoji === "string" ? body.emoji.slice(0, 24) : "";
-    if (!emoji) return json({ error: "Emoji required." }, 400);
+    if (!emoji) return apiError("dm.emojiRequired", 400);
     // Reactions to an encrypted message are encrypted too, once encryption is on.
     if (row.envelope && enabled) {
-      return json(
-        { error: "Reactions here are end-to-end encrypted. Update DeCave to react.", code: "DM_E2EE_REQUIRED" },
-        409,
-      );
+      return apiErrorLegacy("DM_E2EE_REQUIRED", "dm.reactionsEncrypted", 409);
     }
 
     const exists = await env.DB.prepare(
@@ -530,7 +527,7 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     const pollVote = row.envelope
       ? decideEncryptedPollVote(emoji, Boolean(exists))
       : decidePollVote(row.text, emoji, Boolean(exists), Date.now());
-    if (pollVote.kind === "reject") return json({ error: pollVote.error, code: pollVote.code }, 400);
+    if (pollVote.kind === "reject") return apiErrorLegacy(pollVote.code, pollVote.i18nKey, 400);
 
     if (exists) {
       await env.DB.prepare(
@@ -556,7 +553,7 @@ export async function handleDirectMessageRoutes({ request, env, p, method }: Api
     }
 
     const message = await dmMessageForClient(env, messageId);
-    if (!message) return json({ error: "Message not found." }, 404);
+    if (!message) return apiError("common.messageNotFound", 404);
 
     await realtimeBroadcast(
       env,

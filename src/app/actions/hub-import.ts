@@ -8,6 +8,8 @@ import {
   type DiscordImportPreview,
 } from "../../../shared/discord-template";
 import type { Server, ApiError } from "../types";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import { HTTP_URL } from "../env";
 
 export type HubImportActionsDeps = {
@@ -27,7 +29,7 @@ export function createHubImportActions(deps: HubImportActionsDeps) {
   const loadHubImportPreview = async (value: string) => {
     const code = extractDiscordTemplateCode(value);
     if (!code) {
-      setHubImportError("Enter a supported Discord Server Template URL.");
+      setHubImportError(i18next.t("hub.actions.import.templateUrlInvalid"));
       setHubImportPreview(null);
       return;
     }
@@ -36,17 +38,17 @@ export function createHubImportActions(deps: HubImportActionsDeps) {
     try {
       const sourceResponse = await authorizedFetch(`${HTTP_URL}/api/discord/templates/${encodeURIComponent(code)}`);
       const source = (await sourceResponse.json()) as DiscordImportPreview & ApiError;
-      if (!sourceResponse.ok) throw new Error(source.error || "Discord template could not be retrieved.");
+      if (!sourceResponse.ok) throw new Error(apiErrorMessage(source, "client.hub.templateFetch"));
       const previewResponse = await authorizedFetch(`${HTTP_URL}/api/servers/${currentServer.id}/import/preview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ discordImport: source }),
       });
       const preview = (await previewResponse.json()) as DiscordImportPreview & ApiError;
-      if (!previewResponse.ok) throw new Error(preview.error || "The Hub structure could not be previewed.");
+      if (!previewResponse.ok) throw new Error(apiErrorMessage(preview, "client.hub.importPreview"));
       setHubImportPreview(source);
     } catch (error) {
-      setHubImportError(error instanceof Error ? error.message : "The Hub structure could not be previewed.");
+      setHubImportError(error instanceof Error ? error.message : i18next.t("errors.client.hub.importPreview"));
       setHubImportPreview(null);
     } finally {
       setHubImportBusy(false);
@@ -69,7 +71,7 @@ export function createHubImportActions(deps: HubImportActionsDeps) {
       }),
     });
     const result = (await response.json()) as DiscordImportApplyResult & ApiError;
-    if (!response.ok || !result.importId) throw new Error(result.error || "The reviewed import could not be applied.");
+    if (!response.ok || !result.importId) throw new Error(apiErrorMessage(result, "client.hub.importApply"));
     await loadServers();
     return result;
   };

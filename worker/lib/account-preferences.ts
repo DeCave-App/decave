@@ -2,6 +2,10 @@
 
 import type { Env } from "./env";
 import { nowIso } from "../db";
+import { ensureActivitySchema } from "./activity";
+import { twitchConfigured } from "../twitch/client";
+import { faceitLoginConfigured } from "../faceit/client";
+import { isDateStyleLanguage } from "../../shared/date-style";
 
 export let accountPreferencesSchemaReady: Promise<void> | null = null;
 
@@ -21,6 +25,8 @@ export type AccountPreferencesRow = {
   login_alerts?: number;
   client_settings_json?: string;
   client_settings_updated_at?: string | null;
+  /** Migration 0089: provider → shown on the profile. */
+  connection_visibility_json?: string;
 };
 
 /** Settings that follow the account: a JSON object of at most 32 KB. */
@@ -98,16 +104,7 @@ export function accountPreferencesForClient(row: AccountPreferencesRow) {
         : "everyone",
     allowStreamPreviews: row.allow_stream_previews !== 0,
     streamerMode: row.streamer_mode === 1,
-    language:
-      row.language === "pl" ||
-      row.language === "el" ||
-      row.language === "de" ||
-      row.language === "fr" ||
-      row.language === "es" ||
-      row.language === "it" ||
-      row.language === "pt"
-        ? row.language
-        : "en",
+    language: isDateStyleLanguage(row.language) ? row.language : "en",
     timeFormat: row.time_format === "12h" || row.time_format === "24h" ? row.time_format : "system",
     voiceMiniPlayerPosition:
       Number.isFinite(Number(row.voice_mini_player_x)) && Number.isFinite(Number(row.voice_mini_player_y))
@@ -117,4 +114,98 @@ export function accountPreferencesForClient(row: AccountPreferencesRow) {
     clientSettings: parseClientSettings(row.client_settings_json),
     clientSettingsUpdatedAt: row.client_settings_updated_at ?? null,
   };
+}
+
+/** Linked accounts shown in Settings → Connections, in display order. */
+export const CONNECTION_PROVIDERS = ["steam", "twitch", "faceit"] as const;
+export type ConnectionProvider = (typeof CONNECTION_PROVIDERS)[number];
+
+export function isConnectionProvider(value: string): value is ConnectionProvider {
+  return (CONNECTION_PROVIDERS as readonly string[]).includes(value);
+}
+
+export type AccountConnection = {
+  provider: ConnectionProvider;
+  linked: boolean;
+  displayName?: string;
+  showOnProfile: boolean;
+  /** False when the server has no credentials for that provider; the app hides it. */
+  available: boolean;
+};
+
+function parseVisibility(value: string | undefined | null): Partial<Record<ConnectionProvider, boolean>> {
+  const parsed = parseClientSettings(value);
+  return Object.fromEntries(CONNECTION_PROVIDERS.map((provider) => [provider, parsed[provider] === true]));
+}
+
+async function linkedNames(env: Env, userId: string): Promise<Partial<Record<ConnectionProvider, string>>> {
+  await ensureActivitySchema(env);
+  const optional = <T>(query: Promise<T | null>) => query.catch(() => null);
+  const [steam, twitch, faceit] = await Promise.all([
+    optional(
+      env.DB.prepare("SELECT persona_name AS name, steam_id AS id FROM decave_steam_links WHERE user_id=?")
+        .bind(userId)
+        .first<{ name: string; id: string }>(),
+    ),
+    optional(
+      env.DB.prepare("SELECT login AS name FROM decave_twitch_member_links WHERE user_id=?")
+        .bind(userId)
+        .first<{ name: string }>(),
+    ),
+    optional(
+      env.DB.prepare("SELECT nickname AS name FROM decave_faceit_links WHERE user_id=?")
+        .bind(userId)
+        .first<{ name: string }>(),
+    ),
+  ]);
+  const names: Partial<Record<ConnectionProvider, string>> = {};
+  if (steam) names.steam = steam.name || steam.id;
+  if (twitch) names.twitch = twitch.name;
+  if (faceit) names.faceit = faceit.name;
+  return names;
+}
+
+function providerAvailable(env: Env, provider: ConnectionProvider): boolean {
+  if (provider === "twitch") return twitchConfigured(env);
+  if (provider === "faceit") return faceitLoginConfigured(env);
+  return true;
+}
+
+/** The account's own view: every provider, linked or not. */
+export async function accountConnections(env: Env, userId: string): Promise<AccountConnection[]> {
+  const [row, names] = await Promise.all([accountPreferencesRow(env, userId), linkedNames(env, userId)]);
+  const visibility = parseVisibility(row.connection_visibility_json);
+  return CONNECTION_PROVIDERS.map((provider) => ({
+    provider,
+    linked: names[provider] !== undefined,
+    ...(names[provider] !== undefined ? { displayName: names[provider] } : {}),
+    showOnProfile: visibility[provider] === true,
+    available: providerAvailable(env, provider),
+  }));
+}
+
+export async function setConnectionVisibility(
+  env: Env,
+  userId: string,
+  provider: ConnectionProvider,
+  showOnProfile: boolean,
+): Promise<void> {
+  const row = await accountPreferencesRow(env, userId);
+  const visibility = { ...parseVisibility(row.connection_visibility_json), [provider]: showOnProfile };
+  await env.DB.prepare(
+    "UPDATE decave_account_preferences SET connection_visibility_json=?, updated_at=? WHERE user_id=?",
+  )
+    .bind(JSON.stringify(visibility), nowIso(), userId)
+    .run();
+}
+
+/** What other people see on the profile: linked accounts the owner chose to show. */
+export async function profileConnections(
+  env: Env,
+  userId: string,
+): Promise<{ provider: ConnectionProvider; displayName: string }[]> {
+  const connections = await accountConnections(env, userId);
+  return connections
+    .filter((item) => item.available && item.linked && item.showOnProfile)
+    .map((item) => ({ provider: item.provider, displayName: item.displayName ?? "" }));
 }

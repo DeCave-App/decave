@@ -8,6 +8,7 @@ import type {
   VoiceMiniPlayerPosition,
 } from "./types";
 import { clamp } from "./format";
+import { i18next } from "../i18n/index.ts";
 
 // Keep capture constraints and RTP sender limits in one place so changing a
 // quality preset cannot leave another part of the screen-share pipeline on an
@@ -50,8 +51,8 @@ export function noiseSuppressionLabel(mode: NoiseSuppressionMode): string {
     : mode === "deepfilter"
       ? "DeepFilterNet"
       : mode === "strong" || mode === "standard"
-        ? "Standard"
-        : "Off";
+        ? i18next.t("chat.actions.noise.standard")
+        : i18next.t("chat.actions.noise.off");
 }
 
 export function noiseSuppressionShortLabel(mode: NoiseSuppressionMode): string {
@@ -60,32 +61,33 @@ export function noiseSuppressionShortLabel(mode: NoiseSuppressionMode): string {
     : mode === "deepfilter"
       ? "DFN"
       : mode === "strong" || mode === "standard"
-        ? "STD"
-        : "OFF";
+        ? i18next.t("chat.actions.noise.standardShort")
+        : i18next.t("chat.actions.noise.offShort");
 }
 
 /** Shown when the relay (TURN) service is unreachable; voice never falls back to direct peer connections. */
-export const VOICE_RELAY_UNAVAILABLE_MESSAGE =
-  "Voice is temporarily unavailable. We couldn't reach the secure voice relay. Please try again in a few minutes.";
-export const CALL_RELAY_UNAVAILABLE_MESSAGE =
-  "Calls are temporarily unavailable. We couldn't reach the secure call relay. Please try again in a few minutes.";
+export const VOICE_RELAY_UNAVAILABLE_KEY = "voice.engine.relayUnavailable" as const;
+export const CALL_RELAY_UNAVAILABLE_KEY = "dm.call.relayUnavailable" as const;
+
+export const voiceRelayUnavailableMessage = (): string => i18next.t(VOICE_RELAY_UNAVAILABLE_KEY);
+export const callRelayUnavailableMessage = (): string => i18next.t(CALL_RELAY_UNAVAILABLE_KEY);
 
 export function microphoneErrorMessage(error: unknown): string {
   if (error instanceof DOMException) {
     if (error.name === "NotAllowedError") {
-      return "Microphone access is blocked. Allow microphone permission for DeCave in your browser settings and try again.";
+      return i18next.t("chat.actions.microphone.blocked");
     }
     if (error.name === "NotFoundError") {
-      return "No microphone was found on this device.";
+      return i18next.t("chat.actions.microphone.notFound");
     }
     if (error.name === "NotReadableError") {
-      return "The microphone is busy or unavailable. Close other apps using it and try again.";
+      return i18next.t("chat.actions.microphone.busy");
     }
     if (error.name === "OverconstrainedError") {
-      return "The selected microphone does not support the requested audio settings.";
+      return i18next.t("chat.actions.microphone.overconstrained");
     }
   }
-  return error instanceof Error ? error.message : "Could not access the microphone.";
+  return error instanceof Error ? error.message : i18next.t("chat.actions.microphone.failed");
 }
 
 export const clampVoiceMiniPosition = (

@@ -1,5 +1,6 @@
 // Bridge to the Electron desktop shell (window.decaveDesktop) and desktop window scaling.
 
+import { activeLocale, i18next } from "../i18n/index.ts";
 import type {
   DesktopActivityScanResult,
   DesktopSystemSettings,
@@ -18,6 +19,8 @@ declare global {
       setSystemSettings: (settings: DesktopSystemSettings) => Promise<DesktopSystemSettings>;
       setKeybinds: (settings: DesktopKeybindSettings) => Promise<DesktopKeybindSettings>;
       setStreamerMode: (enabled: boolean) => Promise<boolean>;
+      /** Desktop builds with translated native text: the language the page shows. */
+      setLocale?: (locale: string) => Promise<boolean>;
       /** Desktop builds after 0.1.117: streaming/recording apps running now. */
       getCaptureApps?: () => Promise<{ supported: boolean; apps: string[] }>;
       setVoiceOverlayState: (state: {
@@ -129,6 +132,7 @@ function invokeDesktopEventBridge<T>(
     | "setSystemSettings"
     | "setKeybinds"
     | "setStreamerMode"
+    | "setLocale"
     | "setVoiceOverlayState"
     | "getUpdateStatus"
     | "checkForUpdates"
@@ -138,7 +142,7 @@ function invokeDesktopEventBridge<T>(
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     if (typeof document === "undefined") {
-      reject(new Error("DeCave desktop bridge is unavailable."));
+      reject(new Error(i18next.t("chat.actions.desktopBridge.unavailable")));
       return;
     }
 
@@ -174,7 +178,7 @@ function invokeDesktopEventBridge<T>(
       cleanup();
 
       if (message.ok) resolve(message.result as T);
-      else reject(new Error(message.error || "Desktop bridge request failed."));
+      else reject(new Error(message.error || i18next.t("chat.actions.desktopBridge.failed")));
     };
 
     document.addEventListener(DESKTOP_BRIDGE_RESPONSE_EVENT, onResponse as EventListener);
@@ -183,7 +187,7 @@ function invokeDesktopEventBridge<T>(
       () => {
         if (settled) return;
         cleanup();
-        reject(new Error("DeCave desktop bridge timed out."));
+        reject(new Error(i18next.t("chat.actions.desktopBridge.timedOut")));
       },
       action === "verifyHuman" ? 125_000 : 8_000,
     );
@@ -235,6 +239,23 @@ export async function setDesktopKeybinds(settings: DesktopKeybindSettings): Prom
   if (window.decaveDesktop?.isDesktop && typeof window.decaveDesktop.setKeybinds === "function")
     return window.decaveDesktop.setKeybinds(settings);
   return invokeDesktopEventBridge<DesktopKeybindSettings>("setKeybinds", { settings });
+}
+
+export async function setDesktopLocale(locale: string): Promise<boolean> {
+  if (window.decaveDesktop?.isDesktop) {
+    // Builds without translated native text have no setLocale; nothing to tell them.
+    if (typeof window.decaveDesktop.setLocale !== "function") return false;
+    return window.decaveDesktop.setLocale(locale);
+  }
+  return invokeDesktopEventBridge<boolean>("setLocale", { locale });
+}
+
+/** Keeps the desktop shell's tray, native windows and overlay in the page's language. */
+export function followLocaleOnDesktop(): void {
+  if (!hasDesktopActivityBridge()) return;
+  const send = () => void setDesktopLocale(activeLocale()).catch(() => undefined);
+  send();
+  i18next.on("languageChanged", send);
 }
 
 export async function setDesktopStreamerMode(enabled: boolean): Promise<boolean> {

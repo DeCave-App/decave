@@ -36,6 +36,7 @@ import {
 } from "./db";
 import type { Env } from "./index";
 import { consumeSessionBoundWsToken, isActiveSession } from "./lib/sessions";
+import { errorFields } from "./lib/http";
 import {
   RealtimeDirectory,
   RealtimeLookup,
@@ -51,13 +52,18 @@ import {
   parseForumPostPayload,
   rawForumPostJson,
   safeJsonStringArray,
-  validateForumPostExtras,
+  forumPostExtrasProblem,
 } from "../shared/forum";
 import { pushPreview, sendPush } from "./push";
 import { loadPushSettings, pushText, shouldPush, type PushContext } from "./push-policy";
+import type { TFunction } from "i18next";
+import { DEFAULT_LOCALE, type Locale } from "../shared/i18n/languages.ts";
+import { userLocales, workerT } from "./lib/i18n";
 import { nextBotTimerAt, runAllDueBotTimers } from "./bots/timers";
 import { inBackground, queueBotEvent, queueHubMessage, voiceRoomsOf } from "./bots/events";
 import { createRealtimeClient, RealtimeSfuError, screenSfuEnabled } from "./lib/realtime-sfu";
+import { serverNotice } from "./lib/notices";
+import { realtimeErrorFields } from "./lib/realtime-errors";
 import {
   canPull,
   EMPTY_SFU_FIELDS,
@@ -80,26 +86,46 @@ import {
 /**
  * Send phone notifications that respect each recipient's synced settings
  * (levels, muted Hubs, quiet hours, preview privacy). Recipients are grouped
- * by preview style so each group gets one Expo request.
+ * by preview style and language so each group gets one Expo request.
+ *
+ * A missing sender name falls back to a translated label ("Someone" in a room,
+ * "New message" in a DM). `text` may be a function when the body itself is a
+ * label to translate (an encrypted DM).
  */
 async function pushWithPolicy(
   env: Env,
   userIds: readonly string[],
   context: PushContext,
-  message: { sender: string; where: string | null; text: string; route: string; threadId: string },
+  message: {
+    sender: string | null;
+    where: string | null;
+    text: string | ((t: TFunction) => string);
+    route: string;
+    threadId: string;
+  },
 ): Promise<void> {
   if (!userIds.length) return;
   const settings = await loadPushSettings(env.DB, userIds);
-  const groups = new Map<string, string[]>();
-  for (const id of userIds) {
+  const wanted = userIds.filter((id) => {
     const entry = settings.get(id);
-    if (!entry || !shouldPush(entry, context)) continue;
-    const list = groups.get(entry.preview) ?? [];
-    list.push(id);
-    groups.set(entry.preview, list);
+    return !!entry && shouldPush(entry, context);
+  });
+  if (!wanted.length) return;
+  const locales = await userLocales(env.DB, wanted);
+  const groups = new Map<string, { locale: Locale; ids: string[] }>();
+  for (const id of wanted) {
+    const preview = settings.get(id)!.preview;
+    const locale = locales.get(id) ?? DEFAULT_LOCALE;
+    const key = `${preview}\u0000${locale}`;
+    const group = groups.get(key) ?? { locale, ids: [] };
+    group.ids.push(id);
+    groups.set(key, group);
   }
-  for (const [, ids] of groups) {
-    const { title, body } = pushText(settings.get(ids[0])!, message.sender, message.where, pushPreview(message.text));
+  for (const { locale, ids } of groups.values()) {
+    const t = workerT(locale);
+    const sender = message.sender ?? t(message.where ? "push.sender.someone" : "push.sender.unknownDirect");
+    const text = typeof message.text === "function" ? message.text(t) : message.text;
+    const { title, body } = pushText(settings.get(ids[0])!, sender, message.where, pushPreview(text, t), t);
     await sendPush(env, ids, { title, body, route: message.route, threadId: message.threadId });
   }
 }
@@ -378,7 +404,7 @@ export class HubRoom extends DurableObject<Env> {
       const state = this.state(ws);
       if (state.userId || state.authDeadlineAt <= 0) continue;
       if (state.authDeadlineAt <= now) {
-        this.send(ws, { type: "AUTH_ERROR", message: "Authentication timed out. Please reconnect." });
+        this.send(ws, { type: "AUTH_ERROR", ...serverNotice("chat.server.authTimedOut") });
         try {
           ws.close(4003, "Authentication timed out");
         } catch {}
@@ -458,7 +484,7 @@ export class HubRoom extends DurableObject<Env> {
   private rejectRealtimeRate(ws: WebSocket, state: SocketState): SocketState {
     const next = { ...state, rateLimitViolations: state.rateLimitViolations + 1 };
     this.attach(ws, next);
-    this.send(ws, { type: "ERROR", message: "Too many realtime requests. Slow down." });
+    this.send(ws, { type: "ERROR", ...serverNotice("chat.server.rateLimited") });
     if (next.rateLimitViolations >= MAX_REALTIME_RATE_VIOLATIONS) {
       try {
         ws.close(4008, "Too many realtime requests");
@@ -695,12 +721,12 @@ export class HubRoom extends DurableObject<Env> {
     }
 
     if (url.pathname === "/internal/recheck-access" && request.method === "POST") {
-      const body = await request.json<{ hubId?: number; message?: string }>();
+      const body = await request.json<{ hubId?: number }>();
       const hubId = Number(body.hubId);
       if (!Number.isSafeInteger(hubId) || hubId <= 0)
-        return Response.json({ error: "hubId required" }, { status: 400 });
+        return Response.json(errorFields("realtime.internal.hubIdRequired"), { status: 400 });
       this.directory.forgetMemberships();
-      const changed = await this.recheckHubAccess(hubId, typeof body.message === "string" ? body.message : undefined);
+      const changed = await this.recheckHubAccess(hubId);
       return Response.json({ success: true, changed });
     }
 
@@ -774,7 +800,7 @@ export class HubRoom extends DurableObject<Env> {
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer): Promise<void> {
     const payloadBytes = typeof raw === "string" ? new TextEncoder().encode(raw).byteLength : raw.byteLength;
     if (payloadBytes > 1024 * 1024) {
-      this.send(ws, { type: "ERROR", message: "Realtime payload is too large." });
+      this.send(ws, { type: "ERROR", ...serverNotice("chat.server.payloadTooLarge") });
       try {
         ws.close(1009, "Payload too large");
       } catch {}
@@ -800,7 +826,7 @@ export class HubRoom extends DurableObject<Env> {
     try {
       data = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw)) as Record<string, unknown>;
     } catch {
-      this.send(ws, { type: "ERROR", message: "Invalid JSON payload" });
+      this.send(ws, { type: "ERROR", ...serverNotice("chat.server.invalidJson") });
       return;
     }
 
@@ -817,7 +843,7 @@ export class HubRoom extends DurableObject<Env> {
     }
 
     if (!knownType) {
-      this.send(ws, { type: "ERROR", message: "Unknown realtime message type." });
+      this.send(ws, { type: "ERROR", ...serverNotice("chat.server.unknownType") });
       return;
     }
 
@@ -825,7 +851,7 @@ export class HubRoom extends DurableObject<Env> {
       const token = typeof data.token === "string" && data.token.length <= 256 ? data.token : "";
       const peerAddress = this.peerAddressForState(state);
       if (this.identifyFailuresForAddress(peerAddress) >= WS_IDENTIFY_FAILURE_LIMIT_PER_ADDRESS) {
-        this.send(ws, { type: "AUTH_ERROR", message: "Too many authentication attempts. Try again later." });
+        this.send(ws, { type: "AUTH_ERROR", ...serverNotice("chat.server.authTooManyAttempts") });
         try {
           ws.close(4003, "Too many authentication attempts");
         } catch {}
@@ -835,13 +861,13 @@ export class HubRoom extends DurableObject<Env> {
       try {
         credentials = await consumeSessionBoundWsToken(this.env, token);
       } catch {
-        this.send(ws, { type: "AUTH_ERROR", message: "Authentication is temporarily unavailable. Please retry." });
+        this.send(ws, { type: "AUTH_ERROR", ...serverNotice("chat.server.authUnavailable") });
         return;
       }
       if (!credentials) {
         state = { ...state, identifyFailures: state.identifyFailures + 1 };
         this.attach(ws, state);
-        this.send(ws, { type: "AUTH_ERROR", message: "Session expired. Please log in again." });
+        this.send(ws, { type: "AUTH_ERROR", ...serverNotice("chat.server.sessionExpired") });
         if (state.identifyFailures >= MAX_IDENTIFY_FAILURES || !this.recordIdentifyFailure(peerAddress)) {
           try {
             ws.close(4003, "Too many authentication attempts");
@@ -939,7 +965,7 @@ export class HubRoom extends DurableObject<Env> {
     }
 
     if (!state.userId || !state.username) {
-      this.send(ws, { type: "ERROR", message: "You must authenticate first" });
+      this.send(ws, { type: "ERROR", ...serverNotice("chat.server.authenticateFirst") });
       return;
     }
 
@@ -959,7 +985,7 @@ export class HubRoom extends DurableObject<Env> {
     if (type === "JOIN_SERVER") {
       const hubId = Number(data.serverId);
       if (!(await getRole(this.env.DB, hubId, state.userId))) {
-        this.send(ws, { type: "ERROR", message: "You do not have access to this server" });
+        this.send(ws, { type: "ERROR", ...serverNotice("chat.server.noHubAccess") });
         return;
       }
       const rooms = await this.env.DB.prepare(
@@ -985,7 +1011,7 @@ export class HubRoom extends DurableObject<Env> {
     if (type === "JOIN_CHANNEL") {
       const room = await getRoom(this.env.DB, Number(data.channelId));
       if (!room || room.hub_id !== state.serverId || !(await canAccessRoom(this.env.DB, room, state.userId))) {
-        this.send(ws, { type: "ERROR", message: "Room not found or inaccessible" });
+        this.send(ws, { type: "ERROR", ...serverNotice("chat.server.roomNotFound") });
         return;
       }
       state = { ...state, channelId: room.id };
@@ -1023,24 +1049,28 @@ export class HubRoom extends DurableObject<Env> {
       const roomId = Number(data.channelId);
       const room = await getRoom(this.env.DB, roomId);
       if (!room || room.hub_id !== state.serverId || !(await canAccessRoom(this.env.DB, room, state.userId))) {
-        this.send(ws, { type: "ERROR", message: "Room not found or inaccessible" });
+        this.send(ws, { type: "ERROR", ...serverNotice("chat.server.roomNotFound") });
         return;
       }
       const postingDecision = await officialHubPostingDecision(this.env.DB, room.hub_id, state.userId);
       if (postingDecision === "unavailable") {
         this.send(ws, {
           type: "ERROR",
-          message: "Official Hub posting policy is temporarily unavailable.",
+          ...serverNotice("chat.server.officialPolicyUnavailable"),
           code: "HUB_POLICY_UNAVAILABLE",
         });
         return;
       }
       if (postingDecision === "deny") {
-        this.send(ws, { type: "ERROR", message: "Only the Hub owner can post in this Hub." });
+        this.send(ws, { type: "ERROR", ...serverNotice("chat.server.ownerOnlyPosting") });
         return;
       }
       if (room.kind !== "forum" && !(await canPostInChatRoom(this.env.DB, room, state.userId!))) {
-        this.send(ws, { type: "ERROR", message: `#${room.name} is read-only.`, code: "ROOM_READ_ONLY" });
+        this.send(ws, {
+          type: "ERROR",
+          ...serverNotice("chat.server.roomReadOnly", { room: room.name }),
+          code: "ROOM_READ_ONLY",
+        });
         return;
       }
 
@@ -1055,7 +1085,7 @@ export class HubRoom extends DurableObject<Env> {
         .bind(room.hub_id, state.userId)
         .first<{ expires_at: string }>();
       if (timeout && Date.parse(timeout.expires_at) > Date.now()) {
-        this.send(ws, { type: "ERROR", message: "You are currently timed out in this Hub." });
+        this.send(ws, { type: "ERROR", ...serverNotice("chat.server.timedOut") });
         return;
       }
 
@@ -1074,7 +1104,7 @@ export class HubRoom extends DurableObject<Env> {
         if (last && Date.now() - Date.parse(last.created_at) < hub.slow_mode_seconds * 1000) {
           this.send(ws, {
             type: "ERROR",
-            message: `Slow mode is enabled. Wait ${hub.slow_mode_seconds} seconds between messages.`,
+            ...serverNotice("chat.server.slowMode", { seconds: hub.slow_mode_seconds }),
           });
           return;
         }
@@ -1111,7 +1141,7 @@ export class HubRoom extends DurableObject<Env> {
         if (!ownedAttachment) {
           this.send(ws, {
             type: "ERROR",
-            message: "That attachment is not owned by you or is not available in this room.",
+            ...serverNotice("chat.server.attachmentNotOwned"),
           });
           return;
         }
@@ -1128,7 +1158,7 @@ export class HubRoom extends DurableObject<Env> {
           .bind(replyToId, roomId, room.hub_id)
           .first<{ reply_to_id: string | null }>();
         if (!replyTarget) {
-          this.send(ws, { type: "ERROR", message: "The message you are replying to was not found in this room." });
+          this.send(ws, { type: "ERROR", ...serverNotice("chat.server.replyTargetMissingInRoom") });
           return;
         }
         if (room.kind === "forum") {
@@ -1142,34 +1172,37 @@ export class HubRoom extends DurableObject<Env> {
           if (!postState) {
             this.send(ws, {
               type: "ERROR",
-              message: "Forum replies must target a forum post.",
+              ...serverNotice("chat.server.forumReplyTarget"),
               code: "FORUM_REPLY_TARGET",
             });
             return;
           }
           if (text.startsWith(FORUM_POST_PREFIX)) {
-            this.send(ws, { type: "ERROR", message: "Forum replies cannot be posts." });
+            this.send(ws, { type: "ERROR", ...serverNotice("chat.server.forumReplyNotPost") });
             return;
           }
           if (postState.locked === 1 && !(await isForumStaff(this.env.DB, room.hub_id, state.userId!))) {
-            this.send(ws, { type: "ERROR", message: "This post is locked.", code: "FORUM_POST_LOCKED" });
+            this.send(ws, { type: "ERROR", ...serverNotice("chat.server.forumPostLocked"), code: "FORUM_POST_LOCKED" });
             return;
           }
         }
       }
       let lockForumPostOnCreate = false;
       if (room.kind !== "forum" && text.startsWith(FORUM_POST_PREFIX)) {
-        this.send(ws, { type: "ERROR", message: "Forum posts can only be created in forum rooms." });
+        this.send(ws, { type: "ERROR", ...serverNotice("chat.server.forumPostsOnlyInForums") });
         return;
       }
       if (room.kind === "forum" && replyToId === null) {
         const payload = parseForumPostPayload(text);
         if (!payload || !payload.title.trim()) {
-          this.send(ws, { type: "ERROR", message: "Forum top-level messages must be created as posts." });
+          this.send(ws, { type: "ERROR", ...serverNotice("chat.server.forumTopLevelPosts") });
           return;
         }
         if (payload.tags.length > FORUM_TAG_LIMITS.maxTagsPerPost) {
-          this.send(ws, { type: "ERROR", message: `Posts can have at most ${FORUM_TAG_LIMITS.maxTagsPerPost} tags.` });
+          this.send(ws, {
+            type: "ERROR",
+            ...serverNotice("chat.server.forumTooManyTags", { max: FORUM_TAG_LIMITS.maxTagsPerPost }),
+          });
           return;
         }
         const roomTags = safeJsonStringArray(room.forum_tags_json);
@@ -1178,25 +1211,31 @@ export class HubRoom extends DurableObject<Env> {
           if (payload.tags.some((tag) => !allowed.has(tag.trim().toLowerCase()))) {
             this.send(ws, {
               type: "ERROR",
-              message: "Choose tags from this forum's tag list.",
+              ...serverNotice("chat.server.forumTagInvalid"),
               code: "FORUM_TAG_INVALID",
             });
             return;
           }
         }
-        const extrasError = validateForumPostExtras(rawForumPostJson(text));
-        if (extrasError) {
-          this.send(ws, { type: "ERROR", message: extrasError, code: "FORUM_POST_INVALID" });
+        const extrasProblem = forumPostExtrasProblem(rawForumPostJson(text));
+        if (extrasProblem) {
+          this.send(ws, {
+            type: "ERROR",
+            ...realtimeErrorFields(extrasProblem.code, {
+              params: extrasProblem.params,
+              machineCode: "FORUM_POST_INVALID",
+            }),
+          });
           return;
         }
         if (!(await canCreateForumPost(this.env.DB, room, state.userId!))) {
-          this.send(ws, { type: "ERROR", message: "Your role cannot create posts in this forum." });
+          this.send(ws, { type: "ERROR", ...serverNotice("chat.server.forumRoleCannotPost") });
           return;
         }
         if (payload.repliesLocked && !(await isForumStaff(this.env.DB, room.hub_id, state.userId!))) {
           this.send(ws, {
             type: "ERROR",
-            message: "Only forum moderators can create posts with replies turned off.",
+            ...serverNotice("chat.server.forumLockForbidden"),
             code: "FORUM_LOCK_FORBIDDEN",
           });
           return;
@@ -1233,7 +1272,7 @@ export class HubRoom extends DurableObject<Env> {
         )
         .run();
       if (!inserted.meta.changes) {
-        this.send(ws, { type: "ERROR", message: "That attachment isn't available." });
+        this.send(ws, { type: "ERROR", ...serverNotice("chat.server.attachmentUnavailable") });
         return;
       }
       if (lockForumPostOnCreate) {
@@ -1316,7 +1355,7 @@ export class HubRoom extends DurableObject<Env> {
         const online = new Set(onlineUserIds);
         const author = state.userId;
         const pushMessage = {
-          sender: state.username ?? "Someone",
+          sender: state.username ?? null,
           where: `#${room.name}`,
           text,
           route: `/channel/${roomId}?hubId=${room.hub_id}&name=${encodeURIComponent(room.name)}`,
@@ -1397,13 +1436,11 @@ export class HubRoom extends DurableObject<Env> {
         .bind(pair[0], pair[1])
         .first();
       if (!friend) {
-        sendDmError({ message: "Private messages are available between friends." });
+        sendDmError(serverNotice("chat.server.dmFriendsOnly"));
         return;
       }
       if (await isBlockedEitherDirection(this.env.DB, state.userId, targetId)) {
-        sendDmError({
-          message: "This user is blocked. Unblock them before sending private messages.",
-        });
+        sendDmError(serverNotice("chat.server.dmBlocked"));
         return;
       }
       const sender = await this.env.DB.prepare("SELECT * FROM decave_users WHERE id=?")
@@ -1425,6 +1462,7 @@ export class HubRoom extends DurableObject<Env> {
           sendDmError({
             message: outgoing.error,
             code: outgoing.code,
+            i18nKey: outgoing.i18nKey,
             messageId: typeof envelopeId === "string" ? envelopeId : null,
           });
         }
@@ -1440,7 +1478,7 @@ export class HubRoom extends DurableObject<Env> {
           .bind(replyToId, state.userId, targetId, targetId, state.userId)
           .first();
         if (!replyTarget) {
-          sendDmError({ message: "The message you are replying to was not found." });
+          sendDmError(serverNotice("chat.server.replyTargetMissing"));
           return;
         }
       }
@@ -1461,8 +1499,8 @@ export class HubRoom extends DurableObject<Env> {
           .first();
         sendDmError(
           duplicate
-            ? { message: "That message was already sent.", code: "DM_DUPLICATE" }
-            : { message: "That attachment isn't available.", code: "DM_E2EE_INVALID" },
+            ? { ...serverNotice("chat.server.alreadySent"), code: "DM_DUPLICATE" }
+            : { ...serverNotice("chat.server.attachmentUnavailable"), code: "DM_E2EE_INVALID" },
         );
         return;
       }
@@ -1481,7 +1519,7 @@ export class HubRoom extends DurableObject<Env> {
       const targetOnline = this.states().some((other) => other.userId === targetId);
       if (!targetOnline) {
         const senderId = state.userId;
-        const pushBody = dmPushText(outgoing);
+        const pushBody = (t: TFunction) => dmPushText(outgoing, t);
         this.ctx.waitUntil(
           (async () => {
             const muted = await this.env.DB.prepare(
@@ -1495,7 +1533,7 @@ export class HubRoom extends DurableObject<Env> {
               [targetId],
               { kind: "dm" },
               {
-                sender: state.username ?? "New message",
+                sender: state.username ?? null,
                 where: null,
                 text: pushBody,
                 route: `/dm/${encodeURIComponent(message.fromUserId)}`,
@@ -1525,7 +1563,7 @@ export class HubRoom extends DurableObject<Env> {
       if (!groupId || (!hasEnvelope && !(typeof data.text === "string" && data.text.trim()))) return;
       await ensureGroupChatSchema(this.env.DB);
       if (!(await isGroupChatMember(this.env.DB, groupId, state.userId))) {
-        sendGroupError({ message: "You are not a member of this group chat." });
+        sendGroupError(serverNotice("chat.server.groupNotMember"));
         return;
       }
 
@@ -1556,6 +1594,7 @@ export class HubRoom extends DurableObject<Env> {
         sendGroupError({
           message: outgoing.error,
           code: outgoing.code,
+          i18nKey: outgoing.i18nKey,
           messageId: typeof envelopeId === "string" ? envelopeId : null,
         });
         return;
@@ -1568,7 +1607,7 @@ export class HubRoom extends DurableObject<Env> {
           .bind(replyToId, groupId)
           .first();
         if (!replyTarget) {
-          sendGroupError({ message: "The message you are replying to was not found." });
+          sendGroupError(serverNotice("chat.server.replyTargetMissing"));
           return;
         }
       }
@@ -1594,7 +1633,7 @@ export class HubRoom extends DurableObject<Env> {
       const [inserted] = await this.env.DB.batch(statements);
       if (!inserted.meta.changes) {
         sendGroupError({
-          message: "That message was already sent.",
+          ...serverNotice("chat.server.alreadySent"),
           code: "DM_DUPLICATE",
         });
         return;
@@ -1628,7 +1667,7 @@ export class HubRoom extends DurableObject<Env> {
       if (await isBlockedEitherDirection(this.env.DB, state.userId, targetUserId)) {
         this.send(ws, {
           type: "DM_CALL_ERROR",
-          message: "This user is blocked. Unblock them before starting a direct call.",
+          ...serverNotice("dm.call.server.blocked"),
         });
         return;
       }
@@ -1636,7 +1675,7 @@ export class HubRoom extends DurableObject<Env> {
       if (state.voiceChannelId !== null || state.dmCallId) {
         this.send(ws, {
           type: "DM_CALL_ERROR",
-          message: "Leave your current voice session before starting a direct call.",
+          ...serverNotice("dm.call.server.leaveVoice"),
         });
         return;
       }
@@ -1645,7 +1684,7 @@ export class HubRoom extends DurableObject<Env> {
         .bind(pair[0], pair[1])
         .first();
       if (!friend) {
-        this.send(ws, { type: "DM_CALL_ERROR", message: "Direct calls are available between friends." });
+        this.send(ws, { type: "DM_CALL_ERROR", ...serverNotice("dm.call.server.friendsOnly") });
         return;
       }
       // Ring every idle device the friend is signed in on; the first to accept takes the call.
@@ -1656,9 +1695,9 @@ export class HubRoom extends DurableObject<Env> {
       if (!targets.length) {
         this.send(ws, {
           type: "DM_CALL_ERROR",
-          message: (await this.userIsInCall(targetUserId))
-            ? "This friend is already in another call."
-            : "This friend is offline.",
+          ...serverNotice(
+            (await this.userIsInCall(targetUserId)) ? "dm.call.server.peerBusy" : "dm.call.server.peerOffline",
+          ),
           peer: { userId: publicIdOf(targetUserRecord), username: targetUserRecord.username },
         });
         return;
@@ -1667,7 +1706,7 @@ export class HubRoom extends DurableObject<Env> {
         .bind(targetUserId)
         .first<UserRow>();
       if (!targetUser || targetUser.status === "invisible") {
-        this.send(ws, { type: "DM_CALL_ERROR", message: "This friend is offline." });
+        this.send(ws, { type: "DM_CALL_ERROR", ...serverNotice("dm.call.server.peerOffline") });
         return;
       }
       const callId = crypto.randomUUID();
@@ -1705,7 +1744,7 @@ export class HubRoom extends DurableObject<Env> {
     if (type === "DM_CALL_ACCEPT") {
       if (!state.dmCallId || !state.dmCallPeerUserId) return;
       if (!state.dmCallIncoming) {
-        this.send(ws, { type: "DM_CALL_ERROR", message: "Only the recipient can accept this call." });
+        this.send(ws, { type: "DM_CALL_ERROR", ...serverNotice("dm.call.server.recipientOnly") });
         return;
       }
       const peerSocket = state.dmCallPeerConnectionId
@@ -1793,11 +1832,11 @@ export class HubRoom extends DurableObject<Env> {
     if (type === "VOICE_JOIN") {
       const room = await getRoom(this.env.DB, Number(data.channelId));
       if (!room || room.type !== "voice" || !(await canAccessRoom(this.env.DB, room, state.userId))) {
-        this.send(ws, { type: "VOICE_ERROR", message: "Voice room not found" });
+        this.send(ws, { type: "VOICE_ERROR", ...serverNotice("chat.server.voiceRoomNotFound") });
         return;
       }
       if (await isTimedOut(this.env.DB, room.hub_id, state.userId)) {
-        this.send(ws, { type: "VOICE_ERROR", message: "You are currently timed out in this Hub.", code: "TIMED_OUT" });
+        this.send(ws, { type: "VOICE_ERROR", ...serverNotice("chat.server.timedOut"), code: "TIMED_OUT" });
         return;
       }
       const configuredCap = Number((room as { user_limit?: number }).user_limit ?? 0);
@@ -1810,7 +1849,11 @@ export class HubRoom extends DurableObject<Env> {
       if (inside.size >= cap) {
         const role = await getRole(this.env.DB, room.hub_id, state.userId!);
         if (role !== "owner" && role !== "admin") {
-          this.send(ws, { type: "VOICE_ERROR", message: `This room is full (${cap}/${cap}).`, code: "ROOM_FULL" });
+          this.send(ws, {
+            type: "VOICE_ERROR",
+            ...serverNotice("chat.server.voiceRoomFull", { cap }),
+            code: "ROOM_FULL",
+          });
           return;
         }
       }
@@ -1953,7 +1996,7 @@ export class HubRoom extends DurableObject<Env> {
           .bind(soundId, voiceRoom.hub_id)
           .first<{ id: string; name: string }>();
         if (!sound) {
-          this.send(ws, { type: "VOICE_ERROR", message: "That soundboard sound is unavailable." });
+          this.send(ws, { type: "VOICE_ERROR", ...serverNotice("chat.server.soundUnavailable") });
           return;
         }
         await this.broadcast(
@@ -1968,7 +2011,7 @@ export class HubRoom extends DurableObject<Env> {
           { voiceChannelId: state.voiceChannelId },
         );
       } catch {
-        this.send(ws, { type: "VOICE_ERROR", message: "Soundboard is unavailable right now." });
+        this.send(ws, { type: "VOICE_ERROR", ...serverNotice("chat.server.soundboardUnavailable") });
       }
       return;
     }
@@ -2813,7 +2856,7 @@ export class HubRoom extends DurableObject<Env> {
     const room = await getRoom(this.env.DB, state.voiceChannelId);
     if (!room) return false;
     if (!(await isTimedOut(this.env.DB, room.hub_id, state.userId))) return true;
-    this.send(ws, { type: "VOICE_ERROR", message: "You are currently timed out in this Hub.", code: "TIMED_OUT" });
+    this.send(ws, { type: "VOICE_ERROR", ...serverNotice("chat.server.timedOut"), code: "TIMED_OUT" });
     await this.leaveVoice(ws, state, true);
     return false;
   }
@@ -2825,7 +2868,7 @@ export class HubRoom extends DurableObject<Env> {
    * move to the first accessible room; voice sessions that lost access (or
    * whose user is timed out, or whose room was deleted) are ended server-side.
    */
-  private async recheckHubAccess(hubId: number, message?: string): Promise<number> {
+  private async recheckHubAccess(hubId: number): Promise<number> {
     let changed = 0;
     let voiceChanged = false;
     const accessCache = new Map<string, boolean>();
@@ -2857,11 +2900,13 @@ export class HubRoom extends DurableObject<Env> {
           if (lost) {
             this.send(socket, {
               type: "VOICE_ERROR",
-              message: !voiceRoom
-                ? "This voice room was deleted."
-                : timedOut
-                  ? "You are currently timed out in this Hub."
-                  : "You no longer have access to this voice room.",
+              ...serverNotice(
+                !voiceRoom
+                  ? "chat.server.voiceRoomDeleted"
+                  : timedOut
+                    ? "chat.server.timedOut"
+                    : "chat.server.voiceAccessRevoked",
+              ),
               code: !voiceRoom ? "ROOM_DELETED" : timedOut ? "TIMED_OUT" : "ACCESS_REVOKED",
             });
             const voiceBefore = voiceRoomsOf(this.states(), s.userId);
@@ -2895,7 +2940,7 @@ export class HubRoom extends DurableObject<Env> {
             serverId: hubId,
             channelId: lostChannelId,
             fallbackChannelId: fallback,
-            message: message ?? (room ? "You no longer have access to this room." : "This room was deleted."),
+            ...serverNotice(room ? "chat.server.roomAccessRevoked" : "chat.server.roomDeleted"),
           });
           changed++;
         }

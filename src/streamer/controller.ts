@@ -10,8 +10,11 @@ import {
 } from "../../shared/streamer-mode";
 import { createStreamerApi, type StreamerTransport } from "./api";
 import { action, el, field, formValues, icon } from "./dom";
-import { OFFICIAL_ABOUT, OFFICIAL_ANNOUNCEMENTS, OFFICIAL_RESOURCES, OFFICIAL_ROADMAP } from "./official-content";
-import { localeForLanguage, preferredTimeOptions } from "../app/locale";
+import { officialAbout, officialAnnouncements, officialResources, officialRoadmap } from "./official-content";
+import { preferredTimeOptions } from "../app/locale";
+import { formatDate, formatNumber } from "../i18n/format";
+import { dateLocale, t } from "./i18n";
+import { noticeText } from "../i18n/notice";
 import type { Leaderboard } from "../../shared/streamer-pugs";
 import { pugStatusLine, renderLeaderboard, renderPugPanel, teamRoom, type VoiceRoomRef } from "./community";
 
@@ -53,30 +56,29 @@ export type StreamerOverviewOptions = {
 };
 type Panel = "settings" | "queue" | "highlights" | "analytics" | "giveaway" | "welcome" | "pug" | "leaderboard" | null;
 type Controller = { update(options: StreamerOverviewOptions): void; destroy(): void };
-const LABELS: Record<Exclude<Panel, null>, string> = {
-  settings: "Stream settings",
-  queue: "Community session",
-  highlights: "Curate highlights",
-  analytics: "Community activity",
-  giveaway: "Community giveaway",
-  welcome: "Welcome to this Hub",
-  pug: "Community PUG",
-  leaderboard: "Leaderboard",
+const LABELS: Record<Exclude<Panel, null>, () => string> = {
+  settings: () => t("streamer.panels.settings"),
+  queue: () => t("streamer.panels.queue"),
+  highlights: () => t("streamer.panels.highlights"),
+  analytics: () => t("streamer.panels.analytics"),
+  giveaway: () => t("streamer.panels.giveaway"),
+  welcome: () => t("streamer.panels.welcome"),
+  pug: () => t("streamer.panels.pug"),
+  leaderboard: () => t("streamer.panels.leaderboard"),
 };
 /** Panels every member can open (the rest are creator tools). */
 const MEMBER_PANELS: Panel[] = ["welcome", "pug", "leaderboard"];
 const OFFICIAL_LABELS: Partial<typeof LABELS> = {
-  settings: "Welcome guide",
-  analytics: "New members",
-  welcome: "Welcome to DeCave",
+  settings: () => t("streamer.panels.officialSettings"),
+  analytics: () => t("streamer.panels.officialAnalytics"),
+  welcome: () => t("streamer.panels.officialWelcome"),
 };
-const formatNumber = (n: number) => n.toLocaleString();
 function renderKey(options: StreamerOverviewOptions): string {
   const { hubName, bannerPath, events, announcementAvailable, official, isDesktop } = options;
   return JSON.stringify({ hubName, bannerPath, events, announcementAvailable, official, isDesktop });
 }
 function message(error: unknown): string {
-  return error instanceof Error ? error.message : "Unable to complete this action.";
+  return error instanceof Error ? error.message : t("streamer.errors.generic");
 }
 function image(path: string, options: StreamerOverviewOptions, alt: string): HTMLImageElement | null {
   try {
@@ -111,10 +113,9 @@ function card(title: string, symbol: string, description: string, button: HTMLBu
 function giveawayRuleLine(conditions: { subsOnly: boolean; minMemberDays: number; subBonus: boolean } | undefined) {
   if (!conditions) return "";
   const parts: string[] = [];
-  if (conditions.subsOnly) parts.push("Twitch subscribers only");
-  if (conditions.minMemberDays)
-    parts.push(`${conditions.minMemberDays}+ ${conditions.minMemberDays === 1 ? "day" : "days"} in the Hub`);
-  if (conditions.subBonus) parts.push("Subscribers get 2 entries");
+  if (conditions.subsOnly) parts.push(t("streamer.giveaways.subsOnly"));
+  if (conditions.minMemberDays) parts.push(t("streamer.giveaways.minDays", { count: conditions.minMemberDays }));
+  if (conditions.subBonus) parts.push(t("streamer.giveaways.subBonus"));
   return parts.join(" · ");
 }
 
@@ -143,7 +144,7 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
   /** PUGs whose team voice switch already happened (or was offered) on this device. */
   const pugVoiceHandled = new Set<string>();
   const host = el("section", "dc-streamer-overview");
-  host.setAttribute("aria-label", "Streamer Hub Overview");
+  host.setAttribute("aria-label", t("streamer.overview.aria"));
   const status = el("div", "dc-streamer-status");
   status.setAttribute("role", "status");
   status.setAttribute("aria-live", "polite");
@@ -201,7 +202,7 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     try {
       const value = await api.snapshot(controller.signal);
       if (disposed || controller.signal.aborted) return;
-      if (!value.enabled || !value.config || !value.queue) throw new Error("This Hub's Streamer Mode is unavailable.");
+      if (!value.enabled || !value.config || !value.queue) throw new Error(t("streamer.errors.unavailable"));
       const previousSession = snapshot?.session?.id;
       snapshot = value;
       if (!isCreator(value.role)) {
@@ -245,7 +246,11 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       const result = await api.mutate(path, payload, controller.signal);
       if (disposed) return;
       // Saved, but something needs the creator's attention (e.g. Twitch auto-live couldn't link).
-      announce(result?.notice ? `Saved. ${result.notice}` : "Saved.", Boolean(result?.notice));
+      const notice = noticeText(result?.noticeI18n) ?? result?.notice;
+      announce(
+        notice ? t("streamer.notices.savedWithNotice", { notice }) : t("streamer.notices.saved"),
+        Boolean(notice),
+      );
       if (closeOnSuccess) closePanel();
       snapshotAbort?.abort();
       snapshotAbort = null;
@@ -348,12 +353,12 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       return;
     }
     if (!/^https:\/\/id\.twitch\.tv\//.test(target)) {
-      announce("Twitch sign-in isn't available right now.", true);
+      announce(t("streamer.errors.twitchUnavailable"), true);
       return;
     }
     if (options.actions.openSignIn) options.actions.openSignIn(target);
     else window.open(target, "_blank", "noopener,noreferrer");
-    announce("Finish signing in with Twitch in your browser. This page updates by itself.");
+    announce(t("streamer.notices.twitchFinish"));
     const stopAt = Date.now() + 2 * 60_000;
     const check = async () => {
       if (disposed || Date.now() > stopAt) return;
@@ -361,7 +366,7 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       snapshotAbort = null;
       await load();
       if (snapshot?.twitchMember?.linked) {
-        announce(`Twitch linked as ${snapshot.twitchMember.login}.`);
+        announce(t("streamer.notices.twitchLinked", { login: snapshot.twitchMember.login }));
         return;
       }
       setTimeout(() => void check(), 3000);
@@ -379,12 +384,12 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       return;
     }
     if (!/^https:\/\/([a-z0-9-]+\.)*faceit\.com\//.test(target)) {
-      announce("FACEIT sign-in isn't available right now.", true);
+      announce(t("streamer.errors.faceitUnavailable"), true);
       return;
     }
     if (options.actions.openSignIn) options.actions.openSignIn(target);
     else window.open(target, "_blank", "noopener,noreferrer");
-    announce("Finish signing in with FACEIT in your browser. This panel updates by itself.");
+    announce(t("streamer.notices.faceitFinish"));
     const stopAt = Date.now() + 2 * 60_000;
     const check = async () => {
       if (disposed || panel !== "leaderboard" || Date.now() > stopAt) return;
@@ -392,7 +397,7 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
         const latest = await api.leaderboard(new AbortController().signal);
         if (latest.myFaceit) {
           board = latest;
-          announce(`FACEIT linked as ${latest.myFaceit.nickname}.`);
+          announce(t("streamer.notices.faceitLinked", { nickname: latest.myFaceit.nickname }));
           renderPanel();
           return;
         }
@@ -409,15 +414,14 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     if (!pug || pug.status !== "live" || !pug.myTeam || pugVoiceHandled.has(pug.id)) return;
     pugVoiceHandled.add(pug.id);
     const room = teamRoom(pug);
+    const team = () => (pug.myTeam === "a" ? t("streamer.pug.teamA") : t("streamer.pug.teamB"));
     const current = options.actions.currentVoiceRoomId?.() ?? null;
     const hubRooms = new Set((options.voiceRooms ?? []).map((voice) => voice.id));
     if (room && current !== null && current !== room && hubRooms.has(current)) {
       options.actions.joinVoiceRoom?.(room);
-      announce(`Teams are set: moving you to ${pug.myTeam === "a" ? "Team A" : "Team B"} voice.`);
+      announce(t("streamer.notices.teamsMoving", { team: team() }));
     } else if (room && current !== room) {
-      announce(
-        `Teams are set: you're on ${pug.myTeam === "a" ? "Team A" : "Team B"}. Open the PUG to join your team voice.`,
-      );
+      announce(t("streamer.notices.teamsJoin", { team: team() }));
     }
   }
   function panelForm(submitLabel: string, submit: (values: Record<string, unknown>, form: HTMLFormElement) => void) {
@@ -446,9 +450,9 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
         el(
           "div",
           "dc-streamer-empty",
-          el("h2", "", "Streamer Overview"),
-          quiet(lastError || "Loading your community…"),
-          lastError ? action("Retry", () => void load()) : null,
+          el("h2", "", t("streamer.overview.title")),
+          quiet(lastError || t("streamer.overview.loading")),
+          lastError ? action(t("streamer.overview.retry"), () => void load()) : null,
         ),
       );
       return;
@@ -464,26 +468,33 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       el(
         "div",
         "",
-        el("span", "dc-streamer-eyebrow", options.official ? "OFFICIAL HUB" : "STREAMER MODE"),
+        el(
+          "span",
+          "dc-streamer-eyebrow",
+          options.official ? t("streamer.overview.eyebrowOfficial") : t("streamer.overview.eyebrowStreamer"),
+        ),
         el(
           "h2",
           "",
           options.official
             ? owner
-              ? "Welcome every new DeCave member"
-              : "Start here"
+              ? t("streamer.overview.headingOfficialOwner")
+              : t("streamer.overview.headingOfficialMember")
             : owner
-              ? "Your community, in one place"
-              : `${options.hubName} Overview`,
+              ? t("streamer.overview.headingOwner")
+              : t("streamer.overview.headingMember", { hub: options.hubName }),
         ),
       ),
     );
     if (isCreator(data.role)) {
-      const preview = action(previewMember ? "Back to creator view" : "Preview member view", () => {
-        previewMember = !previewMember;
-        closePanel();
-        renderContent();
-      });
+      const preview = action(
+        previewMember ? t("streamer.overview.backToCreator") : t("streamer.overview.previewMember"),
+        () => {
+          previewMember = !previewMember;
+          closePanel();
+          renderContent();
+        },
+      );
       preview.setAttribute("aria-pressed", String(previewMember));
       toolbar.append(preview);
     }
@@ -503,9 +514,19 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       "div",
       "dc-streamer-hero-body",
       options.official
-        ? el("span", "dc-streamer-live", "✓ OFFICIAL")
-        : el("span", `dc-streamer-live${live ? " is-live" : ""}`, live ? "LIVE · Creator status" : "OFFLINE"),
-      el("h1", "", live ? `${displayName} is live` : `Welcome to ${options.hubName}`),
+        ? el("span", "dc-streamer-live", t("streamer.overview.badgeOfficial"))
+        : el(
+            "span",
+            `dc-streamer-live${live ? " is-live" : ""}`,
+            live ? t("streamer.overview.badgeLive") : t("streamer.overview.badgeOffline"),
+          ),
+      el(
+        "h1",
+        "",
+        live
+          ? t("streamer.overview.heroLive", { name: displayName })
+          : t("streamer.overview.heroWelcome", { hub: options.hubName }),
+      ),
       quiet(config.streamTitle || config.tagline),
       el(
         "div",
@@ -521,13 +542,18 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     const heroActions = el("div", "dc-streamer-actions");
     if (config.streamUrl) {
       heroActions.append(
-        button(live ? "Watch Stream ↗" : "Visit Channel ↗", () => openLink(config.streamUrl), true, true),
+        button(
+          live ? t("streamer.overview.watchStream") : t("streamer.overview.visitChannel"),
+          () => openLink(config.streamUrl),
+          true,
+          true,
+        ),
       );
     }
     if (owner)
       heroActions.append(
         button(
-          data.session ? "Manage Live Session" : "Start Community Session",
+          data.session ? t("streamer.overview.manageSession") : t("streamer.overview.startSession"),
           () => openPanel("queue"),
           !config.streamUrl,
         ),
@@ -537,89 +563,88 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     hero.append(heroBody);
     const heroRow = el("div", `dc-streamer-hero-row${owner ? " is-creator" : ""}`, hero);
     if (owner) {
-      const tools = el("section", "dc-streamer-tools", el("h3", "", "Creator Tools"));
+      const tools = el("section", "dc-streamer-tools", el("h3", "", t("streamer.tools.heading")));
       const tool = (label: string, symbol: string, handler: () => void) => {
         const row = button(label, handler);
         row.prepend(icon(symbol));
         tools.append(row);
       };
-      tool("Stream settings", "settings", () => openPanel("settings"));
-      tool("Manage queue", "queue", () => openPanel("queue"));
-      tool("Create event", "calendar", () => guardedNative(options.actions.createEvent));
+      tool(t("streamer.tools.streamSettings"), "settings", () => openPanel("settings"));
+      tool(t("streamer.tools.manageQueue"), "queue", () => openPanel("queue"));
+      tool(t("streamer.tools.createEvent"), "calendar", () => guardedNative(options.actions.createEvent));
       if (options.announcementAvailable) {
-        tool("Send announcement", "announce", () => guardedNative(options.actions.composeAnnouncement));
+        tool(t("streamer.tools.sendAnnouncement"), "announce", () =>
+          guardedNative(options.actions.composeAnnouncement),
+        );
       }
-      tool("Curate highlights", "star", () => openPanel("highlights"));
-      if (data.features.giveaways) tool("Run giveaway", "gift", () => openPanel("giveaway"));
+      tool(t("streamer.tools.curateHighlights"), "star", () => openPanel("highlights"));
+      if (data.features.giveaways) tool(t("streamer.tools.runGiveaway"), "gift", () => openPanel("giveaway"));
       if (options.actions.openModeration)
-        tool("Moderation", "settings", () => guardedNative(options.actions.openModeration!));
+        tool(t("streamer.tools.moderation"), "settings", () => guardedNative(options.actions.openModeration!));
       heroRow.append(tools);
     }
     const tiles = el("div", "dc-streamer-tiles");
     if (owner) {
       tiles.append(
         card(
-          "Community Queue",
+          t("streamer.cards.queue.title"),
           "queue",
-          "Ready checks, fair turns, and controlled session rotation.",
-          button(data.session ? "Manage Queue" : "Open Queue", () => openPanel("queue")),
-          `${formatNumber(data.queue.waiting)} waiting`,
+          t("streamer.cards.queue.ownerDescription"),
+          button(data.session ? t("streamer.cards.queue.manage") : t("streamer.cards.queue.open"), () =>
+            openPanel("queue"),
+          ),
+          waitingLine(data),
         ),
         ...communityCards(data),
         card(
-          "Upcoming Events",
+          t("streamer.cards.events.title"),
           "calendar",
-          "Plan the next community night using your Hub calendar.",
-          button("Create Event", () => guardedNative(options.actions.createEvent), true),
-          `${options.events.length} scheduled`,
+          t("streamer.cards.events.ownerDescription"),
+          button(t("streamer.cards.events.create"), () => guardedNative(options.actions.createEvent), true),
+          t("streamer.cards.events.scheduled", { count: options.events.length }),
         ),
         card(
-          "Community Activity",
+          t("streamer.cards.activity.title"),
           "chart",
-          "See community participation across recent sessions.",
-          button("View Analytics", () => openPanel("analytics")),
+          t("streamer.cards.activity.description"),
+          button(t("streamer.cards.activity.view"), () => openPanel("analytics")),
         ),
         card(
-          "Manage Hub",
+          t("streamer.cards.manageHub.title"),
           "settings",
-          "Update your existing Hub settings, roles, and banner.",
-          button("Open Settings", () => guardedNative(options.actions.manageHub)),
+          t("streamer.cards.manageHub.description"),
+          button(t("streamer.cards.manageHub.open"), () => guardedNative(options.actions.manageHub)),
         ),
       );
     } else {
       tiles.append(
-        card(
-          "Community Queue",
-          "queue",
-          queueDescription(data),
-          joinButton(data),
-          `${formatNumber(data.queue.waiting)} waiting`,
-        ),
+        card(t("streamer.cards.queue.title"), "queue", queueDescription(data), joinButton(data), waitingLine(data)),
         ...communityCards(data),
         card(
-          "Find a Squad",
+          t("streamer.cards.squad.title"),
           "game",
-          "Find teammates and play together in DeCave.",
-          button("Find a Squad", () => guardedNative(options.actions.findSquad), true),
+          t("streamer.cards.squad.description"),
+          button(t("streamer.cards.squad.open"), () => guardedNative(options.actions.findSquad), true),
         ),
         card(
-          "Upcoming Events",
+          t("streamer.cards.events.title"),
           "calendar",
-          "Take part in the next community night.",
-          button("View Events", () => guardedNative(options.actions.openCalendar)),
+          t("streamer.cards.events.memberDescription"),
+          button(t("streamer.cards.events.view"), () => guardedNative(options.actions.openCalendar)),
         ),
         card(
-          "New Here?",
+          t("streamer.cards.newHere.title"),
           "star",
-          "Read the welcome guide and get to know this community.",
-          button("Get Started", () => openPanel("welcome"), false, true),
+          t("streamer.cards.newHere.description"),
+          button(t("streamer.cards.newHere.open"), () => openPanel("welcome"), false, true),
         ),
       );
     }
     const events = el("section", "dc-streamer-section");
-    const eventHead = el("header", "dc-streamer-section-head", el("h3", "", "Upcoming Events"));
-    if (owner) eventHead.append(button("+ Create Event", () => guardedNative(options.actions.createEvent)));
-    eventHead.append(button("View All", () => guardedNative(options.actions.openCalendar)));
+    const eventHead = el("header", "dc-streamer-section-head", el("h3", "", t("streamer.cards.events.title")));
+    if (owner)
+      eventHead.append(button(t("streamer.events.createButton"), () => guardedNative(options.actions.createEvent)));
+    eventHead.append(button(t("streamer.events.viewAll"), () => guardedNative(options.actions.openCalendar)));
     events.append(eventHead);
     const eventsGrid = el("div", "dc-streamer-event-grid");
     const upcoming = options.events
@@ -631,7 +656,7 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       const date = el(
         "time",
         "dc-streamer-date",
-        el("small", "", start.toLocaleDateString(localeForLanguage(), { month: "short" })),
+        el("small", "", start.toLocaleDateString(dateLocale(), { month: "short" })),
         String(start.getDate()),
       );
       date.dateTime = event.startAt;
@@ -644,7 +669,7 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
           "",
           el("h4", "", event.title),
           quiet(
-            start.toLocaleString(localeForLanguage(), {
+            start.toLocaleString(dateLocale(), {
               weekday: "short",
               hour: "numeric",
               minute: "2-digit",
@@ -653,57 +678,42 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
             }),
           ),
         ),
-        button(owner ? "Manage Event" : "View Event", () =>
+        button(owner ? t("streamer.events.manage") : t("streamer.events.view"), () =>
           guardedNative(() => options.actions.openEvent(event, owner ? "manage" : "view")),
         ),
       );
       eventsGrid.append(row);
     }
     if (!upcoming.length)
-      eventsGrid.append(
-        quiet(
-          owner
-            ? "No upcoming events. Create your first community night."
-            : "No events scheduled yet. Check back soon.",
-        ),
-      );
+      eventsGrid.append(quiet(owner ? t("streamer.events.emptyOwner") : t("streamer.events.emptyMember")));
     events.append(eventsGrid);
     const highlights = el("section", "dc-streamer-section");
-    const highlightHead = el("header", "dc-streamer-section-head", el("h3", "", "Latest from the Community"));
-    if (owner) highlightHead.append(button("Curate Highlights", () => openPanel("highlights")));
+    const highlightHead = el("header", "dc-streamer-section-head", el("h3", "", t("streamer.highlights.heading")));
+    if (owner) highlightHead.append(button(t("streamer.highlights.curate"), () => openPanel("highlights")));
     highlights.append(highlightHead);
     const clips = el("div", "dc-streamer-clips");
     for (const highlight of data.highlights.slice(0, 4)) {
-      const clip = button("Watch ↗", () => openLink(highlight.url), false, true);
+      const clip = button(t("streamer.highlights.watch"), () => openLink(highlight.url), false, true);
       const thumbnail = highlight.thumbnailPath ? image(highlight.thumbnailPath, options, "") : null;
       const preview = el("div", "dc-streamer-clip-preview", thumbnail, icon("live"));
       clips.append(el("article", "dc-streamer-clip", preview, el("h4", "", highlight.title), clip));
     }
     if (!data.highlights.length)
-      clips.append(
-        quiet(
-          owner
-            ? "Add approved community clips. Only direct Twitch/YouTube links are opened."
-            : "Community highlights will appear here.",
-        ),
-      );
+      clips.append(quiet(owner ? t("streamer.highlights.emptyOwner") : t("streamer.highlights.emptyMember")));
     highlights.append(clips);
     const sections: Node[] = [toolbar];
-    if (previewMember)
-      sections.push(
-        el(
-          "div",
-          "dc-streamer-preview-note",
-          "Member preview — participation actions are disabled. Your permissions have not changed.",
-        ),
-      );
+    if (previewMember) sections.push(el("div", "dc-streamer-preview-note", t("streamer.overview.previewNote")));
     sections.push(heroRow, tiles, events, highlights);
     if (!owner && data.giveaways.length) {
-      const giveaways = el("section", "dc-streamer-section", el("h3", "", "Community Giveaways"));
+      const giveaways = el("section", "dc-streamer-section", el("h3", "", t("streamer.giveaways.heading")));
       for (const giveaway of data.giveaways) {
         const closed = giveaway.status !== "open" || Date.parse(giveaway.closesAt) <= now();
         const enter = button(
-          giveaway.entered ? "Entered" : closed ? "Entries Closed" : "Enter Free Giveaway",
+          giveaway.entered
+            ? t("streamer.giveaways.entered")
+            : closed
+              ? t("streamer.giveaways.closed")
+              : t("streamer.giveaways.enter"),
           () => void perform("giveaways/enter", { id: giveaway.id }),
         );
         enter.disabled ||= closed || giveaway.entered;
@@ -716,8 +726,8 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
             giveawayRuleLine(giveaway.conditions)
               ? el("p", "dc-streamer-detail", giveawayRuleLine(giveaway.conditions))
               : null,
-            quiet(`Closes ${new Date(giveaway.closesAt).toLocaleString(localeForLanguage(), preferredTimeOptions())}`),
-            giveaway.winnerName ? quiet(`Winner: ${giveaway.winnerName}`) : null,
+            quiet(t("streamer.giveaways.closes", { date: formatDate(giveaway.closesAt, "dateTime") })),
+            giveaway.winnerName ? quiet(t("streamer.giveaways.winner", { name: giveaway.winnerName })) : null,
             enter,
           ),
         );
@@ -743,87 +753,91 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     const rooms = options.actions.openRoom;
     const room = (name: string) => () =>
       guardedNative(() => {
-        if (!rooms?.(name)) announce(`#${name} isn't available in this Hub.`, true);
+        if (!rooms?.(name)) announce(t("streamer.errors.roomUnavailable", { room: name }), true);
       });
     const heroActions = el("div", "dc-streamer-actions");
     if (owner) {
-      heroActions.append(button("Post Announcement", room("announcements"), true));
-      heroActions.append(button("Edit Welcome Guide", () => openPanel("settings")));
+      heroActions.append(button(t("streamer.official.postAnnouncement"), room("announcements"), true));
+      heroActions.append(button(t("streamer.official.editWelcomeGuide"), () => openPanel("settings")));
     } else {
-      heroActions.append(button("Get Started", () => openPanel("welcome"), true, true));
-      heroActions.append(button("Read the Rules", room("rules"), false, true));
+      heroActions.append(button(t("streamer.cards.newHere.open"), () => openPanel("welcome"), true, true));
+      heroActions.append(button(t("streamer.official.readRules"), room("rules"), false, true));
     }
     heroBody.append(heroActions);
     hero.append(heroBody);
     const heroRow = el("div", `dc-streamer-hero-row${owner ? " is-creator" : ""}`, hero);
     if (owner) {
-      const tools = el("section", "dc-streamer-tools", el("h3", "", "Official Hub Tools"));
+      const tools = el("section", "dc-streamer-tools", el("h3", "", t("streamer.official.toolsHeading")));
       const tool = (label: string, symbol: string, handler: () => void) => {
         const row = button(label, handler);
         row.prepend(icon(symbol));
         tools.append(row);
       };
-      tool("Post announcement", "announce", room("announcements"));
-      tool("Publish patch notes", "star", room("patch-notes"));
-      tool("Update FAQ", "queue", room("faq"));
-      tool("Edit rules", "settings", room("rules"));
-      tool("Edit welcome guide", "settings", () => openPanel("settings"));
+      tool(t("streamer.official.tools.postAnnouncement"), "announce", room("announcements"));
+      tool(t("streamer.official.tools.publishPatchNotes"), "star", room("patch-notes"));
+      tool(t("streamer.official.tools.updateFaq"), "queue", room("faq"));
+      tool(t("streamer.official.tools.editRules"), "settings", room("rules"));
+      tool(t("streamer.official.tools.editWelcomeGuide"), "settings", () => openPanel("settings"));
       if (options.actions.openModeration)
-        tool("Moderation", "settings", () => guardedNative(options.actions.openModeration!));
+        tool(t("streamer.tools.moderation"), "settings", () => guardedNative(options.actions.openModeration!));
       heroRow.append(tools);
     }
     const tiles = el("div", "dc-streamer-tiles");
     if (owner) {
       const growth = data.stats
-        ? `${formatNumber(data.stats.memberCount)} members · +${formatNumber(data.stats.joinedLast7Days)} this week`
+        ? t("streamer.official.growth", {
+            count: data.stats.memberCount,
+            members: formatNumber(data.stats.memberCount),
+            joined: formatNumber(data.stats.joinedLast7Days),
+          })
         : "";
       tiles.append(
         card(
-          "New Members",
+          t("streamer.official.cards.newMembers.title"),
           "chart",
-          "Everyone joins this Hub on sign-up. Members can't see each other.",
-          button("View Growth", () => openPanel("analytics")),
+          t("streamer.official.cards.newMembers.description"),
+          button(t("streamer.official.cards.newMembers.open"), () => openPanel("analytics")),
           growth,
         ),
         card(
-          "Announcements",
+          t("streamer.official.cards.announcements.title"),
           "announce",
-          "News and important updates for every DeCave user.",
-          button("Open #announcements", room("announcements"), true),
+          t("streamer.official.cards.announcements.description"),
+          button(t("streamer.official.cards.announcements.open"), room("announcements"), true),
         ),
         card(
-          "Patch Notes",
+          t("streamer.official.cards.patchNotes.title"),
           "star",
-          "Readable notes for every release on web, Windows and Mac.",
-          button("Open #patch-notes", room("patch-notes")),
+          t("streamer.official.cards.patchNotes.description"),
+          button(t("streamer.official.cards.patchNotes.open"), room("patch-notes")),
         ),
         card(
-          "Manage Hub",
+          t("streamer.cards.manageHub.title"),
           "settings",
-          "Banner, icon, rooms and roles for DeCave Official.",
-          button("Open Settings", () => guardedNative(options.actions.manageHub)),
+          t("streamer.official.cards.manageHub.description"),
+          button(t("streamer.cards.manageHub.open"), () => guardedNative(options.actions.manageHub)),
         ),
       );
     } else {
       tiles.append(
         card(
-          "New Here?",
+          t("streamer.cards.newHere.title"),
           "star",
-          "A two-minute guide to profiles, friends, squads and Hubs.",
-          button("Get Started", () => openPanel("welcome"), true, true),
+          t("streamer.official.cards.newHere.description"),
+          button(t("streamer.cards.newHere.open"), () => openPanel("welcome"), true, true),
         ),
         card(
-          "FAQ",
+          t("streamer.official.cards.faq.title"),
           "queue",
-          "Quick answers about accounts, privacy, voice and the desktop app.",
-          button("Open FAQ", room("faq"), false, true),
+          t("streamer.official.cards.faq.description"),
+          button(t("streamer.official.cards.faq.open"), room("faq"), false, true),
         ),
         card(
-          "Roadmap",
+          t("streamer.official.cards.roadmap.title"),
           "chart",
-          "What's shipped, what we're building now and what comes next.",
+          t("streamer.official.cards.roadmap.description"),
           button(
-            "See the Roadmap",
+            t("streamer.official.cards.roadmap.open"),
             () => {
               if (!options.actions.openRoom?.("roadmap")) openSite("https://de-cave.com/roadmap");
             },
@@ -832,39 +846,35 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
           ),
         ),
         card(
-          "What's New",
+          t("streamer.official.cards.whatsNew.title"),
           "announce",
-          "Announcements and patch notes from the DeCave team.",
-          button("See Updates", room("patch-notes"), false, true),
+          t("streamer.official.cards.whatsNew.description"),
+          button(t("streamer.official.cards.whatsNew.open"), room("patch-notes"), false, true),
         ),
       );
       if (!options.isDesktop)
         tiles.append(
           card(
-            "Get the Desktop App",
+            t("streamer.official.cards.desktop.title"),
             "live",
-            "Game detection, notifications and push-to-talk on Windows and Mac.",
-            button("Download ↗", () => openSite("https://de-cave.com/#download"), false, true),
+            t("streamer.official.cards.desktop.description"),
+            button(
+              t("streamer.official.cards.desktop.open"),
+              () => openSite("https://de-cave.com/#download"),
+              false,
+              true,
+            ),
           ),
         );
     }
     const privacy = el(
       "section",
       "dc-streamer-section",
-      el("header", "dc-streamer-section-head", el("h3", "", "Your privacy here")),
-      quiet(
-        "This Hub is private for everyone. Members can't see who else is here, and only the DeCave team can post. Report anything that breaks the rules by right-clicking a message or profile.",
-      ),
+      el("header", "dc-streamer-section-head", el("h3", "", t("streamer.official.privacy.heading"))),
+      quiet(t("streamer.official.privacy.body")),
     );
     const sections: Node[] = [toolbar];
-    if (previewMember)
-      sections.push(
-        el(
-          "div",
-          "dc-streamer-preview-note",
-          "Member preview — participation actions are disabled. Your permissions have not changed.",
-        ),
-      );
+    if (previewMember) sections.push(el("div", "dc-streamer-preview-note", t("streamer.overview.previewNote")));
     sections.push(heroRow, tiles, ...officialInfoSections(), privacy);
     content.replaceChildren(...sections);
   }
@@ -876,30 +886,38 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
         el("header", "dc-streamer-section-head", el("h3", "", title)),
         ...children,
       );
+    const officialAboutContent = officialAbout();
     const about = section(
-      OFFICIAL_ABOUT.title,
+      officialAboutContent.title,
       el(
         "div",
         "dc-official-about",
         el(
           "div",
           "dc-official-about-copy",
-          quiet(OFFICIAL_ABOUT.body),
-          el("p", "dc-official-alpha", el("strong", "", "Alpha. "), OFFICIAL_ABOUT.alphaNote),
+          quiet(officialAboutContent.body),
+          el(
+            "p",
+            "dc-official-alpha",
+            el("strong", "", t("streamer.official.alphaLabel")),
+            officialAboutContent.alphaNote,
+          ),
         ),
         el(
           "dl",
           "dc-official-facts",
-          ...OFFICIAL_ABOUT.facts.map((fact) => el("div", "", el("dt", "", fact.label), el("dd", "", fact.value))),
+          ...officialAboutContent.facts.map((fact) =>
+            el("div", "", el("dt", "", fact.label), el("dd", "", fact.value)),
+          ),
         ),
       ),
     );
     const announcementsHead = section(
-      "Announcements",
+      t("streamer.official.cards.announcements.title"),
       el(
         "ol",
         "dc-official-news",
-        ...OFFICIAL_ANNOUNCEMENTS.map((item) =>
+        ...officialAnnouncements().map((item) =>
           el(
             "li",
             "",
@@ -911,20 +929,21 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       ),
     );
     const openAnnouncements = button(
-      "Open #announcements",
+      t("streamer.official.cards.announcements.open"),
       () => {
-        if (!options.actions.openRoom?.("announcements")) announce("#announcements isn't available in this Hub.", true);
+        if (!options.actions.openRoom?.("announcements"))
+          announce(t("streamer.errors.roomUnavailable", { room: "announcements" }), true);
       },
       false,
       true,
     );
     announcementsHead.querySelector(".dc-streamer-section-head")?.append(openAnnouncements);
     const roadmap = section(
-      "Roadmap",
+      t("streamer.official.cards.roadmap.title"),
       el(
         "ol",
         "dc-official-roadmap",
-        ...OFFICIAL_ROADMAP.map((item, index) =>
+        ...officialRoadmap().map((item, index) =>
           el(
             "li",
             `is-step-${index}`,
@@ -936,11 +955,11 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       ),
     );
     const resources = section(
-      "Helpful resources",
+      t("streamer.official.resourcesHeading"),
       el(
         "div",
         "dc-official-resources",
-        ...OFFICIAL_RESOURCES.map((item) => {
+        ...officialResources().map((item) => {
           const link = el("a", "dc-official-resource", el("strong", "", item.label), el("small", "", item.detail));
           link.href = item.href;
           link.target = "_blank";
@@ -951,20 +970,21 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     );
     return [about, announcementsHead, roadmap, resources];
   }
+  function waitingLine(data: StreamerSnapshot): string {
+    return t("streamer.cards.queue.waiting", {
+      count: data.queue.waiting,
+      number: formatNumber(data.queue.waiting),
+    });
+  }
   function queueDescription(data: StreamerSnapshot): string {
     const mine = data.queue.mine;
-    if (!data.session) return "No community session is open yet.";
-    if (!mine)
-      return data.session.status === "paused"
-        ? "The queue is paused. Existing players keep their places."
-        : "Join the queue to play with the creator.";
-    if (mine.status === "waiting") return `Your position: ${mine.position ?? "—"}. One turn per session.`;
-    if (mine.status === "called")
-      return `Your turn! Accept before ${new Date(mine.callExpiresAt!).toLocaleTimeString(localeForLanguage(), preferredTimeOptions())}.`;
-    if (mine.status === "ready")
-      return "Ready accepted. Wait for the creator to start your group. Voice joining remains your choice.";
-    if (mine.status === "playing") return "You're in the current group. Have a great game.";
-    return "Your participation in this session has ended. Come back for the next one.";
+    if (!data.session) return t("streamer.queue.none");
+    if (!mine) return data.session.status === "paused" ? t("streamer.queue.paused") : t("streamer.queue.join");
+    if (mine.status === "waiting") return t("streamer.queue.waiting", { position: mine.position ?? "—" });
+    if (mine.status === "called") return t("streamer.queue.called", { time: formatDate(mine.callExpiresAt!, "time") });
+    if (mine.status === "ready") return t("streamer.queue.ready");
+    if (mine.status === "playing") return t("streamer.queue.playing");
+    return t("streamer.queue.ended");
   }
   /** PUG and Leaderboard cards, only on Hubs where DeCave staff switched them on. */
   function communityCards(data: StreamerSnapshot): HTMLElement[] {
@@ -972,11 +992,13 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     if (data.features.pugs)
       cards.push(
         card(
-          "Community PUG",
+          t("streamer.cards.pug.title"),
           "game",
-          "Random teams, map vote, team voice rooms. Just for fun.",
+          t("streamer.cards.pug.description"),
           button(
-            data.pug && data.pug.status === "open" && !data.pug.joined ? "Join PUG" : "Open PUG",
+            data.pug && data.pug.status === "open" && !data.pug.joined
+              ? t("streamer.cards.pug.join")
+              : t("streamer.cards.pug.open"),
             () => openPanel("pug"),
             Boolean(data.pug && data.pug.status !== "done"),
             true,
@@ -987,36 +1009,43 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     if (data.twitchMember) {
       const tm = data.twitchMember;
       const action = !tm.linked
-        ? button("Link Twitch", () => void startTwitchSignIn(), true, true)
+        ? button(t("streamer.cards.twitch.link"), () => void startTwitchSignIn(), true, true)
         : button(
-            "Check again",
-            () => void twitchAction((s) => api.recheckTwitch(s), "Subscription checked."),
+            t("streamer.cards.twitch.checkAgain"),
+            () => void twitchAction((s) => api.recheckTwitch(s), t("streamer.notices.subscriptionChecked")),
             false,
             true,
           );
       cards.push(
         card(
-          "Twitch Subscriber",
+          t("streamer.cards.twitch.title"),
           "live",
-          tm.linked
-            ? "Subscribers get the Subs role and giveaway perks. Checked daily. Unlink anytime from here."
-            : "Link your Twitch account: subscribers get the Subs role and giveaway perks.",
+          tm.linked ? t("streamer.cards.twitch.linkedDescription") : t("streamer.cards.twitch.unlinkedDescription"),
           action,
-          !tm.linked ? "Not linked" : tm.subscribed ? `${tm.login} · Subscriber ✓` : `${tm.login} · Not subscribed`,
+          !tm.linked
+            ? t("streamer.cards.twitch.notLinked")
+            : tm.subscribed
+              ? t("streamer.cards.twitch.subscribed", { login: tm.login })
+              : t("streamer.cards.twitch.notSubscribed", { login: tm.login }),
         ),
       );
       if (tm.linked)
         cards[cards.length - 1].append(
-          button("Unlink Twitch", () => void twitchAction((s) => api.unlinkTwitch(s), "Twitch unlinked."), false, true),
+          button(
+            t("streamer.cards.twitch.unlink"),
+            () => void twitchAction((s) => api.unlinkTwitch(s), t("streamer.notices.twitchUnlinked")),
+            false,
+            true,
+          ),
         );
     }
     if (data.features.leaderboard)
       cards.push(
         card(
-          "Leaderboard",
+          t("streamer.cards.leaderboard.title"),
           "chart",
-          "Monthly PUG wins and linked FACEIT ELO. Top player is Rifler of the month.",
-          button("View Leaderboard", () => openPanel("leaderboard"), false, true),
+          t("streamer.cards.leaderboard.description"),
+          button(t("streamer.cards.leaderboard.view"), () => openPanel("leaderboard"), false, true),
         ),
       );
     return cards;
@@ -1024,16 +1053,16 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
   function joinButton(data: StreamerSnapshot, hero = false): HTMLButtonElement {
     const mine = data.queue.mine;
     const sessionId = data.session?.id;
-    let label = hero ? "Join Community Queue" : "Join Queue";
+    let label = hero ? t("streamer.join.communityQueue") : t("streamer.join.queue");
     let path = "queue/join";
     if (mine?.status === "called") {
-      label = "I'm Ready";
+      label = t("streamer.join.ready");
       path = "queue/ready";
     } else if (mine && ["waiting", "ready"].includes(mine.status)) {
-      label = "Leave Queue";
+      label = t("streamer.join.leave");
       path = "queue/leave";
-    } else if (mine?.status === "playing") label = "In Game";
-    else if (mine) label = "Session Turn Completed";
+    } else if (mine?.status === "playing") label = t("streamer.join.inGame");
+    else if (mine) label = t("streamer.join.completed");
     const result = button(label, () => void perform(path, { sessionId }), true);
     result.disabled ||=
       !sessionId ||
@@ -1064,13 +1093,13 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     const name = panel;
     const data = snapshot;
     const container = el("section", "dc-streamer-panel");
-    const label = (options.official && OFFICIAL_LABELS[name]) || LABELS[name];
+    const label = ((options.official && OFFICIAL_LABELS[name]) || LABELS[name])();
     container.setAttribute("role", "dialog");
     container.setAttribute("aria-label", label);
     // Non-modal by design: the existing global navigation/friends UI stays usable.
     const title = el("h2", "", label);
     title.tabIndex = -1;
-    const close = action("Close ×", closePanel);
+    const close = action(t("streamer.panels.close"), closePanel);
     close.dataset.close = "true";
     container.append(el("header", "dc-streamer-panel-head", title, close));
     if (name === "settings") renderSettings(container, data.config);
@@ -1088,22 +1117,21 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       renderLeaderboard(container, board, boardError, {
         ...community,
         signInFaceit: () => void startFaceitSignIn(),
-        unlinkFaceit: () => void faceitAction((signal) => api.unlinkFaceit(signal), "FACEIT unlinked."),
+        unlinkFaceit: () =>
+          void faceitAction((signal) => api.unlinkFaceit(signal), t("streamer.notices.faceitUnlinked")),
       });
     if (name === "queue") renderQueue(container);
     if (name === "analytics") {
-      container.append(
-        quiet("Real aggregate data. Seven-day activity reflects this feature only, not all DeCave usage."),
-      );
+      container.append(quiet(t("streamer.analytics.intro")));
       const stats = data.stats;
       const grid = el("div", "dc-streamer-stats");
       if (stats)
         for (const [label, value] of [
-          ["Hub members", stats.memberCount],
-          ["Joined in 7 days", stats.joinedLast7Days],
-          ["Sessions in 7 days", stats.sessionsLast7Days],
-          ["Accepted/playing participants in 7 days", stats.playersLast7Days],
-          ["Completed viewer seats in 7 days", stats.seatsCompletedLast7Days],
+          [t("streamer.analytics.hubMembers"), stats.memberCount],
+          [t("streamer.analytics.joined"), stats.joinedLast7Days],
+          [t("streamer.analytics.sessions"), stats.sessionsLast7Days],
+          [t("streamer.analytics.players"), stats.playersLast7Days],
+          [t("streamer.analytics.seats"), stats.seatsCompletedLast7Days],
         ] as const)
           grid.append(el("article", "dc-streamer-stat", el("strong", "", formatNumber(value)), quiet(label)));
       container.append(grid);
@@ -1111,21 +1139,17 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     if (name === "welcome")
       container.append(
         quiet(data.config.onboarding),
-        ...(options.official ? [] : [el("h3", "", "Community session rules"), quiet(data.config.queueRules)]),
+        ...(options.official ? [] : [el("h3", "", t("streamer.welcome.sessionRules")), quiet(data.config.queueRules)]),
       );
     if (name === "highlights") {
-      container.append(
-        quiet(
-          "Publish only community-approved clips. Thumbnails must already be Hub-wide DeCave media; private attachments are not allowed.",
-        ),
-      );
+      container.append(quiet(t("streamer.highlights.intro")));
       const { form, submitButton } = panelForm(
-        "Publish Highlight",
+        t("streamer.highlights.publish"),
         (values) => void perform("highlights/add", values, true),
       );
-      field(form, "title", "Title", "", { required: true, maxLength: 120 });
-      field(form, "url", "Direct Twitch or YouTube link", "", { required: true, type: "url", maxLength: 500 });
-      field(form, "thumbnailPath", "Optional existing Hub image path (/api/media/…)", "", { maxLength: 600 });
+      field(form, "title", t("streamer.highlights.titleField"), "", { required: true, maxLength: 120 });
+      field(form, "url", t("streamer.highlights.urlField"), "", { required: true, type: "url", maxLength: 500 });
+      field(form, "thumbnailPath", t("streamer.highlights.thumbnailField"), "", { maxLength: 600 });
       form.append(submitButton);
       container.append(form);
       for (const highlight of data.highlights)
@@ -1134,7 +1158,10 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
             "div",
             "dc-streamer-row",
             el("span", "", highlight.title),
-            button("Remove", () => void perform("highlights/remove", { id: highlight.id }, true)),
+            button(
+              t("streamer.highlights.remove"),
+              () => void perform("highlights/remove", { id: highlight.id }, true),
+            ),
           ),
         );
     }
@@ -1143,9 +1170,9 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
   }
   function renderSettings(container: HTMLElement, config: StreamerConfig) {
     if (options.official) {
-      container.append(quiet("Shown to every new member under Get Started. Line breaks are kept."));
+      container.append(quiet(t("streamer.settings.officialIntro")));
       const { form, submitButton } = panelForm(
-        "Save Welcome Guide",
+        t("streamer.settings.saveWelcomeGuide"),
         (values) =>
           void perform(
             "settings",
@@ -1162,30 +1189,29 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
             true,
           ),
       );
-      field(form, "tagline", "Banner tagline", config.tagline, { maxLength: 160 });
-      field(form, "streamTitle", "Banner subtitle", config.streamTitle, { maxLength: 140 });
-      field(form, "onboarding", "Welcome guide", config.onboarding, { multiline: true, maxLength: 1600 });
+      field(form, "tagline", t("streamer.settings.bannerTagline"), config.tagline, { maxLength: 160 });
+      field(form, "streamTitle", t("streamer.settings.bannerSubtitle"), config.streamTitle, { maxLength: 140 });
+      field(form, "onboarding", t("streamer.settings.welcomeGuide"), config.onboarding, {
+        multiline: true,
+        maxLength: 1600,
+      });
       form.append(submitButton);
       container.append(form);
       return;
     }
-    container.append(
-      quiet(
-        "These settings update your DeCave Overview only. They do not start a broadcast or verify the creator's identity. Live status expires automatically.",
-      ),
-    );
+    container.append(quiet(t("streamer.settings.intro")));
     const { form, submitButton } = panelForm(
-      "Save Stream Settings",
+      t("streamer.settings.save"),
       (values) =>
         void perform("settings", { ...values, version: config.version, liveHours: Number(values.liveHours) }, true),
     );
-    field(form, "creatorName", "Creator display name", config.creatorName, { maxLength: 80 });
-    field(form, "tagline", "Community tagline", config.tagline, { maxLength: 160 });
-    field(form, "streamUrl", "Twitch or YouTube channel/video URL", config.streamUrl, { type: "url", maxLength: 500 });
-    field(form, "streamTitle", "Stream title", config.streamTitle, { maxLength: 140 });
-    field(form, "game", "Game", config.game, { maxLength: 80 });
-    field(form, "language", "Language", config.language, { maxLength: 40 });
-    field(form, "liveHours", "Manual live status (hours; 0 = offline)", isLive(config, now()) ? "4" : "0", {
+    field(form, "creatorName", t("streamer.settings.creatorName"), config.creatorName, { maxLength: 80 });
+    field(form, "tagline", t("streamer.settings.communityTagline"), config.tagline, { maxLength: 160 });
+    field(form, "streamUrl", t("streamer.settings.streamUrl"), config.streamUrl, { type: "url", maxLength: 500 });
+    field(form, "streamTitle", t("streamer.settings.streamTitle"), config.streamTitle, { maxLength: 140 });
+    field(form, "game", t("streamer.settings.game"), config.game, { maxLength: 80 });
+    field(form, "language", t("streamer.settings.language"), config.language, { maxLength: 40 });
+    field(form, "liveHours", t("streamer.settings.liveHours"), isLive(config, now()) ? "4" : "0", {
       type: "number",
       min: "0",
       max: "12",
@@ -1195,40 +1221,31 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       const autoLive = el("select", "dc-streamer-input");
       autoLive.name = "twitchAutoLive";
       autoLive.id = "dc-streamer-field-twitch-auto-live";
-      autoLive.append(new Option("Off", "off"), new Option("On: follow my Twitch channel", "on"));
-      autoLive.value = config.twitchAutoLive ? "on" : "off";
-      const autoLiveLabel = el("label", "", "Go live automatically when my Twitch stream starts");
-      autoLiveLabel.htmlFor = autoLive.id;
-      form.append(
-        el(
-          "div",
-          "dc-streamer-field",
-          autoLiveLabel,
-          autoLive,
-          quiet('Needs a Twitch channel link above. Hub bots can announce it with the "Stream goes live" trigger.'),
-        ),
+      autoLive.append(
+        new Option(t("streamer.settings.off"), "off"),
+        new Option(t("streamer.settings.autoLiveOn"), "on"),
       );
+      autoLive.value = config.twitchAutoLive ? "on" : "off";
+      const autoLiveLabel = el("label", "", t("streamer.settings.autoLiveLabel"));
+      autoLiveLabel.htmlFor = autoLive.id;
+      form.append(el("div", "dc-streamer-field", autoLiveLabel, autoLive, quiet(t("streamer.settings.autoLiveHint"))));
       const clips = el("select", "dc-streamer-input");
       clips.name = "twitchClips";
       clips.id = "dc-streamer-field-twitch-clips";
-      clips.append(new Option("Off", "off"), new Option("On: post new clips in the clips forum", "on"));
+      clips.append(new Option(t("streamer.settings.off"), "off"), new Option(t("streamer.settings.clipsOn"), "on"));
       clips.value = config.twitchClips ? "on" : "off";
-      const clipsLabel = el("label", "", "Post my new Twitch clips");
+      const clipsLabel = el("label", "", t("streamer.settings.clipsLabel"));
       clipsLabel.htmlFor = clips.id;
-      form.append(
-        el(
-          "div",
-          "dc-streamer-field",
-          clipsLabel,
-          clips,
-          quiet(
-            'Checked every hour. Clips go to the forum room with "clip" in its name; members react to pick Clip of the week (Mondays).',
-          ),
-        ),
-      );
+      form.append(el("div", "dc-streamer-field", clipsLabel, clips, quiet(t("streamer.settings.clipsHint"))));
     }
-    field(form, "queueRules", "Session rules", config.queueRules, { multiline: true, maxLength: 1600 });
-    field(form, "onboarding", "Welcome guide", config.onboarding, { multiline: true, maxLength: 1600 });
+    field(form, "queueRules", t("streamer.settings.sessionRules"), config.queueRules, {
+      multiline: true,
+      maxLength: 1600,
+    });
+    field(form, "onboarding", t("streamer.settings.welcomeGuide"), config.onboarding, {
+      multiline: true,
+      maxLength: 1600,
+    });
     form.append(submitButton);
     container.append(form);
   }
@@ -1236,13 +1253,9 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     if (!snapshot) return;
     const session = snapshot.session;
     if (!session) {
-      container.append(
-        quiet(
-          "Create a community session. Viewer slots exclude the creator. Players accept their own ready checks; this does not force anyone into voice.",
-        ),
-      );
+      container.append(quiet(t("streamer.session.intro")));
       const { form, submitButton } = panelForm(
-        "Open Community Session",
+        t("streamer.session.open"),
         (values) =>
           void perform("session/create", {
             ...values,
@@ -1250,15 +1263,18 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
             readySeconds: Number(values.readySeconds),
           }),
       );
-      field(form, "title", "Session title", "Community games", { required: true, maxLength: 100 });
-      field(form, "game", "Game", snapshot.config.game, { required: true, maxLength: 80 });
-      field(form, "partySize", "Viewer slots per group (not total Hub members)", "4", {
+      field(form, "title", t("streamer.session.titleField"), t("streamer.session.defaultTitle"), {
+        required: true,
+        maxLength: 100,
+      });
+      field(form, "game", t("streamer.session.gameField"), snapshot.config.game, { required: true, maxLength: 80 });
+      field(form, "partySize", t("streamer.session.partySizeField"), "4", {
         type: "number",
         min: "1",
         max: "16",
         required: true,
       });
-      field(form, "readySeconds", "Ready-check seconds", "90", {
+      field(form, "readySeconds", t("streamer.session.readySecondsField"), "90", {
         type: "number",
         min: "30",
         max: "300",
@@ -1271,26 +1287,32 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     const payload = { sessionId: session.id, version: session.version };
     container.append(
       el("h3", "", session.title),
-      quiet(`${session.game} · ${session.partySize} viewer slots · ${session.status.toUpperCase()}`),
+      quiet(
+        t("streamer.session.summary", {
+          game: session.game,
+          count: session.partySize,
+          status: t(`streamer.session.status.${session.status}`),
+        }),
+      ),
       quiet(snapshot.config.queueRules),
     );
     const controls = el("div", "dc-streamer-actions");
     controls.append(
       button(
-        session.status === "paused" ? "Resume Queue" : "Pause Queue",
+        session.status === "paused" ? t("streamer.session.resume") : t("streamer.session.pause"),
         () => void perform(`session/${session.status === "paused" ? "resume" : "pause"}`, payload),
       ),
-      button("Call Next Group", () => void perform("session/call-next", payload), true),
-      button("Start Ready Players", () => void perform("session/start-ready", payload)),
-      button("Finish Current Group", () => void perform("session/finish-playing", payload)),
+      button(t("streamer.session.callNext"), () => void perform("session/call-next", payload), true),
+      button(t("streamer.session.startReady"), () => void perform("session/start-ready", payload)),
+      button(t("streamer.session.finishGroup"), () => void perform("session/finish-playing", payload)),
     );
-    const end = button("End Session", () => {
+    const end = button(t("streamer.session.end"), () => {
       const confirm = el(
         "div",
         "dc-streamer-confirm",
-        quiet("End this session? The current group is completed and remaining queue entries are closed."),
-        button("Confirm End Session", () => void perform("session/end", payload)),
-        action("Keep Session", () => confirm.remove()),
+        quiet(t("streamer.session.endConfirmText")),
+        button(t("streamer.session.endConfirm"), () => void perform("session/end", payload)),
+        action(t("streamer.session.keep"), () => confirm.remove()),
       );
       controls.after(confirm);
     });
@@ -1299,56 +1321,57 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
     container.append(controls);
     container.append(
       quiet(
-        `${snapshot.queue.waiting} waiting · ${snapshot.queue.called} called · ${snapshot.queue.ready} ready · ${snapshot.queue.playing} playing`,
+        t("streamer.session.counts", {
+          waiting: snapshot.queue.waiting,
+          called: snapshot.queue.called,
+          ready: snapshot.queue.ready,
+          playing: snapshot.queue.playing,
+        }),
       ),
     );
     const list = el("div", "dc-streamer-queue-list");
     for (const entry of queueRows) {
-      const state = el("span", `dc-streamer-state is-${entry.status}`, entry.status);
+      const state = el(
+        "span",
+        `dc-streamer-state is-${entry.status}`,
+        t(`streamer.session.entryStatus.${entry.status}`),
+      );
       const row = el("div", "dc-streamer-row", el("span", "", entry.name), state);
       if (entry.callExpiresAt && entry.status === "called")
         row.append(
           el(
             "time",
             "dc-streamer-muted",
-            `Until ${new Date(entry.callExpiresAt).toLocaleTimeString(localeForLanguage(), preferredTimeOptions())}`,
+            t("streamer.session.until", { time: formatDate(entry.callExpiresAt, "time") }),
           ),
         );
       if (entry.status !== "playing")
-        row.append(button("Skip", () => void perform("queue/skip", { entryId: entry.id })));
+        row.append(button(t("streamer.session.skip"), () => void perform("queue/skip", { entryId: entry.id })));
       list.append(row);
     }
-    if (!queueRows.length) list.append(quiet("No active queue entries on this page."));
+    if (!queueRows.length) list.append(quiet(t("streamer.session.empty")));
     container.append(list);
     if (queuePageAfter)
       container.append(
-        button("First Page", () => {
+        button(t("streamer.session.firstPage"), () => {
           queuePageAfter = undefined;
           void loadQueue(false);
         }),
       );
-    if (queueCursor) container.append(button("Next Page", () => void loadQueue(true)));
-    container.append(
-      quiet(
-        "No one is moved to voice automatically. Use DeCave's existing permission-controlled voice rooms when participants are ready.",
-      ),
-    );
+    if (queueCursor) container.append(button(t("streamer.session.nextPage"), () => void loadQueue(true)));
+    container.append(quiet(t("streamer.session.voiceNote")));
   }
   function renderGiveaway(container: HTMLElement) {
     if (!snapshot) return;
     if (!snapshot.features.giveaways) {
-      container.append(quiet("Giveaways are disabled on this deployment."));
+      container.append(quiet(t("streamer.giveaways.disabled")));
       return;
     }
-    container.append(
-      quiet(
-        "Free entry only. Publish eligibility and prize-fulfilment rules before opening. The platform does not collect payments or deliver prizes. Drawing is available only after the closing time; winners cannot be rerolled.",
-      ),
-    );
-    const { form, submitButton } = panelForm("Create Free Giveaway", (values) => {
+    container.append(quiet(t("streamer.giveaways.intro")));
+    const { form, submitButton } = panelForm(t("streamer.giveaways.create"), (values) => {
       const date = new Date(String(values.closesAt));
       if (!Number.isFinite(date.getTime())) {
-        announce("Choose a closing time.", true);
+        announce(t("streamer.errors.closingTimeRequired"), true);
         return;
       }
       const rules = snapshot?.features.subRoles
@@ -1361,26 +1384,26 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
       const { subsOnly: _a, minMemberDays: _b, subBonus: _c, ...base } = values;
       void perform("giveaways/create", { ...base, ...rules, closesAt: date.toISOString() }, true);
     });
-    field(form, "title", "Giveaway title", "", { required: true, maxLength: 120 });
-    field(form, "rules", "Eligibility, prize, and fulfilment rules", "", {
+    field(form, "title", t("streamer.giveaways.titleField"), "", { required: true, maxLength: 120 });
+    field(form, "rules", t("streamer.giveaways.rulesField"), "", {
       required: true,
       multiline: true,
       maxLength: 2000,
     });
-    field(form, "closesAt", "Closes at (your local time)", "", { required: true, type: "datetime-local" });
+    field(form, "closesAt", t("streamer.giveaways.closesAtField"), "", { required: true, type: "datetime-local" });
     if (snapshot.features.subRoles) {
       const choice = (name: string, label: string, on: string) => {
         const select = el("select", "dc-streamer-input");
         select.name = name;
         select.id = `dc-streamer-giveaway-${name}`;
-        select.append(new Option("No", "off"), new Option(on, "on"));
+        select.append(new Option(t("streamer.giveaways.no"), "off"), new Option(on, "on"));
         const title = el("label", "", label);
         title.htmlFor = select.id;
         form.append(el("div", "dc-streamer-field", title, select));
       };
-      choice("subsOnly", "Who can enter", "Twitch subscribers only");
-      choice("subBonus", "Subscriber bonus", "Subscribers get 2 entries");
-      field(form, "minMemberDays", "Minimum days in the Hub (0 = none)", "0", {
+      choice("subsOnly", t("streamer.giveaways.whoCanEnter"), t("streamer.giveaways.subsOnly"));
+      choice("subBonus", t("streamer.giveaways.subscriberBonus"), t("streamer.giveaways.subBonus"));
+      field(form, "minMemberDays", t("streamer.giveaways.minDaysField"), "0", {
         type: "number",
         min: "0",
         max: "365",
@@ -1393,17 +1416,25 @@ export function mountStreamerOverview(root: HTMLElement, initial: StreamerOvervi
         "article",
         "dc-streamer-giveaway",
         el("h3", "", giveaway.title),
-        quiet(`${giveaway.entryCount} entries · ${giveaway.status}`),
+        quiet(
+          t("streamer.giveaways.summary", {
+            count: giveaway.entryCount,
+            status: t(`streamer.giveaways.status.${giveaway.status}`),
+          }),
+        ),
         giveawayRuleLine(giveaway.conditions) ? quiet(giveawayRuleLine(giveaway.conditions)) : null,
       );
       if (giveaway.status === "open") {
-        const draw = button("Draw Winner", () => void perform("giveaways/draw", { id: giveaway.id }, true));
+        const draw = button(
+          t("streamer.giveaways.draw"),
+          () => void perform("giveaways/draw", { id: giveaway.id }, true),
+        );
         draw.disabled ||= Date.parse(giveaway.closesAt) > now();
         row.append(
           draw,
-          button("Cancel Giveaway", () => void perform("giveaways/cancel", { id: giveaway.id }, true)),
+          button(t("streamer.giveaways.cancel"), () => void perform("giveaways/cancel", { id: giveaway.id }, true)),
         );
-      } else if (giveaway.winnerName) row.append(quiet(`Winner: ${giveaway.winnerName}`));
+      } else if (giveaway.winnerName) row.append(quiet(t("streamer.giveaways.winner", { name: giveaway.winnerName })));
       container.append(row);
     }
   }

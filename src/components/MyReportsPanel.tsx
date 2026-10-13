@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { SafetyReport } from "../safety/types";
-import { localeForLanguage, preferredTimeOptions } from "../app/locale";
+import { serverErrorOr } from "../safety/server-error";
+import { formatDate } from "../i18n/format";
 
 type MyReportsPanelProps = {
   request: (path: string, init?: RequestInit) => Promise<Response>;
 };
 
-function statusLabel(status: SafetyReport["status"]): string {
-  return status.replace(/_/g, " ").replace(/\b\w/g, (letter: string) => letter.toUpperCase());
-}
-
 export function MyReportsPanel({ request }: MyReportsPanelProps) {
+  const { t } = useTranslation(["safety"]);
+  const statusLabel = (status: SafetyReport["status"]) => t(`safety.myReports.status.${status}`);
   const [reports, setReports] = useState<SafetyReport[]>([]);
   const [selected, setSelected] = useState<SafetyReport | null>(null);
   const [busy, setBusy] = useState(true);
@@ -20,14 +20,18 @@ export function MyReportsPanel({ request }: MyReportsPanelProps) {
     setBusy(true);
     try {
       const response = await request("/api/safety/reports");
-      const data = (await response.json().catch(() => ({}))) as { reports?: SafetyReport[]; error?: string };
+      const data = (await response.json().catch(() => ({}))) as {
+        reports?: SafetyReport[];
+        error?: string;
+        code?: string;
+      };
       if (!response.ok) {
-        setNotice(data.error || "Could not load your reports.");
+        setNotice(serverErrorOr(data, t("safety.myReports.loadFailed")));
         return;
       }
       setReports(Array.isArray(data.reports) ? data.reports : []);
     } catch {
-      setNotice("Could not connect to DeCave.");
+      setNotice(t("safety.myReports.connectFailed"));
     } finally {
       setBusy(false);
     }
@@ -41,12 +45,12 @@ export function MyReportsPanel({ request }: MyReportsPanelProps) {
     <section className="dc-safety-panel">
       <div className="dc-safety-panel-head">
         <div>
-          <div className="ds-kicker">PRIVATE TO YOU</div>
-          <h2>My Reports</h2>
-          <p>Track reports you have submitted. Review details remain private.</p>
+          <div className="ds-kicker">{t("safety.myReports.kicker")}</div>
+          <h2>{t("safety.myReports.title")}</h2>
+          <p>{t("safety.myReports.intro")}</p>
         </div>
         <button type="button" className="ds-btn ds-btn-sm" onClick={() => void load()} disabled={busy}>
-          {busy ? "Loading…" : "Refresh"}
+          {busy ? t("safety.myReports.loading") : t("safety.myReports.refresh")}
         </button>
       </div>
       {notice && (
@@ -55,7 +59,7 @@ export function MyReportsPanel({ request }: MyReportsPanelProps) {
         </div>
       )}
       {!busy && reports.length === 0 ? (
-        <div className="dc-safety-empty ds-empty">You have not submitted any reports.</div>
+        <div className="dc-safety-empty ds-empty">{t("safety.myReports.empty")}</div>
       ) : (
         <div className="dc-safety-report-list">
           {reports.map((report) => (
@@ -68,13 +72,15 @@ export function MyReportsPanel({ request }: MyReportsPanelProps) {
               <span>
                 <strong>{report.caseNumber || report.id.slice(0, 8)}</strong>
                 <small>
-                  {report.targetUsername || report.targetType} ·{" "}
-                  {new Date(report.createdAt).toLocaleString(localeForLanguage(), preferredTimeOptions())}
+                  {t("safety.myReports.rowMeta", {
+                    target: report.targetUsername || t(`safety.myReports.target.${report.targetType}`),
+                    date: formatDate(report.createdAt, "dateTime"),
+                  })}
                 </small>
               </span>
               <span className={`dc-safety-status ${report.status}`}>
                 <b>{statusLabel(report.status)}</b>
-                <small>{report.urgency}</small>
+                <small>{t(`safety.myReports.urgency.${report.urgency}`)}</small>
               </span>
             </button>
           ))}
@@ -83,15 +89,17 @@ export function MyReportsPanel({ request }: MyReportsPanelProps) {
       {selected && (
         <div className="dc-safety-report-detail">
           <div>
-            <strong>{selected.caseNumber || "Report"}</strong>
+            <strong>{selected.caseNumber || t("safety.myReports.report")}</strong>
             <button type="button" className="ds-btn ds-btn-sm" onClick={() => setSelected(null)}>
-              Close
+              {t("safety.myReports.close")}
             </button>
           </div>
-          <p>{selected.description || "No additional details were provided."}</p>
+          <p>{selected.description || t("safety.myReports.noDetails")}</p>
           <small>
-            Status: {statusLabel(selected.status)} · submitted{" "}
-            {new Date(selected.submittedAt).toLocaleString(localeForLanguage(), preferredTimeOptions())}
+            {t("safety.myReports.statusLine", {
+              status: statusLabel(selected.status),
+              date: formatDate(selected.submittedAt, "dateTime"),
+            })}
           </small>
         </div>
       )}

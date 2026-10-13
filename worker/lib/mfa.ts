@@ -3,7 +3,7 @@
 
 import type { Env } from "./env";
 import { createRawToken, nowIso, tokenHash } from "../db";
-import { json } from "./http";
+import { apiError } from "./http";
 
 export const OWNER_MFA_BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
@@ -233,13 +233,13 @@ export async function ownerCreateReauth(env: Env, userId: string): Promise<strin
 
 export async function ownerRequireReauth(request: Request, env: Env, userId: string): Promise<Response | null> {
   const raw = request.headers.get("X-DeCave-Owner-Reauth") ?? "";
-  if (!raw) return json({ error: "Recent owner re-authentication required" }, 428);
+  if (!raw) return apiError("owner.reauthRequired", 428);
   const row = await env.DB.prepare(
     "SELECT token_hash FROM decave_owner_reauth WHERE token_hash=? AND user_id=? AND expires_at>? LIMIT 1",
   )
     .bind(tokenHash(raw), userId, nowIso())
     .first();
-  return row ? null : json({ error: "Owner re-authentication expired or invalid" }, 428);
+  return row ? null : apiError("owner.reauthExpired", 428);
 }
 
 export async function ownerVerifyMfaOrRecovery(

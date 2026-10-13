@@ -1,5 +1,6 @@
 // Dialog for changing your username, email, phone number or password, confirmed with your password (and second factor if on).
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import type { AccountEditState } from "../state/account-edit";
 import type { AccountActions } from "../actions/account";
@@ -25,6 +26,7 @@ export function AccountEditDialog({
   accountEdit,
   accountActions,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { closeAccountEditor, submitAccountIdentityEdit, changePassword } = accountActions;
   const {
     changePasswordCurrentInput,
@@ -47,20 +49,16 @@ export function AccountEditDialog({
   return (
     <div className="modal-overlay" onClick={() => !changePasswordBusy && closeAccountEditor()}>
       <div className="modal dc-account-edit-modal" onClick={(event) => event.stopPropagation()}>
-        <div className="social-kicker ds-kicker">ACCOUNT SECURITY</div>
+        <div className="social-kicker ds-kicker">{t("common.account.edit.kicker")}</div>
         <h2>
           {accountEditField === "username"
-            ? "Change username"
+            ? t("common.account.edit.usernameTitle")
             : accountEditField === "email"
-              ? "Change email"
-              : "Change password"}
+              ? t("common.account.edit.emailTitle")
+              : t("common.account.edit.passwordTitle")}
         </h2>
-        {accountEditField === "username" && (
-          <p>Your username must be unique across DeCave. After changing it, you cannot change it again for 30 days.</p>
-        )}
-        {accountEditField === "email" && (
-          <p>We will send a verification link to the new email address. The address remains pending until verified.</p>
-        )}
+        {accountEditField === "username" && <p>{t("common.account.edit.usernameBody")}</p>}
+        {accountEditField === "email" && <p>{t("common.account.edit.emailBody")}</p>}
         {accountEditField === "password" ? (
           <div className="dc-account-edit-fields">
             <input
@@ -68,7 +66,7 @@ export function AccountEditDialog({
               type="password"
               value={changePasswordCurrentInput}
               onChange={(event) => setChangePasswordCurrentInput(event.target.value)}
-              placeholder="Current password"
+              placeholder={t("common.account.currentPassword")}
               autoComplete="current-password"
               autoFocus
             />
@@ -77,7 +75,7 @@ export function AccountEditDialog({
               type="password"
               value={changePasswordNewInput}
               onChange={(event) => setChangePasswordNewInput(event.target.value)}
-              placeholder="New password"
+              placeholder={t("common.account.edit.newPassword")}
               autoComplete="new-password"
             />
             <input
@@ -85,7 +83,7 @@ export function AccountEditDialog({
               type="password"
               value={changePasswordConfirmInput}
               onChange={(event) => setChangePasswordConfirmInput(event.target.value)}
-              placeholder="Confirm new password"
+              placeholder={t("common.account.edit.confirmPassword")}
               autoComplete="new-password"
             />
             {changePasswordNotice && <div className="ds-notice danger">{changePasswordNotice}</div>}
@@ -100,9 +98,9 @@ export function AccountEditDialog({
               onChange={(event) => setAccountEditValue(event.target.value)}
               placeholder={
                 accountEditField === "username"
-                  ? "New username"
+                  ? t("common.account.edit.newUsername")
                   : accountEditField === "email"
-                    ? "New email"
+                    ? t("common.account.edit.newEmail")
                     : "+48123456789"
               }
               autoFocus
@@ -113,7 +111,7 @@ export function AccountEditDialog({
               disabled={accountEditBusy}
               value={accountEditPassword}
               onChange={(event) => setAccountEditPassword(event.target.value)}
-              placeholder="Current password"
+              placeholder={t("common.account.currentPassword")}
               autoComplete="current-password"
             />
             {accountEditField === "email" && (
@@ -125,14 +123,14 @@ export function AccountEditDialog({
                 onChange={(event) =>
                   setAccountEditMfaCode(event.target.value.toUpperCase().replace(/\s/g, "").slice(0, 19))
                 }
-                placeholder="Authenticator or recovery code, if enabled"
-                aria-label="Authenticator or recovery code"
+                placeholder={t("common.account.edit.mfaIfEnabled")}
+                aria-label={t("common.account.mfaCodeLabel")}
                 autoComplete="one-time-code"
               />
             )}
             {accountEditBusy && ownerLoginChallengeToken && (
               <>
-                <p>Verify this account update with your authenticator or a one-time recovery code.</p>
+                <p>{t("common.account.edit.verifyBody")}</p>
                 <input
                   className="ds-input"
                   type="text"
@@ -143,7 +141,7 @@ export function AccountEditDialog({
                   onKeyDown={(event) => {
                     if (event.key === "Enter") void submitOwnerMfaLogin();
                   }}
-                  placeholder="Authenticator or recovery code"
+                  placeholder={t("common.account.mfaCodeLabel")}
                   autoComplete="one-time-code"
                   autoFocus
                 />
@@ -153,7 +151,7 @@ export function AccountEditDialog({
                   disabled={ownerLoginMfaBusy || !ownerLoginMfaCode.trim()}
                   onClick={() => void submitOwnerMfaLogin()}
                 >
-                  {ownerLoginMfaBusy ? "Verifying…" : "Verify account update"}
+                  {ownerLoginMfaBusy ? t("common.status.verifying") : t("common.account.edit.verifyButton")}
                 </button>
               </>
             )}
@@ -162,7 +160,7 @@ export function AccountEditDialog({
         )}
         <div className="modal-actions ds-modal-actions">
           <button type="button" className="ds-btn" disabled={changePasswordBusy} onClick={() => closeAccountEditor()}>
-            Cancel
+            {t("common.actions.cancel")}
           </button>
           <button
             type="button"
@@ -174,7 +172,7 @@ export function AccountEditDialog({
             }
             onClick={() => (accountEditField === "password" ? void changePassword() : void submitAccountIdentityEdit())}
           >
-            {accountEditBusy || changePasswordBusy ? "Saving…" : "Save"}
+            {accountEditBusy || changePasswordBusy ? t("common.status.saving") : t("common.actions.save")}
           </button>
         </div>
       </div>

@@ -7,6 +7,9 @@ import { Screen } from "@/src/components/Screen";
 import { apiJson } from "@/src/lib/api";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
+import { i18next } from "@/src/i18n";
+import { countryText, deviceName } from "@/src/lib/session-device";
 
 function parseQr(value: string): { challengeId: string; secret: string } | null {
   try {
@@ -18,9 +21,23 @@ function parseQr(value: string): { challengeId: string; secret: string } | null 
   } catch { return null; }
 }
 
-type QrPreview = { deviceLabel: string; locationLabel: string; expiresAt: string; mfaRequired?: boolean };
+type QrPreview = { deviceLabel: string; device?: unknown; locationLabel: string; locationCountry?: unknown; expiresAt: string; mfaRequired?: boolean };
+
+/** The requesting device in the UI language; the Worker's English label from older servers. */
+function previewDeviceText(preview: QrPreview): string {
+  if (preview.device === null && preview.deviceLabel === "Unknown device") return i18next.t("settings.sessions.unknownDevice");
+  return deviceName(preview.deviceLabel, preview.device);
+}
+
+/** The approximate location in the UI language; the Worker's English label from older servers. */
+function locationText(preview: QrPreview): string {
+  if (preview.locationCountry === null) return i18next.t("auth.mobile.scanLogin.unknownLocation");
+  const country = countryText(preview.locationCountry);
+  return country && country !== preview.locationCountry ? country : preview.locationLabel;
+}
 
 export default function ScanLoginScreen() {
+  const { t } = useTranslation(["auth", "common"]);
   const { token } = useSession();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
@@ -36,9 +53,9 @@ export default function ScanLoginScreen() {
     if (!parsed) {
       setScanned(true);
       Alert.alert(
-        "Not a DeCave login code",
-        "Scan the QR code shown on the DeCave web or desktop login screen.",
-        [{ text: "Scan again", onPress: () => setScanned(false) }],
+        t("auth.mobile.scanLogin.notADecaveLoginCode"),
+        t("auth.mobile.scanLogin.scanTheQrCodeShown"),
+        [{ text: t("auth.mobile.scanLogin.scanAgain"), onPress: () => setScanned(false) }],
       );
       return;
     }
@@ -54,7 +71,7 @@ export default function ScanLoginScreen() {
       setPreview(data);
       setMfaCode("");
     } catch (cause) {
-      Alert.alert("Could not check this login", cause instanceof Error ? cause.message : "Refresh the QR code and try again.", [{ text: "Try again", onPress: () => setScanned(false) }]);
+      Alert.alert(t("auth.mobile.scanLogin.couldNotCheckThisLogin"), cause instanceof Error ? cause.message : t("auth.mobile.scanLogin.refreshTheQrCodeAnd"), [{ text: t("auth.mobile.scanLogin.tryAgain"), onPress: () => setScanned(false) }]);
     } finally { setBusy(false); }
   };
 
@@ -64,7 +81,7 @@ export default function ScanLoginScreen() {
     if (!token || !challenge || !preview || busy) return;
     const code = mfaCode.trim();
     if (preview.mfaRequired && !code) {
-      Alert.alert("Code required", "Enter a code from your authenticator app or a recovery code to approve this login.");
+      Alert.alert(t("auth.mobile.scanLogin.codeRequired"), t("auth.mobile.scanLogin.enterACodeFromYour"));
       return;
     }
     setBusy(true);
@@ -75,14 +92,14 @@ export default function ScanLoginScreen() {
         body: JSON.stringify({ ...challenge, approved: true, ...(code ? { mfaCode: code } : {}) }),
       }, token);
       setChallenge(null); setPreview(null); setMfaCode("");
-      Alert.alert("Login approved", "The other device is now signed in to your DeCave account.", [{ text: "Done", onPress: () => router.back() }]);
+      Alert.alert(t("auth.mobile.scanLogin.loginApproved"), t("auth.mobile.scanLogin.theOtherDeviceIsNow"), [{ text: t("common.actions.done"), onPress: () => router.back() }]);
     } catch (cause) {
-      Alert.alert("Could not approve login", cause instanceof Error ? cause.message : "Refresh the QR code and try again.");
+      Alert.alert(t("auth.mobile.scanLogin.couldNotApproveLogin"), cause instanceof Error ? cause.message : t("auth.mobile.scanLogin.refreshTheQrCodeAnd"));
     } finally { setBusy(false); }
   };
 
-  return <Screen><View style={styles.top}><Pressable accessibilityRole="button" accessibilityLabel="Back" style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable><View><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>SECURE LOGIN</Text><Text style={styles.title}>Scan QR code</Text></View></View><View style={styles.body}>
-    {!permission ? <ActivityIndicator color={colors.cyan} /> : !permission.granted ? <View style={styles.permission}><Ionicons name="camera-outline" size={38} color={colors.cyan} /><Text style={styles.permissionTitle}>Camera access is required</Text><Text style={styles.help}>DeCave only uses the camera here to scan a one-time login code.</Text><Pressable accessibilityRole="button" style={styles.primary} onPress={() => void requestPermission()}><Text style={styles.primaryText}>Allow camera</Text></Pressable></View> : preview ? <View style={styles.preview}><Ionicons name="shield-checkmark-outline" size={36} color={colors.cyan} /><Text style={styles.permissionTitle}>Approve this sign-in?</Text><Text style={styles.help}>Only approve if you started this sign-in yourself on a device you control.</Text><Text style={styles.previewLabel}>Requesting device</Text><Text style={styles.previewValue}>{preview.deviceLabel}</Text><Text style={styles.previewLabel}>Approximate location</Text><Text style={styles.previewValue}>{preview.locationLabel}</Text>{preview.mfaRequired && <TextInput value={mfaCode} onChangeText={setMfaCode} placeholder="Authenticator or recovery code" placeholderTextColor={colors.faint} autoCapitalize="characters" autoCorrect={false} autoComplete="one-time-code" textContentType="oneTimeCode" accessibilityLabel="Authenticator or recovery code" style={styles.input} />}<Pressable accessibilityRole="button" style={[styles.primary, busy && styles.disabled]} disabled={busy} onPress={() => void approve()}><Text style={styles.primaryText}>{busy ? "Approving…" : "Approve sign-in"}</Text></Pressable><Pressable accessibilityRole="button" style={styles.secondary} disabled={busy} onPress={cancelPreview}><Text style={styles.secondaryText}>Cancel</Text></Pressable></View> : <><View style={styles.cameraWrap}><CameraView style={styles.camera} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={scanned ? undefined : handleScan} /><View style={styles.frame} /></View><Text style={styles.help}>Point the camera at the QR code on the web or desktop login screen. Codes expire after two minutes.</Text>{busy && <ActivityIndicator color={colors.cyan} />}</>}
+  return <Screen><View style={styles.top}><Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.back")} style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={22} color={colors.cyan} /></Pressable><View><Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("auth.mobile.scanLogin.secureLogin")}</Text><Text style={styles.title}>{t("auth.mobile.scanLogin.scanQrCode")}</Text></View></View><View style={styles.body}>
+    {!permission ? <ActivityIndicator color={colors.cyan} /> : !permission.granted ? <View style={styles.permission}><Ionicons name="camera-outline" size={38} color={colors.cyan} /><Text style={styles.permissionTitle}>{t("auth.mobile.scanLogin.cameraAccessIsRequired")}</Text><Text style={styles.help}>{t("auth.mobile.scanLogin.decaveOnlyUsesTheCamera")}</Text><Pressable accessibilityRole="button" style={styles.primary} onPress={() => void requestPermission()}><Text style={styles.primaryText}>{t("auth.mobile.scanLogin.allowCamera")}</Text></Pressable></View> : preview ? <View style={styles.preview}><Ionicons name="shield-checkmark-outline" size={36} color={colors.cyan} /><Text style={styles.permissionTitle}>{t("auth.mobile.scanLogin.approveThisSignIn")}</Text><Text style={styles.help}>{t("auth.mobile.scanLogin.onlyApproveIfYouStarted")}</Text><Text style={styles.previewLabel}>{t("auth.mobile.scanLogin.requestingDevice")}</Text><Text style={styles.previewValue}>{previewDeviceText(preview)}</Text><Text style={styles.previewLabel}>{t("auth.mobile.scanLogin.approximateLocation")}</Text><Text style={styles.previewValue}>{locationText(preview)}</Text>{preview.mfaRequired && <TextInput value={mfaCode} onChangeText={setMfaCode} placeholder={t("common.account.mfaCodeLabel")} placeholderTextColor={colors.faint} autoCapitalize="characters" autoCorrect={false} autoComplete="one-time-code" textContentType="oneTimeCode" accessibilityLabel={t("common.account.mfaCodeLabel")} style={styles.input} />}<Pressable accessibilityRole="button" style={[styles.primary, busy && styles.disabled]} disabled={busy} onPress={() => void approve()}><Text style={styles.primaryText}>{busy ? t("auth.mobile.scanLogin.approving") : t("auth.mobile.scanLogin.approveSignIn")}</Text></Pressable><Pressable accessibilityRole="button" style={styles.secondary} disabled={busy} onPress={cancelPreview}><Text style={styles.secondaryText}>{t("common.actions.cancel")}</Text></Pressable></View> : <><View style={styles.cameraWrap}><CameraView style={styles.camera} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={scanned ? undefined : handleScan} /><View style={styles.frame} /></View><Text style={styles.help}>{t("auth.mobile.scanLogin.pointTheCameraAtThe")}</Text>{busy && <ActivityIndicator color={colors.cyan} />}</>}
   </View></Screen>;
 }
 

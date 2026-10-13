@@ -3,13 +3,20 @@
 
 import type { Env } from "./env";
 import { createRawToken, nowIso, tokenHash, type UserRow, rawSessionTokenFromRequest, userFromRequest } from "../db";
-import { json, authBaseUrlForEnvironment } from "./http";
+import { apiError, apiErrorLegacy, errorFields, json, authBaseUrlForEnvironment } from "./http";
 import { accountPreferencesRow } from "./account-preferences";
 import { sendSignInAlertEmail } from "./email";
+import { userLocale } from "./i18n";
 import { realtimeBroadcast } from "./realtime";
 import { getSafetyProfile } from "../trust-safety";
 import { touchPresenceActivity } from "./activity";
 import { ensurePushSchema } from "../push";
+import {
+  englishSessionDeviceLabel,
+  parseSessionDeviceLabel,
+  sessionDeviceFromUserAgent,
+  type SessionDevice,
+} from "../../shared/session-device";
 
 export function sessionCookie(request: Request, token: string, maxAgeSeconds: number | null = 30 * 86400): string {
   const url = new URL(request.url);
@@ -182,7 +189,7 @@ export async function securityEvent(
  */
 export async function currentPasswordThrottle(env: Env, userId: string): Promise<Response | null> {
   const limited = await env.RECOVERY_RATE_LIMITER.limit({ key: `current-password:${userId}` });
-  return limited.success ? null : json({ error: "Too many password attempts. Please try again later." }, 429);
+  return limited.success ? null : apiError("session.passwordAttempts", 429);
 }
 
 export function activeSuspension(user: UserRow): boolean {
@@ -193,37 +200,21 @@ export function activeSuspension(user: UserRow): boolean {
 
 export function accountAccessError(user: UserRow): Response | null {
   if ((user as UserRow & { erasure_started_at?: string | null }).erasure_started_at) {
-    return json({ error: "This account is being erased." }, 403);
+    return apiError("session.accountErasing", 403);
   }
   if (user.erased_at) {
-    return json({ error: "This account is no longer available." }, 403);
+    return apiError("session.accountUnavailable", 403);
   }
   if (user.deleted_at) {
-    return json(
-      {
-        error: "This account is scheduled for deletion. Contact DeCave support if it should be restored.",
-      },
-      403,
-    );
+    return apiError("session.accountScheduledForDeletion", 403);
   }
   if (activeSuspension(user)) {
-    return json(
-      {
-        error: user.suspended_until
-          ? `This account is suspended until ${user.suspended_until}.`
-          : "This account is suspended.",
-      },
-      403,
-    );
+    return user.suspended_until
+      ? apiError("session.accountSuspendedUntil", 403, { until: user.suspended_until })
+      : apiError("session.accountSuspended", 403);
   }
   if (user.must_reset_password === 1) {
-    return json(
-      {
-        error: "A password reset is required before this account can be used.",
-        passwordResetRequired: true,
-      },
-      403,
-    );
+    return json({ ...errorFields("session.passwordResetRequired"), passwordResetRequired: true }, 403);
   }
   return null;
 }
@@ -302,47 +293,17 @@ export async function replaceSessionClientClass(env: Env, userId: string, client
   );
 }
 
-/** "Chrome on Windows · Greece": readable name for the Active sessions list. */
+/** "Chrome on Windows · Greece": readable English name for the Active sessions list. */
 export function describeSessionDevice(userAgent: string, client: SessionClient, country = ""): string {
-  const ua = userAgent || "";
-  const os = /Windows/i.test(ua)
-    ? "Windows"
-    : /iPhone|iPad|iPod/i.test(ua)
-      ? "iOS"
-      : /Mac OS X|Macintosh/i.test(ua)
-        ? "macOS"
-        : /Android/i.test(ua)
-          ? "Android"
-          : /CrOS/i.test(ua)
-            ? "ChromeOS"
-            : /Linux/i.test(ua)
-              ? "Linux"
-              : "";
-  const app =
-    client === "desktop" || /Electron|DeCave/i.test(ua)
-      ? "DeCave Desktop"
-      : client === "mobile"
-        ? "DeCave Mobile"
-        : /Edg\//.test(ua)
-          ? "Edge"
-          : /OPR\/|Opera/.test(ua)
-            ? "Opera"
-            : /Firefox\//.test(ua)
-              ? "Firefox"
-              : /Chrome\//.test(ua)
-                ? "Chrome"
-                : /Safari\//.test(ua)
-                  ? "Safari"
-                  : "Web browser";
-  let place = "";
-  if (/^[A-Z]{2}$/.test(country) && country !== "XX" && country !== "T1") {
-    try {
-      place = new Intl.DisplayNames(["en"], { type: "region" }).of(country) ?? country;
-    } catch {
-      place = country;
-    }
-  }
-  return [os ? `${app} on ${os}` : app, place].filter(Boolean).join(" · ").slice(0, 80);
+  return englishSessionDeviceLabel(sessionDeviceFromUserAgent(userAgent, client, country));
+}
+
+/**
+ * The parts of a stored device label, sent next to it so clients can show the
+ * name in their own language. Null when the label is not one the Worker wrote.
+ */
+export function sessionDeviceParts(label: string): SessionDevice | null {
+  return parseSessionDeviceLabel(label);
 }
 
 /** The two-letter country Cloudflare places the request in, or "" when unknown. No IP is read. */
@@ -461,7 +422,16 @@ export async function noteSignInDevice(
     )
       .bind(tokenHash(raw), user.id, label, now, new Date(Date.now() + 7 * 86400000).toISOString())
       .run();
-    await sendSignInAlertEmail(env, user.email, user.username, label, now, raw, authBaseUrlForEnvironment(env));
+    await sendSignInAlertEmail(
+      env,
+      user.email,
+      user.username,
+      label,
+      now,
+      raw,
+      authBaseUrlForEnvironment(env),
+      await userLocale(env.DB, user.id),
+    );
     await securityEvent(env, user.id, "login.new_device_alert_sent", request, label);
   } catch (error) {
     console.error("Could not record sign-in device", error instanceof Error ? error.name : "UnknownError");
@@ -488,7 +458,7 @@ export async function revokeAccountSessions(env: Env, userId: string, reason: st
 
 export async function requireUser(request: Request, env: Env): Promise<UserRow | Response> {
   const user = await userFromRequest(env.DB, request);
-  if (!user) return json({ error: "Authentication required" }, 401);
+  if (!user) return apiError("session.authRequired", 401);
 
   const blocked = accountAccessError(user);
   if (blocked) return blocked;
@@ -499,17 +469,11 @@ export async function requireUser(request: Request, env: Env): Promise<UserRow |
   try {
     const safetyProfile = await getSafetyProfile(env.DB, user.id);
     if (safetyProfile?.age_status === "ineligible") {
-      return json(
-        {
-          error: "This account is not eligible for DeCave because DeCave is only for adults aged 18 or older.",
-          code: "AGE_RESTRICTED",
-        },
-        403,
-      );
+      return apiErrorLegacy("AGE_RESTRICTED", "session.ageIneligible", 403);
     }
   } catch (error) {
     console.error("Could not read account safety profile", error instanceof Error ? error.name : "UnknownError");
-    return json({ error: "Account safety policy is temporarily unavailable.", code: "SAFETY_POLICY_UNAVAILABLE" }, 503);
+    return apiErrorLegacy("SAFETY_POLICY_UNAVAILABLE", "session.safetyPolicyUnavailable", 503);
   }
 
   await touchPresenceActivity(env, user.id);

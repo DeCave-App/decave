@@ -1,0 +1,1594 @@
+{
+  "noHubs": {
+    "kicker": "ГОЛОВНА DECAVE",
+    "title": "До Hub можна приєднатися, коли захочеш",
+    "body": "Твій акаунт готовий. Головна, друзі й приватні повідомлення працюють і без Hub. Створи свій або знайди публічні Hub будь-коли.",
+    "create": "+ Створити Hub",
+    "discover": "Знайти публічні Hub",
+    "friends": "Друзі",
+    "emptyHubName": "Ще немає Hub"
+  },
+  "streamFocus": {
+    "close": "Закрити трансляцію",
+    "popOut": "В окреме вікно",
+    "fullscreen": "На весь екран"
+  },
+  "voiceMini": {
+    "return": "Повернутися в голосову кімнату",
+    "drag": "Перетягнути вікно голосу",
+    "activeRoom": "Активна голосова кімната:{{room}}"
+  },
+  "header": {
+    "switchHub": "Змінити Hub",
+    "labelOverview": "Hubs · {{hub}} · Огляд",
+    "labelHome": "Hubs · {{hub}} · Головна Hub",
+    "labelRoom": "Hubs · {{hub}} · {{room}}",
+    "hubPicker": "Hub",
+    "roomPicker": "Кімната",
+    "switchRoom": "Змінити кімнату в{{hub}}",
+    "voicePrefix": "Г"
+  },
+  "roomActions": {
+    "leaveSquad": "Вийти з тимчасової кімнати Squad",
+    "leave": "↪ Вийти",
+    "searchMessages": "Пошук повідомлень",
+    "manageRoom": "Керувати кімнатою",
+    "showVoiceControls": "Показати керування голосом",
+    "openRoomChat": "Відкрити чат кімнати",
+    "voiceToggle": "◉ Голос",
+    "chatToggle": "💬 Чат",
+    "pinned": "Закріплені повідомлення",
+    "pinnedCountTitle": "Закріплені повідомлення ({{pinned}})",
+    "pinnedCountLabel": "Закріплені повідомлення, {{pinned}}",
+    "unmuteRoom": "Увімкнути сповіщення #{{room}}",
+    "muteRoom": "Вимкнути сповіщення #{{room}}"
+  },
+  "onboarding": {
+    "title": "Вітаємо в DeCave",
+    "lead": "Створи Hub, приєднайся до публічної спільноти або пропусти цей крок і зроби це пізніше.",
+    "skip": "Поки пропустити",
+    "search": "Пошук Hub",
+    "loading": "Завантаження публічних Hub…",
+    "noResults": "Немає публічних Hub за твоїм запитом.",
+    "cardPrivate": "Учасники приховані · {{category}}",
+    "card_one": "{{count}} учасник · {{online}} онлайн · {{category}}",
+    "card_few": "{{count}} учасники · {{online}} онлайн · {{category}}",
+    "card_many": "{{count}} учасників · {{online}} онлайн · {{category}}",
+    "card_other": "{{count}} учасника · {{online}} онлайн · {{category}}",
+    "defaultCategory": "Ігри",
+    "joined": "Ти учасник"
+  },
+  "contextMenu": {
+    "copyShareLink": "Копіювати посилання",
+    "hubKind": "HUB",
+    "textRoomKind": "текстова КІМНАТА",
+    "voiceRoomKind": "голосова КІМНАТА",
+    "forumRoomKind": "КІМНАТА-форум",
+    "unmuteHub": "Увімкнути сповіщення Hub",
+    "muteHub": "Вимкнути сповіщення Hub",
+    "unmuteRoom": "Увімкнути сповіщення кімнати",
+    "muteRoom": "Вимкнути сповіщення кімнати",
+    "editHub": "Редагувати Hub",
+    "editRoom": "Редагувати кімнату"
+  },
+  "home": {
+    "roleLabel": "Твоя роль: {{role}}",
+    "newInForum": "Нове в «{{title}}»"
+  },
+  "sidebar": {
+    "membershipPrivate": "Учасники приховані",
+    "official": "Офіційний",
+    "private": "Приватний",
+    "leave": "Вийти з Hub",
+    "membersTitle": "Учасники Hub",
+    "searchMembers": "Пошук учасників Hub",
+    "filterRole": "Фільтр учасників Hub за роллю",
+    "allRoles": "Усі ролі",
+    "owners": "Власники",
+    "admins": "Адміністратори",
+    "moderators": "Модератори",
+    "membersFilter": "Учасники",
+    "noMembers": "Немає учасників за цими фільтрами.",
+    "navigation": "Навігація Hub",
+    "show": "Показати бічну панель Hub",
+    "hide": "Сховати бічну панель Hub",
+    "online_one": "{{value}} онлайн",
+    "online_few": "{{value}} онлайн",
+    "online_many": "{{value}} онлайн",
+    "online_other": "{{value}} онлайн",
+    "members_one": "{{value}} учасник",
+    "members_few": "{{value}} учасники",
+    "members_many": "{{value}} учасників",
+    "members_other": "{{value}} учасника",
+    "roleTitle": "Роль {{role}}",
+    "memberMeta": "{{role}} · {{presence}}",
+    "membersCount": "Учасники ({{members}})",
+    "membersTooltip": "Учасники · {{members}}",
+    "calendar": "Календар",
+    "calendarUpcoming_one": "Календар, {{count}} майбутня подія",
+    "calendarUpcoming_few": "Календар, {{count}} майбутні події",
+    "calendarUpcoming_many": "Календар, {{count}} майбутніх подій",
+    "calendarUpcoming_other": "Календар, {{count}} майбутньої події",
+    "calendarCount": "Календар ({{upcoming}})",
+    "manage": "Керувати Hub",
+    "voiceRoom": "Голосова кімната",
+    "boxes": {
+      "forums": "Форуми",
+      "voice": "Голос",
+      "rooms": "Кімнати"
+    },
+    "aria": {
+      "private": "приватна",
+      "mentions_one": "{{count}} згадка",
+      "mentions_few": "{{count}} згадки",
+      "mentions_many": "{{count}} згадок",
+      "mentions_other": "{{count}} згадки",
+      "unread_one": "{{count}} непрочитане",
+      "unread_few": "{{count}} непрочитані",
+      "unread_many": "{{count}} непрочитаних",
+      "unread_other": "{{count}} непрочитаного",
+      "forum": "форум",
+      "newestThread": "найновіша гілка {{title}}",
+      "new": "нове",
+      "voiceRoom": "голосова кімната",
+      "connectedCount_one": "{{count}} підключений",
+      "connectedCount_few": "{{count}} підключені",
+      "connectedCount_many": "{{count}} підключених",
+      "connectedCount_other": "{{count}} підключеного",
+      "someoneSharing": "хтось демонструє екран",
+      "youAreConnected": "ти підключений",
+      "empty": "порожньо"
+    },
+    "ownerOnlyPosting": "Публікувати може лише власник Hub",
+    "privateRoom": "Приватна кімната",
+    "forum": {
+      "new": "Нове",
+      "replies_one": "{{count}} відповідь",
+      "replies_few": "{{count}} відповіді",
+      "replies_many": "{{count}} відповідей",
+      "replies_other": "{{count}} відповіді",
+      "noThreads": "Ще немає гілок",
+      "openToSee": "Відкрий, щоб побачити гілки"
+    },
+    "voice": {
+      "doubleClickToJoin": "{{name}} · двічі клацни, щоб приєднатися",
+      "youreHere": "Ти тут · ",
+      "inVoice_one": "{{people}} у голосі",
+      "inVoice_few": "{{people}} у голосі",
+      "inVoice_many": "{{people}} у голосі",
+      "inVoice_other": "{{people}} у голосі",
+      "sharing": " · демонструє екран",
+      "peopleIn": "У {{name}}",
+      "deafened": " (звук вимкнено)",
+      "muted": " (мікрофон вимкнено)",
+      "sharingScreen": " · демонструє екран",
+      "live": "НАЖИВО"
+    },
+    "dismiss": "Закрити",
+    "hubHome": "Головна Hub",
+    "homeBadge_one": "{{count}} кімната з новими повідомленнями",
+    "homeBadge_few": "{{count}} кімнати з новими повідомленнями",
+    "homeBadge_many": "{{count}} кімнат з новими повідомленнями",
+    "homeBadge_other": "{{count}} кімнати з новими повідомленнями",
+    "empty": {
+      "manager": "У цьому Hub ще немає кімнат.",
+      "member": "Поки немає кімнат, які ти бачиш."
+    },
+    "createRoom": "Створити кімнату",
+    "createForum": "Створити форум",
+    "createVoiceRoom": "Створити голосову кімнату",
+    "createRoomIn": "Створити кімнату в {{box}}"
+  },
+  "voiceControls": {
+    "latencyTitle": "Виміряна затримка голосу (туди й назад)",
+    "toggleSoundboard": "Звукова панель",
+    "cameraBackground": "Фон камери",
+    "effectOff": "Вимк.",
+    "effectBlur": "Розмиття",
+    "effectReplace": "Замінити фон",
+    "startCamera": "Увімкнути камеру",
+    "qualityAuto": "Авто",
+    "startSharing": "Почати демонстрацію",
+    "settings": "Налаштування голосу і звуку",
+    "disconnectLabel": "Відключитися від голосу",
+    "disconnect": "Відключитися",
+    "label": "Керування голосом для {{hub}} · {{room}}",
+    "connected": "Голос підключено",
+    "room": "Голосова кімната",
+    "connectingEllipsis": "Підключення…",
+    "live": "Наживо",
+    "serverMutedDeafened": "Мікрофон і звук вимкнено модератором",
+    "serverMuted": "Мікрофон вимкнено модератором",
+    "serverDeafened": "Звук вимкнено модератором",
+    "inputZero": "Гучність мікрофона — 0%",
+    "holdToTalk": "Утримуй {{key}}, щоб говорити",
+    "connectedCount_one": "{{count}} підключений",
+    "connectedCount_few": "{{count}} підключені",
+    "connectedCount_many": "{{count}} підключених",
+    "connectedCount_other": "{{count}} підключеного",
+    "unmute": "Увімкнути мікрофон",
+    "mute": "Вимкнути мікрофон",
+    "serverMutedTitle": "Модератор Hub вимкнув тобі мікрофон.",
+    "serverDeafenedTitle": "Модератор Hub вимкнув тобі звук.",
+    "noiseLabel": "Поглинання шуму: {{mode}}. Натисни, щоб змінити режим.",
+    "noiseTooltip": "Поглинання шуму: {{mode}} · Натисни, щоб змінити",
+    "soundboard": "Звукова панель",
+    "cameraOff": "Вимкнути камеру",
+    "cameraOn": "Увімкнути камеру",
+    "cameraOffShort": "Вимк. камеру",
+    "camera": "Камера",
+    "stopScreenShare": "Закінчити демонстрацію екрана",
+    "shareScreen": "Почати демонстрацію екрана",
+    "stopSharing": "Закінчити демонстрацію",
+    "stopShareShort": "Закінчити",
+    "shareScreenShort": "Почати демонстрацію",
+    "resolution": "Роздільність і частота кадрів",
+    "systemAudio": "Системний звук",
+    "systemAudioHint": "Транслювати звук комп'ютера глядачам",
+    "settingsShort": "Налаштування голосу",
+    "leave": "Вийти з голосу",
+    "connecting": "Підключення…",
+    "switch": "Перейти сюди",
+    "join": "Приєднатися",
+    "quality": "{{resolution}} · {{fps}} FPS"
+  },
+  "voiceStage": {
+    "uploadSound": "Завантажити звук",
+    "deleteSound": "Видалити звук",
+    "soundboardEmpty": "Завантаж короткі звуки MP3, WAV, OGG, M4A або WebM для цього Hub.",
+    "layoutLabel": "Макет демонстрації екрана",
+    "layoutFocus": "Фокус",
+    "layoutGrid": "Сітка",
+    "fullscreen": "На весь екран",
+    "previewDisabled": "Попередній перегляд вимкнено",
+    "startWatching": "Дивитися",
+    "stopWatching": "Припинити перегляд",
+    "participantsHint": "Учасники з'являтимуться тут, щойно підключаться.",
+    "inVoice_one": "{{count}} у голосі",
+    "inVoice_few": "{{count}} у голосі",
+    "inVoice_many": "{{count}} у голосі",
+    "inVoice_other": "{{count}} у голосі",
+    "empty": "Порожньо",
+    "soundboardTitle_one": "Звукова панель · {{count}} спільний звук",
+    "soundboardTitle_few": "Звукова панель · {{count}} спільні звуки",
+    "soundboardTitle_many": "Звукова панель · {{count}} спільних звуків",
+    "soundboardTitle_other": "Звукова панель · {{count}} спільного звуку",
+    "soundboardScope": "Доступно кожному учаснику в кожній голосовій кімнаті {{hub}}.",
+    "playSound": "Відтворити {{name}}",
+    "joinToPlay": "Приєднайся до цієї голосової кімнати, щоб відтворювати звуки",
+    "deleteSoundNamed": "Видалити {{name}}",
+    "peopleSharing_one": "Екран демонструє {{count}} людина",
+    "peopleSharing_few": "Екран демонструють {{count}} людини",
+    "peopleSharing_many": "Екран демонструють {{count}} людей",
+    "peopleSharing_other": "Екран демонструють {{count}} людини",
+    "youScreenShare": "Ти · демонстрація екрана",
+    "youScreenShareTitle": "Ти · Демонстрація екрана",
+    "userScreenShare": "{{name}} · демонстрація екрана",
+    "userScreenShareTitle": "{{name}} · Демонстрація екрана",
+    "isSharing": "{{name}} демонструє свій екран",
+    "state": "{{state}}",
+    "stateSharing": "{{state}} · Демонструє екран",
+    "deafened": "Звук вимкнено",
+    "muted": "Мікрофон вимкнено",
+    "speaking": "Говорить",
+    "micActive": "Мікрофон активний",
+    "youCamera": "Ти · Камера",
+    "userCamera": "{{name}} · Камера",
+    "connectingTo": "Підключення до {{room}}…"
+  },
+  "import": {
+    "rollbackFailed": "Не вдалося відкотити перевірений імпорт."
+  },
+  "actions": {
+    "calendar": {
+      "memberFallback": "Учасник Hub"
+    },
+    "create": {
+      "nameMissing": "Введи назву Hub."
+    },
+    "import": {
+      "templateUrlInvalid": "Введи підтримувану URL-адресу шаблону сервера Discord.",
+      "previewOffline": "Не вдалося підключитися до DeCave для перегляду цього шаблону."
+    },
+    "share": {
+      "opening": "Відкриваємо Hub за посиланням…",
+      "opened": "Відкрито {{name}}.",
+      "offline": "Не вдалося підключитися до цього Hub за посиланням.",
+      "inviteCopied": "Одноразове запрошення для {{name}} скопійовано."
+    },
+    "leave": {
+      "confirm": "Вийти з Hub «{{name}}»?"
+    },
+    "room": {
+      "nameMissing": "Введи назву кімнати.",
+      "unidentified": "Не вдалося визначити кімнату. Знову відкрий налаштування кімнати й спробуй ще раз.",
+      "confirmDelete": "Видалити кімнату «{{name}}»?\n\nЗбережені повідомлення в цій кімнаті теж буде видалено."
+    },
+    "members": {
+      "loadFailed": "Не вдалося завантажити учасників Hub.",
+      "confirmRemove": "Вигнати {{username}} з «{{hub}}»?"
+    },
+    "media": {
+      "iconTooLarge": "Іконка завелика.",
+      "bannerTooLarge": "Банер завеликий.",
+      "headerTooLarge": "Зображення заголовка завелике.",
+      "chatBackgroundTooLarge": "Фон чату завеликий.",
+      "notImage": "Вибери файл зображення.",
+      "confirmRemoveBanner": "Прибрати банер бічної панелі? Зображення буде видалено з цього Hub.",
+      "confirmRemoveHeader": "Прибрати зображення заголовка? Зображення буде видалено з цього Hub.",
+      "confirmRemoveChatBackground": "Прибрати фон чату? Зображення буде видалено з цього Hub.",
+      "loadFeaturesFailed": "Не вдалося завантажити застосунки й медіа Hub."
+    },
+    "assets": {
+      "emoteNamePrompt": "Назва емоута",
+      "stickerNamePrompt": "Назва стікера",
+      "confirmDeleteEmote": "Видалити емоут «{{name}}»?",
+      "confirmDeleteSticker": "Видалити стікер «{{name}}»?"
+    },
+    "invite": {
+      "useFailed": "Не вдалося використати запрошення."
+    },
+    "moderation": {
+      "confirmKick": "ВИГНАТИ {{username}}?",
+      "confirmBan": "ЗАБАНИТИ {{username}}?",
+      "confirmTimeout": "ТИМЧАСОВО ЗАБЛОКУВАТИ {{username}}?"
+    },
+    "settings": {
+      "nameMissing": "Введи назву Hub."
+    },
+    "delete": {
+      "ownerOnly": "Видалити цей Hub може лише його власник.",
+      "confirm": "Видалити Hub «{{name}}»?\n\nУсі його кімнати й збережені повідомлення теж буде видалено."
+    },
+    "preview": {
+      "unreadable": "Не вдалося прочитати попередній перегляд цього Hub."
+    },
+    "browser": {
+      "invalidResponse": "Недійсна відповідь каталогу Hub.",
+      "offline": "Не вдалося підключитися до каталогу Hub."
+    },
+    "squad": {
+      "confirmLeave": "Вийти з {{name}}? Тимчасову кімнату буде видалено, коли вийде останній учасник.",
+      "readyTitle": "Squad готовий",
+      "readyBody_one": "{{count}}/4 гравців готові грати в {{game}}.",
+      "readyBody_few": "{{count}}/4 гравців готові грати в {{game}}.",
+      "readyBody_many": "{{count}}/4 гравців готові грати в {{game}}.",
+      "readyBody_other": "{{count}}/4 гравців готові грати в {{game}}.",
+      "offline": "Не вдалося підключитися до «Пошуку Squad».",
+      "gameNameMissing": "Спершу введи назву гри, якої бракує.",
+      "gameSubmitted": "Надіслано на розгляд. Гра з'явиться після схвалення власником.",
+      "gameSubmitFailed": "Не вдалося надіслати пропозицію гри.",
+      "matchesFound": "Знайдено відповідні Squads.",
+      "searching": "Шукаємо відповідних гравців…",
+      "startFailed": "Не вдалося запустити «Пошук Squad».",
+      "stopped": "Пошук зупинено."
+    },
+    "realtime": {
+      "voiceRoomDeleted": "Цю голосову кімнату видалено. Вибери іншу кімнату, щоб продовжити.",
+      "accessRevoked": "Твій доступ до цього Hub відкликано."
+    }
+  },
+  "createHub": {
+    "iconWrongType": "Вибери зображення PNG, JPG, WebP або GIF.",
+    "iconTooLarge": "Іконка має бути не більше 3 МБ.",
+    "kicker": "Новий Hub",
+    "title": "Створити Hub",
+    "intro": "Дай назву, вибери, хто може приєднатися, і стартовий макет. Ти будеш власником, і все можна змінити пізніше.",
+    "close": "Закрити",
+    "basics": "Основне",
+    "uploadIcon": "Завантажити іконку Hub",
+    "iconPreview": "Перегляд іконки Hub",
+    "nameLabel": "Назва Hub",
+    "namePlaceholder": "напр. П'ятничний Squad",
+    "iconFile": "Іконка: {{name}}",
+    "removeIcon": "Прибрати",
+    "iconHint": "Необов'язкова іконка: квадратне зображення PNG, JPG, WebP або GIF до 3 МБ.",
+    "whoCanJoin": "Хто може приєднатися",
+    "visibility": {
+      "private": {
+        "title": "Приватний",
+        "description": "Приєднатися можуть лише ті, кого ти запросиш або кому надаси доступ."
+      },
+      "public": {
+        "title": "Публічний",
+        "description": "Показується в каталозі, тож будь-хто може знайти й приєднатися."
+      }
+    },
+    "importDiscord": "Імпортувати структуру з шаблону Discord",
+    "startingTemplate": "Стартовий шаблон",
+    "templateAria_one": "Шаблон {{name}}: {{description}} {{count}} кімната.",
+    "templateAria_few": "Шаблон {{name}}: {{description}} {{count}} кімнати.",
+    "templateAria_many": "Шаблон {{name}}: {{description}} {{count}} кімнат.",
+    "templateAria_other": "Шаблон {{name}}: {{description}} {{count}} кімнати.",
+    "roomCount_one": "{{count}} кімната",
+    "roomCount_few": "{{count}} кімнати",
+    "roomCount_many": "{{count}} кімнат",
+    "roomCount_other": "{{count}} кімнати",
+    "whatYouGet": "Що ти отримаєш",
+    "previewStats": "Кімнати: {{text}} текстових, {{voice}} голосових, {{forum}} форумів",
+    "privateRoom": "Приватна кімната",
+    "enterName": "Введи назву, щоб продовжити.",
+    "cancel": "Скасувати",
+    "creating": "Створення…",
+    "create": "Створити Hub"
+  },
+  "manageHub": {
+    "nav": {
+      "overview": {
+        "label": "Огляд",
+        "description": "Статистика й швидкі дії для цього Hub."
+      },
+      "profile": {
+        "label": "Профіль і вигляд",
+        "description": "Назва, іконка, банер, тема та дані для каталогу."
+      },
+      "roles": {
+        "label": "Ролі й дозволи",
+        "description": "Створюй ролі й точно визначай, що може кожна з них."
+      },
+      "members": {
+        "label": "Учасники",
+        "description": "Шукай учасників, призначай ролі та модеруй."
+      },
+      "invites": {
+        "label": "Запрошення",
+        "description": "Ділися одноразовими посиланнями-запрошеннями з новими людьми."
+      },
+      "rooms": {
+        "label": "Кімнати",
+        "description": "Упорядковуй кімнати й відкривай їхні налаштування."
+      },
+      "events": {
+        "label": "Події",
+        "description": "Календар Hub і те, хто може планувати події."
+      },
+      "moderation": {
+        "label": "Модерація й безпека",
+        "description": "Повільний режим, власні емоути й стікери, журнал аудиту."
+      },
+      "bots": {
+        "label": "Боти",
+        "description": "Створюй ботів, які вітають, відповідають на команди й видають ролі."
+      },
+      "danger": {
+        "label": "Небезпечна зона",
+        "description": "Незворотні дії для цього Hub."
+      }
+    },
+    "groups": {
+      "hub": "Hub",
+      "people": "Люди",
+      "content": "Контент",
+      "advanced": "Додатково"
+    },
+    "unsavedChanges": "Незбережені зміни",
+    "saving": "Збереження…",
+    "unsavedNotice": "У тебе є незбережені зміни",
+    "reset": "Скинути",
+    "saveChanges": "Зберегти зміни",
+    "sectionsLabel": "Розділи керування Hub",
+    "title": "Керувати Hub",
+    "section": "Розділ",
+    "close": "Закрити керування Hub",
+    "publicHub": "Публічний Hub",
+    "privateHub": "Приватний Hub",
+    "stats": {
+      "members": "Учасники",
+      "online": "В мережі",
+      "rooms": "Кімнати",
+      "customRoles": "Власні ролі"
+    },
+    "quickActions": "Швидкі дії",
+    "createRoom": "Створити кімнату",
+    "invitePeople": "Запросити людей",
+    "editRoles": "Редагувати ролі",
+    "manageMembers": "Керувати учасниками",
+    "openCalendar": "Відкрити календар",
+    "editProfile": "Редагувати профіль",
+    "importDiscord": {
+      "title": "Імпорт з Discord",
+      "description": "Переглянь шаблон Discord, перш ніж додавати його кімнати й ролі."
+    },
+    "uploading": "Завантаження…",
+    "profile": {
+      "legend": "Профіль і вигляд",
+      "identity": "Основна інформація",
+      "name": "Назва Hub",
+      "nameRequired": "Потрібна назва Hub.",
+      "icon": "Іконка Hub",
+      "iconHint": "PNG, JPEG або WebP. Застосовується одразу після завантаження.",
+      "uploadIcon": "Завантажити іконку",
+      "fallbackIcon": "Запасний емодзі або літери",
+      "fallbackIconHint": "Показується, коли немає завантаженої іконки.",
+      "description": "Опис",
+      "descriptionPlaceholder": "Про що цей Hub?",
+      "category": "Категорія",
+      "categoryPlaceholder": "Гонки, MMO, Спільнота",
+      "tags": "Теги",
+      "tagsPlaceholder": "гонки, EU, казуал"
+    },
+    "visibility": {
+      "title": "Видимість",
+      "ownerOnly": "Змінювати видимість може лише власник Hub.",
+      "label": "Видимість Hub",
+      "public": "Публічний",
+      "publicHint": "Будь-хто може знайти цей Hub у каталозі й приєднатися.",
+      "private": "Приватний",
+      "privateHint": "Приєднатися можуть лише запрошені."
+    },
+    "appearance": {
+      "title": "Вигляд",
+      "theme": "Тема",
+      "themeHint": "Набір кольорів для всього Hub.",
+      "themes": {
+        "midnight": "Опівніч",
+        "ocean": "Океан",
+        "forest": "Ліс",
+        "ember": "Жар"
+      },
+      "accent": "Акцентний колір",
+      "accentHint": "Для виділень і кільця іконки.",
+      "ring": "Кільце навколо іконки",
+      "ringHint": "Обвести іконку Hub акцентним кольором."
+    },
+    "media": {
+      "change": "Змінити",
+      "remove": "Прибрати",
+      "show": "Показувати",
+      "banner": {
+        "current": "Поточний банер бічної панелі",
+        "none": "Немає банера",
+        "title": "Банер бічної панелі",
+        "hint": "Заповнює бічну панель Hub за списком кімнат. {{spec}}.",
+        "add": "Додати банер",
+        "on": "Затемнено для читабельності.",
+        "off": "Додай банер, щоб увімкнути це."
+      },
+      "header": {
+        "current": "Поточне зображення заголовка",
+        "none": "Немає заголовка",
+        "title": "Зображення заголовка",
+        "hint": "Широке зображення вгорі головної Hub та огляду стримера, показується повністю. Якщо його немає, використовується банер бічної панелі. {{spec}}.",
+        "add": "Додати заголовок"
+      },
+      "chat": {
+        "current": "Поточний фон чату",
+        "none": "Немає фото",
+        "title": "Фон чату",
+        "hint": "За списком повідомлень, автоматично затемнюється. {{spec}}.",
+        "add": "Додати фото",
+        "on": "Показується в кожній кімнаті цього Hub.",
+        "off": "Додай фото, щоб увімкнути це."
+      }
+    },
+    "invites": {
+      "title": "Одноразове посилання-запрошення",
+      "description": "Кожне посилання працює один раз і діє 24 години. Використовуй його для людей, які ще не твої друзі.",
+      "label": "Посилання-запрошення",
+      "generating": "Створення безпечного запрошення…",
+      "placeholder": "Створи посилання, щоб поділитися",
+      "copy": "Копіювати",
+      "generate": "Створити",
+      "another": "Створити ще одне посилання"
+    },
+    "rooms": {
+      "empty": "У цьому Hub ще немає кімнат.",
+      "groups": {
+        "text": "Текстові кімнати",
+        "forum": "Кімнати-форуми",
+        "voice": "Голосові кімнати"
+      },
+      "private": "Приватна",
+      "public": "Публічна",
+      "moveUp": "Перемістити {{name}} вище",
+      "moveDown": "Перемістити {{name}} нижче",
+      "settings": "Налаштування"
+    },
+    "events": {
+      "calendar": "Календар Hub",
+      "calendarHint": "Переглядай майбутні події, відповіді учасників і плануй нові.",
+      "create": "Створити подію",
+      "whoTitle": "Хто може створювати події",
+      "whoDescription": "Події публікуються в текстовій кімнаті, тож кожен, хто може писати в текстовій кімнаті, може планувати там події. Щоб обмежити, хто створює події, зроби кімнати приватними на сторінці «Кімнати» й надай доступ конкретним учасникам.",
+      "noPermission": "Окремого дозволу «створювати події» поки немає."
+    },
+    "moderation": {
+      "legend": "Налаштування модерації",
+      "slowMode": "Повільний режим",
+      "slowModeHint": "Скільки секунд учасники мають чекати між повідомленнями (0–120). На модераторів і адміністраторів не поширюється.",
+      "assets": "Емоути й стікери",
+      "assetsHint": "Власні зображення, які учасники можуть використовувати в цьому Hub.",
+      "uploadEmote": "Завантажити емоут",
+      "uploadSticker": "Завантажити стікер",
+      "emote": "Емоут",
+      "sticker": "Стікер",
+      "deleteAsset": "Видалити {{name}}",
+      "delete": "Видалити",
+      "audit": "Журнал аудиту",
+      "auditHint": "Останні зміни налаштувань, ролей і учасників.",
+      "refresh": "Оновити",
+      "loadAudit": "Завантажити журнал аудиту"
+    },
+    "botsUnavailable": "Боти доступні власникам та адміністраторам Hub.",
+    "danger": {
+      "title": "Видалити цей Hub",
+      "description": "Назавжди видаляє Hub, кожну кімнату й усі збережені повідомлення. Це не можна скасувати.",
+      "delete": "Видалити Hub",
+      "confirmTitle": "Видалити {{name}}?",
+      "confirmDescription": "Це назавжди видалить Hub, усі його кімнати й кожне збережене повідомлення."
+    },
+    "members": {
+      "actions": "Дії",
+      "actionsFor": "Дії для {{name}}",
+      "timeout": "Тимчасово заблокувати на 10 хвилин",
+      "remove": "Вигнати з Hub",
+      "ban": "Забанити учасника",
+      "search": "Пошук учасників",
+      "filter": "Фільтр за роллю",
+      "filters": {
+        "all": "Усі ролі",
+        "owner": "Власник",
+        "admin": "Адміністратори",
+        "member": "Учасники"
+      },
+      "caption": "Учасники Hub",
+      "columns": {
+        "member": "Учасник",
+        "roles": "Ролі",
+        "access": "Рівень доступу",
+        "customRole": "Власна роль"
+      },
+      "loading": "Завантаження учасників…",
+      "noMatch": "Немає учасників за твоїми фільтрами.",
+      "you": " (ти)",
+      "joined": "Приєднання: {{date}}",
+      "roles": {
+        "owner": "Власник",
+        "admin": "Адміністратор",
+        "member": "Учасник"
+      },
+      "accessFor": "Рівень доступу для {{name}}",
+      "customRoleFor": "Власна роль для {{name}}",
+      "noCustomRole": "Без власної ролі",
+      "count_one": "{{shown}} з {{count}} учасника",
+      "count_few": "{{shown}} з {{count}} учасників",
+      "count_many": "{{shown}} з {{count}} учасників",
+      "count_other": "{{shown}} з {{count}} учасника",
+      "showMore_one": "Показати ще {{count}}",
+      "showMore_few": "Показати ще {{count}}",
+      "showMore_many": "Показати ще {{count}}",
+      "showMore_other": "Показати ще {{count}}",
+      "addFriends": "Додати друзів",
+      "addFriendsHint": "Друзів, яких ще немає в цьому Hub, можна додати напряму.",
+      "searchFriends": "Пошук друзів",
+      "loadingFriends": "Завантаження друзів…",
+      "noFriends": "Немає друзів, яких можна додати.",
+      "friendNotInHub": "Друг · не в цьому Hub",
+      "addToHub": "Додати в Hub"
+    },
+    "roles": {
+      "groups": {
+        "general": "Загальні",
+        "moderation": "Модерація",
+        "voice": "Голос"
+      },
+      "permissions": {
+        "manageRooms": {
+          "label": "Керувати кімнатами",
+          "description": "Створювати, редагувати, упорядковувати й видаляти кімнати, включно з доступом до приватних кімнат."
+        },
+        "manageEvents": {
+          "label": "Керувати подіями",
+          "description": "Створювати, редагувати й скасовувати події в календарі Hub."
+        },
+        "manageBots": {
+          "label": "Керувати ботами",
+          "description": "Створювати, публікувати й вимикати ботів Hub. Входить у «Керувати кімнатами»."
+        },
+        "createInvites": {
+          "label": "Створювати запрошення",
+          "description": "Створювати посилання-запрошення для людей поза Hub."
+        },
+        "viewAudit": {
+          "label": "Переглядати журнал аудиту",
+          "description": "Бачити, хто змінював налаштування Hub, ролі та дії модерації."
+        },
+        "moderateMessages": {
+          "label": "Модерувати повідомлення",
+          "description": "Видаляти або закріплювати чужі повідомлення й публікації на форумі."
+        },
+        "moderateMembers": {
+          "label": "Модерувати учасників",
+          "description": "Тимчасово блокувати, виганяти й банити учасників нижче рівня адміністратора."
+        },
+        "voiceModerate": {
+          "label": "Модерувати голос",
+          "description": "Вимикати мікрофон людям або відключати їх у голосових кімнатах."
+        }
+      },
+      "saveFailed": "Не вдалося зберегти роль.",
+      "deleteFailed": "Не вдалося видалити роль.",
+      "listLabel": "Ролі",
+      "owner": "Власник",
+      "ownerHint": "Усі дозволи",
+      "admin": "Адміністратор",
+      "adminHint": "Усе, крім статусу власника",
+      "createNew": "+ Створити роль",
+      "ownerOnly": "Створювати чи редагувати ролі може лише власник Hub.",
+      "empty": "У цьому Hub ще немає власних ролей.",
+      "editRole": "Редагувати {{name}}",
+      "newRole": "Нова роль",
+      "details": "Деталі ролі",
+      "memberCount_one": "Цю роль має {{count}} учасник. Признач її в розділі «Учасники».",
+      "memberCount_few": "Цю роль мають {{count}} учасники. Признач її в розділі «Учасники».",
+      "memberCount_many": "Цю роль мають {{count}} учасників. Признач її в розділі «Учасники».",
+      "memberCount_other": "Цю роль мають {{count}} учасника. Признач її в розділі «Учасники».",
+      "name": "Назва",
+      "namePlaceholder": "Модератор",
+      "color": "Колір",
+      "icon": "Іконка",
+      "suggestedIcons": "Пропоновані іконки ролі",
+      "useIcon": "Використати {{icon}} як іконку ролі",
+      "delete": "Видалити роль",
+      "unsaved": "Незбережені зміни ролі",
+      "create": "Створити роль",
+      "draft": "Чернетка нової ролі",
+      "save": "Зберегти роль",
+      "confirmTitle": "Видалити {{name}}?",
+      "confirmDescription": "Учасники одразу втратять цю роль і її дозволи. Правила публікації на форумі, що її використовують, більше ні до кого не застосовуватимуться."
+    }
+  },
+  "hubHome": {
+    "countdown": {
+      "now": "Відбувається зараз",
+      "minutes": "Через {{minutes}} хв",
+      "hours": "Через {{hours}} год {{minutes}} хв",
+      "tomorrow": "Завтра",
+      "days_one": "Через {{count}} день",
+      "days_few": "Через {{count}} дні",
+      "days_many": "Через {{count}} днів",
+      "days_other": "Через {{count}} дня"
+    },
+    "saveFailed": "Не вдалося зберегти головну Hub.",
+    "welcomeLabel": "Привітання",
+    "welcomePlaceholder": "Привітайся, поясни, для чого цей Hub і з чого почати новачкам.",
+    "rulesLabel": "Правила, по одному на рядок",
+    "rulesPlaceholder": "Поводься нормально. Без цькування.\nКліпи — в кімнату кліпів.\nДля рейтингових Squad потрібен мікрофон.",
+    "rulesCount_one": "Одне правило на рядок · до {{count}} правила",
+    "rulesCount_few": "Одне правило на рядок · до {{count}} правил",
+    "rulesCount_many": "Одне правило на рядок · до {{count}} правил",
+    "rulesCount_other": "Одне правило на рядок · до {{count}} правила",
+    "liveVoice": "● Голос наживо",
+    "andMore_one": " і ще {{count}}",
+    "andMore_few": " і ще {{count}}",
+    "andMore_many": " і ще {{count}}",
+    "andMore_other": " і ще {{count}}",
+    "sharingScreen": " · демонструє екран",
+    "open": "Відкрити",
+    "join": "Приєднатися",
+    "nextEvent": "Наступна подія · {{when}}",
+    "going_one": "Підуть: {{count}}",
+    "going_few": "Підуть: {{count}}",
+    "going_many": "Підуть: {{count}}",
+    "going_other": "Підуть: {{count}}",
+    "rsvp": {
+      "going": "Ти йдеш",
+      "maybe": "Твоя відповідь: «можливо»",
+      "none": "Ще немає відповіді"
+    },
+    "details": "Деталі",
+    "quiet": {
+      "title": "Зараз тут тихо",
+      "detail": "У голосі нікого немає, і нічого не заплановано."
+    },
+    "scheduleEvent": "Запланувати подію",
+    "catchUp": {
+      "mentions_one": "{{count}} згадка",
+      "mentions_few": "{{count}} згадки",
+      "mentions_many": "{{count}} згадок",
+      "mentions_other": "{{count}} згадки",
+      "unread_one": "{{count}} нове повідомлення",
+      "unread_few": "{{count}} нові повідомлення",
+      "unread_many": "{{count}} нових повідомлень",
+      "unread_other": "{{count}} нового повідомлення",
+      "activity": "Нова активність",
+      "empty": "Усе прочитано. Нові повідомлення цього Hub з'являтимуться тут.",
+      "titleWithCount": "Нове · {{n}}"
+    },
+    "about": {
+      "manageHint": "Додай опис у керуванні Hub, щоб нові учасники знали, для чого цей Hub.",
+      "empty": "У цього Hub ще немає опису."
+    },
+    "events": {
+      "empty": "Немає майбутніх подій.",
+      "scheduleOne": "Запланувати"
+    },
+    "members": {
+      "hidden": "Приховано: цей Hub не показує список учасників.",
+      "friendsHere_one": " · тут {{count}} друг",
+      "friendsHere_few": " · тут {{count}} друзі",
+      "friendsHere_many": " · тут {{count}} друзів",
+      "friendsHere_other": " · тут {{count}} друга"
+    },
+    "online": "{{online}} онлайн",
+    "memberCount_one": "{{members}} учасник",
+    "memberCount_few": "{{members}} учасники",
+    "memberCount_many": "{{members}} учасників",
+    "memberCount_other": "{{members}} учасника",
+    "links": {
+      "markAllRead": "Позначити все прочитаним",
+      "edit": "Редагувати",
+      "calendar": "Календар",
+      "seeAll": "Усі"
+    },
+    "sections": {
+      "welcome": {
+        "title": "Привітання",
+        "hint": "Коротке повідомлення від тебе для всіх, хто відкриває Hub."
+      },
+      "now": {
+        "title": "Відбувається зараз",
+        "hint": "Активні голосові кімнати й наступна подія."
+      },
+      "catchUp": {
+        "title": "Нове",
+        "hint": "Кімнати з новими повідомленнями, для кожного учасника свої."
+      },
+      "about": {
+        "title": "Про Hub",
+        "hint": "Опис і теги Hub."
+      },
+      "rules": {
+        "title": "Правила",
+        "hint": "Одне правило на рядок, нумерація автоматична."
+      },
+      "events": {
+        "title": "Майбутні події",
+        "hint": "Найближчі події з календаря Hub."
+      },
+      "members": {
+        "title": "Учасники",
+        "hint": "Хто тут і скільки зараз у мережі."
+      }
+    },
+    "moveSectionUp": "Перемістити {{section}} вище",
+    "moveSectionDown": "Перемістити {{section}} нижче",
+    "moveUp": "Вище",
+    "moveDown": "Нижче",
+    "shown": "Показано",
+    "hidden": "Приховано",
+    "rootLabel": "Головна Hub {{name}}",
+    "kicker": "Головна Hub",
+    "membershipPrivate": "Учасники приховані",
+    "private": "Приватний",
+    "public": "Публічний",
+    "muted": "Сповіщення вимкнено",
+    "notificationsOn": "Сповіщення ввімкнено",
+    "invite": "Запросити",
+    "insights": {
+      "loadFailed": "Не вдалося завантажити статистику.",
+      "kicker": "Статистика Hub · лише для власників і адміністраторів",
+      "loading": "Завантаження…",
+      "members": "Учасники",
+      "joinedThisWeek_one": "+{{count}} цього тижня",
+      "joinedThisWeek_few": "+{{count}} цього тижня",
+      "joinedThisWeek_many": "+{{count}} цього тижня",
+      "joinedThisWeek_other": "+{{count}} цього тижня",
+      "noNewMembers": "Цього тижня нових учасників немає",
+      "messagesThisWeek": "Повідомлень цього тижня",
+      "vsLastWeek": "{{change}} порівняно з минулим тижнем",
+      "changeNew": "Нове",
+      "changeSame": "Без змін",
+      "peopleWhoTalked": "Хто писав",
+      "busiestTime": "Найактивніший час",
+      "busiestHint": "Останні 30 днів, твій час",
+      "perDay": "Повідомлень на день, останні 14 днів",
+      "byHour": "Повідомлення за годинами доби, останні 30 днів (твій час)",
+      "barLabel_one": "{{label}}: {{count}} повідомлення",
+      "barLabel_few": "{{label}}: {{count}} повідомлення",
+      "barLabel_many": "{{label}}: {{count}} повідомлень",
+      "barLabel_other": "{{label}}: {{count}} повідомлення",
+      "barTip_one": "повідомлення · {{label}}",
+      "barTip_few": "повідомлення · {{label}}",
+      "barTip_many": "повідомлень · {{label}}",
+      "barTip_other": "повідомлення · {{label}}",
+      "rooms": "Кімнати, останні 30 днів",
+      "roomMessages_one": "{{count}} повідомлення",
+      "roomMessages_few": "{{count}} повідомлення",
+      "roomMessages_many": "{{count}} повідомлень",
+      "roomMessages_other": "{{count}} повідомлення",
+      "quietRoom": "У #{{name}} цього місяця не було повідомлень. Можливо, варто об'єднати або перейменувати її.",
+      "quietRooms_one": "У {{count}} кімнаті цього місяця не було повідомлень. Можливо, варто об'єднати або перейменувати її.",
+      "quietRooms_few": "У {{count}} кімнатах цього місяця не було повідомлень. Можливо, варто об'єднати або перейменувати їх.",
+      "quietRooms_many": "У {{count}} кімнатах цього місяця не було повідомлень. Можливо, варто об'єднати або перейменувати їх.",
+      "quietRooms_other": "У {{count}} кімнати цього місяця не було повідомлень. Можливо, варто об'єднати або перейменувати їх.",
+      "mostActive": "Найактивніші, останні 30 днів",
+      "nobody": "Ще ніхто нічого не написав."
+    },
+    "customize": "Налаштувати",
+    "insightsButton": "Статистика",
+    "joinRoom": "Приєднатися до {{name}}",
+    "customizeTitle": "Налаштувати головну Hub",
+    "customizeHint": "Вибери, які розділи бачать усі та в якому порядку. Розділ «Нове» для кожного учасника свій.",
+    "cancel": "Скасувати",
+    "saving": "Збереження…",
+    "save": "Зберегти",
+    "allHidden": "Усі розділи приховано. Натисни «Налаштувати», щоб показати деякі.",
+    "notSetUp": "Головну сторінку цього Hub ще не налаштовано.",
+    "close": "Закрити",
+    "setup": {
+      "title": "Налаштуй свій Hub",
+      "progress": "Готово {{done}} з {{total}}. Це бачать лише власники й адміністратори.",
+      "progressLabel": "Прогрес налаштування",
+      "hide": "Сховати",
+      "done": "Готово",
+      "steps": {
+        "describe": {
+          "title": "Розкажи, для чого твій Hub",
+          "detail": "Короткий опис показується в каталозі й на головній Hub.",
+          "action": "Додати опис"
+        },
+        "artwork": {
+          "title": "Додай іконку або банер",
+          "detail": "Так людям легше помітити твій Hub на верхній панелі й у каталозі.",
+          "action": "Додати оформлення"
+        },
+        "welcome": {
+          "title": "Напиши привітання",
+          "detail": "Перше, що новачки читають на головній Hub.",
+          "action": "Написати привітання"
+        },
+        "rules": {
+          "title": "Встанови кілька правил",
+          "detail": "Чіткі правила спрощують модерацію.",
+          "action": "Додати правила"
+        },
+        "rooms": {
+          "title": "Створи кімнати для своїх тем",
+          "detail": "Наприклад, #lfg, #clips або #help поруч із #general.",
+          "action": "Створити кімнату"
+        },
+        "event": {
+          "title": "Заплануй першу подію",
+          "detail": "Ігрові вечори й турніри повертають людей.",
+          "action": "Створити подію"
+        },
+        "invite": {
+          "title": "Запроси перших учасників",
+          "detail": "Поділися посиланням-запрошенням із друзями.",
+          "action": "Копіювати посилання"
+        }
+      }
+    }
+  },
+  "switcher": {
+    "mentions_one": "{{count}} згадка",
+    "mentions_few": "{{count}} згадки",
+    "mentions_many": "{{count}} згадок",
+    "mentions_other": "{{count}} згадки",
+    "unread_one": "{{count}} непрочитане",
+    "unread_few": "{{count}} непрочитані",
+    "unread_many": "{{count}} непрочитаних",
+    "unread_other": "{{count}} непрочитаного",
+    "label": "Hubs",
+    "mutedSuffix": " · сповіщення вимкнено",
+    "unreadSuffix_one": " · {{count}} непрочитане",
+    "unreadSuffix_few": " · {{count}} непрочитані",
+    "unreadSuffix_many": " · {{count}} непрочитаних",
+    "unreadSuffix_other": " · {{count}} непрочитаного",
+    "open": "Відкрити {{name}}",
+    "moreHubs_one": "Ще {{count}} Hub",
+    "moreHubs_few": "Ще {{count}} Hub",
+    "moreHubs_many": "Ще {{count}} Hub",
+    "moreHubs_other": "Ще {{count}} Hub",
+    "unreadMessages": "непрочитані повідомлення",
+    "create": "Створити Hub",
+    "add": "Додати",
+    "moreMenu": "Інші Hub"
+  },
+  "voicePanel": {
+    "connecting": "Підключення…",
+    "connected": "Голос підключено",
+    "connectedPing": "Голос підключено · {{ms}} мс",
+    "serverMuted": "Мікрофон вимкнено модератором",
+    "unmute": "Увімкнути мікрофон",
+    "mute": "Вимкнути мікрофон",
+    "serverDeafened": "Звук вимкнено модератором",
+    "undeafen": "Увімкнути звук",
+    "deafen": "Вимкнути звук",
+    "region": "Голосове з'єднання",
+    "openRoom": "Відкрити голосову кімнату",
+    "peopleInVoice_one": "{{count}} людина в голосі",
+    "peopleInVoice_few": "{{count}} людини в голосі",
+    "peopleInVoice_many": "{{count}} людей у голосі",
+    "peopleInVoice_other": "{{count}} людини в голосі",
+    "stopScreenSharing": "Закінчити демонстрацію екрана",
+    "shareScreen": "Почати демонстрацію екрана",
+    "stopSharing": "Закінчити демонстрацію",
+    "disconnectFromVoice": "Відключитися від голосу",
+    "disconnect": "Відключитися"
+  },
+  "composerPlus": {
+    "label": "Додати до повідомлення"
+  },
+  "roomSettings": {
+    "tabs": {
+      "general": "Загальне",
+      "permissions": "Дозволи",
+      "forum": "Форум"
+    },
+    "createTitle": "Створити кімнату",
+    "title": "Налаштування кімнати",
+    "newRoomIn": "Нова кімната в <strong>{{hub}}</strong>",
+    "untitled": "Кімната без назви",
+    "close": "Закрити налаштування кімнати",
+    "sections": "Розділи налаштувань кімнати",
+    "name": "Назва кімнати",
+    "namePlaceholder": "напр. загальний-чат",
+    "icon": {
+      "label": "Іконка або емодзі",
+      "suggested": "Пропоновані іконки",
+      "use": "Використати {{icon}} як іконку",
+      "fewer": "Менше іконок",
+      "more": "Більше іконок",
+      "searchPlaceholder": "Шукай іконки, напр. правила, кліпи, cs, музика",
+      "search": "Пошук іконок",
+      "useNamed": "Використати {{icon}} ({{name}}) як іконку",
+      "noMatch": "Немає відповідних іконок. Можеш ввести або вставити будь-який емодзі в поле."
+    },
+    "iconGroups": {
+      "chat": "Чат",
+      "info": "Інфо",
+      "gaming": "Ігри",
+      "esports": "Кіберспорт",
+      "voice": "Голос і медіа",
+      "creative": "Творчість",
+      "community": "Спільнота",
+      "food": "Їжа",
+      "nature": "Тварини й природа",
+      "symbols": "Символи"
+    },
+    "type": {
+      "label": "Тип кімнати",
+      "fixed": "Тип не можна змінити після створення кімнати.",
+      "setAtCreation": "Задано під час створення кімнати.",
+      "text": {
+        "label": "Текстова",
+        "description": "Розмови, посилання й медіа."
+      },
+      "voice": {
+        "label": "Голосова",
+        "description": "Спілкуйся, демонструй екран і веди трансляції."
+      },
+      "forum": {
+        "label": "Форум",
+        "description": "Упорядковані публікації з відповідями й тегами."
+      }
+    },
+    "post": {
+      "label": "Хто може писати",
+      "hint": "Усі в кімнаті все одно можуть читати й реагувати.",
+      "everyone": {
+        "label": "Усі",
+        "description": "Будь-хто, хто бачить кімнату."
+      },
+      "staff": {
+        "label": "Лише команда Hub (решта — читання)",
+        "description": "Власник, адміністратори й модератори."
+      },
+      "roles": {
+        "label": "Вибрані ролі",
+        "description": "Команда Hub плюс учасники з вибраною тобою роллю."
+      },
+      "noRoles": "У цьому Hub ще немає власних ролей."
+    },
+    "userLimit": {
+      "label": "Макс. гравців",
+      "hint": "0 — без обмеження. Власник та адміністратори можуть зайти навіть у заповнену кімнату."
+    },
+    "delete": {
+      "title": "Видалити кімнату",
+      "description": "Назавжди видаляє кімнату й усі її збережені повідомлення.",
+      "action": "Видалити кімнату",
+      "confirmTitle": "Видалити кімнату?",
+      "confirmDescription": "Це назавжди видалить кімнату й кожне збережене в ній повідомлення. Це не можна скасувати.",
+      "confirmWord": "видалити"
+    },
+    "visibility": {
+      "label": "Видимість кімнати",
+      "public": "Публічна",
+      "publicHint": "Кожен учасник Hub може бачити цю кімнату й заходити в неї.",
+      "private": "Приватна",
+      "privateHint": "Лише вибрані учасники, а також власник та адміністратори Hub."
+    },
+    "access": {
+      "title": "Доступ учасників",
+      "selected_one": "Вибрано {{count}} учасника. Власники й адміністратори завжди мають доступ.",
+      "selected_few": "Вибрано {{count}} учасників. Власники й адміністратори завжди мають доступ.",
+      "selected_many": "Вибрано {{count}} учасників. Власники й адміністратори завжди мають доступ.",
+      "selected_other": "Вибрано {{count}} учасника. Власники й адміністратори завжди мають доступ.",
+      "search": "Пошук учасників",
+      "searchPlaceholder": "Пошук учасників Hub",
+      "you": " (ти)",
+      "ownerAlways": "Власник · завжди має доступ",
+      "adminAlways": "Адміністратор · завжди має доступ",
+      "alwaysAria": "{{name}} завжди має доступ",
+      "has": "Має доступ",
+      "none": "Немає доступу",
+      "toggleAria": "Доступ до кімнати для {{name}}",
+      "noOthers": "У цьому Hub ще немає інших учасників.",
+      "noMatch": "Немає учасників за твоїм запитом.",
+      "forumTabHint": "Дозволи на публікацію в цьому форумі — на <tab>вкладці «Форум»</tab>."
+    },
+    "forum": {
+      "warnings": {
+        "noRoles": "Вибрано «Лише вибрані ролі», але жодної ролі не вибрано — публікувати зможуть лише власник та адміністратори.",
+        "emptyRoles_one": "У ролі {{names}} ще немає учасників, тож вона нікому не дає дозволу на публікацію.",
+        "emptyRoles_few": "У ролях {{names}} ще немає учасників, тож вони нікому не дають дозволу на публікацію.",
+        "emptyRoles_many": "У ролях {{names}} ще немає учасників, тож вони нікому не дають дозволу на публікацію.",
+        "emptyRoles_other": "У ролях {{names}} ще немає учасників, тож вони нікому не дають дозволу на публікацію.",
+        "noMembers": "Вибрано «Лише вибрані учасники», але жодного учасника не вибрано — публікувати зможуть лише власник та адміністратори."
+      },
+      "guidelines": "Правила публікації",
+      "guidelinesHint": "Показуються людям перед створенням публікації.",
+      "guidelinesPlaceholder": "Опиши тему, правила й що має містити корисна публікація.",
+      "policyLabel": "Хто може публікувати",
+      "policyHint": "Усі все одно можуть читати й відповідати там, де мають доступ.",
+      "policies": {
+        "everyone": "Усі в Hub",
+        "staff": "Власник, адміністратори й модератори",
+        "roles": "Лише вибрані ролі",
+        "members": "Лише вибрані учасники"
+      },
+      "rolesAllowed": "Ролі, яким дозволено публікувати",
+      "roleMembers_one": "{{count}} учасник",
+      "roleMembers_few": "{{count}} учасники",
+      "roleMembers_many": "{{count}} учасників",
+      "roleMembers_other": "{{count}} учасника",
+      "noRoles": "У цьому Hub ще немає власних ролей. Створи їх у розділі «Керувати Hub» → «Ролі».",
+      "membersAllowed": "Учасники, яким дозволено публікувати",
+      "alwaysAllowed": "{{role}} · завжди дозволено"
+    },
+    "roles": {
+      "owner": "власник",
+      "admin": "адміністратор",
+      "member": "учасник"
+    },
+    "tags": {
+      "title": "Теги публікацій",
+      "description": "Модератори визначають теги, які люди можуть вибирати під час публікації. Стрілками задай їхній порядок.",
+      "new": "Новий тег",
+      "placeholder": "Додай тег, напр. Питання",
+      "add": "Додати тег",
+      "count_one": "{{count}}/{{max}} тегів",
+      "count_few": "{{count}}/{{max}} тегів",
+      "count_many": "{{count}}/{{max}} тегів",
+      "count_other": "{{count}}/{{max}} тегів",
+      "list": "Теги форуму",
+      "moveUp": "Перемістити {{tag}} вище",
+      "moveDown": "Перемістити {{tag}} нижче",
+      "removeTag": "Прибрати {{tag}}",
+      "remove": "Прибрати",
+      "unsupported": "Списки тегів модераторів поки недоступні на цьому сервері. Публікації все одно можуть мати довільні теги."
+    },
+    "cancel": "Скасувати",
+    "creating": "Створення…",
+    "saving": "Збереження…",
+    "saveChanges": "Зберегти зміни",
+    "style": {
+      "tooLarge": "Фон кімнати завеликий (максимум 8 МБ).",
+      "notImage": "Вибери файл зображення.",
+      "title": "Стиль",
+      "hint": "Дай цій кімнаті власний колір і фон. Якщо порожньо — використовується стиль Hub.",
+      "previewRoom": "кімната",
+      "previewSend": "Надіслати",
+      "accent": "Акцентний колір",
+      "accents": "Акцентні кольори",
+      "hubAccent": "Акцент Hub",
+      "swatches": {
+        "violet": "Фіолетовий",
+        "blue": "Синій",
+        "cyan": "Блакитний",
+        "teal": "Бірюзовий",
+        "green": "Зелений",
+        "lime": "Лаймовий",
+        "yellow": "Жовтий",
+        "amber": "Бурштиновий",
+        "orange": "Помаранчевий",
+        "red": "Червоний",
+        "pink": "Рожевий",
+        "steel": "Сталевий"
+      },
+      "custom": "Власний колір",
+      "background": "Фон",
+      "backgroundHint": "{{spec}}. PNG, JPG, WebP або GIF до 8 МБ.",
+      "replace": "Замінити",
+      "upload": "Завантажити",
+      "remove": "Прибрати"
+    }
+  },
+  "pins": {
+    "kinds": {
+      "forumPost": "Публікація на форумі",
+      "event": "Подія",
+      "poll": "Опитування",
+      "bot": "Повідомлення бота",
+      "gif": "GIF",
+      "sticker": "Стікер",
+      "image": "Зображення",
+      "file": "Файл",
+      "message": "Повідомлення"
+    },
+    "kindsWithDetail": {
+      "forumPost": "Публікація на форумі: {{detail}}",
+      "event": "Подія: {{detail}}",
+      "poll": "Опитування: {{detail}}",
+      "bot": "Повідомлення бота: {{detail}}",
+      "gif": "GIF: {{detail}}",
+      "sticker": "Стікер: {{detail}}",
+      "image": "Зображення · {{detail}}",
+      "file": "Файл · {{detail}}",
+      "message": "Повідомлення: {{detail}}"
+    },
+    "loadFailed": "Не вдалося завантажити закріплені повідомлення.",
+    "title": "Закріплені повідомлення",
+    "titleWithCount": "Закріплені повідомлення · {{n}}",
+    "close": "Закрити",
+    "loading": "Завантаження…",
+    "empty": "Ще немає закріплених повідомлень",
+    "emptyCanPin": "Закріпи важливе повідомлення через його меню, щоб усі могли знайти його тут.",
+    "emptyMember": "Адміністратори можуть закріплювати важливі повідомлення, щоб усі знаходили їх тут.",
+    "jumpTitle": "Показати це повідомлення в кімнаті",
+    "jump": "Перейти",
+    "less": "Менше",
+    "readAll": "Читати повністю",
+    "unpinning": "Відкріплення…",
+    "unpin": "Відкріпити"
+  },
+  "templates": {
+    "names": {
+      "blank": "Порожній",
+      "friends": "Друзі / Тусовка",
+      "gaming": "Ігри",
+      "community": "Спільнота",
+      "creator": "Автор",
+      "esports": "Кіберспорт / Клан",
+      "development": "Розробка",
+      "support": "Підтримка",
+      "project": "Проєкт / Команда",
+      "streamer": "Режим стримера · Макет з оглядом"
+    },
+    "descriptions": {
+      "blank": "Чистий старт для твоєї власної структури Hub.",
+      "friends": "Легкий простір для друзів, чату й спільних медіа.",
+      "gaming": "Кімнати для пошуку напарників, кліпів і збору Squads.",
+      "community": "Структурований публічний Hub з інформацією, обговореннями, подіями й голосом.",
+      "creator": "Контент, відгуки, пропозиції та чат спільноти в одному місці.",
+      "esports": "Координуй склади, скріми, стратегію, кліпи й закриту роботу команди.",
+      "development": "Робочий простір проєкту для багів, релізів, ідей і голосу команди.",
+      "support": "Допоможи користувачам знаходити відповіді, повідомляти про проблеми й зв'язуватися з підтримкою.",
+      "project": "Організуй оновлення, завдання, документи, дедлайни й кімнати команди.",
+      "streamer": "Огляд автора, сесії зі спільнотою, події та банер Hub на всю висоту."
+    },
+    "rooms": {
+      "general": "загальний",
+      "generalVoice": "Загальний голос",
+      "offTopic": "офтоп",
+      "mediaMemes": "медіа-меми",
+      "lounge": "Лаунж",
+      "lfg": "LFG",
+      "gameDiscussion": "обговорення-ігор",
+      "clips": "кліпи",
+      "screenshots": "скриншоти",
+      "gamingRoom": "Ігрова кімната",
+      "squad1": "Squad 1",
+      "squad2": "Squad 2",
+      "afk": "AFK",
+      "welcome": "вітання",
+      "announcements": "оголошення",
+      "rules": "правила",
+      "media": "медіа",
+      "discussions": "обговорення",
+      "events": "події",
+      "communityVoice": "Голос спільноти",
+      "uploads": "завантаження",
+      "feedback": "відгуки",
+      "suggestions": "пропозиції",
+      "communityChat": "чат-спільноти",
+      "creatorRoom": "Кімната автора",
+      "roster": "склад",
+      "scrims": "скріми",
+      "strategy": "стратегія",
+      "staff": "команда",
+      "development": "розробка",
+      "bugs": "баги",
+      "featureRequests": "запити-функцій",
+      "releases": "релізи",
+      "showcase": "вітрина",
+      "teamVoice": "Голос команди",
+      "faq": "FAQ",
+      "help": "допомога",
+      "knownIssues": "відомі-проблеми",
+      "generalDiscussion": "загальне-обговорення",
+      "staffSupport": "підтримка-команди",
+      "updates": "оновлення",
+      "tasks": "завдання",
+      "docsFiles": "документи-файли",
+      "deadlines": "дедлайни",
+      "teamRoom": "Кімната команди",
+      "streamerRoom": "Кімната стримера"
+    },
+    "categories": {
+      "general": "ЗАГАЛЬНЕ",
+      "voice": "ГОЛОС",
+      "social": "СПІЛКУВАННЯ",
+      "community": "СПІЛЬНОТА",
+      "media": "МЕДІА",
+      "information": "ІНФОРМАЦІЯ",
+      "content": "КОНТЕНТ",
+      "competitive": "ЗМАГАННЯ",
+      "staff": "КОМАНДА",
+      "development": "РОЗРОБКА",
+      "support": "ПІДТРИМКА",
+      "project": "ПРОЄКТ",
+      "streamerHub": "HUB СТРИМЕРА",
+      "voiceRooms": "ГОЛОСОВІ КІМНАТИ"
+    }
+  },
+  "media": {
+    "banner": {
+      "hint": "Рекомендовано: {{width}}×{{height}} пкс, вертикально (мінімум {{minWidth}}×{{minHeight}})"
+    },
+    "chatBackground": {
+      "hint": "Рекомендовано: {{width}}×{{height}} пкс, горизонтально (мінімум {{minWidth}}×{{minHeight}})"
+    },
+    "header": {
+      "hint": "Рекомендовано: {{width}}×{{height}} пкс; підійде будь-яке широке зображення від 4:3 до 4:1 (ширина щонайменше {{minWidth}} пкс)"
+    }
+  },
+  "mobile": {
+    "hubs": {
+      "couldNotLoadHubs": "Не вдалося завантажити Hub.",
+      "couldNotCreateHub": "Не вдалося створити Hub.",
+      "couldNotJoinHub": "Не вдалося приєднатися до Hub.",
+      "couldNotUseThatInvite": "Не вдалося використати це запрошення.",
+      "yourCommunities": "ТВОЇ СПІЛЬНОТИ",
+      "roomsVoiceAndThePeople": "Кімнати, голос і люди, з якими ти граєш.",
+      "createOrJoinAHub": "Створи Hub або приєднайся",
+      "searchYourHubs": "Пошук серед твоїх Hub",
+      "findAPublicHub": "Знайти публічний Hub",
+      "memberships": "ТИ УЧАСНИК",
+      "publicHubs": "ПУБЛІЧНІ HUB",
+      "noMatchingHubs": "Немає відповідних Hub",
+      "noPublicHubsRightNow": "Зараз немає публічних Hub",
+      "tryAnotherNameCategoryOr": "Спробуй іншу назву, категорію або тег.",
+      "createYourOwnHubOr": "Створи власний Hub або знайди публічну спільноту.",
+      "publicCommunitiesWillAppearHere": "Публічні спільноти з'являться тут, коли будуть доступні.",
+      "joinAHub": "Приєднатися до Hub",
+      "newCommunity": "НОВА СПІЛЬНОТА",
+      "hubName": "НАЗВА HUB",
+      "giveYourHubAName": "Дай своєму Hub назву",
+      "privacy": "ПРИВАТНІСТЬ",
+      "inviteOnly": "Лише за запрошенням",
+      "discoverable": "Видимий у каталозі",
+      "haveAnInvite": "МАЄШ ЗАПРОШЕННЯ?",
+      "inviteCodeOrLink": "Код або посилання запрошення",
+      "joinWithInvite": "Приєднатися за запрошенням",
+      "joining": "Приєднання…",
+      "onlinecountOnline": "{{onlineCount}} онлайн",
+      "categoryMembers": "{{category}} · учасників: {{count}}"
+    },
+    "hub": {
+      "couldNotLoadThisHub": "Не вдалося завантажити цей Hub.",
+      "couldNotLoadHubMembers": "Не вдалося завантажити учасників Hub.",
+      "couldNotUpdateTheHub": "Не вдалося оновити Hub.",
+      "couldNotLoadRoomAccess": "Не вдалося завантажити доступ до кімнати.",
+      "couldNotSaveTheRoom": "Не вдалося зберегти кімнату.",
+      "couldNotMoveTheRoom": "Не вдалося перемістити кімнату.",
+      "deleteName": "Видалити {{name}}?",
+      "messagesSavedInThisRoom": "Збережені в цій кімнаті повідомлення теж можуть бути видалені. Це не можна скасувати.",
+      "couldNotDeleteTheRoom": "Не вдалося видалити кімнату.",
+      "tryAgain": "Спробувати ще раз",
+      "goBack": "Назад",
+      "manageThisHub": "Керувати цим Hub",
+      "editHubDetailsCreateRooms": "Редагуй дані Hub, створюй кімнати й керуй наявними.",
+      "textRooms": "ТЕКСТОВІ КІМНАТИ",
+      "noTextRoomsInThis": "У цьому Hub немає текстових кімнат.",
+      "forums": "ФОРУМИ",
+      "noForumsInThisHub": "У цьому Hub немає форумів.",
+      "voiceRooms": "ГОЛОСОВІ КІМНАТИ",
+      "noVoiceRoomsInThis": "У цьому Hub немає голосових кімнат.",
+      "pickARoomToStart": "Вибери кімнату, щоб почати спілкування",
+      "onlineMembers": "{{online}} онлайн · учасників: {{count}}",
+      "withRole": "{{summary}} · {{role}}"
+    },
+    "hubAdmin": {
+      "hubSettingsUpdated": "Налаштування Hub оновлено.",
+      "memberAdded": "Учасника додано.",
+      "makeUsernameAnAdmin": "Зробити {{username}} адміністратором?",
+      "removeAdminAccessFromUsername": "Забрати в {{username}} роль адміністратора?",
+      "adminsCanManageRoomsAnd": "Адміністратори можуть керувати кімнатами й модерувати учасників Hub.",
+      "theyWillBecomeARegular": "Людина стане звичайним учасником і втратить дозволи на керування Hub.",
+      "makeAdmin": "Зробити адміністратором",
+      "removeAdmin": "Зняти адміністратора",
+      "removeMember": "Видалити учасника?",
+      "removeUsernameFromThisHub": "Видалити {{username}} з цього Hub?",
+      "thisRemovesTheMemberAnd": "Учасника буде видалено, і він не зможе повернутися, доки його не розбанять.",
+      "thisActionIsRecordedIn": "Ця дія записується в журнал аудиту Hub.",
+      "inviteWasCreatedButThe": "Запрошення створено, але сервер не повернув посилання чи код.",
+      "oneTimeInviteCreated24": "Одноразове запрошення створено (24 години, одне використання). ",
+      "theImageIsDeletedAnd": "Зображення буде видалено й приховано для всіх у цьому Hub.",
+      "sidebarBannerRemoved": "Банер бічної панелі прибрано.",
+      "chatBackgroundRemoved": "Фон чату прибрано.",
+      "photoLibraryPermissionIsRequired": "Потрібен дозвіл на доступ до фото.",
+      "couldNotUploadHubImage": "Не вдалося завантажити зображення Hub.",
+      "deleteAsset": "Видалити ресурс?",
+      "deleteName": "Видалити {{name}}?",
+      "deleteBot": "Видалити бота?",
+      "loadingHubManagement": "Завантаження керування Hub…",
+      "hubControl": "КЕРУВАННЯ HUB",
+      "manageName": "Керувати {{name}}",
+      "hubProfileDiscovery": "ПРОФІЛЬ HUB І КАТАЛОГ",
+      "changeHubImage": "Змінити зображення Hub",
+      "fillsTheHubSidebarBehind": "Заповнює бічну панель Hub за списком кімнат.",
+      "behindTheMessageListDimmed": "За списком повідомлень, автоматично затемнюється.",
+      "accentRrggbb": "Акцент (#RRGGBB)",
+      "tagsCommaSeparatedMax6": "Теги (через кому, до 6)",
+      "slowModeSeconds0120": "Повільний режим, секунди (0–120)",
+      "roomsPrivateAccess": "КІМНАТИ Й ПРИВАТНИЙ ДОСТУП",
+      "createEditReorderOrDelete": "Створюй, редагуй, упорядковуй і видаляй текстові, голосові кімнати й форуми, задавай іконки кімнат і вибирай учасників для приватних кімнат.",
+      "botBuilder": "КОНСТРУКТОР БОТІВ",
+      "turnBotsOnOrOff": "Вмикай і вимикай ботів, переглядай їхню активність або почни з шаблону. Правила редагуються на комп'ютері або у вебі.",
+      "invites": "ЗАПРОШЕННЯ",
+      "createOneTimeInvite": "Створити одноразове запрошення",
+      "expiresAfter24HoursAnd": "Діє 24 години, використати можна один раз.",
+      "membersCount": "УЧАСНИКИ · {{count}}",
+      "usernameOrDecaveId": "Ім'я користувача або DeCave ID",
+      "addMember": "Додати учасника",
+      "changeUsernameSRoleCurrent": "Змінити роль {{username}}. Поточна роль: {{role}}",
+      "removeUsername": "Видалити {{username}}",
+      "n10mTimeout": "Блок на 10 хв",
+      "kick": "Вигнати",
+      "ban": "Забанити",
+      "customRoles": "ВЛАСНІ РОЛІ",
+      "roleName": "Назва ролі",
+      "noExtraPermissions": "Без додаткових дозволів",
+      "emotesStickers": "ЕМОУТИ Й СТІКЕРИ",
+      "assetNameOptional": "Назва ресурсу (необов'язково)",
+      "noCustomAssets": "Немає власних ресурсів.",
+      "deleteAsset2": "Видалити ресурс",
+      "hubBots": "БОТИ HUB",
+      "botName": "Назва бота",
+      "createBot": "Створити бота",
+      "copyThisTokenNowIt": "СКОПІЮЙ ЦЕЙ ТОКЕН ЗАРАЗ — ВІН ПОКАЗУЄТЬСЯ ОДИН РАЗ",
+      "noHubBots": "Немає ботів Hub.",
+      "enabled": "УВІМКНЕНО",
+      "disabled": "ВИМКНЕНО",
+      "pauseName": "Призупинити {{name}}",
+      "resumeName": "Відновити {{name}}",
+      "deleteName2": "Видалити {{name}}",
+      "auditLog": "ЖУРНАЛ АУДИТУ",
+      "system": "Система",
+      "saveHubSettings": "Зберегти налаштування Hub",
+      "permissions": {
+        "voiceModerate": "Модерація голосу",
+        "viewAudit": "Перегляд журналу аудиту"
+      },
+      "loadFailed": "Не вдалося завантажити керування Hub.",
+      "updateFailed": "Не вдалося оновити Hub.",
+      "visibilityFailed": "Не вдалося змінити видимість Hub.",
+      "addMemberFailed": "Не вдалося додати учасника.",
+      "roleFailed": "Не вдалося оновити роль.",
+      "removeMemberFailed": "Не вдалося видалити учасника.",
+      "moderation": {
+        "timeout": "Тимчасово заблокувати на 10 хв",
+        "timeoutConfirm": "Тимчасово заблокувати {{username}} на 10 хвилин?",
+        "kickConfirm": "Вигнати {{username}}?",
+        "banConfirm": "Забанити {{username}}?",
+        "timeoutFailed": "Не вдалося тимчасово заблокувати учасника.",
+        "kickFailed": "Не вдалося вигнати учасника.",
+        "banFailed": "Не вдалося забанити учасника."
+      },
+      "inviteTitle": "Приєднуйся до {{hub}} у DeCave",
+      "inviteTitleFallback": "Приєднуйся до мого Hub у DeCave",
+      "inviteFailed": "Не вдалося створити запрошення.",
+      "artworkFailed": "Не вдалося оновити оформлення Hub.",
+      "removeBanner": "Прибрати банер бічної панелі?",
+      "removeChatBackground": "Прибрати фон чату?",
+      "removeBannerFailed": "Не вдалося прибрати банер бічної панелі.",
+      "removeChatBackgroundFailed": "Не вдалося прибрати фон чату.",
+      "iconUpdated": "Зображення профілю Hub оновлено.",
+      "bannerUpdated": "Банер бічної панелі оновлено.",
+      "chatBackgroundUpdated": "Фон чату оновлено.",
+      "uploadImageFailed": "Не вдалося завантажити зображення Hub.",
+      "createRoleFailed": "Не вдалося створити власну роль.",
+      "assignRoleFailed": "Не вдалося призначити власну роль.",
+      "emoteTooLarge": "Емоут завеликий.",
+      "stickerTooLarge": "Стікер завеликий.",
+      "uploadEmoteFailed": "Не вдалося завантажити емоут.",
+      "uploadStickerFailed": "Не вдалося завантажити стікер.",
+      "deleteAssetFailed": "Не вдалося видалити ресурс.",
+      "createBotFailed": "Не вдалося створити бота Hub.",
+      "updateBotFailed": "Не вдалося оновити бота.",
+      "deleteBotFailed": "Не вдалося видалити бота.",
+      "bannerNote": "Затемнено для читабельності.",
+      "bannerNoteEmpty": "Додай банер, щоб увімкнути це.",
+      "chatNote": "Показується в кожній кімнаті цього Hub.",
+      "chatNoteEmpty": "Додай фото, щоб увімкнути це.",
+      "recentEvents_one": "{{count}} недавня подія",
+      "recentEvents_few": "{{count}} недавні події",
+      "recentEvents_many": "{{count}} недавніх подій",
+      "recentEvents_other": "{{count}} недавньої події",
+      "mediaCurrent": "Поточне: {{item}}",
+      "mediaRemove": "Прибрати: {{item}}",
+      "mediaShow": "Показувати: {{item}}"
+    },
+    "join": {
+      "couldnTUseThisInvite": "Не вдалося використати це запрошення.",
+      "inviteDidnTWork": "Запрошення не спрацювало",
+      "goHome": "На головну",
+      "joiningHub": "Приєднання до Hub…"
+    },
+    "rooms": {
+      "add": "Додати кімнату",
+      "draft": "Чернетка",
+      "connected": "Підключено · торкнись для керування голосом",
+      "voiceJoin": "Голосова кімната · торкнись, щоб приєднатися",
+      "textRoom": "Текстова кімната",
+      "edit": "Редагувати {{name}}"
+    },
+    "manage": {
+      "kicker": "КЕРУВАННЯ HUB",
+      "title": "Керувати {{name}}",
+      "visibilityOwner": "Змінювати публічність Hub може лише власник Hub.",
+      "visibilityPublic": "Цей Hub публічний. Змінити видимість може лише власник.",
+      "visibilityPrivate": "Цей Hub приватний. Змінити видимість може лише власник.",
+      "rooms": "КІМНАТИ",
+      "createRoom": "Створити нову кімнату",
+      "createRoomHint": "Додай ще одну текстову або голосову кімнату в цей Hub.",
+      "save": "Зберегти зміни Hub"
+    },
+    "roomEditor": {
+      "kickerEdit": "НАЛАШТУВАННЯ КІМНАТИ",
+      "kickerNew": "НОВА КІМНАТА",
+      "titleNew": "Створити кімнату",
+      "placeholder": {
+        "text": "загальний",
+        "voice": "Ігровий голос",
+        "forum": "гайди"
+      },
+      "icon": "Іконка кімнати",
+      "noIcon": "Без іконки",
+      "useIcon": "Використати {{icon}} як іконку кімнати",
+      "emojiPlaceholder": "Або введи будь-який емодзі",
+      "hubAccent": "Використати акцент Hub",
+      "swatchAccent": "Акцент: {{color}}",
+      "guidelines": "Правила форуму",
+      "guidelinesPlaceholder": "Що люди мають публікувати тут?",
+      "postPolicy": "Хто може створювати публікації",
+      "policyEveryone": "Усі",
+      "policyStaff": "Власник і адміністратори",
+      "policyLimitedRoles": "Публікація обмежена вибраними ролями. Цей список залишається без змін; вибери варіант вище, щоб замінити його.",
+      "policyLimitedMembers": "Публікація обмежена вибраними учасниками. Цей список залишається без змін; вибери варіант вище, щоб замінити його.",
+      "privateHint": "Власник і адміністратори завжди мають доступ. Нижче вибери, які звичайні учасники Hub можуть заходити.",
+      "access": "ДОСТУП ДО КІМНАТИ",
+      "selected_one": "Вибрано: {{count}}",
+      "selected_few": "Вибрано: {{count}}",
+      "selected_many": "Вибрано: {{count}}",
+      "selected_other": "Вибрано: {{count}}",
+      "noMembers": "Немає звичайних учасників для вибору",
+      "noMembersHint": "Кімната все одно буде доступна власнику й адміністраторам Hub.",
+      "noMatch": "Немає відповідних учасників",
+      "noMatchHint": "Спробуй інше ім'я користувача.",
+      "save": "Зберегти кімнату",
+      "create": "Створити кімнату"
+    }
+  },
+  "hubCategories": {
+    "gaming": "Ігри",
+    "community": "Спільнота",
+    "racing": "Гонки",
+    "creative": "Творчість",
+    "music": "Музика"
+  }
+}

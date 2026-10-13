@@ -113,6 +113,8 @@ function createBuildHarness(captures, overrides = {}) {
   };
   const env = {
     console,
+    // The engine's t(): keys stand in for the UI text.
+    t: (key) => key,
     MediaStream: FakeStream,
     AudioContext: FakeAudioContext,
     GainNode: FakeGainNode,
@@ -259,7 +261,7 @@ test("voice join cancellation has an explicit bounded pre-join deadline", () => 
     /const cancellable = <T,?>\(promise: Promise<T>\) => Promise\.race\(\[promise, joinDeadline, abortPromise\]\)/,
   );
   assert.match(appSource, /armVoiceJoinPreJoinDeadline\(\);/);
-  assert.match(appSource, /Voice join timed out before the connection was ready/);
+  assert.match(appSource, /new Error\(t\("voice\.engine\.joinTimedOut"\)\)/);
   assert.equal(isAbortError(createAbortError("cancelled")), true);
   assert.equal(isAbortError(new Error("ordinary failure")), false);
 });
@@ -440,6 +442,8 @@ test("the actual desktop sink helper falls back to the system output and clears 
   };
   const env = {
     console,
+    // The engine's t(): keys stand in for the UI text.
+    t: (key) => key,
     audioSettingsRef: ref(settings),
     setAudioOutputError: (value) => errors.push(value),
     setAudioSettings: (value) => {
@@ -452,7 +456,7 @@ test("the actual desktop sink helper falls back to the system output and clears 
   assert.deepEqual(calls, ["headset", ""]);
   assert.equal(env.audioSettingsRef.current.outputDeviceId, "");
   assert.equal(updates.at(-1).outputDeviceId, "");
-  assert.match(errors.at(-1), /system default/);
+  assert.equal(errors.at(-1), "voice.engine.selectedOutputUnavailable");
 });
 
 test("direct-call mute toggles the cloned track without muting Hub's shared track", () => {

@@ -24,7 +24,7 @@ import {
 import { streamerHubIdsForUserSafe, streamerHubsEnabled } from "../lib/streamer";
 import { queueBotEvent } from "../bots/events";
 import { botsEnabled } from "../bots/flags";
-import { json, bodyJson, idFromPath } from "../lib/http";
+import { json, bodyJson, idFromPath, apiError } from "../lib/http";
 import {
   hubForUser,
   discoverSignals,
@@ -53,6 +53,7 @@ import { normalizeHubHomeConfig } from "../../shared/hub-home";
 import { officialHubMembershipPrivate } from "../lib/official-hubs";
 import { safeJsonStringArray, normalizeForumTags } from "../../shared/forum";
 import { ensureSoundboardSchema } from "../lib/soundboard";
+import { serverNotice } from "../lib/notices";
 import {
   deleteQueuedMedia,
   ensureMediaDeletionQueueSchema,
@@ -129,7 +130,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const body = await bodyJson(request);
     const raw = typeof body.name === "string" ? body.name.trim() : "";
-    if (!raw) return json({ error: "Server name is required" }, 400);
+    if (!raw) return apiError("hubs.serverNameRequired", 400);
     const id = await nextIntegerId(env.DB, "decave_hubs");
     const roomId = await nextIntegerId(env.DB, "decave_rooms");
     const name = raw.slice(0, 40);
@@ -138,7 +139,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const visibility = body.visibility === "public" ? "public" : "private";
     const streamerTemplate = body.templateId === "streamer";
     if (streamerTemplate && (!streamerHubsEnabled(env) || !(await streamerMigrationExists(env.DB)))) {
-      return json({ error: "Streamer Hub templates are not available on this deployment." }, 404);
+      return apiError("hubs.streamerTemplatesUnavailable", 404);
     }
     const template = streamerTemplate ? STREAMER_HUB_TEMPLATE : getHubTemplate(body.templateId);
     const imported = sanitizeDiscordImport(body.discordImport);
@@ -197,14 +198,14 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
   if (method === "POST" && hubShareLink) {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-    return json({ error: "Permanent Hub links are disabled. Generate a one-time invite instead." }, 410);
+    return apiError("hubs.permanentLinksDisabled", 410);
   }
 
   const hubShareJoin = idFromPath(p, /^\/api\/hub-links\/([^/]+)\/join$/);
   if (method === "POST" && hubShareJoin) {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-    return json({ error: "This permanent Hub link has been disabled. Ask for a new one-time invite." }, 410);
+    return apiError("hubs.permanentLinkDisabled", 410);
   }
 
   const hubJoin = idFromPath(p, /^\/api\/servers\/(\d+)\/join$/);
@@ -213,13 +214,12 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(hubJoin[1]);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Server not found" }, 404);
+    if (!hub) return apiError("hubs.serverNotFound", 404);
     const banned = await env.DB.prepare("SELECT 1 FROM decave_bans WHERE hub_id=? AND user_id=?")
       .bind(hubId, user.id)
       .first();
-    if (banned) return json({ error: "You are banned from this Hub" }, 403);
-    if (hub.visibility !== "public")
-      return json({ error: "This server is private. You need an invite or access grant." }, 403);
+    if (banned) return apiError("hubs.banned", 403);
+    if (hub.visibility !== "public") return apiError("hubs.serverPrivate", 403);
     const joined = await env.DB.prepare(
       "INSERT OR IGNORE INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(?,?, 'member', ?)",
     )
@@ -237,10 +237,9 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(hubPreview[1]);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Hub not found" }, 404);
+    if (!hub) return apiError("hubs.notFound", 404);
     const role = await getRole(env.DB, hubId, user.id);
-    if (hub.visibility !== "public" && role === null)
-      return json({ error: "This Hub is private. You need an invite to see it." }, 403);
+    if (hub.visibility !== "public" && role === null) return apiError("hubs.privateNeedsInvite", 403);
     const base = await hubForUser(env, hub, user.id);
     const hidePeople = base.membershipPrivate === true && role !== "owner";
     const roomRows = await env.DB.prepare(
@@ -312,9 +311,8 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(hubLeave[1]);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Server not found" }, 404);
-    if (hub.owner_id === user.id)
-      return json({ error: "The server owner cannot leave. Delete the server or transfer ownership first." }, 400);
+    if (!hub) return apiError("hubs.serverNotFound", 404);
+    if (hub.owner_id === user.id) return apiError("hubs.ownerCannotLeave", 400);
     const left = await env.DB.prepare("DELETE FROM decave_hub_members WHERE hub_id=? AND user_id=?")
       .bind(hubId, user.id)
       .run();
@@ -335,7 +333,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     }
     await realtimeBroadcast(
       env,
-      { type: "ACCESS_REVOKED", serverId: hubId, message: "You left this Hub." },
+      { type: "ACCESS_REVOKED", serverId: hubId, ...serverNotice("chat.server.leftHub") },
       { userIds: [user.id] },
     );
     return json({ success: true, serverId: hubId, fallbackServerId: Number(fallback?.id ?? 0), fallbackChannelId });
@@ -347,17 +345,17 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(hubBase[1]);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Server not found" }, 404);
+    if (!hub) return apiError("hubs.serverNotFound", 404);
     const role = await getRole(env.DB, hubId, user.id);
     if (method === "GET") {
-      if (!role) return json({ error: "You do not have access to this server" }, 403);
+      if (!role) return apiError("hubs.noServerAccess", 403);
       return json(await hubForUser(env, hub, user.id));
     }
     if (method === "PATCH") {
-      if (role !== "owner" && role !== "admin") return json({ error: "Owner or admin permission required" }, 403);
+      if (role !== "owner" && role !== "admin") return apiError("hubs.ownerOrAdminPermission", 403);
       const body = await bodyJson(request);
       const name = typeof body.name === "string" ? body.name.trim().slice(0, 40) : "";
-      if (!name) return json({ error: "Server name is required" }, 400);
+      if (!name) return apiError("hubs.serverNameRequired", 400);
       const icon =
         typeof body.icon === "string" && body.icon.trim() ? body.icon.trim().slice(0, 4) : name.charAt(0).toUpperCase();
       await env.DB.prepare("UPDATE decave_hubs SET name=?,icon=?,updated_at=? WHERE id=?")
@@ -366,7 +364,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
       await realtimeBroadcast(env, { type: "SERVERS_REFRESH" }, { hubId });
       return json(await hubForUser(env, (await getHub(env.DB, hubId))!, user.id));
     }
-    if (hub.owner_id !== user.id) return json({ error: "Only the server owner can do this" }, 403);
+    if (hub.owner_id !== user.id) return apiError("hubs.ownerOnly", 403);
     await ensureHubFeatureSchema(env);
     await ensureSoundboardSchema(env);
     await ensureMediaDeletionQueueSchema(env.DB);
@@ -393,10 +391,10 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(hubSettings[1]);
     const role = await getRole(env.DB, hubId, user.id);
-    if (role !== "owner" && role !== "admin") return json({ error: "Owner or admin permission required" }, 403);
+    if (role !== "owner" && role !== "admin") return apiError("hubs.ownerOrAdminPermission", 403);
     await ensureHubFeatureSchema(env);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Hub not found" }, 404);
+    if (!hub) return apiError("hubs.notFound", 404);
     const body = await bodyJson(request);
     const description = typeof body.description === "string" ? body.description.trim().slice(0, 300) : hub.description;
     const accent = typeof body.accent === "string" && /^#[0-9a-fA-F]{6}$/.test(body.accent) ? body.accent : hub.accent;
@@ -474,11 +472,10 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(hubHome[1]);
     const role = await getRole(env.DB, hubId, user.id);
-    if (role !== "owner" && role !== "admin")
-      return json({ error: "Only the Hub owner or an admin can edit Hub Home." }, 403);
+    if (role !== "owner" && role !== "admin") return apiError("hubs.homeEditDenied", 403);
     await ensureHubFeatureSchema(env);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Hub not found" }, 404);
+    if (!hub) return apiError("hubs.notFound", 404);
     const body = await bodyJson(request);
     const current = await hubHomeConfig(env, hubId);
     const next = normalizeHubHomeConfig({
@@ -503,11 +500,11 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(visibility[1]);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Server not found" }, 404);
-    if (hub.owner_id !== user.id) return json({ error: "Only the server owner can do this" }, 403);
+    if (!hub) return apiError("hubs.serverNotFound", 404);
+    if (hub.owner_id !== user.id) return apiError("hubs.ownerOnly", 403);
     const body = await bodyJson(request);
     const value = body.visibility === "public" ? "public" : body.visibility === "private" ? "private" : null;
-    if (!value) return json({ error: "Visibility must be private or public" }, 400);
+    if (!value) return apiError("hubs.visibilityInvalid", 400);
     await env.DB.prepare("UPDATE decave_hubs SET visibility=?,updated_at=? WHERE id=?")
       .bind(value, nowIso(), hubId)
       .run();
@@ -521,9 +518,9 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(hubMembers[1]);
     const requestingRole = await getRole(env.DB, hubId, user.id);
-    if (!requestingRole) return json({ error: "You are not a member of this Hub" }, 403);
+    if (!requestingRole) return apiError("common.notHubMember", 403);
     if ((await officialHubMembershipPrivate(env.DB, hubId)) && requestingRole !== "owner")
-      return json({ error: "Only the Hub owner can view this Hub's members" }, 403);
+      return apiError("hubs.ownerOnlyMembers", 403);
     await ensureCollaborationSchema(env);
 
     const rows = await env.DB.prepare(
@@ -615,10 +612,9 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(hubAccess[1]);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Server not found" }, 404);
+    if (!hub) return apiError("hubs.serverNotFound", 404);
     const actorRole = await getRole(env.DB, hubId, user.id);
-    if (actorRole !== "owner" && actorRole !== "admin")
-      return json({ error: "Hub owner or admin access required" }, 403);
+    if (actorRole !== "owner" && actorRole !== "admin") return apiError("hubs.ownerOrAdminRequired", 403);
 
     const rows = await env.DB.prepare(
       `SELECT u.public_id AS userId,u.username
@@ -643,23 +639,18 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const hubId = Number(memberRole[1]);
     const targetUser = await userByReference(env.DB, decodeURIComponent(memberRole[2]));
     const targetId = targetUser?.id ?? "";
-    if (!targetId) return json({ error: "User not found" }, 404);
+    if (!targetId) return apiError("common.userNotFound", 404);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Server not found" }, 404);
+    if (!hub) return apiError("hubs.serverNotFound", 404);
     const actorRole = await getRole(env.DB, hubId, user.id);
-    if (actorRole !== "owner" && actorRole !== "admin")
-      return json({ error: "Hub owner or admin access required" }, 403);
+    if (actorRole !== "owner" && actorRole !== "admin") return apiError("hubs.ownerOrAdminRequired", 403);
 
     if (method === "PUT") {
-      if (!(await usersAreFriends(env.DB, user.id, targetId)))
-        return json(
-          { error: "Only your existing friends can be added directly. Use an invite link for non-friends." },
-          403,
-        );
+      if (!(await usersAreFriends(env.DB, user.id, targetId))) return apiError("hubs.friendsOnlyDirectAdd", 403);
       const banned = await env.DB.prepare("SELECT 1 FROM decave_bans WHERE hub_id=? AND user_id=? LIMIT 1")
         .bind(hubId, targetId)
         .first();
-      if (banned) return json({ error: "This user is banned from the Hub" }, 409);
+      if (banned) return apiError("hubs.userBanned", 409);
       const added = await env.DB.prepare(
         "INSERT OR IGNORE INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(?,?, 'member', ?)",
       )
@@ -672,13 +663,13 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     }
 
     const targetRole = await getRole(env.DB, hubId, targetId);
-    if (!targetRole) return json({ error: "User is not a Hub member" }, 404);
-    if (targetId === hub.owner_id) return json({ error: "The Hub owner cannot be removed or changed here" }, 400);
+    if (!targetRole) return apiError("hubs.userNotMember", 404);
+    if (targetId === hub.owner_id) return apiError("hubs.ownerCannotChange", 400);
 
     if (method === "DELETE") {
       const canRemove =
         actorRole === "owner" ? targetRole === "admin" || targetRole === "member" : targetRole === "member";
-      if (!canRemove) return json({ error: "You cannot remove this Hub member" }, 403);
+      if (!canRemove) return apiError("hubs.cannotRemoveMember", 403);
       const removed = await env.DB.batch([
         env.DB.prepare("DELETE FROM decave_member_roles WHERE hub_id=? AND user_id=?").bind(hubId, targetId),
         env.DB.prepare(
@@ -690,16 +681,16 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
       if (removed[2]?.meta?.changes) memberEvent(hubId, targetId, "memberLeave", { reason: "removed" });
       await realtimeBroadcast(
         env,
-        { type: "ACCESS_REVOKED", serverId: hubId, message: "You were removed from this Hub." },
+        { type: "ACCESS_REVOKED", serverId: hubId, ...serverNotice("chat.server.removedFromHub") },
         { userIds: [targetId] },
       );
       return json({ success: true, userId: publicIdOf(targetUser!) });
     }
 
-    if (actorRole !== "owner") return json({ error: "Only the Hub owner can change Hub roles" }, 403);
+    if (actorRole !== "owner") return apiError("hubs.ownerOnlyRoles", 403);
     const body = await bodyJson(request);
     const role = body.role === "admin" ? "admin" : body.role === "member" ? "member" : null;
-    if (!role) return json({ error: "Role must be admin or member" }, 400);
+    if (!role) return apiError("hubs.roleInvalid", 400);
     await env.DB.prepare("UPDATE decave_hub_members SET role=? WHERE hub_id=? AND user_id=?")
       .bind(role, hubId, targetId)
       .run();
@@ -715,11 +706,11 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const hubId = Number(customAssign[1]);
     const targetUser = await userByReference(env.DB, decodeURIComponent(customAssign[2]));
     const targetId = targetUser?.id ?? "";
-    if (!targetId) return json({ error: "User not found" }, 404);
+    if (!targetId) return apiError("common.userNotFound", 404);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Hub not found" }, 404);
-    if (hub.owner_id !== user.id) return json({ error: "Only the server owner can do this" }, 403);
-    if (!(await getRole(env.DB, hubId, targetId))) return json({ error: "User is not a Hub member" }, 404);
+    if (!hub) return apiError("hubs.notFound", 404);
+    if (hub.owner_id !== user.id) return apiError("hubs.ownerOnly", 403);
+    if (!(await getRole(env.DB, hubId, targetId))) return apiError("hubs.userNotMember", 404);
     const body = await bodyJson(request);
     const roleIds = Array.isArray(body.roleIds)
       ? body.roleIds.filter((x): x is string => typeof x === "string").slice(0, 8)
@@ -760,7 +751,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(roles[1]);
     const role = await getRole(env.DB, hubId, user.id);
-    if (!role) return json({ error: "No access" }, 403);
+    if (!role) return apiError("common.noAccess", 403);
     if (method === "GET") {
       const rows = await env.DB.prepare(
         "SELECT id,name,color,icon,permissions_json FROM decave_custom_roles WHERE hub_id=? ORDER BY position,id",
@@ -778,10 +769,10 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
       );
     }
     const hub = await getHub(env.DB, hubId);
-    if (hub?.owner_id !== user.id) return json({ error: "Only the server owner can do this" }, 403);
+    if (hub?.owner_id !== user.id) return apiError("hubs.ownerOnly", 403);
     const body = await bodyJson(request);
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 32) : "";
-    if (!name) return json({ error: "Role name required" }, 400);
+    if (!name) return apiError("hubs.roleNameRequired", 400);
     const color = typeof body.color === "string" && /^#[0-9a-fA-F]{6}$/.test(body.color) ? body.color : "#62d6ff";
     const icon = typeof body.icon === "string" ? Array.from(body.icon.trim()).slice(0, 4).join("") : "";
     const allowed: readonly string[] = CUSTOM_ROLE_PERMISSIONS;
@@ -804,14 +795,14 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const hubId = Number(roleItem[1]);
     const roleId = decodeURIComponent(roleItem[2]);
     const hub = await getHub(env.DB, hubId);
-    if (!hub) return json({ error: "Hub not found" }, 404);
-    if (hub.owner_id !== user.id) return json({ error: "Only the server owner can do this" }, 403);
+    if (!hub) return apiError("hubs.notFound", 404);
+    if (hub.owner_id !== user.id) return apiError("hubs.ownerOnly", 403);
     const existing = await env.DB.prepare(
       "SELECT id,name,color,icon,permissions_json FROM decave_custom_roles WHERE id=? AND hub_id=?",
     )
       .bind(roleId, hubId)
       .first<{ id: string; name: string; color: string; icon: string; permissions_json: string }>();
-    if (!existing) return json({ error: "Custom role not found" }, 404);
+    if (!existing) return apiError("hubs.roleNotFound", 404);
     if (method === "DELETE") {
       await env.DB.batch([
         env.DB.prepare("DELETE FROM decave_member_roles WHERE hub_id=? AND role_id=?").bind(hubId, roleId),
@@ -823,7 +814,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     }
     const body = await bodyJson(request);
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 32) : "";
-    if (!name) return json({ error: "Role name required" }, 400);
+    if (!name) return apiError("hubs.roleNameRequired", 400);
     const color = typeof body.color === "string" && /^#[0-9a-fA-F]{6}$/.test(body.color) ? body.color : existing.color;
     const icon = typeof body.icon === "string" ? Array.from(body.icon.trim()).slice(0, 4).join("") : existing.icon;
     const allowed: readonly string[] = CUSTOM_ROLE_PERMISSIONS;
@@ -846,7 +837,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(invites[1]);
     if (!(await hasPermission(env.DB, hubId, user.id, "createInvites")))
-      return json({ error: "Missing createInvites permission" }, 403);
+      return apiError("hubs.missingCreateInvites", 403);
     if (method === "GET") {
       const rows = await env.DB.prepare(
         `SELECT i.code,u.public_id createdBy,i.created_at createdAt,i.expires_at expiresAt,i.max_uses maxUses,i.uses FROM decave_invites i LEFT JOIN decave_users u ON u.id=i.created_by WHERE i.hub_id=? ORDER BY i.created_at DESC`,
@@ -879,12 +870,12 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const invite = await env.DB.prepare("SELECT * FROM decave_invites WHERE code=? COLLATE NOCASE")
       .bind(code)
       .first<{ hub_id: number; expires_at: string | null; max_uses: number | null; uses: number }>();
-    if (!invite) return json({ error: "Invite not found" }, 404);
-    if (invite.expires_at && Date.parse(invite.expires_at) < Date.now()) return json({ error: "Invite expired" }, 410);
+    if (!invite) return apiError("hubs.inviteNotFound", 404);
+    if (invite.expires_at && Date.parse(invite.expires_at) < Date.now()) return apiError("hubs.inviteExpired", 410);
     const banned = await env.DB.prepare("SELECT 1 FROM decave_bans WHERE hub_id=? AND user_id=?")
       .bind(invite.hub_id, user.id)
       .first();
-    if (banned) return json({ error: "You are banned from this Hub" }, 403);
+    if (banned) return apiError("hubs.banned", 403);
     const existing = await getRole(env.DB, invite.hub_id, user.id);
     if (!existing) {
       const claimed = await env.DB.prepare(
@@ -892,7 +883,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
       )
         .bind(code, nowIso())
         .first<{ hub_id: number }>();
-      if (!claimed) return json({ error: "Invite has expired or reached its use limit" }, 410);
+      if (!claimed) return apiError("hubs.inviteUsedUp", 410);
       const joined = await env.DB.prepare(
         "INSERT OR IGNORE INTO decave_hub_members(hub_id,user_id,role,joined_at) VALUES(?,?, 'member', ?)",
       )
@@ -910,8 +901,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const hubId = Number(auditRoute[1]);
-    if (!(await hasPermission(env.DB, hubId, user.id, "viewAudit")))
-      return json({ error: "Missing viewAudit permission" }, 403);
+    if (!(await hasPermission(env.DB, hubId, user.id, "viewAudit"))) return apiError("hubs.missingViewAudit", 403);
     const rows = await env.DB.prepare(
       `SELECT a.id,a.action,actor.public_id actorUserId,actor.username actorUsername,target.public_id targetUserId,target.username targetUsername,a.detail,a.created_at timestamp FROM decave_audit a LEFT JOIN decave_users actor ON actor.id=a.actor_user_id LEFT JOIN decave_users target ON target.id=a.target_user_id WHERE a.hub_id=? ORDER BY a.created_at DESC LIMIT 100`,
     )
@@ -927,7 +917,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const hubId = Number(modRoute[1]);
     const targetUser = await userByReference(env.DB, decodeURIComponent(modRoute[2]));
     const targetId = targetUser?.id ?? "";
-    if (!targetId) return json({ error: "User not found" }, 404);
+    if (!targetId) return apiError("common.userNotFound", 404);
     const action = modRoute[3];
     const actorRole = await getRole(env.DB, hubId, user.id);
     const targetRole = await getRole(env.DB, hubId, targetId);
@@ -937,7 +927,11 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
         : actorRole === "admin"
           ? targetRole === "member"
           : (await hasPermission(env.DB, hubId, user.id, "moderateMembers")) && targetRole === "member";
-    if (!allowed) return json({ error: `You cannot ${action} this member` }, 403);
+    if (!allowed)
+      return apiError(
+        action === "kick" ? "hubs.cannotKick" : action === "ban" ? "hubs.cannotBan" : "hubs.cannotTimeout",
+        403,
+      );
     const body = await bodyJson(request);
     const reason = typeof body.reason === "string" ? body.reason.slice(0, 120) : "";
     const streamerCleanup = (await streamerMigrationExists(env.DB))
@@ -955,7 +949,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
       if (kicked[1]?.meta?.changes) memberEvent(hubId, targetId, "memberLeave", { reason: "kicked" });
       await realtimeBroadcast(
         env,
-        { type: "ACCESS_REVOKED", serverId: hubId, message: "You were kicked from this Hub." },
+        { type: "ACCESS_REVOKED", serverId: hubId, ...serverNotice("chat.server.kickedFromHub") },
         { userIds: [targetId] },
       );
       return json({ success: true });
@@ -975,7 +969,7 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
       if (banned[1]?.meta?.changes) memberEvent(hubId, targetId, "memberLeave", { reason: "banned" });
       await realtimeBroadcast(
         env,
-        { type: "ACCESS_REVOKED", serverId: hubId, message: "You were banned from this Hub." },
+        { type: "ACCESS_REVOKED", serverId: hubId, ...serverNotice("chat.server.bannedFromHub") },
         { userIds: [targetId] },
       );
       return json({ success: true });
@@ -999,20 +993,20 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(createRoom[1]);
     if (!(await hasPermission(env.DB, hubId, user.id, "manageRooms")))
-      return json({ error: "Missing manageRooms permission" }, 403);
+      return apiError("common.missingManageRooms", 403);
     const body = await bodyJson(request);
     const name = cleanRoomName(body.name);
-    if (!name) return json({ error: "Room name is required" }, 400);
+    if (!name) return apiError("hubs.roomNameRequired", 400);
     const requestedType = body.type;
     const type =
       requestedType === "voice" ? "voice" : requestedType === "text" || requestedType === "forum" ? "text" : null;
     const kind = requestedType === "forum" ? "forum" : "chat";
-    if (!type) return json({ error: "Room type must be text, voice, or forum" }, 400);
+    if (!type) return apiError("hubs.roomTypeInvalid", 400);
     const icon = cleanRoomIcon(body.icon);
     const dup = await env.DB.prepare("SELECT 1 FROM decave_rooms WHERE hub_id=? AND name=? AND type=? AND kind=?")
       .bind(hubId, name, type, kind)
       .first();
-    if (dup) return json({ error: "Room already exists" }, 409);
+    if (dup) return apiError("hubs.roomExists", 409);
     const id = await nextIntegerId(env.DB, "decave_rooms");
     const category = typeof body.category === "string" ? body.category.trim().slice(0, 40) : "";
     const position = Number(
@@ -1034,14 +1028,15 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const forumPostRoleIds =
       forumPostPolicy === "roles" ? await validatedHubRoleIds(env.DB, hubId, body.forumPostRoleIds) : [];
     if (forumPostRoleIds === null)
-      return json({ error: "Forum posting roles must be roles of this Hub", field: "forumPostRoleIds" }, 400);
+      return apiError("hubs.forumRolesInvalid", 400, undefined, undefined, { field: "forumPostRoleIds" });
     const forumPostMemberIds =
       forumPostPolicy === "members" ? await validatedHubMemberPublicIds(env.DB, hubId, body.forumPostMemberIds) : [];
     if (forumPostMemberIds === null)
-      return json({ error: "Forum posting members must be members of this Hub", field: "forumPostMemberIds" }, 400);
+      return apiError("hubs.forumMembersInvalid", 400, undefined, undefined, { field: "forumPostMemberIds" });
     const forumTagsResult =
       kind === "forum" ? normalizeForumTags(body.forumTags) : { ok: true as const, tags: [] as string[] };
-    if (!forumTagsResult.ok) return json({ error: forumTagsResult.error, field: "forumTags" }, 400);
+    if (!forumTagsResult.ok)
+      return apiError(forumTagsResult.code, 400, forumTagsResult.params, undefined, { field: "forumTags" });
     const forumTags = forumTagsResult.tags;
     await env.DB.prepare(
       "INSERT INTO decave_rooms(id,hub_id,name,type,kind,category,position,private,icon,forum_guidelines,forum_post_policy,forum_post_role_ids_json,forum_post_member_ids_json,forum_tags_json,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -1093,25 +1088,25 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(reorderRooms[1]);
     if (!(await hasPermission(env.DB, hubId, user.id, "manageRooms")))
-      return json({ error: "Missing manageRooms permission" }, 403);
+      return apiError("common.missingManageRooms", 403);
     const body = await bodyJson(request);
     const orderedIds = Array.isArray(body.orderedIds)
       ? body.orderedIds.filter((id): id is number => Number.isSafeInteger(id) && id > 0)
       : [];
     if (!orderedIds.length || orderedIds.length > 250 || new Set(orderedIds).size !== orderedIds.length)
-      return json({ error: "A unique room order is required" }, 400);
+      return apiError("hubs.roomOrderRequired", 400);
     const rows = (
       await env.DB.prepare("SELECT id,type,kind FROM decave_rooms WHERE hub_id=? ORDER BY position,id")
         .bind(hubId)
         .all<{ id: number; type: "text" | "voice"; kind: "chat" | "forum" }>()
     ).results;
     const first = rows.find((room) => room.id === orderedIds[0]);
-    if (!first) return json({ error: "Room not found" }, 404);
+    if (!first) return apiError("hubs.roomNotFound", 404);
     const displayType = (room: { type: "text" | "voice"; kind: "chat" | "forum" }) =>
       room.kind === "forum" ? "forum" : room.type;
     const group = rows.filter((room) => displayType(room) === displayType(first));
     if (group.length !== orderedIds.length || group.some((room) => !orderedIds.includes(room.id)))
-      return json({ error: "The order must include every room in that section" }, 400);
+      return apiError("hubs.roomOrderIncomplete", 400);
     const updatedAt = nowIso();
     await env.DB.batch(
       orderedIds.map((id, position) =>

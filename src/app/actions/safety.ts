@@ -4,6 +4,8 @@ import type { Dispatch, SetStateAction } from "react";
 import type { SafetyProfile, SafetyReportTarget } from "../../safety/types";
 import type { AccountUser, DmNotice, UserContextTarget, UserContextMenuState } from "../types";
 import { HTTP_URL } from "../env";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import { authorizedFetch } from "../http";
 
 export type SafetyActionsDeps = {
@@ -48,7 +50,7 @@ export function createSafetyActions(deps: SafetyActionsDeps) {
         setDmNotice({
           userId: target.userId,
           username: target.username,
-          text: data.error || "Could not update the block.",
+          text: apiErrorMessage(data, "client.safety.block"),
         });
         return;
       }
@@ -57,13 +59,13 @@ export function createSafetyActions(deps: SafetyActionsDeps) {
       );
       setUserContextMenu(null);
     } catch {
-      setDmNotice({ userId: target.userId, username: target.username, text: "Could not connect to DeCave." });
+      setDmNotice({ userId: target.userId, username: target.username, text: i18next.t("errors.client.connect") });
     }
   };
 
   const confirmAgeGate = async () => {
     if (!ageGateBirthDate) {
-      setAgeGateNotice("Enter your birth date to continue.");
+      setAgeGateNotice(i18next.t("chat.actions.safety.birthDateMissing"));
       return;
     }
     setAgeGateBusy(true);
@@ -76,12 +78,12 @@ export function createSafetyActions(deps: SafetyActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as { safety?: SafetyProfile; error?: string };
       if (!response.ok || !data.safety) {
-        setAgeGateNotice(data.error || "We could not verify your age.");
+        setAgeGateNotice(apiErrorMessage(data, "client.safety.verifyAge"));
         return;
       }
       setCurrentUser((current) => (current ? { ...current, safety: data.safety } : current));
     } catch {
-      setAgeGateNotice("Could not connect to DeCave.");
+      setAgeGateNotice(i18next.t("errors.client.connect"));
     } finally {
       setAgeGateBusy(false);
     }

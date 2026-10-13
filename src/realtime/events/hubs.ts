@@ -14,6 +14,8 @@ import type {
 } from "../../app/types";
 import type { HubEventsStore } from "../../features/events";
 import type { RealtimeFrame } from "../connection";
+import { i18next } from "../../i18n/index.ts";
+import { serverMessage } from "../../i18n/notice.ts";
 import { applyFriendPresence, applyPresenceHints, applyUsersDiff, parseUsersDiff } from "../presence";
 
 export type HubEventContext = {
@@ -181,7 +183,7 @@ export function handleHubEvent(data: RealtimeFrame, context: HubEventContext): b
       }
       voiceReconnectChannelRef.current = null;
       cleanupVoiceLocal(true);
-      setVoiceError("This voice room was deleted. Choose another room to continue.");
+      setVoiceError(i18next.t("hub.actions.realtime.voiceRoomDeleted"));
     }
 
     const selectedDeleted = activeChannelRef.current === deletedChannelId;
@@ -266,7 +268,7 @@ export function handleHubEvent(data: RealtimeFrame, context: HubEventContext): b
       }
       voiceReconnectChannelRef.current = null;
       cleanupVoiceLocal(true);
-      setVoiceError(typeof data.message === "string" ? data.message : "Your access to this Hub was revoked.");
+      setVoiceError(serverMessage(data, i18next.t("hub.actions.realtime.accessRevoked")));
     }
     setMessages([]);
     void loadServers();

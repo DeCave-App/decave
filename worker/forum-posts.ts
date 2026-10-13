@@ -1,6 +1,8 @@
 // Forum feed endpoints backed by decave_forum_post_state (migration 0057).
 import { getRoom, hasPermission, isForumStaff, type RoomRow, type UserRow } from "./db";
 import { FORUM_PAGE_SIZE, FORUM_REPLY_PAGE_SIZE, FORUM_SORTS, type ForumSort } from "../shared/forum";
+import { errorFields } from "./lib/http";
+import { localizeOfficialPosts } from "./lib/official-post-translations";
 
 export type ForumDeps = {
   json(data: unknown, status?: number, headers?: HeadersInit): Response;
@@ -77,21 +79,19 @@ export async function handleForumRoute(
   const user = await deps.requireUser(request);
   if (user instanceof Response) return user;
   const room = await getRoom(db, roomId);
-  if (!room) return deps.json({ error: "Room not found" }, 404);
-  if (!(await deps.canAccessRoom(room, user.id)))
-    return deps.json({ error: "You do not have access to this room" }, 403);
-  if (room.kind !== "forum") return deps.json({ error: "This room is not a forum" }, 400);
+  if (!room) return deps.json(errorFields("forumFeed.roomNotFound"), 404);
+  if (!(await deps.canAccessRoom(room, user.id))) return deps.json(errorFields("forumFeed.noAccess"), 403);
+  if (room.kind !== "forum") return deps.json(errorFields("forumFeed.notForum"), 400);
   const url = new URL(request.url);
 
   if (!postId) {
     const sortParam = url.searchParams.get("sort") ?? "active";
-    if (!FORUM_SORTS.includes(sortParam as ForumSort))
-      return deps.json({ error: "sort must be active, new, top or unanswered" }, 400);
+    if (!FORUM_SORTS.includes(sortParam as ForumSort)) return deps.json(errorFields("forumFeed.invalidSort"), 400);
     const sort = sortParam as ForumSort;
     const tag = (url.searchParams.get("tag") ?? "").trim().slice(0, 24);
     const q = (url.searchParams.get("q") ?? "").trim().slice(0, 100);
     const cursor = decodeCursor(url.searchParams.get("cursor"));
-    if (cursor === false) return deps.json({ error: "Invalid cursor" }, 400);
+    if (cursor === false) return deps.json(errorFields("forumFeed.invalidCursor"), 400);
     const offset = cursor && Number.isSafeInteger(cursor.o) && Number(cursor.o) >= 0 ? Number(cursor.o) : 0;
     if (offset > 10_000) return deps.json({ posts: [], nextCursor: null });
     // Optional smaller page (the Hub sidebar asks for a few posts per forum).
@@ -133,10 +133,15 @@ export async function handleForumRoute(
       .bind(...binds, pageSize + 1, offset)
       .all<PostStateRow>();
     const page = rows.results.slice(0, pageSize);
-    const messages = (await deps.messagesForClient(
-      page.map((r) => r.message_id),
-      user.id,
-    )) as { id: string }[];
+    const messages = await localizeOfficialPosts(
+      db,
+      room,
+      user,
+      (await deps.messagesForClient(
+        page.map((r) => r.message_id),
+        user.id,
+      )) as { id: string }[],
+    );
     const byId = new Map(messages.map((m) => [m.id, m]));
     return deps.json({
       posts: page.flatMap((r) =>
@@ -153,10 +158,15 @@ export async function handleForumRoute(
     )
     .bind(postId, roomId)
     .first<PostStateRow>();
-  if (!post) return deps.json({ error: "Post not found" }, 404);
+  if (!post) return deps.json(errorFields("forumFeed.postNotFound"), 404);
 
   if (method === "GET" && !replies) {
-    const [message] = await deps.messagesForClient([post.message_id], user.id);
+    const [message] = await localizeOfficialPosts(
+      db,
+      room,
+      user,
+      (await deps.messagesForClient([post.message_id], user.id)) as { id: string }[],
+    );
     return deps.json({ post: { message, ...stateForClient(post) } });
   }
 
@@ -168,7 +178,7 @@ export async function handleForumRoute(
         .prepare("SELECT id, created_at FROM decave_messages WHERE id=? AND reply_to_id=? AND room_id=?")
         .bind(before, postId, roomId)
         .first<{ id: string; created_at: string }>();
-      if (!anchor) return deps.json({ error: "Invalid cursor" }, 400);
+      if (!anchor) return deps.json(errorFields("forumFeed.invalidCursor"), 400);
     }
     const rows = await db
       .prepare(
@@ -199,17 +209,17 @@ export async function handleForumRoute(
   const body = await deps.bodyJson(request);
   const wantsModeration = body.pinned !== undefined || body.locked !== undefined;
   const wantsSolved = body.solvedReplyId !== undefined;
-  if (!wantsModeration && !wantsSolved) return deps.json({ error: "Nothing to update" }, 400);
+  if (!wantsModeration && !wantsSolved) return deps.json(errorFields("forumFeed.nothingToUpdate"), 400);
   if (body.pinned !== undefined && typeof body.pinned !== "boolean")
-    return deps.json({ error: "pinned must be a boolean" }, 400);
+    return deps.json(errorFields("forumFeed.pinnedInvalid"), 400);
   if (body.locked !== undefined && typeof body.locked !== "boolean")
-    return deps.json({ error: "locked must be a boolean" }, 400);
+    return deps.json(errorFields("forumFeed.lockedInvalid"), 400);
   if (wantsSolved && body.solvedReplyId !== null && typeof body.solvedReplyId !== "string")
-    return deps.json({ error: "solvedReplyId must be a reply id or null" }, 400);
+    return deps.json(errorFields("forumFeed.solvedReplyInvalid"), 400);
   const manager = await hasPermission(db, room.hub_id, user.id, "manageRooms");
-  if (wantsModeration && !manager) return deps.json({ error: "Missing manageRooms permission" }, 403);
+  if (wantsModeration && !manager) return deps.json(errorFields("forumFeed.manageRoomsRequired"), 403);
   if (wantsSolved && !manager && post.author_user_id !== user.id && !(await isForumStaff(db, room.hub_id, user.id))) {
-    return deps.json({ error: "Only the post author or a forum moderator can mark a solution" }, 403);
+    return deps.json(errorFields("forumFeed.solutionNotAllowed"), 403);
   }
   let solved = post.solved_reply_id;
   if (wantsSolved) {
@@ -219,7 +229,7 @@ export async function handleForumRoute(
         .prepare("SELECT 1 AS found FROM decave_messages WHERE id=? AND reply_to_id=? AND room_id=?")
         .bind(body.solvedReplyId, postId, roomId)
         .first<{ found: number }>();
-      if (!reply) return deps.json({ error: "The solution must be a reply to this post" }, 400);
+      if (!reply) return deps.json(errorFields("forumFeed.solutionNotReply"), 400);
       solved = body.solvedReplyId as string;
     }
   }

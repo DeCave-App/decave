@@ -1,66 +1,24 @@
 import { useEffect, useId, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { apiErrorMessage, type ApiErrorBody } from "../../i18n/apiError";
 import { TypeToConfirmDialog } from "../shared/TypeToConfirmDialog";
 import { BotApiError, createBotsApi } from "../bots/api";
 import type { AuthorizedFetch, HubCustomRole, HubMemberRow, HubPermission } from "./types";
 
+// Labels: hub.manageHub.roles.groups.<id> and hub.manageHub.roles.permissions.<id>.label / .description.
 export const PERMISSION_GROUPS: Array<{
-  id: string;
-  label: string;
-  items: Array<{ id: HubPermission; label: string; description: string }>;
+  id: "general" | "moderation" | "voice";
+  items: HubPermission[];
 }> = [
-  {
-    id: "general",
-    label: "General",
-    items: [
-      {
-        id: "manageRooms",
-        label: "Manage rooms",
-        description: "Create, edit, reorder and delete rooms, including private room access.",
-      },
-      { id: "manageEvents", label: "Manage events", description: "Create, edit and cancel Hub calendar events." },
-      {
-        id: "manageBots",
-        label: "Manage bots",
-        description: "Build, publish and turn off Hub bots. Manage rooms includes this.",
-      },
-      {
-        id: "createInvites",
-        label: "Create invites",
-        description: "Generate invite links for people outside the Hub.",
-      },
-      {
-        id: "viewAudit",
-        label: "View audit log",
-        description: "See who changed Hub settings, roles and moderation actions.",
-      },
-    ],
-  },
-  {
-    id: "moderation",
-    label: "Moderation",
-    items: [
-      {
-        id: "moderateMessages",
-        label: "Moderate messages",
-        description: "Delete or pin other people’s messages and forum posts.",
-      },
-      {
-        id: "moderateMembers",
-        label: "Moderate members",
-        description: "Time out, remove and ban members below the admin level.",
-      },
-    ],
-  },
-  {
-    id: "voice",
-    label: "Voice",
-    items: [{ id: "voiceModerate", label: "Moderate voice", description: "Mute or disconnect people in voice rooms." }],
-  },
+  { id: "general", items: ["manageRooms", "manageEvents", "manageBots", "createInvites", "viewAudit"] },
+  { id: "moderation", items: ["moderateMessages", "moderateMembers"] },
+  { id: "voice", items: ["voiceModerate"] },
 ];
 
 type Draft = { name: string; color: string; icon: string; permissions: HubPermission[] };
 const EMPTY_DRAFT: Draft = { name: "", color: "#62d6ff", icon: "", permissions: [] };
 const NEW_ID = "__new__";
+const ROLE_ICON_PLACEHOLDER = "🛡️";
 
 type RolesSectionProps = {
   hubId: number;
@@ -92,6 +50,7 @@ export function RolesSection({
   members,
   onRolesChanged,
 }: RolesSectionProps) {
+  const { t } = useTranslation(["hub"]);
   const [selectedId, setSelectedId] = useState<string>(() => roles[0]?.id ?? NEW_ID);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [busy, setBusy] = useState(false);
@@ -147,8 +106,12 @@ export function RolesSection({
       headers: body ? { "Content-Type": "application/json" } : undefined,
       body: body ? JSON.stringify(body) : undefined,
     });
-    const data = (await response.json().catch(() => ({}))) as { id?: string; error?: string };
-    if (!response.ok) throw new Error(data.error || "The role could not be saved.");
+    const data = (await response.json().catch(() => ({}))) as { id?: string } & ApiErrorBody;
+    if (!response.ok) {
+      throw new Error(
+        data.code || data.error ? apiErrorMessage(data, "common.unknown") : t("hub.manageHub.roles.saveFailed"),
+      );
+    }
     return data;
   };
 
@@ -167,7 +130,7 @@ export function RolesSection({
         if (created.id) setSelectedId(created.id);
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "The role could not be saved.");
+      setError(caught instanceof Error ? caught.message : t("hub.manageHub.roles.saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -183,7 +146,7 @@ export function RolesSection({
       setSelectedId(NEW_ID);
       await onRolesChanged();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "The role could not be deleted.");
+      setError(caught instanceof Error ? caught.message : t("hub.manageHub.roles.deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -202,17 +165,19 @@ export function RolesSection({
       <div
         className="dch-roles-list"
         role="listbox"
-        aria-label="Roles"
+        aria-label={t("hub.manageHub.roles.listLabel")}
         aria-activedescendant={`${baseId}-${selectedId}`}
       >
         <div className="dch-roles-fixed">
           <span className="dch-role-row is-static">
             <i style={{ background: "var(--ds-warn)" }} aria-hidden="true" />
-            Owner<small>All permissions</small>
+            {t("hub.manageHub.roles.owner")}
+            <small>{t("hub.manageHub.roles.ownerHint")}</small>
           </span>
           <span className="dch-role-row is-static">
             <i style={{ background: "var(--ds-accent-2)" }} aria-hidden="true" />
-            Admin<small>All except ownership</small>
+            {t("hub.manageHub.roles.admin")}
+            <small>{t("hub.manageHub.roles.adminHint")}</small>
           </span>
         </div>
         {roles.map((role) => (
@@ -242,41 +207,40 @@ export function RolesSection({
             className={`dch-role-row dch-role-new${selectedId === NEW_ID ? " is-active" : ""}`}
             onClick={() => setSelectedId(NEW_ID)}
           >
-            + Create role
+            {t("hub.manageHub.roles.createNew")}
           </button>
         )}
       </div>
 
       <div className="dch-roles-editor">
-        {!isOwner && <div className="dcx-notice dcx-notice-info">Only the Hub owner can create or edit roles.</div>}
+        {!isOwner && <div className="dcx-notice dcx-notice-info">{t("hub.manageHub.roles.ownerOnly")}</div>}
         {!selected && !isOwner ? (
-          <p className="dcx-hint">This Hub has no custom roles yet.</p>
+          <p className="dcx-hint">{t("hub.manageHub.roles.empty")}</p>
         ) : (
           <fieldset disabled={!isOwner || busy} className="dch-fieldset">
-            <legend className="dcx-sr-only">{selected ? `Edit ${selected.name}` : "New role"}</legend>
+            <legend className="dcx-sr-only">
+              {selected ? t("hub.manageHub.roles.editRole", { name: selected.name }) : t("hub.manageHub.roles.newRole")}
+            </legend>
             <section className="dcx-card">
               <div className="dcx-card-head">
-                <h4>{selected ? "Role details" : "New role"}</h4>
+                <h4>{selected ? t("hub.manageHub.roles.details") : t("hub.manageHub.roles.newRole")}</h4>
                 {selected && (
-                  <p>
-                    {memberCounts.get(selected.id) ?? 0} member{(memberCounts.get(selected.id) ?? 0) === 1 ? "" : "s"}{" "}
-                    have this role. Assign it from Members.
-                  </p>
+                  <p>{t("hub.manageHub.roles.memberCount", { count: memberCounts.get(selected.id) ?? 0 })}</p>
                 )}
               </div>
               <div className="dch-role-fields">
                 <label className="dch-field">
-                  <span>Name</span>
+                  <span>{t("hub.manageHub.roles.name")}</span>
                   <input
                     className="dcx-input"
                     value={draft.name}
                     maxLength={32}
-                    placeholder="Moderator"
+                    placeholder={t("hub.manageHub.roles.namePlaceholder")}
                     onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
                   />
                 </label>
                 <label className="dch-field dch-field-color">
-                  <span>Color</span>
+                  <span>{t("hub.manageHub.roles.color")}</span>
                   <input
                     type="color"
                     value={draft.color}
@@ -284,12 +248,12 @@ export function RolesSection({
                   />
                 </label>
                 <label className="dch-field dch-field-icon">
-                  <span>Icon</span>
+                  <span>{t("hub.manageHub.roles.icon")}</span>
                   <input
                     className="dcx-input"
                     value={draft.icon}
                     maxLength={8}
-                    placeholder="🛡️"
+                    placeholder={ROLE_ICON_PLACEHOLDER}
                     onChange={(event) =>
                       setDraft((current) => ({ ...current, icon: Array.from(event.target.value).slice(0, 4).join("") }))
                     }
@@ -297,14 +261,14 @@ export function RolesSection({
                 </label>
               </div>
               {iconChoices.length > 0 && (
-                <div className="dch-role-icons" role="group" aria-label="Suggested role icons">
+                <div className="dch-role-icons" role="group" aria-label={t("hub.manageHub.roles.suggestedIcons")}>
                   {iconChoices.map((icon) => (
                     <button
                       type="button"
                       key={icon}
                       className={`dcr-icon-choice${draft.icon === icon ? " is-selected" : ""}`}
                       aria-pressed={draft.icon === icon}
-                      aria-label={`Use ${icon} as role icon`}
+                      aria-label={t("hub.manageHub.roles.useIcon", { icon })}
                       onClick={() => setDraft((current) => ({ ...current, icon }))}
                     >
                       {icon}
@@ -316,24 +280,28 @@ export function RolesSection({
             {PERMISSION_GROUPS.map((group) => (
               <section className="dcx-card" key={group.id} aria-labelledby={`${baseId}-group-${group.id}`}>
                 <div className="dcx-card-head">
-                  <h4 id={`${baseId}-group-${group.id}`}>{group.label}</h4>
+                  <h4 id={`${baseId}-group-${group.id}`}>{t(`hub.manageHub.roles.groups.${group.id}`)}</h4>
                 </div>
                 {group.items
-                  .filter((item) => item.id !== "manageBots" || botsAvailable)
+                  .filter((item) => item !== "manageBots" || botsAvailable)
                   .map((item) => (
-                    <div className="dcx-row" key={item.id}>
+                    <div className="dcx-row" key={item}>
                       <div className="dcx-row-copy">
-                        <label htmlFor={`${baseId}-perm-${item.id}`}>{item.label}</label>
-                        <small id={`${baseId}-perm-${item.id}-d`}>{item.description}</small>
+                        <label htmlFor={`${baseId}-perm-${item}`}>
+                          {t(`hub.manageHub.roles.permissions.${item}.label`)}
+                        </label>
+                        <small id={`${baseId}-perm-${item}-d`}>
+                          {t(`hub.manageHub.roles.permissions.${item}.description`)}
+                        </small>
                       </div>
                       <div className="dcx-row-control">
                         <label className="dcx-switch">
                           <input
-                            id={`${baseId}-perm-${item.id}`}
+                            id={`${baseId}-perm-${item}`}
                             type="checkbox"
-                            aria-describedby={`${baseId}-perm-${item.id}-d`}
-                            checked={draft.permissions.includes(item.id)}
-                            onChange={() => togglePermission(item.id)}
+                            aria-describedby={`${baseId}-perm-${item}-d`}
+                            checked={draft.permissions.includes(item)}
+                            onChange={() => togglePermission(item)}
                           />
                           <span aria-hidden="true" />
                         </label>
@@ -354,15 +322,19 @@ export function RolesSection({
                   className="dcx-btn dcx-btn-danger dcx-btn-sm"
                   onClick={() => setConfirmDelete(true)}
                 >
-                  Delete role
+                  {t("hub.manageHub.roles.delete")}
                 </button>
               </div>
             )}
           </fieldset>
         )}
         {isOwner && (dirty || !selected) && (
-          <div className="dcx-dirtybar" role="region" aria-label={selected ? "Unsaved role changes" : "Create role"}>
-            <span>{selected ? "Unsaved role changes" : "New role draft"}</span>
+          <div
+            className="dcx-dirtybar"
+            role="region"
+            aria-label={selected ? t("hub.manageHub.roles.unsaved") : t("hub.manageHub.roles.create")}
+          >
+            <span>{selected ? t("hub.manageHub.roles.unsaved") : t("hub.manageHub.roles.draft")}</span>
             <div>
               {selected && (
                 <button
@@ -371,7 +343,7 @@ export function RolesSection({
                   disabled={busy}
                   onClick={() => setDraft(original)}
                 >
-                  Reset
+                  {t("hub.manageHub.reset")}
                 </button>
               )}
               <button
@@ -380,7 +352,11 @@ export function RolesSection({
                 disabled={busy || !draft.name.trim()}
                 onClick={() => void save()}
               >
-                {busy ? "Saving…" : selected ? "Save role" : "Create role"}
+                {busy
+                  ? t("hub.manageHub.saving")
+                  : selected
+                    ? t("hub.manageHub.roles.save")
+                    : t("hub.manageHub.roles.create")}
               </button>
             </div>
           </div>
@@ -389,10 +365,10 @@ export function RolesSection({
 
       {confirmDelete && selected && (
         <TypeToConfirmDialog
-          title={`Delete ${selected.name}?`}
-          description="Members lose this role and its permissions immediately. Forum posting rules that use it will stop matching anyone."
+          title={t("hub.manageHub.roles.confirmTitle", { name: selected.name })}
+          description={t("hub.manageHub.roles.confirmDescription")}
           confirmText={selected.name}
-          actionLabel="Delete role"
+          actionLabel={t("hub.manageHub.roles.delete")}
           busy={busy}
           onCancel={() => setConfirmDelete(false)}
           onConfirm={() => void remove()}

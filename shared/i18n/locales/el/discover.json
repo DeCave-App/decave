@@ -1,0 +1,102 @@
+{
+  "sort": {
+    "active": "Ενεργά τώρα",
+    "friends": "Φίλοι",
+    "largest": "Μεγαλύτερα",
+    "new": "Νέα"
+  },
+  "size": {
+    "any": "Οποιοδήποτε μέγεθος",
+    "small": "Κάτω από 50",
+    "medium": "50 έως 500",
+    "large": "500+"
+  },
+  "friends": {
+    "count_one": "{{count}} φίλος εδώ",
+    "count_other": "{{count}} φίλοι εδώ",
+    "one": "{{name}} είναι εδώ",
+    "two": "{{first}} και {{second}} είναι εδώ",
+    "more_one": "{{names}} και {{count}} ακόμα είναι εδώ",
+    "more_other": "{{names}} και {{count}} ακόμα είναι εδώ"
+  },
+  "open": "Άνοιγμα",
+  "joining": "Γίνεσαι μέλος…",
+  "join": "Γίνε μέλος",
+  "pageLabel": "Ανακάλυψη Hubs",
+  "kicker": "Ανακάλυψη",
+  "title": "Βρες ένα Hub που αξίζει τον κόπο",
+  "stats_one": "{{count}} δημόσιο Hub · {{online}} άτομα σε σύνδεση",
+  "stats_other": "{{count}} δημόσια Hubs · {{online}} άτομα σε σύνδεση",
+  "statsVoice_one": " · {{count}} στη φωνή",
+  "statsVoice_other": " · {{count}} στη φωνή",
+  "searchPlaceholder": "Αναζήτηση Hub, κατηγορίας ή ετικέτας",
+  "searchLabel": "Αναζήτηση δημόσιων Hubs",
+  "invitePlaceholder": "Έχεις κωδικό πρόσκλησης;",
+  "inviteLabel": "Κωδικός πρόσκλησης",
+  "useInvite": "Χρήση πρόσκλησης",
+  "refresh": "Ανανέωση",
+  "filters": {
+    "label": "Φίλτρα",
+    "showMe": "Δείξε μου",
+    "friendsInside": "Με φίλους σου",
+    "activeNow": "Ενεργά τώρα",
+    "category": "Κατηγορία",
+    "all": "Όλα",
+    "size": "Μέγεθος",
+    "clear": "Καθαρισμός φίλτρων"
+  },
+  "results": {
+    "all": "Όλα τα δημόσια Hubs",
+    "some_one": "{{shown}} από {{count}} Hub",
+    "some_other": "{{shown}} από {{count}} Hubs"
+  },
+  "sortLabel": "Ταξινόμηση Hubs",
+  "loading": "Φόρτωση δημόσιων Hubs…",
+  "inVoice_one": "{{count}} στη φωνή",
+  "inVoice_other": "{{count}} στη φωνή",
+  "defaultCategory": "Κοινότητα",
+  "noDescription": "Δεν υπάρχει περιγραφή ακόμα.",
+  "card": {
+    "previewLabel": "Προεπισκόπηση {{name}}",
+    "joined": "Μέλος",
+    "membershipPrivate": "Ιδιωτική λίστα μελών",
+    "counts_one": "<b>{{online}}</b> σε σύνδεση · {{members}} μέλη",
+    "counts_other": "<b>{{online}}</b> σε σύνδεση · {{members}} μέλη",
+    "preview": "Προεπισκόπηση"
+  },
+  "empty": {
+    "noMatch": "Κανένα Hub δεν ταιριάζει με αυτά τα φίλτρα",
+    "quiet": "Ησυχία στα δημόσια Hubs προς το παρόν",
+    "noMatchHint": "Δοκίμασε άλλη αναζήτηση ή καθάρισε τα φίλτρα.",
+    "quietHint": "Μπορείς να μπεις με κωδικό πρόσκλησης ή να φτιάξεις ένα δημόσιο Hub, που θα εμφανιστεί εδώ."
+  },
+  "preview": {
+    "loadFailed": "Δεν ήταν δυνατή η φόρτωση αυτού του Hub.",
+    "label": "Προεπισκόπηση {{name}}",
+    "fallbackLabel": "Προεπισκόπηση Hub",
+    "close": "Κλείσιμο προεπισκόπησης",
+    "categoryPublic": "{{category}} · Δημόσιο",
+    "rightNow": "Αυτή τη στιγμή",
+    "counts_one": "{{online}} σε σύνδεση · {{members}} μέλη",
+    "counts_other": "{{online}} σε σύνδεση · {{members}} μέλη",
+    "going_one": "{{count}} θα έρθει",
+    "going_other": "{{count}} θα έρθουν",
+    "inside": "Μέσα",
+    "loadingRooms": "Φόρτωση δωματίων…",
+    "chatRooms_one": "{{count}} δωμάτιο συνομιλίας",
+    "chatRooms_other": "{{count}} δωμάτια συνομιλίας",
+    "forums_one": "{{count}} φόρουμ",
+    "forums_other": "{{count}} φόρουμ",
+    "threads_one": "{{count}} νήμα",
+    "threads_other": "{{count}} νήματα",
+    "voiceRooms_one": "{{count}} φωνητικό δωμάτιο",
+    "voiceRooms_other": "{{count}} φωνητικά δωμάτια",
+    "moreRooms_one": "+{{count}} ακόμα",
+    "moreRooms_other": "+{{count}} ακόμα",
+    "rules": "Κανόνες",
+    "moreRules_one": "+{{count}} ακόμα αφού γίνεις μέλος",
+    "moreRules_other": "+{{count}} ακόμα αφού γίνεις μέλος",
+    "openHub": "Άνοιγμα Hub",
+    "joinHub": "Γίνε μέλος του Hub"
+  }
+}

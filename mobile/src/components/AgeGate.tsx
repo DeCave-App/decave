@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiJson } from "@/src/lib/api";
 import { colors } from "@/src/theme";
@@ -10,13 +11,14 @@ type AgeGateProps = {
 };
 
 export function AgeGate({ token, onComplete }: AgeGateProps) {
+  const { t } = useTranslation(["common", "errors"]);
   const [birthDate, setBirthDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
 
   const submit = async () => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
-      setNotice("Enter your birth date as YYYY-MM-DD.");
+      setNotice(t("common.mobile.ageGate.formatHint"));
       return;
     }
     setBusy(true);
@@ -29,7 +31,7 @@ export function AgeGate({ token, onComplete }: AgeGateProps) {
       );
       onComplete(data.safety);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "We could not verify your age.");
+      setNotice(error instanceof Error ? error.message : t("errors.client.safety.verifyAge"));
     } finally {
       setBusy(false);
     }
@@ -39,16 +41,16 @@ export function AgeGate({ token, onComplete }: AgeGateProps) {
     <Modal visible transparent animationType="fade" onRequestClose={() => {}}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>WELCOME TO DECAVE</Text>
-          <Text style={styles.title}>Confirm your age</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("common.ageGate.kicker")}</Text>
+          <Text style={styles.title}>{t("common.ageGate.title")}</Text>
           <Text style={styles.copy}>
-            DeCave is only for adults aged 18 and older. We keep only an age band and the verification time, not your exact birth date.
+            {t("common.mobile.ageGate.body")}
           </Text>
-          <Text style={styles.label}>Birth date</Text>
+          <Text style={styles.label}>{t("common.ageGate.birthDate")}</Text>
           <TextInput
             value={birthDate}
             onChangeText={(value) => setBirthDate(value.replace(/[^0-9-]/g, "").slice(0, 10))}
-            placeholder="YYYY-MM-DD"
+            placeholder={t("common.mobile.ageGate.placeholder")}
             placeholderTextColor={colors.faint}
             keyboardType="numbers-and-punctuation"
             autoCapitalize="none"
@@ -57,7 +59,7 @@ export function AgeGate({ token, onComplete }: AgeGateProps) {
           />
           {!!notice && <Text style={styles.error}>{notice}</Text>}
           <Pressable accessibilityRole="button" style={[styles.button, busy && styles.buttonDisabled]} onPress={() => void submit()} disabled={busy}>
-            <Text style={styles.buttonText}>{busy ? "Checking…" : "Continue"}</Text>
+            <Text style={styles.buttonText}>{busy ? t("common.status.checking") : t("common.actions.continue")}</Text>
           </Pressable>
         </View>
       </View>

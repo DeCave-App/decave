@@ -6,8 +6,8 @@
 // artwork on this DeCave server, which is shown inline.
 
 import { useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  PRIVATE_NOTICE_LABEL,
   cardButtons,
   cardFields,
   cardSelect,
@@ -19,6 +19,7 @@ import {
   type BotForm,
   type MessageBot,
 } from "../../../shared/bots/card-view";
+import { apiErrorText } from "../shared/apiErrorText";
 import { BotFormModal } from "./BotFormModal";
 import "./bot-cards.css";
 
@@ -38,10 +39,11 @@ type Props = {
 
 /** BOT badge with the bot's colour as a small dot (any colour stays readable). */
 export function BotBadge({ bot }: { bot: Pick<MessageBot, "color"> }) {
+  const { t } = useTranslation(["bots"]);
   return (
     <span className="bot-badge">
       {bot.color ? <i className="bot-badge-dot" style={{ background: bot.color }} aria-hidden="true" /> : null}
-      BOT
+      {t("bots.card.badge")}
     </span>
   );
 }
@@ -73,6 +75,7 @@ export function BotCard({
   authorizedFetch,
   showHead = true,
 }: Props) {
+  const { t } = useTranslation(["bots"]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState<BotForm | null>(null);
@@ -101,14 +104,13 @@ export function BotCard({
       });
       const data: unknown = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const message = (data as { error?: unknown }).error;
-        setError(typeof message === "string" ? message : `The bot did not answer (${response.status}).`);
+        setError(apiErrorText(data, t("bots.card.noAnswerStatus", { status: response.status })));
         return;
       }
-      const next = formFromResponse(data);
+      const next = formFromResponse(data, t("bots.card.form.untitled"));
       if (next) setForm(next);
     } catch {
-      setError("The bot did not answer.");
+      setError(t("bots.card.noAnswer"));
     } finally {
       setBusy(false);
     }
@@ -121,10 +123,10 @@ export function BotCard({
           {bot.avatarEmoji ? <span aria-hidden="true">{bot.avatarEmoji}</span> : null}
           <BotBadge bot={bot} />
           <strong>{bot.name}</strong>
-          {privateNotice ? <span className="bot-private-label">{PRIVATE_NOTICE_LABEL}</span> : null}
+          {privateNotice ? <span className="bot-private-label">{t("bots.card.privateNotice")}</span> : null}
         </div>
       ) : privateNotice ? (
-        <span className="bot-private-label">{PRIVATE_NOTICE_LABEL}</span>
+        <span className="bot-private-label">{t("bots.card.privateNotice")}</span>
       ) : null}
       <div className="bot-message-text">{body}</div>
       {card ? (
@@ -151,7 +153,7 @@ export function BotCard({
             <img className="bot-card-image" src={inlineImage} alt="" loading="lazy" referrerPolicy="no-referrer" />
           ) : imageLink ? (
             <a className="bot-card-image-link" href={imageLink} target="_blank" rel="noreferrer noopener">
-              Open image
+              {t("bots.card.openImage")}
             </a>
           ) : null}
           {buttons.length ? (
@@ -172,7 +174,7 @@ export function BotCard({
           {select ? (
             <select
               className="bot-card-select"
-              aria-label="Choose an option"
+              aria-label={t("bots.card.chooseOption")}
               disabled={busy}
               value={selected}
               onChange={(event) => {
@@ -181,7 +183,7 @@ export function BotCard({
                 if (value) void interact(select.customId, value);
               }}
             >
-              <option value="">Choose…</option>
+              <option value="">{t("bots.card.choose")}</option>
               {select.options.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}

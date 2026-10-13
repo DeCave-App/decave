@@ -121,6 +121,58 @@
   border-radius: 50%;
   background: var(--dcx-warn);
 }
+#dcs-nav .dcs-nav-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+#dcs-nav .dcs-nav-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--dcx-warn);
+  color: #111;
+  font-size: 11px;
+  font-weight: 800;
+}
+#dcs-nav .dcs-search-results {
+  display: grid;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--dcx-border);
+  border-radius: 10px;
+}
+#dcs-nav .dcs-search-result {
+  display: grid;
+  gap: 1px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dcx-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+#dcs-nav .dcs-search-result:hover,
+#dcs-nav .dcs-search-result:focus-visible {
+  background: color-mix(in srgb, var(--ds-text) 6%, transparent);
+}
+#dcs-nav .dcs-search-result strong {
+  font-size: 13px;
+}
+#dcs-nav .dcs-search-result small {
+  color: var(--dcx-muted);
+  font-size: 11px;
+}
+.dcs-desktop-note {
+  margin: 12px 0 0;
+  color: var(--dcx-muted);
+}
 #dcs-nav .dcs-nav-empty {
   margin: 0;
   padding: 4px 10px;
@@ -224,6 +276,68 @@
     box-shadow: inset 0 -2px var(--dcx-accent);
   }
 }
+/* Kickers keep their capitals from CSS; the catalog text is sentence case. */
+.dc-settings-page .settings-audio-kicker,
+.dc-settings-page .dc-session-kicker {
+  text-transform: uppercase;
+}
+
+/* Instant save: toast, inline save errors and the search jump highlight. */
+.dcs-toast-region {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 60;
+  pointer-events: none;
+}
+.dcs-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--dcx-border);
+  background: var(--ds-surface-solid, #151b29);
+  color: var(--dcx-text);
+  font-size: 13px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+}
+.dcs-field-error {
+  display: block;
+  margin-top: 4px;
+  color: var(--ds-danger);
+  font-size: 12px;
+}
+.dcs-link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+[data-settings-anchor].dcs-anchor-flash {
+  animation: dcs-anchor-flash 1.6s ease-out;
+}
+@keyframes dcs-anchor-flash {
+  0%,
+  35% {
+    box-shadow: 0 0 0 2px var(--dcx-accent);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-settings-anchor].dcs-anchor-flash {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--dcx-accent);
+  }
+}
+
 @media (max-width: 560px) {
   .dc-settings-shell > .dcs-footer {
     flex-direction: column;

@@ -1,6 +1,7 @@
 // Confirmation dialog for the dangerous account actions (delete or lock).
 
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/Icon";
 import type { AdminActions } from "../actions/admin";
 import type { AccountActions } from "../actions/account";
@@ -38,17 +39,22 @@ export function AccountDangerDialog({
   adminActions,
   accountActions,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="modal-overlay" onClick={accountActions.closeAccountDangerDialog}>
       <div className="modal dc-account-danger-modal" onClick={(event) => event.stopPropagation()}>
         <div className="dc-account-danger-icon">
           <Icon name={accountDangerAction === "delete" ? "trash" : "lock"} />
         </div>
-        <h2>{accountDangerAction === "delete" ? "Delete account" : "Disable account"}</h2>
+        <h2>
+          {accountDangerAction === "delete"
+            ? t("common.account.danger.deleteTitle")
+            : t("common.account.danger.disableTitle")}
+        </h2>
         <p>
           {accountDangerAction === "delete"
-            ? "Your account will be scheduled for permanent deletion after 30 days. You must transfer ownership of every Hub you own before deletion can be scheduled. Sign in before the deletion date to cancel."
-            : "Your account and every active session will be disabled. Signing in again reactivates it."}
+            ? t("common.account.danger.deleteBody")
+            : t("common.account.danger.disableBody")}
         </p>
         <input
           className="ds-input"
@@ -56,14 +62,14 @@ export function AccountDangerDialog({
           value={dangerPassword}
           disabled={securityBusy}
           onChange={(event) => setDangerPassword(event.target.value)}
-          placeholder="Current password"
+          placeholder={t("common.account.currentPassword")}
           autoComplete="current-password"
           autoFocus
         />
         {ownerLoginChallengeToken && accountDangerOperationRef.current && (
           <>
             <label className="ds-field">
-              Authenticator or recovery code
+              {t("common.account.mfaCodeLabel")}
               <input
                 className="ds-input"
                 value={ownerLoginMfaCode}
@@ -78,7 +84,7 @@ export function AccountDangerDialog({
               disabled={ownerLoginMfaBusy || !ownerLoginMfaCode.trim()}
               onClick={() => void adminActions.submitOwnerMfaLogin()}
             >
-              Verify code
+              {t("common.actions.verifyCode")}
             </button>
           </>
         )}
@@ -89,7 +95,7 @@ export function AccountDangerDialog({
         )}
         <div className="modal-actions ds-modal-actions">
           <button type="button" className="ds-btn" onClick={accountActions.closeAccountDangerDialog}>
-            Cancel
+            {t("common.actions.cancel")}
           </button>
           <button
             type="button"
@@ -97,7 +103,11 @@ export function AccountDangerDialog({
             disabled={securityBusy || !dangerPassword}
             onClick={() => void accountActions.runAccountDangerAction(accountDangerAction)}
           >
-            {securityBusy ? "Confirming…" : accountDangerAction === "delete" ? "Delete" : "Disable"}
+            {securityBusy
+              ? t("common.status.confirming")
+              : accountDangerAction === "delete"
+                ? t("common.actions.delete")
+                : t("common.actions.disable")}
           </button>
         </div>
       </div>

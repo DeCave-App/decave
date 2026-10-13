@@ -5,6 +5,8 @@ import type { BotAction, BotFormField, BotTrigger } from "../../../shared/bots/t
 import type { Env } from "../../lib/env";
 import type { HubBotCapability } from "../../lib/hub-bots";
 import type { BotRow } from "../store";
+import type { BotRunNotice } from "../../../shared/bots/run-notice.ts";
+import type { ServerNotice } from "../../../shared/i18n/server-notices.ts";
 
 export type BotEvent = {
   hubId: number;
@@ -17,7 +19,16 @@ export type BotEvent = {
   data: Record<string, unknown>;
 };
 
-export type DryRunStep = { ruleId: string; action: string; description: string; ok: boolean; reason?: string };
+export type DryRunStep = {
+  ruleId: string;
+  action: string;
+  description: string;
+  ok: boolean;
+  reason?: string;
+  /** The reason and DeCave-written descriptions ("Would wait...") as notices the builder translates. */
+  reasonNotice?: BotRunNotice;
+  descriptionNotice?: BotRunNotice;
+};
 
 /** What an interaction (slash command, button, select) answers with; filled by actions such as openForm. */
 export type BotInteractionResponse = { form?: { formId: string; title: string; fields: BotFormField[] } };
@@ -36,11 +47,20 @@ export type ActionContext = {
   /** Set by the engine while an action runs: its index and the actions after it (used by wait). */
   actionIndex?: number;
   remaining?: BotAction[];
+  /** DeCave-written text (a command's usage hint): sent with its notice code so clients translate it. */
+  systemNotice?: ServerNotice;
 };
 
 export type ActionResult =
   | { ok: true; vars?: Record<string, string | number> }
-  | { ok: false; reason: string; /** Budget miss: logged as "limited", not a failure. */ limited?: true }
+  | {
+      ok: false;
+      reason: string;
+      /** The reason as a notice the bot builder shows in the viewer's language. */
+      notice?: BotRunNotice;
+      /** Budget miss: logged as "limited", not a failure. */
+      limited?: true;
+    }
   | { stop: true };
 
 export type ActionHandler = {

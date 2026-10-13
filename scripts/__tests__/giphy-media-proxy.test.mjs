@@ -246,8 +246,8 @@ test("app CSPs no longer allow GIPHY or removed media hosts", () => {
 
 test("web and mobile clients load GIF media only through the DeCave proxy", () => {
   assert.match(webPayloads, /\/api\/giphy\/media\?u=\$\{encodeURIComponent\(safe\)\}/);
-  assert.doesNotMatch(webRendering, /<img src=\{gifUrl\}/);
-  assert.match(webRendering, /<img src=\{gifSrc\}/);
+  assert.doesNotMatch(webRendering, /<(?:img|ChatAnimatedImage) src=\{gifUrl\}/);
+  assert.match(webRendering, /<(?:img|ChatAnimatedImage) src=\{gifSrc\}/);
   assert.match(webHubChat, /giphyMediaProxyUrl\(gif\.previewUrl\)/);
   assert.doesNotMatch(webHubChat, /src=\{gif\.previewUrl\}/);
   assert.match(mobileMedia, /\/api\/giphy\/media/);

@@ -1,26 +1,32 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { useSettingsT } from "./useSettingsT";
+import { apiErrorOr, type ApiErrorBody } from "../../i18n/apiError";
 
-type MfaStatus = { enabled: boolean; enabledAt: string | null; recoveryCodesRemaining: number };
+export type MfaStatus = { enabled: boolean; enabledAt: string | null; recoveryCodesRemaining: number };
 type Step = "idle" | "password" | "scan" | "codes" | "disable" | "regenerate";
 
-type Props = { apiBase: string };
+type Props = {
+  apiBase: string;
+  /** Told whenever two-factor is checked, turned on or off (Your setup uses it). */
+  onStatus?: (status: MfaStatus) => void;
+};
 
-async function post<T>(apiBase: string, path: string, body: unknown): Promise<T> {
+async function post<T>(apiBase: string, path: string, body: unknown, fallback: string): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = (await response.json().catch(() => ({}))) as T & { error?: string };
-  if (!response.ok) throw new Error(data.error || "Something went wrong. Try again.");
+  const data = (await response.json().catch(() => ({}))) as T & ApiErrorBody;
+  if (!response.ok) throw new Error(apiErrorOr(data, fallback));
   return data;
 }
 
 /** Download recovery codes as a text file the user can keep offline. */
-function downloadCodes(codes: string[]) {
-  const text = `DeCave recovery codes\nEach code works once. Keep them somewhere safe.\n\n${codes.join("\n")}\n`;
+function downloadCodes(codes: string[], header: string) {
+  const text = `${header}\n\n${codes.join("\n")}\n`;
   const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
   const link = document.createElement("a");
   link.href = url;
@@ -29,8 +35,9 @@ function downloadCodes(codes: string[]) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Settings → Account: optional two-factor sign-in with an authenticator app. */
-export function TwoFactorPanel({ apiBase }: Props) {
+/** Settings → Account & devices: optional two-factor sign-in with an authenticator app. */
+export function TwoFactorPanel({ apiBase, onStatus }: Props) {
+  const { t } = useSettingsT();
   const [status, setStatus] = useState<MfaStatus | null>(null);
   const [step, setStep] = useState<Step>("idle");
   const [password, setPassword] = useState("");
@@ -41,11 +48,16 @@ export function TwoFactorPanel({ apiBase }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const failed = t("settings.twoFactor.errorRetry");
 
   const load = async () => {
     try {
       const response = await fetch(`${apiBase}/api/account/mfa`, { credentials: "include" });
-      if (response.ok) setStatus((await response.json()) as MfaStatus);
+      if (response.ok) {
+        const next = (await response.json()) as MfaStatus;
+        setStatus(next);
+        onStatus?.(next);
+      }
     } catch {
       /* Status stays unknown; the panel shows a retry. */
     }
@@ -71,7 +83,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
     try {
       await task();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : t("settings.twoFactor.error"));
     } finally {
       setBusy(false);
     }
@@ -79,9 +91,12 @@ export function TwoFactorPanel({ apiBase }: Props) {
 
   const startSetup = () =>
     run(async () => {
-      const data = await post<{ secret: string; otpauth: string }>(apiBase, "/api/account/mfa/setup", {
-        currentPassword: password,
-      });
+      const data = await post<{ secret: string; otpauth: string }>(
+        apiBase,
+        "/api/account/mfa/setup",
+        { currentPassword: password },
+        failed,
+      );
       setSecret(data.secret);
       setQr(
         await QRCode.toDataURL(data.otpauth, {
@@ -97,7 +112,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
 
   const enable = () =>
     run(async () => {
-      const data = await post<{ recoveryCodes: string[] }>(apiBase, "/api/account/mfa/enable", { code });
+      const data = await post<{ recoveryCodes: string[] }>(apiBase, "/api/account/mfa/enable", { code }, failed);
       setCodes(data.recoveryCodes);
       setSecret("");
       setQr("");
@@ -108,17 +123,19 @@ export function TwoFactorPanel({ apiBase }: Props) {
 
   const disable = () =>
     run(async () => {
-      await post(apiBase, "/api/account/mfa/disable", { currentPassword: password, code });
+      await post(apiBase, "/api/account/mfa/disable", { currentPassword: password, code }, failed);
       reset();
       await load();
     });
 
   const regenerate = () =>
     run(async () => {
-      const data = await post<{ recoveryCodes: string[] }>(apiBase, "/api/account/mfa/recovery-codes", {
-        currentPassword: password,
-        code,
-      });
+      const data = await post<{ recoveryCodes: string[] }>(
+        apiBase,
+        "/api/account/mfa/recovery-codes",
+        { currentPassword: password, code },
+        failed,
+      );
       setCodes(data.recoveryCodes);
       setPassword("");
       setCode("");
@@ -138,7 +155,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
 
   const codeInput = (
     <label className="dcs-field">
-      <span>Authenticator or recovery code</span>
+      <span>{t("settings.twoFactor.codeLabel")}</span>
       <input
         className="dcx-input"
         value={code}
@@ -151,7 +168,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
   );
   const passwordInput = (
     <label className="dcs-field">
-      <span>Current password</span>
+      <span>{t("settings.twoFactor.currentPassword")}</span>
       <input
         className="dcx-input"
         type="password"
@@ -161,6 +178,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
       />
     </label>
   );
+  const checking = t("settings.twoFactor.checking");
 
   return (
     <div className="dcs-card" data-mfa-enabled={status?.enabled ? "true" : "false"}>
@@ -169,48 +187,43 @@ export function TwoFactorPanel({ apiBase }: Props) {
           {status?.enabled ? "✓" : "!"}
         </span>
         <div className="dcs-card-copy">
-          <strong>Two-factor sign-in</strong>
+          <strong>{t("settings.twoFactor.title")}</strong>
           <small>
             {status === null
-              ? "Checking…"
+              ? checking
               : status.enabled
-                ? `On · ${status.recoveryCodesRemaining} recovery code${status.recoveryCodesRemaining === 1 ? "" : "s"} left`
-                : "Off · Ask for a code from an authenticator app when you sign in on a new device."}
+                ? t("settings.twoFactor.on", { count: status.recoveryCodesRemaining })
+                : t("settings.twoFactor.off")}
           </small>
         </div>
         {step === "idle" && status && !status.enabled && (
           <button type="button" className="modal-primary" onClick={() => reset("password")}>
-            Turn on
+            {t("settings.twoFactor.turnOn")}
           </button>
         )}
         {step === "idle" && status?.enabled && (
           <div className="dcs-card-actions">
             <button type="button" className="modal-secondary" onClick={() => reset("regenerate")}>
-              New recovery codes
+              {t("settings.twoFactor.newCodes")}
             </button>
             <button type="button" className="modal-secondary dcs-danger-text" onClick={() => reset("disable")}>
-              Turn off
+              {t("settings.twoFactor.turnOff")}
             </button>
           </div>
         )}
       </div>
 
       {status?.enabled && status.recoveryCodesRemaining <= 2 && step === "idle" && (
-        <p className="dcs-warning">
-          You are running out of recovery codes. Make a new set so you don't get locked out.
-        </p>
+        <p className="dcs-warning">{t("settings.twoFactor.runningOut")}</p>
       )}
 
       {step === "password" && (
         <div className="dcs-steps">
-          <p>
-            Install an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, Authy…), then
-            confirm your password to begin.
-          </p>
+          <p>{t("settings.twoFactor.installApp")}</p>
           {passwordInput}
           <div className="dcs-card-actions">
             <button type="button" className="modal-secondary" onClick={() => reset()}>
-              Cancel
+              {t("settings.twoFactor.cancel")}
             </button>
             <button
               type="button"
@@ -218,7 +231,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
               disabled={busy || !password}
               onClick={() => void startSetup()}
             >
-              {busy ? "Checking…" : "Continue"}
+              {busy ? checking : t("settings.twoFactor.continue")}
             </button>
           </div>
         </div>
@@ -226,18 +239,18 @@ export function TwoFactorPanel({ apiBase }: Props) {
 
       {step === "scan" && (
         <div className="dcs-steps dcs-mfa-scan">
-          {qr && <img src={qr} width={180} height={180} alt="QR code for your authenticator app" />}
+          {qr && <img src={qr} width={180} height={180} alt={t("settings.twoFactor.qrAlt")} />}
           <div>
             <p>
-              <strong>1.</strong> Scan this code with your authenticator app.
+              <strong>1.</strong> {t("settings.twoFactor.scan")}
             </p>
-            <p>Can't scan? Enter this key instead:</p>
+            <p>{t("settings.twoFactor.cantScan")}</p>
             <code className="dcs-secret">{secret.replace(/(.{4})/g, "$1 ").trim()}</code>
             <p>
-              <strong>2.</strong> Type the 6-digit code the app shows.
+              <strong>2.</strong> {t("settings.twoFactor.typeCode")}
             </p>
             <label className="dcs-field">
-              <span>6-digit code</span>
+              <span>{t("settings.twoFactor.sixDigit")}</span>
               <input
                 className="dcx-input"
                 value={code}
@@ -252,7 +265,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
             </label>
             <div className="dcs-card-actions">
               <button type="button" className="modal-secondary" onClick={() => reset()}>
-                Cancel
+                {t("settings.twoFactor.cancel")}
               </button>
               <button
                 type="button"
@@ -260,7 +273,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
                 disabled={busy || code.length !== 6}
                 onClick={() => void enable()}
               >
-                {busy ? "Checking…" : "Turn on two-factor"}
+                {busy ? checking : t("settings.twoFactor.turnOnTwoFactor")}
               </button>
             </div>
           </div>
@@ -270,8 +283,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
       {step === "codes" && (
         <div className="dcs-steps">
           <p className="dcs-warning">
-            <strong>Save these recovery codes now.</strong> Each one works once if you lose your phone. You won't see
-            them again.
+            <strong>{t("settings.twoFactor.saveCodesNow")}</strong> {t("settings.twoFactor.saveCodesDetail")}
           </p>
           <ul className="dcs-codes">
             {codes.map((value) => (
@@ -282,10 +294,14 @@ export function TwoFactorPanel({ apiBase }: Props) {
           </ul>
           <div className="dcs-card-actions">
             <button type="button" className="modal-secondary" onClick={() => void copyCodes()}>
-              {copied ? "Copied" : "Copy"}
+              {copied ? t("settings.twoFactor.copied") : t("settings.twoFactor.copy")}
             </button>
-            <button type="button" className="modal-secondary" onClick={() => downloadCodes(codes)}>
-              Download .txt
+            <button
+              type="button"
+              className="modal-secondary"
+              onClick={() => downloadCodes(codes, t("settings.twoFactor.fileHeader"))}
+            >
+              {t("settings.twoFactor.downloadTxt")}
             </button>
             <button
               type="button"
@@ -295,7 +311,7 @@ export function TwoFactorPanel({ apiBase }: Props) {
                 reset();
               }}
             >
-              I saved them
+              {t("settings.twoFactor.savedThem")}
             </button>
           </div>
         </div>
@@ -304,15 +320,13 @@ export function TwoFactorPanel({ apiBase }: Props) {
       {(step === "disable" || step === "regenerate") && (
         <div className="dcs-steps">
           <p>
-            {step === "disable"
-              ? "Turning off two-factor makes your account easier to take over. Confirm it's you."
-              : "Your old recovery codes stop working as soon as you make new ones. Confirm it's you."}
+            {step === "disable" ? t("settings.twoFactor.disableWarning") : t("settings.twoFactor.regenerateWarning")}
           </p>
           {passwordInput}
           {codeInput}
           <div className="dcs-card-actions">
             <button type="button" className="modal-secondary" onClick={() => reset()}>
-              Cancel
+              {t("settings.twoFactor.cancel")}
             </button>
             <button
               type="button"
@@ -320,7 +334,11 @@ export function TwoFactorPanel({ apiBase }: Props) {
               disabled={busy || !password || !code}
               onClick={() => void (step === "disable" ? disable() : regenerate())}
             >
-              {busy ? "Checking…" : step === "disable" ? "Turn off two-factor" : "Make new codes"}
+              {busy
+                ? checking
+                : step === "disable"
+                  ? t("settings.twoFactor.turnOffTwoFactor")
+                  : t("settings.twoFactor.makeNewCodes")}
             </button>
           </div>
         </div>

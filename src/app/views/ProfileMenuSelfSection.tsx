@@ -1,5 +1,6 @@
 // Your own entry in the profile menu: status, mute and deafen, Settings and Log out.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { PresenceStatus, AccountUser, UserContextMenuState } from "../types";
@@ -30,9 +31,10 @@ export function ProfileMenuSelfSection({
   toggleMute,
   toggleDeafen,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="user-context-self-section">
-      <div className="user-context-section-title">STATUS</div>
+      <div className="user-context-section-title">{t("common.profileMenu.statusTitle")}</div>
       <div
         style={{
           display: "grid",
@@ -66,18 +68,18 @@ export function ProfileMenuSelfSection({
             padding: "8px 10px",
             fontWeight: 700,
           }}
-          aria-label="Set your status"
+          aria-label={t("common.profileMenu.setStatus")}
         >
-          <option value="online">Online</option>
-          <option value="idle">Idle</option>
-          <option value="dnd">Do Not Disturb</option>
-          <option value="invisible">Invisible</option>
+          <option value="online">{t("common.presence.online")}</option>
+          <option value="idle">{t("common.presence.idle")}</option>
+          <option value="dnd">{t("common.presence.dnd")}</option>
+          <option value="invisible">{t("common.presence.invisible")}</option>
         </select>
       </div>
 
       <div className="user-context-section-title dc-controls-heading">
-        <span>YOUR CONTROLS</span>
-        <small>Quick voice and account actions</small>
+        <span>{t("common.profileMenu.controlsTitle")}</span>
+        <small>{t("common.profileMenu.controlsHint")}</small>
       </div>
       <div className="dc-profile-controls">
         <button
@@ -87,19 +89,39 @@ export function ProfileMenuSelfSection({
           disabled={isServerMuted}
           aria-pressed={isMuted || isServerMuted}
           aria-label={
-            isServerMuted ? "Microphone muted by a hub moderator" : isMuted ? "Unmute microphone" : "Mute microphone"
+            isServerMuted
+              ? t("common.profileMenu.micLockedLabel")
+              : isMuted
+                ? t("common.profileMenu.unmuteMic")
+                : t("common.profileMenu.muteMic")
           }
         >
           <span className="dc-profile-control-icon" aria-hidden="true">
             <Icon name={isMuted || isServerMuted ? "mic-off" : "mic"} />
           </span>
           <span className="dc-profile-control-copy">
-            <strong>{isServerMuted ? "Mic locked" : isMuted ? "Mic muted" : "Mic on"}</strong>
+            <strong>
+              {isServerMuted
+                ? t("common.profileMenu.micLocked")
+                : isMuted
+                  ? t("common.profileMenu.micMuted")
+                  : t("common.profileMenu.micOn")}
+            </strong>
             <small>
-              {isServerMuted ? "Muted by a hub moderator" : isMuted ? "You are not being heard" : "Your voice is ready"}
+              {isServerMuted
+                ? t("common.profileMenu.micLockedHint")
+                : isMuted
+                  ? t("common.profileMenu.micMutedHint")
+                  : t("common.profileMenu.micOnHint")}
             </small>
           </span>
-          <span className="dc-profile-control-state">{isServerMuted ? "LOCKED" : isMuted ? "OFF" : "ON"}</span>
+          <span className="dc-profile-control-state">
+            {isServerMuted
+              ? t("common.profileMenu.locked")
+              : isMuted
+                ? t("common.profileMenu.off")
+                : t("common.profileMenu.on")}
+          </span>
         </button>
         <button
           type="button"
@@ -107,22 +129,40 @@ export function ProfileMenuSelfSection({
           onClick={toggleDeafen}
           disabled={isServerDeafened}
           aria-pressed={isDeafened || isServerDeafened}
-          aria-label={isServerDeafened ? "Audio deafened by a hub moderator" : isDeafened ? "Undeafen" : "Deafen"}
+          aria-label={
+            isServerDeafened
+              ? t("common.profileMenu.audioLockedLabel")
+              : isDeafened
+                ? t("common.profileMenu.undeafen")
+                : t("common.profileMenu.deafen")
+          }
         >
           <span className="dc-profile-control-icon" aria-hidden="true">
             <Icon name={isDeafened || isServerDeafened ? "headphones-off" : "headphones"} />
           </span>
           <span className="dc-profile-control-copy">
-            <strong>{isServerDeafened ? "Audio locked" : isDeafened ? "Audio muted" : "Audio on"}</strong>
+            <strong>
+              {isServerDeafened
+                ? t("common.profileMenu.audioLocked")
+                : isDeafened
+                  ? t("common.profileMenu.audioMuted")
+                  : t("common.profileMenu.audioOn")}
+            </strong>
             <small>
               {isServerDeafened
-                ? "Deafened by a hub moderator"
+                ? t("common.profileMenu.audioLockedHint")
                 : isDeafened
-                  ? "Voice audio is silenced"
-                  : "You can hear the room"}
+                  ? t("common.profileMenu.audioMutedHint")
+                  : t("common.profileMenu.audioOnHint")}
             </small>
           </span>
-          <span className="dc-profile-control-state">{isServerDeafened ? "LOCKED" : isDeafened ? "OFF" : "ON"}</span>
+          <span className="dc-profile-control-state">
+            {isServerDeafened
+              ? t("common.profileMenu.locked")
+              : isDeafened
+                ? t("common.profileMenu.off")
+                : t("common.profileMenu.on")}
+          </span>
         </button>
       </div>
 
@@ -139,8 +179,8 @@ export function ProfileMenuSelfSection({
             <Icon name="settings" />
           </span>
           <span className="user-context-settings-copy">
-            <strong>Settings</strong>
-            <small>Profile, appearance, voice &amp; audio</small>
+            <strong>{t("common.rail.settings")}</strong>
+            <small>{t("common.profileMenu.settingsHint")}</small>
           </span>
           <span className="dc-profile-action-chevron" aria-hidden="true">
             <Icon name="chevron-right" size="sm" />

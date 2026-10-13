@@ -18,6 +18,8 @@ import { useSession } from "@/src/providers/SessionProvider";
 import { SkeletonRows } from "@/src/components/Skeleton";
 import { colors } from "@/src/theme";
 import type { Hub } from "@/src/types";
+import { useTranslation } from "react-i18next";
+import { hubCategoryText } from "@/src/lib/hub-category";
 
 function assetUrl(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -26,6 +28,7 @@ function assetUrl(value: string | null | undefined): string | null {
 }
 
 export default function HubsScreen() {
+  const { t } = useTranslation(["hub", "common"]);
   const { token } = useSession();
 
   const [hubs, setHubs] = useState<Hub[]>([]);
@@ -59,7 +62,7 @@ export default function HubsScreen() {
       setHubs(mine);
       setDiscover(publicHubs);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not load Hubs.");
+      setNotice(error instanceof Error ? error.message : t("hub.mobile.hubs.couldNotLoadHubs"));
     } finally {
       setLoaded(true);
     }
@@ -96,7 +99,7 @@ export default function HubsScreen() {
       router.push(`/hub/${hub.id}`);
     } catch (error) {
       setNotice(
-        error instanceof Error ? error.message : "Could not create Hub.",
+        error instanceof Error ? error.message : t("hub.mobile.hubs.couldNotCreateHub"),
       );
     } finally {
       setCreating(false);
@@ -117,7 +120,7 @@ export default function HubsScreen() {
       await load();
       setMode("mine");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not join Hub.");
+      setNotice(error instanceof Error ? error.message : t("hub.mobile.hubs.couldNotJoinHub"));
     }
   };
 
@@ -134,7 +137,7 @@ export default function HubsScreen() {
       await load();
       router.push(`/hub/${hub.id}`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not use that invite.");
+      setNotice(error instanceof Error ? error.message : t("hub.mobile.hubs.couldNotUseThatInvite"));
       setCreateOpen(false);
     } finally {
       setJoiningInvite(false);
@@ -183,10 +186,10 @@ export default function HubsScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>YOUR COMMUNITIES</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("hub.mobile.hubs.yourCommunities")}</Text>
             <Text style={styles.title}>Hubs</Text>
             <Text style={styles.subtitle}>
-              Rooms, voice and the people you play with.
+              {t("hub.mobile.hubs.roomsVoiceAndThePeople")}
             </Text>
           </View>
 
@@ -194,7 +197,7 @@ export default function HubsScreen() {
             style={styles.createButton}
             onPress={() => setCreateOpen(true)}
             accessibilityRole="button"
-            accessibilityLabel="Create or join a Hub"
+            accessibilityLabel={t("hub.mobile.hubs.createOrJoinAHub")}
           >
             <Ionicons name="add" size={23} color="#fff" />
           </Pressable>
@@ -206,7 +209,7 @@ export default function HubsScreen() {
             value={query}
             onChangeText={setQuery}
             placeholder={
-              mode === "mine" ? "Search your Hubs" : "Find a public Hub"
+              mode === "mine" ? t("hub.mobile.hubs.searchYourHubs") : t("hub.mobile.hubs.findAPublicHub")
             }
             placeholderTextColor={colors.faint}
             style={styles.searchInput}
@@ -214,7 +217,7 @@ export default function HubsScreen() {
             autoCorrect={false}
           />
           {!!query && (
-            <Pressable accessibilityRole="button" accessibilityLabel="Clear" onPress={() => setQuery("")} hitSlop={8}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.clear")} onPress={() => setQuery("")} hitSlop={8}>
               <Ionicons name="close-circle" size={18} color={colors.faint} />
             </Pressable>
           )}
@@ -239,7 +242,7 @@ export default function HubsScreen() {
                 mode === "mine" && styles.segmentTextActive,
               ]}
             >
-              Your Hubs
+              {t("common.commandPalette.groupHubs")}
             </Text>
           </Pressable>
 
@@ -261,7 +264,7 @@ export default function HubsScreen() {
                 mode === "discover" && styles.segmentTextActive,
               ]}
             >
-              Discover
+              {t("common.rail.discover")}
             </Text>
           </Pressable>
         </View>
@@ -279,7 +282,7 @@ export default function HubsScreen() {
 
         <View style={styles.countRow}>
           <Text maxFontSizeMultiplier={1.3} style={styles.countLabel}>
-            {mode === "mine" ? "MEMBERSHIPS" : "PUBLIC HUBS"}
+            {mode === "mine" ? t("hub.mobile.hubs.memberships") : t("hub.mobile.hubs.publicHubs")}
           </Text>
           <Text maxFontSizeMultiplier={1.3} style={styles.countValue}>{filteredList.length}</Text>
         </View>
@@ -297,17 +300,17 @@ export default function HubsScreen() {
             </View>
             <Text style={styles.emptyTitle}>
               {query
-                ? "No matching Hubs"
+                ? t("hub.mobile.hubs.noMatchingHubs")
                 : mode === "mine"
-                  ? "No Hubs yet"
-                  : "No public Hubs right now"}
+                  ? t("common.mobile.home.noHubsYet")
+                  : t("hub.mobile.hubs.noPublicHubsRightNow")}
             </Text>
             <Text style={styles.emptyText}>
               {query
-                ? "Try another name, category or tag."
+                ? t("hub.mobile.hubs.tryAnotherNameCategoryOr")
                 : mode === "mine"
-                  ? "Create your own Hub or discover a public community."
-                  : "Public communities will appear here when they are available."}
+                  ? t("hub.mobile.hubs.createYourOwnHubOr")
+                  : t("hub.mobile.hubs.publicCommunitiesWillAppearHere")}
             </Text>
 
             {mode === "mine" && !query && (
@@ -317,14 +320,14 @@ export default function HubsScreen() {
                   style={styles.emptyAction}
                   onPress={() => setMode("discover")}
                 >
-                  <Text style={styles.emptyActionText}>Join a Hub</Text>
+                  <Text style={styles.emptyActionText}>{t("hub.mobile.hubs.joinAHub")}</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   style={[styles.emptyAction, styles.emptyActionSecondary]}
                   onPress={() => setCreateOpen(true)}
                 >
-                  <Text style={[styles.emptyActionText, styles.emptyActionSecondaryText]}>Create a Hub</Text>
+                  <Text style={[styles.emptyActionText, styles.emptyActionSecondaryText]}>{t("hub.createHub.title")}</Text>
                 </Pressable>
               </View>
             )}
@@ -362,10 +365,10 @@ export default function HubsScreen() {
                 <Ionicons name="people-circle-outline" size={23} color={colors.cyan} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.modalKicker}>NEW COMMUNITY</Text>
-                <Text style={styles.modalTitle}>Create or join a Hub</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.modalKicker}>{t("hub.mobile.hubs.newCommunity")}</Text>
+                <Text style={styles.modalTitle}>{t("hub.mobile.hubs.createOrJoinAHub")}</Text>
               </View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Close"
+              <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")}
                 style={styles.modalClose}
                 onPress={() => setCreateOpen(false)}
               >
@@ -373,30 +376,30 @@ export default function HubsScreen() {
               </Pressable>
             </View>
 
-            <Text style={styles.fieldLabel}>HUB NAME</Text>
+            <Text style={styles.fieldLabel}>{t("hub.mobile.hubs.hubName")}</Text>
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Give your Hub a name"
+              placeholder={t("hub.mobile.hubs.giveYourHubAName")}
               placeholderTextColor={colors.faint}
               style={styles.input}
               maxLength={40}
             />
 
-            <Text style={styles.fieldLabel}>PRIVACY</Text>
+            <Text style={styles.fieldLabel}>{t("hub.mobile.hubs.privacy")}</Text>
             <View style={styles.privacyGrid}>
               <PrivacyCard
                 active={visibility === "private"}
                 icon="lock-closed-outline"
-                title="Private"
-                detail="Invite only"
+                title={t("hub.sidebar.private")}
+                detail={t("hub.mobile.hubs.inviteOnly")}
                 onPress={() => setVisibility("private")}
               />
               <PrivacyCard
                 active={visibility === "public"}
                 icon="globe-outline"
-                title="Public"
-                detail="Discoverable"
+                title={t("hub.createHub.visibility.public.title")}
+                detail={t("hub.mobile.hubs.discoverable")}
                 onPress={() => setVisibility("public")}
               />
             </View>
@@ -410,16 +413,16 @@ export default function HubsScreen() {
               onPress={() => void createHub()}
             >
               <Text style={styles.primaryText}>
-                {creating ? "Creating…" : "Create Hub"}
+                {creating ? t("hub.createHub.creating") : t("hub.createHub.create")}
               </Text>
             </Pressable>
 
-            <Text style={[styles.fieldLabel, { marginTop: 22 }]}>HAVE AN INVITE?</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 22 }]}>{t("hub.mobile.hubs.haveAnInvite")}</Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput
                 value={inviteCode}
                 onChangeText={setInviteCode}
-                placeholder="Invite code or link"
+                placeholder={t("hub.mobile.hubs.inviteCodeOrLink")}
                 placeholderTextColor={colors.faint}
                 style={[styles.input, { flex: 1, marginBottom: 0 }]}
                 autoCapitalize="none"
@@ -429,12 +432,12 @@ export default function HubsScreen() {
               />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Join with invite"
+                accessibilityLabel={t("hub.mobile.hubs.joinWithInvite")}
                 style={[styles.primary, { marginTop: 0, paddingHorizontal: 18 }, (!inviteCode.trim() || joiningInvite) && styles.primaryDisabled]}
                 disabled={!inviteCode.trim() || joiningInvite}
                 onPress={() => void joinWithInvite()}
               >
-                <Text style={styles.primaryText}>{joiningInvite ? "Joining…" : "Join"}</Text>
+                <Text style={styles.primaryText}>{joiningInvite ? t("hub.mobile.hubs.joining") : t("common.actions.join")}</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -455,6 +458,7 @@ function HubCard({
   onOpen: () => void;
   onJoin: () => void;
 }) {
+  const { t } = useTranslation(["hub", "common"]);
   const accent = hub.accent || colors.violet;
   const canOpen = !discoverMode || hub.joined;
 
@@ -482,13 +486,13 @@ function HubCard({
                 size={10}
                 color={colors.muted}
               />
-              <Text style={styles.privateChipText}>Private</Text>
+              <Text style={styles.privateChipText}>{t("hub.sidebar.private")}</Text>
             </View>
           )}
         </View>
 
         <Text style={styles.meta} numberOfLines={1}>
-          {hub.category || "Gaming"} · {hub.memberCount ?? 0} members
+          {t("hub.mobile.hubs.categoryMembers", { category: hub.category ? hubCategoryText(hub.category) : t("hub.onboarding.defaultCategory"), count: hub.memberCount ?? 0 })}
         </Text>
 
         {!!hub.description && (
@@ -500,7 +504,7 @@ function HubCard({
         <View style={styles.statusRow}>
           <View style={styles.onlineDot} />
           <Text style={styles.onlineText}>
-            {hub.onlineCount ?? 0} online
+            {t("hub.mobile.hubs.onlinecountOnline", { onlineCount: hub.onlineCount ?? 0 })}
           </Text>
 
           {(hub.tags ?? []).slice(0, 2).map((tag) => (
@@ -513,7 +517,7 @@ function HubCard({
 
       {discoverMode && !hub.joined ? (
         <Pressable accessibilityRole="button" style={styles.join} onPress={onJoin}>
-          <Text style={styles.joinText}>Join</Text>
+          <Text style={styles.joinText}>{t("common.actions.join")}</Text>
         </Pressable>
       ) : (
         <View style={styles.openIcon}>

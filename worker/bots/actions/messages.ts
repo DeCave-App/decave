@@ -10,8 +10,10 @@ import { canAccessRoom } from "../../lib/hubs";
 import { BOT_MESSAGE_PREFIX, botMessageText, postBotMessage } from "../../lib/hub-bots";
 import { messageForClient } from "../../lib/messages";
 import { realtimeBroadcast } from "../../lib/realtime";
+import type { ServerNotice } from "../../../shared/i18n/server-notices.ts";
 import { queueHubMessage } from "../events";
 import { takeBudget } from "../limits";
+import { refusal } from "../reasons";
 import { guardActor, guardMessage, guardRoom, refused } from "./guard";
 import { registerAction, type ActionContext, type ActionResult } from "./registry";
 
@@ -31,7 +33,9 @@ function renderCard(ctx: ActionContext, card: BotCard | undefined): BotCard | nu
 }
 
 function spendMessage(ctx: ActionContext): ActionResult | null {
-  return takeBudget(ctx.event.hubId, "messages") ? null : { ok: false, reason: "Message limit reached", limited: true };
+  return takeBudget(ctx.event.hubId, "messages")
+    ? null
+    : { ok: false, ...refusal("bots.run.server.messageLimit"), limited: true };
 }
 
 /** Posts plain bot text (wrapped for current clients) unless it is a structured payload. */
@@ -39,19 +43,25 @@ export async function postFromBot(
   ctx: ActionContext,
   room: RoomRow,
   text: string,
-  extra: { card?: BotCard | null; visibleToUserId?: string | null; replyToId?: string | null; raw?: boolean } = {},
+  extra: {
+    card?: BotCard | null;
+    visibleToUserId?: string | null;
+    replyToId?: string | null;
+    raw?: boolean;
+    notice?: ServerNotice;
+  } = {},
 ): Promise<ActionResult> {
   const message = await postBotMessage(ctx.env, {
     hubId: ctx.event.hubId,
     roomId: room.id,
     botId: ctx.bot.id,
     authorUserId: ctx.publishedBy,
-    text: extra.raw ? text : botMessageText(ctx.bot, text),
+    text: extra.raw ? text : botMessageText(ctx.bot, text, extra.notice),
     card: extra.card ?? null,
     visibleToUserId: extra.visibleToUserId ?? null,
     replyToId: extra.replyToId ?? null,
   });
-  if (!message) return { ok: false, reason: "Could not post the message" };
+  if (!message) return { ok: false, ...refusal("bots.run.server.postFailed") };
   // Other bots (rules that opt in to bot triggers) see public bot messages one chain level deeper.
   if (!extra.visibleToUserId && !extra.raw)
     queueHubMessage(ctx.env, {
@@ -71,7 +81,7 @@ registerAction("sendMessage", {
   async run(ctx, action) {
     if (action.type !== "sendMessage") return OK;
     const room = await guardRoom(ctx, action.channel);
-    if (refused(room)) return { ok: false, reason: room.reason };
+    if (refused(room)) return { ok: false, reason: room.reason, notice: room.notice };
     if (ctx.dryRun) return OK;
     const limited = spendMessage(ctx);
     if (limited) return limited;
@@ -84,7 +94,7 @@ registerAction("reply", {
   async run(ctx, action) {
     if (action.type !== "reply") return OK;
     const target = await guardMessage(ctx, "trigger");
-    if (refused(target)) return { ok: false, reason: target.reason };
+    if (refused(target)) return { ok: false, reason: target.reason, notice: target.notice };
     // In a forum a reply belongs to the thread's post, not to another reply.
     const replyToId =
       target.room.kind === "forum" && target.message.reply_to_id ? target.message.reply_to_id : target.message.id;
@@ -93,9 +103,9 @@ registerAction("reply", {
       const post = await ctx.env.DB.prepare("SELECT locked FROM decave_forum_post_state WHERE message_id=? LIMIT 1")
         .bind(replyToId)
         .first<{ locked: number }>();
-      if (!post) return { ok: false, reason: "Forum replies must target a forum post" };
+      if (!post) return { ok: false, ...refusal("bots.run.server.forumReplyTarget") };
       if (post.locked === 1 && !(await isForumStaff(ctx.env.DB, ctx.event.hubId, ctx.publishedBy)))
-        return { ok: false, reason: "This post is locked" };
+        return { ok: false, ...refusal("bots.run.server.postLocked") };
     }
     if (ctx.dryRun) return OK;
     const limited = spendMessage(ctx);
@@ -109,14 +119,15 @@ registerAction("privateNotice", {
   async run(ctx, action) {
     if (action.type !== "privateNotice") return OK;
     const room = await guardRoom(ctx, "trigger");
-    if (refused(room)) return { ok: false, reason: room.reason };
+    if (refused(room)) return { ok: false, reason: room.reason, notice: room.notice };
     const actor = await guardActor(ctx);
-    if (refused(actor)) return { ok: false, reason: actor.reason };
-    if (!(await canAccessRoom(ctx.env.DB, room, actor))) return { ok: false, reason: "Member can't see this channel" };
+    if (refused(actor)) return { ok: false, reason: actor.reason, notice: actor.notice };
+    if (!(await canAccessRoom(ctx.env.DB, room, actor)))
+      return { ok: false, ...refusal("bots.run.server.memberNoAccess") };
     if (ctx.dryRun) return OK;
     const limited = spendMessage(ctx);
     if (limited) return limited;
-    return postFromBot(ctx, room, render(ctx, action.text), { visibleToUserId: actor });
+    return postFromBot(ctx, room, render(ctx, action.text), { visibleToUserId: actor, notice: ctx.systemNotice });
   },
 });
 
@@ -125,10 +136,10 @@ registerAction("editMessage", {
   async run(ctx, action) {
     if (action.type !== "editMessage") return OK;
     const target = await guardMessage(ctx, action.messageRef);
-    if (refused(target)) return { ok: false, reason: target.reason };
-    if (target.message.bot_id !== ctx.bot.id) return { ok: false, reason: "Bots can only edit their own messages" };
+    if (refused(target)) return { ok: false, reason: target.reason, notice: target.notice };
+    if (target.message.bot_id !== ctx.bot.id) return { ok: false, ...refusal("bots.run.server.editOwnOnly") };
     if (!target.message.text.startsWith(BOT_MESSAGE_PREFIX))
-      return { ok: false, reason: "This message can't be edited" };
+      return { ok: false, ...refusal("bots.run.server.cantEdit") };
     if (ctx.dryRun) return OK;
     const limited = spendMessage(ctx);
     if (limited) return limited;
@@ -143,10 +154,10 @@ registerAction("editMessage", {
 
 async function setPinned(ctx: ActionContext, ref: string, pinned: 0 | 1): Promise<ActionResult> {
   const target = await guardMessage(ctx, ref);
-  if (refused(target)) return { ok: false, reason: target.reason };
+  if (refused(target)) return { ok: false, reason: target.reason, notice: target.notice };
   // Mirrors the pin route: Moderate Messages is required.
   if (!(await hasPermission(ctx.env.DB, ctx.event.hubId, ctx.publishedBy, "moderateMessages")))
-    return { ok: false, reason: "Publisher can't moderate messages" };
+    return { ok: false, ...refusal("bots.run.server.publisherCantModerate") };
   if (ctx.dryRun || target.message.pinned === pinned) return OK;
   const limited = spendMessage(ctx);
   if (limited) return limited;
@@ -178,15 +189,15 @@ registerAction("deleteTrigger", {
   capability: "manage_messages",
   async run(ctx) {
     const target = await guardMessage(ctx, "trigger");
-    if (refused(target)) return { ok: false, reason: target.reason };
+    if (refused(target)) return { ok: false, reason: target.reason, notice: target.notice };
     const { message, room } = target;
     // Mirrors the delete route: owners and admins may delete any message.
     const role = await getRole(ctx.env.DB, ctx.event.hubId, ctx.publishedBy);
     if (message.bot_id !== ctx.bot.id && role !== "owner" && role !== "admin")
-      return { ok: false, reason: "Publisher can't delete this message" };
+      return { ok: false, ...refusal("bots.run.server.publisherCantDelete") };
     // Attachments and forum threads need the full delete route (media queue, thread replies).
     if (message.attachment_key || (room.kind === "forum" && message.reply_to_id === null))
-      return { ok: false, reason: "Bots can't delete this kind of message" };
+      return { ok: false, ...refusal("bots.run.server.cantDeleteKind") };
     if (ctx.dryRun) return OK;
     await ctx.env.DB.prepare("DELETE FROM decave_messages WHERE id=?").bind(message.id).run();
     await audit(
@@ -211,11 +222,11 @@ registerAction("react", {
   async run(ctx, action) {
     if (action.type !== "react") return OK;
     const emoji = action.emoji.trim().slice(0, 24);
-    if (!emoji) return { ok: false, reason: "Emoji required" };
+    if (!emoji) return { ok: false, ...refusal("bots.run.server.emojiRequired") };
     // Poll votes and forum votes are reactions too; a bot must not cast them.
-    if (/^(poll_|forum_vote_)/.test(emoji)) return { ok: false, reason: "That emoji is reserved" };
+    if (/^(poll_|forum_vote_)/.test(emoji)) return { ok: false, ...refusal("bots.run.server.emojiReserved") };
     const target = await guardMessage(ctx, "trigger");
-    if (refused(target)) return { ok: false, reason: target.reason };
+    if (refused(target)) return { ok: false, reason: target.reason, notice: target.notice };
     if (ctx.dryRun) return OK;
     const limited = spendMessage(ctx);
     if (limited) return limited;
@@ -236,12 +247,12 @@ registerAction("createThread", {
   async run(ctx, action) {
     if (action.type !== "createThread") return OK;
     const room = await guardRoom(ctx, "trigger");
-    if (refused(room)) return { ok: false, reason: room.reason };
-    if (room.kind !== "forum") return { ok: false, reason: "Threads need a forum channel" };
+    if (refused(room)) return { ok: false, reason: room.reason, notice: room.notice };
+    if (room.kind !== "forum") return { ok: false, ...refusal("bots.run.server.threadsNeedForum") };
     if (!(await canCreateForumPost(ctx.env.DB, room, ctx.publishedBy)))
-      return { ok: false, reason: "Publisher can't post in this forum" };
+      return { ok: false, ...refusal("bots.run.server.publisherCantPostForum") };
     const title = render(ctx, action.name).replace(/\s+/g, " ").trim().slice(0, 100);
-    if (!title) return { ok: false, reason: "Thread name is empty" };
+    if (!title) return { ok: false, ...refusal("bots.run.server.threadNameEmpty") };
     if (ctx.dryRun) return OK;
     const limited = spendMessage(ctx);
     if (limited) return limited;

@@ -1,10 +1,12 @@
 import "react-native-gesture-handler";
 // Before anything that encrypts: Hermes needs crypto.getRandomValues from expo-crypto.
 import "@/src/lib/e2ee/polyfills";
+// Before any screen renders text: starts the translation runtime.
+import { useAccountLocaleSync } from "@/src/i18n";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { SessionProvider } from "@/src/providers/SessionProvider";
+import { SessionProvider, useSession } from "@/src/providers/SessionProvider";
 import { RealtimeProvider } from "@/src/providers/RealtimeProvider";
 import { DmE2eeProvider } from "@/src/providers/DmE2eeProvider";
 import { VoiceProvider } from "@/src/providers/VoiceProvider";
@@ -21,12 +23,20 @@ import { IosBroadcastPicker } from "@/src/components/IosBroadcastPicker";
 import { SoundboardListener } from "@/src/components/Soundboard";
 import { useSkin } from "@/src/skin";
 
+/** Follows the language saved on the signed-in account. */
+function AccountLocaleSync() {
+  const { token } = useSession();
+  useAccountLocaleSync(token);
+  return null;
+}
+
 export default function RootLayout() {
   const { palette } = useSkin();
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.bg }}>
       <SafeAreaProvider>
         <SessionProvider>
+          <AccountLocaleSync />
           <RealtimeProvider>
             <DmE2eeProvider>
             <MutedUsersProvider>

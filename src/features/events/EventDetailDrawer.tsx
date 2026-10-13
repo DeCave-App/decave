@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { hubEventToIcs, type HubEvent } from "../../../shared/hub-events";
 import { useDialogA11y } from "../shared/useDialogA11y";
 import { cancelHubEvent, downloadHubEventIcs, downloadIcsText, type EventsApiContext } from "./api";
@@ -36,6 +37,7 @@ export type EventDetailDrawerProps = {
 };
 
 export function EventDetailDrawer(props: EventDetailDrawerProps) {
+  const { t } = useTranslation(["events"]);
   const { item, rooms, api } = props;
   const titleId = useId();
   const [now, setNow] = useState(() => Date.now());
@@ -84,7 +86,7 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
           item.title,
         );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not download the calendar file.");
+      setError(err instanceof Error ? err.message : t("events.api.icsFailed"));
     }
   };
 
@@ -97,7 +99,7 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
       props.onEventCancelled(item.hubId, event.id);
       props.onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not cancel this event.");
+      setError(err instanceof Error ? err.message : t("events.drawer.cancelFailed"));
     } finally {
       setBusy(false);
     }
@@ -105,13 +107,13 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
 
   const audienceLabel = event
     ? event.audience === "all"
-      ? "Everyone in the Hub"
+      ? t("events.drawer.audienceAll")
       : event.audience === "roles"
-        ? `${event.audienceIds.length} role${event.audienceIds.length === 1 ? "" : "s"}`
-        : `${event.audienceIds.length} invited member${event.audienceIds.length === 1 ? "" : "s"}`
+        ? t("events.drawer.audienceRoles", { count: event.audienceIds.length })
+        : t("events.drawer.audienceMembers", { count: event.audienceIds.length })
     : item.legacy?.authorName
-      ? `Posted by ${item.legacy.authorName}`
-      : "Hub event";
+      ? t("events.drawer.postedBy", { name: item.legacy.authorName })
+      : t("events.drawer.hubEvent");
 
   const body = (
     <div
@@ -138,15 +140,17 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
             type="button"
             className="evx-icon-btn evx-close"
             onClick={props.onClose}
-            aria-label="Close event details"
+            aria-label={t("events.drawer.close")}
           >
             <Icon name="close" size="sm" />
           </button>
           <div className="evx-cover-badges">
-            {live && <span className="evx-badge live">Live now</span>}
-            {item.cancelled && <span className="evx-badge cancelled">Cancelled</span>}
+            {live && <span className="evx-badge live">{t("events.status.live")}</span>}
+            {item.cancelled && <span className="evx-badge cancelled">{t("events.kind.cancelled")}</span>}
             <span className="evx-badge">{itemKindLabel(item)}</span>
-            {event && event.recurrence !== "none" && <span className="evx-badge">Repeats {event.recurrence}</span>}
+            {event && event.recurrence !== "none" && (
+              <span className="evx-badge">{t(`events.composer.repeatsChip.${event.recurrence}`)}</span>
+            )}
           </div>
         </div>
         <div className="evx-drawer-body">
@@ -155,13 +159,15 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
 
           <dl className="evx-facts">
             <div>
-              <dt>When</dt>
+              <dt>{t("events.drawer.when")}</dt>
               <dd>
                 <strong>{formatTimeRange(item.start, item.end)}</strong>
                 <small>
                   {timeZoneLabel(viewerTz, item.start)}
-                  {!ended && !live && !item.cancelled ? ` · starts ${formatCountdown(item.start, now)}` : ""}
-                  {ended ? " · ended" : ""}
+                  {!ended && !live && !item.cancelled
+                    ? t("events.drawer.startsIn", { countdown: formatCountdown(item.start, now) })
+                    : ""}
+                  {ended ? t("events.drawer.ended") : ""}
                 </small>
                 {item.timezone && item.timezone !== viewerTz && (
                   <small className="evx-alt-tz">
@@ -172,7 +178,7 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
             </div>
             {(voiceRoom || textRoom) && (
               <div>
-                <dt>Where</dt>
+                <dt>{t("events.drawer.where")}</dt>
                 <dd className="evx-where">
                   {voiceRoom && (
                     <button
@@ -180,19 +186,19 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
                       className="dcx-btn dcx-btn-primary"
                       onClick={() => props.onJoinVoice(item.hubId, voiceRoom.id)}
                     >
-                      Join voice · {voiceRoom.name}
+                      {t("events.drawer.joinVoice", { name: voiceRoom.name })}
                     </button>
                   )}
                   {textRoom && (
                     <button type="button" className="dcx-btn" onClick={() => props.onOpenRoom(item.hubId, textRoom.id)}>
-                      Open #{textRoom.name}
+                      {t("events.drawer.openRoom", { name: textRoom.name })}
                     </button>
                   )}
                 </dd>
               </div>
             )}
             <div>
-              <dt>Audience</dt>
+              <dt>{t("events.composer.audienceLabel")}</dt>
               <dd>
                 {audienceLabel}
                 {event?.gameTag ? <span className="evx-chip">{event.gameTag}</span> : null}
@@ -203,22 +209,18 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
           {item.description && <p className="evx-description">{item.description}</p>}
 
           {event && !item.cancelled && (
-            <section className="evx-section" aria-label="RSVP">
-              <h3>Are you going?</h3>
+            <section className="evx-section" aria-label={t("events.rsvp.label")}>
+              <h3>{t("events.drawer.going")}</h3>
               <RsvpControl
                 event={event}
                 api={api}
                 onChanged={props.onEventChanged}
-                disabledReason={ended && event.recurrence === "none" ? "This event has ended" : undefined}
+                disabledReason={ended && event.recurrence === "none" ? t("events.rsvp.ended") : undefined}
               />
               <AttendeeStack event={event} renderAvatar={props.renderAvatar} memberName={props.memberName} />
             </section>
           )}
-          {!event && (
-            <p className="evx-note">
-              This event was posted as a chat message by an older DeCave version, so RSVPs aren’t available.
-            </p>
-          )}
+          {!event && <p className="evx-note">{t("events.drawer.legacy")}</p>}
 
           {error && (
             <p className="evx-error" role="alert">
@@ -228,7 +230,7 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
 
           <div className="evx-actions">
             <button type="button" className="dcx-btn" onClick={() => void addToCalendar()}>
-              Add to calendar (.ics)
+              {t("events.drawer.addToCalendar")}
             </button>
             {!event && item.legacy && (
               <button
@@ -236,31 +238,31 @@ export function EventDetailDrawer(props: EventDetailDrawerProps) {
                 className="dcx-btn"
                 onClick={() => props.onOpenRoom(item.hubId, item.legacy!.channelId)}
               >
-                Open in chat
+                {t("events.drawer.openInChat")}
               </button>
             )}
             {event?.canManage && !item.cancelled && (
               <>
                 <button type="button" className="dcx-btn" onClick={() => props.onEdit(event)}>
-                  Edit
+                  {t("events.drawer.edit")}
                 </button>
                 {confirmCancel ? (
-                  <span className="evx-confirm" role="group" aria-label="Confirm cancel">
+                  <span className="evx-confirm" role="group" aria-label={t("events.drawer.confirmCancel")}>
                     <button
                       type="button"
                       className="dcx-btn dcx-btn-danger"
                       disabled={busy}
                       onClick={() => void cancelEvent()}
                     >
-                      {busy ? "Cancelling…" : "Yes, cancel event"}
+                      {busy ? t("events.drawer.cancelling") : t("events.drawer.confirmCancelYes")}
                     </button>
                     <button type="button" className="dcx-btn" disabled={busy} onClick={() => setConfirmCancel(false)}>
-                      Keep
+                      {t("events.drawer.keep")}
                     </button>
                   </span>
                 ) : (
                   <button type="button" className="dcx-btn dcx-btn-danger" onClick={() => setConfirmCancel(true)}>
-                    Cancel event
+                    {t("events.drawer.cancelEvent")}
                   </button>
                 )}
               </>

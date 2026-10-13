@@ -1,0 +1,1167 @@
+{
+  "rule": {
+    "deleted": {
+      "room": "deleted room (pick another)",
+      "voiceRoom": "deleted voice room (pick another)",
+      "role": "deleted role (pick another)",
+      "rule": "deleted rule (pick another)"
+    },
+    "pick": {
+      "room": "(pick a room)",
+      "voiceRoom": "(pick a voice room)",
+      "role": "(pick a role)",
+      "rule": "(pick a rule)"
+    },
+    "duration": {
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes"
+    },
+    "schedule": {
+      "every": "every {{duration}}",
+      "daily": "every day at {{time}}",
+      "weekly": "every {{day}} at {{time}}",
+      "cron": "on cron \"{{cron}}\"",
+      "any": "on a schedule"
+    },
+    "anyVoiceRoom": "any voice room",
+    "sameChannel": "the same channel",
+    "trigger": {
+      "command": "someone uses /{{name}}",
+      "message": {
+        "contains": "a message contains \"{{pattern}}\"",
+        "startsWith": "a message starts with \"{{pattern}}\"",
+        "exact": "a message is exactly \"{{pattern}}\"",
+        "regex": "a message matches \"{{pattern}}\""
+      },
+      "memberJoin": "someone joins the Hub",
+      "memberLeave": "someone leaves the Hub",
+      "roleAdded": "someone gets {{role}}",
+      "roleRemoved": "someone loses {{role}}",
+      "reactionAdded": "someone reacts with {{emoji}}",
+      "reactionRemoved": "someone removes a {{emoji}} reaction",
+      "component": "someone uses button \"{{id}}\"",
+      "formSubmit": "someone submits form \"{{id}}\"",
+      "voiceJoin": "someone joins {{room}}",
+      "voiceLeave": "someone leaves {{room}}",
+      "hubEventStart": "a Hub event starts",
+      "streamLive": "the stream goes live on Twitch",
+      "streamOffline": "the stream ends on Twitch"
+    },
+    "condition": {
+      "hasRole": "they have {{role}}",
+      "lacksRole": "they don't have {{role}}",
+      "channelIs": "it's in {{room}}",
+      "channelIsNot": "it's not in {{room}}",
+      "accountAge_one": "their account is {{count}}+ days old",
+      "accountAge_other": "their account is {{count}}+ days old",
+      "memberAge_one": "they joined {{count}}+ days ago",
+      "memberAge_other": "they joined {{count}}+ days ago",
+      "chance": "{{percent}}% chance",
+      "timeOfDay": "it's between {{from}} and {{to}}",
+      "weekday": "it's {{days}}",
+      "noDay": "it's no day"
+    },
+    "action": {
+      "sendMessage": "send {{text}} in {{room}}",
+      "reply": "reply {{text}}",
+      "editMessage": "edit the message to {{text}}",
+      "pin": "pin the message",
+      "unpin": "unpin the message",
+      "deleteTrigger": "delete the message",
+      "react": "react with {{emoji}}",
+      "createThread": "start thread {{name}}",
+      "privateNotice": "privately tell them {{text}}",
+      "addRole": "give {{role}}",
+      "addRoleFor": "give {{role}} for {{duration}}",
+      "removeRole": "remove {{role}}",
+      "removeRoleFor": "remove {{role}} for {{duration}}",
+      "toggleRole": "toggle {{role}}",
+      "toggleRoleFor": "toggle {{role}} for {{duration}}",
+      "openForm": "open form {{title}}",
+      "startPoll": "start poll {{question}}",
+      "createEvent": "create event {{title}}",
+      "setVariable": "set {{name}} to {{value}}",
+      "addVariable": "add {{value}} to {{name}}",
+      "resetVariable": "reset {{name}}",
+      "wait": "wait {{duration}}",
+      "stop": "stop",
+      "runRule": "run {{rule}}",
+      "webhook": "call {{method}} {{url}}"
+    },
+    "join": {
+      "and": "{{left}} and {{right}}",
+      "or": "{{left}} or {{right}}",
+      "then": "{{left}}, then {{right}}"
+    },
+    "sentence": {
+      "when": "When {{trigger}}",
+      "if": "If {{conditions}}",
+      "ifBoth": "If {{all}} and ({{any}})",
+      "do": "Do {{actions}}",
+      "doNothing": "Do nothing",
+      "otherwise": "Otherwise {{actions}}"
+    },
+    "label": "Rule {{number}}",
+    "defaultFormField": "Answer"
+  },
+  "variable": {
+    "user": "Member",
+    "channel": "Room",
+    "date": "Today's date",
+    "random": "Random number",
+    "text": "Message text",
+    "textSample": "hello there",
+    "match": "Matched part",
+    "matchSample": "hello",
+    "emoji": "Emoji",
+    "value": "Picked value",
+    "streamTitle": "Stream title",
+    "streamTitleSample": "Ranked grind tonight",
+    "streamGame": "Game",
+    "streamUrl": "Stream link",
+    "streamer": "Twitch channel",
+    "insert": "Insert a variable",
+    "previewLabel": "Preview",
+    "preview": "Preview: {{text}}"
+  },
+  "capability": {
+    "send_messages": {
+      "label": "Send messages",
+      "description": "Messages, replies, reactions, threads and private notices.",
+      "phrase": "send messages"
+    },
+    "create_polls": {
+      "label": "Create polls",
+      "description": "The Start poll action.",
+      "phrase": "create polls"
+    },
+    "create_events": {
+      "label": "Create events",
+      "description": "The Create Hub event action.",
+      "phrase": "create events"
+    },
+    "manage_roles": {
+      "label": "Manage roles",
+      "description": "Give, remove and toggle roles.",
+      "phrase": "manage roles"
+    },
+    "manage_messages": {
+      "label": "Manage messages",
+      "description": "Pin, unpin and delete messages.",
+      "phrase": "manage messages"
+    },
+    "webhooks": {
+      "label": "Call webhooks",
+      "description": "Send requests to HTTPS URLs.",
+      "phrase": "call webhooks"
+    }
+  },
+  "catalogue": {
+    "triggers": {
+      "command": {
+        "label": "Slash command",
+        "description": "A member runs /name in a room.",
+        "fields": {
+          "name": {
+            "label": "Command name",
+            "hint": "1-32 lowercase letters, digits or dashes, no slash."
+          },
+          "options": {
+            "label": "Options",
+            "hint": "List of {name, type (text|number|user|role|channel|choice), required, choices?}. Read as {args.name}."
+          }
+        }
+      },
+      "message": {
+        "label": "Message posted",
+        "description": "A message in a room matches a pattern.",
+        "fields": {
+          "mode": {
+            "label": "Match"
+          },
+          "pattern": {
+            "label": "Pattern",
+            "hint": "Regex: up to 200 characters, one * or + at most, repeats only on single characters, groups only for (a|b) choices. Checks the first 500 characters."
+          },
+          "caseSensitive": {
+            "label": "Case sensitive"
+          }
+        }
+      },
+      "memberJoin": {
+        "label": "Member joins",
+        "description": "Someone joins the hub."
+      },
+      "memberLeave": {
+        "label": "Member leaves",
+        "description": "Someone leaves the hub."
+      },
+      "roleAdded": {
+        "label": "Role added",
+        "description": "A member gets a role.",
+        "fields": {
+          "roleId": {
+            "label": "Role"
+          }
+        }
+      },
+      "roleRemoved": {
+        "label": "Role removed",
+        "description": "A member loses a role.",
+        "fields": {
+          "roleId": {
+            "label": "Role"
+          }
+        }
+      },
+      "reactionAdded": {
+        "label": "Reaction added",
+        "description": "A member reacts with an emoji.",
+        "fields": {
+          "emoji": {
+            "label": "Emoji"
+          },
+          "messageId": {
+            "label": "Only on message",
+            "hint": "Message id; empty for any message."
+          }
+        }
+      },
+      "reactionRemoved": {
+        "label": "Reaction removed",
+        "description": "A member removes a reaction.",
+        "fields": {
+          "emoji": {
+            "label": "Emoji"
+          },
+          "messageId": {
+            "label": "Only on message",
+            "hint": "Message id; empty for any message."
+          }
+        }
+      },
+      "component": {
+        "label": "Button or select used",
+        "description": "A member clicks a card button or picks from a card select.",
+        "fields": {
+          "customId": {
+            "label": "Button or select id",
+            "hint": "The customId set on the card."
+          }
+        }
+      },
+      "formSubmit": {
+        "label": "Form submitted",
+        "description": "A member submits a form opened by this bot.",
+        "fields": {
+          "formId": {
+            "label": "Form id",
+            "hint": "Fields are read as {form.fieldId}."
+          }
+        }
+      },
+      "voiceJoin": {
+        "label": "Joins voice",
+        "description": "A member joins a voice room.",
+        "fields": {
+          "roomId": {
+            "label": "Voice room",
+            "hint": "Empty for any voice room."
+          }
+        }
+      },
+      "voiceLeave": {
+        "label": "Leaves voice",
+        "description": "A member leaves a voice room.",
+        "fields": {
+          "roomId": {
+            "label": "Voice room",
+            "hint": "Empty for any voice room."
+          }
+        }
+      },
+      "schedule": {
+        "label": "On a schedule",
+        "description": "Runs on a timer, at least 5 minutes apart.",
+        "fields": {
+          "schedule": {
+            "label": "Schedule",
+            "hint": "Exactly one of every (minutes, >=5), daily (\"HH:MM\"), weekly ({day 0-6, time \"HH:MM\"}) or cron, plus timezone (IANA name)."
+          }
+        }
+      },
+      "hubEventStart": {
+        "label": "Hub event starts",
+        "description": "A scheduled hub event begins."
+      },
+      "streamLive": {
+        "label": "Stream goes live",
+        "description": "The hub's Twitch channel starts streaming (needs automatic live status in Stream Settings)."
+      },
+      "streamOffline": {
+        "label": "Stream ends",
+        "description": "The hub's Twitch channel stops streaming."
+      }
+    },
+    "conditions": {
+      "hasRole": {
+        "label": "Has role",
+        "description": "The member has a role.",
+        "fields": {
+          "roleId": {
+            "label": "Role"
+          }
+        }
+      },
+      "lacksRole": {
+        "label": "Lacks role",
+        "description": "The member does not have a role.",
+        "fields": {
+          "roleId": {
+            "label": "Role"
+          }
+        }
+      },
+      "channelIs": {
+        "label": "Room is",
+        "description": "The event happened in a room.",
+        "fields": {
+          "channelId": {
+            "label": "Room"
+          }
+        }
+      },
+      "channelIsNot": {
+        "label": "Room is not",
+        "description": "The event happened outside a room.",
+        "fields": {
+          "channelId": {
+            "label": "Room"
+          }
+        }
+      },
+      "accountAge": {
+        "label": "Account age",
+        "description": "The account is at least this many days old.",
+        "fields": {
+          "minDays": {
+            "label": "At least (days)"
+          }
+        }
+      },
+      "memberAge": {
+        "label": "Member for",
+        "description": "The member joined the hub at least this many days ago.",
+        "fields": {
+          "minDays": {
+            "label": "At least (days)"
+          }
+        }
+      },
+      "variable": {
+        "label": "Variable",
+        "description": "Compares a stored variable.",
+        "fields": {
+          "name": {
+            "label": "Variable"
+          },
+          "scope": {
+            "label": "Variable scope",
+            "hint": "user: one value per member; hub: one shared value."
+          },
+          "op": {
+            "label": "Comparison"
+          },
+          "value": {
+            "label": "Value"
+          }
+        }
+      },
+      "chance": {
+        "label": "Random chance",
+        "description": "Passes this percent of the time.",
+        "fields": {
+          "percent": {
+            "label": "Percent",
+            "hint": "0-100."
+          }
+        }
+      },
+      "timeOfDay": {
+        "label": "Time of day",
+        "description": "The current time is in a window.",
+        "fields": {
+          "from": {
+            "label": "From",
+            "hint": "\"HH:MM\"."
+          },
+          "to": {
+            "label": "To",
+            "hint": "\"HH:MM\"."
+          },
+          "timezone": {
+            "label": "Time zone",
+            "hint": "IANA name, e.g. Europe/Berlin."
+          }
+        }
+      },
+      "weekday": {
+        "label": "Weekday",
+        "description": "Today is one of these days.",
+        "fields": {
+          "days": {
+            "label": "Days",
+            "hint": "0 = Sunday."
+          }
+        }
+      }
+    },
+    "actions": {
+      "sendMessage": {
+        "label": "Send message",
+        "description": "Posts a message in a room.",
+        "fields": {
+          "channel": {
+            "label": "Room",
+            "hint": "A room id, or \"trigger\" for the room the event came from."
+          },
+          "text": {
+            "label": "Message"
+          },
+          "card": {
+            "label": "Card",
+            "hint": "Optional rich card: title, text, color, imageUrl, fields, up to 5 buttons, one select."
+          }
+        }
+      },
+      "reply": {
+        "label": "Reply",
+        "description": "Replies to the triggering message or command.",
+        "fields": {
+          "text": {
+            "label": "Message"
+          },
+          "card": {
+            "label": "Card",
+            "hint": "Optional rich card: title, text, color, imageUrl, fields, up to 5 buttons, one select."
+          }
+        }
+      },
+      "editMessage": {
+        "label": "Edit message",
+        "description": "Edits a message the bot sent earlier in this run.",
+        "fields": {
+          "messageRef": {
+            "label": "Message",
+            "hint": "\"trigger\" or a message id."
+          },
+          "text": {
+            "label": "New text"
+          }
+        }
+      },
+      "pin": {
+        "label": "Pin message",
+        "description": "Pins a message.",
+        "fields": {
+          "messageRef": {
+            "label": "Message",
+            "hint": "\"trigger\" or a message id."
+          }
+        }
+      },
+      "unpin": {
+        "label": "Unpin message",
+        "description": "Unpins a message.",
+        "fields": {
+          "messageRef": {
+            "label": "Message",
+            "hint": "\"trigger\" or a message id."
+          }
+        }
+      },
+      "deleteTrigger": {
+        "label": "Delete triggering message",
+        "description": "Deletes the message that fired the rule."
+      },
+      "react": {
+        "label": "React",
+        "description": "Adds a reaction to the triggering message.",
+        "fields": {
+          "emoji": {
+            "label": "Emoji"
+          }
+        }
+      },
+      "createThread": {
+        "label": "Create thread",
+        "description": "Starts a thread on the triggering message.",
+        "fields": {
+          "name": {
+            "label": "Thread name"
+          }
+        }
+      },
+      "privateNotice": {
+        "label": "Private notice",
+        "description": "A message only the member sees.",
+        "fields": {
+          "text": {
+            "label": "Message"
+          }
+        }
+      },
+      "addRole": {
+        "label": "Give role",
+        "description": "Gives the member a role.",
+        "fields": {
+          "roleId": {
+            "label": "Role"
+          },
+          "durationMinutes": {
+            "label": "Remove again after",
+            "hint": "Minutes. Leave empty to keep it."
+          }
+        }
+      },
+      "removeRole": {
+        "label": "Remove role",
+        "description": "Takes a role from the member.",
+        "fields": {
+          "roleId": {
+            "label": "Role"
+          },
+          "durationMinutes": {
+            "label": "Remove again after",
+            "hint": "Minutes. Leave empty to keep it."
+          }
+        }
+      },
+      "toggleRole": {
+        "label": "Toggle role",
+        "description": "Gives the role if missing, else removes it.",
+        "fields": {
+          "roleId": {
+            "label": "Role"
+          },
+          "durationMinutes": {
+            "label": "Remove again after",
+            "hint": "Minutes. Leave empty to keep it."
+          }
+        }
+      },
+      "openForm": {
+        "label": "Open form",
+        "description": "Shows the member a form (from a command, button or select only).",
+        "fields": {
+          "formId": {
+            "label": "Form id"
+          },
+          "title": {
+            "label": "Title"
+          },
+          "fields": {
+            "label": "Fields",
+            "hint": "Up to 5 of {id, label, style (short|long), required}."
+          }
+        }
+      },
+      "startPoll": {
+        "label": "Start poll",
+        "description": "Posts a poll in the room.",
+        "fields": {
+          "question": {
+            "label": "Question"
+          },
+          "options": {
+            "label": "Choices",
+            "hint": "2-10 choices."
+          }
+        }
+      },
+      "createEvent": {
+        "label": "Create hub event",
+        "description": "Schedules a hub event.",
+        "fields": {
+          "title": {
+            "label": "Title"
+          },
+          "startsInMinutes": {
+            "label": "Starts in",
+            "hint": "Minutes."
+          },
+          "durationMinutes": {
+            "label": "Lasts",
+            "hint": "Minutes."
+          }
+        }
+      },
+      "setVariable": {
+        "label": "Set variable",
+        "description": "Stores a value.",
+        "fields": {
+          "name": {
+            "label": "Variable"
+          },
+          "scope": {
+            "label": "Variable scope",
+            "hint": "user: one value per member; hub: one shared value."
+          },
+          "value": {
+            "label": "Value"
+          }
+        }
+      },
+      "addVariable": {
+        "label": "Add to variable",
+        "description": "Adds a number to a stored value.",
+        "fields": {
+          "name": {
+            "label": "Variable"
+          },
+          "scope": {
+            "label": "Variable scope",
+            "hint": "user: one value per member; hub: one shared value."
+          },
+          "value": {
+            "label": "Amount"
+          }
+        }
+      },
+      "resetVariable": {
+        "label": "Reset variable",
+        "description": "Deletes a stored value.",
+        "fields": {
+          "name": {
+            "label": "Variable"
+          },
+          "scope": {
+            "label": "Variable scope",
+            "hint": "user: one value per member; hub: one shared value."
+          }
+        }
+      },
+      "wait": {
+        "label": "Wait",
+        "description": "Pauses before the next actions (at most 7 days).",
+        "fields": {
+          "minutes": {
+            "label": "Wait",
+            "hint": "Minutes, 1-10080."
+          }
+        }
+      },
+      "stop": {
+        "label": "Stop",
+        "description": "Stops running this rule's actions."
+      },
+      "runRule": {
+        "label": "Run another rule",
+        "description": "Runs another rule of this bot.",
+        "fields": {
+          "ruleId": {
+            "label": "Rule"
+          }
+        }
+      },
+      "webhook": {
+        "label": "Call webhook",
+        "description": "Calls an HTTPS URL.",
+        "fields": {
+          "url": {
+            "label": "URL",
+            "hint": "HTTPS only."
+          },
+          "method": {
+            "label": "Method"
+          },
+          "body": {
+            "label": "Body"
+          }
+        }
+      }
+    }
+  },
+  "part": {
+    "triggers": "Trigger",
+    "conditions": "Condition",
+    "actions": "Action",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "remove": "Remove"
+  },
+  "field": {
+    "keep": "Keep",
+    "unit": "Unit",
+    "units": {
+      "minutes": "minutes",
+      "hours": "hours",
+      "days": "days"
+    },
+    "pickRoom": "Pick a room",
+    "sameRoom": "The same room",
+    "pickVoiceRoom": "Pick a voice room",
+    "anyVoiceRoom": "Any voice room",
+    "pickRole": "Pick a role",
+    "pickRule": "Pick a rule",
+    "removeChoice": "Remove choice",
+    "addChoice": "Add choice",
+    "optional": " (optional)"
+  },
+  "list": {
+    "noOptions": "No options: members just type the command.",
+    "optionName": "Option name",
+    "optionNamePlaceholder": "name",
+    "optionType": "Option type",
+    "optionTypes": {
+      "text": "text",
+      "number": "number",
+      "user": "user",
+      "role": "role",
+      "channel": "channel",
+      "choice": "choice"
+    },
+    "choices": "Choices, separated by commas",
+    "choicesPlaceholder": "red, green, blue",
+    "required": "required",
+    "removeOption": "Remove option",
+    "addOption": "Add option",
+    "fieldLabel": "Field label",
+    "fieldLabelPlaceholder": "Label",
+    "fieldId": "Field id",
+    "fieldIdPlaceholder": "id",
+    "fieldSize": "Field size",
+    "short": "short",
+    "long": "long",
+    "removeField": "Remove field",
+    "addField": "Add field",
+    "addCard": "Add a card",
+    "cardTitle": "Card title",
+    "cardTitlePlaceholder": "Title",
+    "cardColour": "Card colour",
+    "removeCard": "Remove card",
+    "cardText": "Card text",
+    "cardTextPlaceholder": "Text",
+    "buttonLabel": "Button label",
+    "buttonId": "Button id",
+    "buttonIdPlaceholder": "button id",
+    "removeButton": "Remove button",
+    "addButton": "Add button",
+    "buttonHint": "A button fires rules whose trigger is “Button or select used” with its id."
+  },
+  "activity": {
+    "loadFailed": "Could not load activity.",
+    "errorsOnly": "Errors only",
+    "refresh": "Refresh",
+    "noErrors": "No errors in the last 30 days.",
+    "empty": "Nothing has run yet.",
+    "runs": "Runs",
+    "status": {
+      "ok": "Ran",
+      "error": "Error",
+      "limited": "Rate limited",
+      "skipped": "Skipped"
+    },
+    "deletedRule": "Deleted rule",
+    "detail": "{{action}}: {{text}}"
+  },
+  "status": {
+    "off": "Off",
+    "unpublished": "Unpublished changes",
+    "live": "Live"
+  },
+  "page": {
+    "updateFailed": "Could not update the bot.",
+    "resumeFailed": "Could not resume the bot.",
+    "needsFixing_one": "{{count}} rule needs fixing",
+    "needsFixing_other": "{{count}} rules need fixing",
+    "saving": "Saving…",
+    "unsaved": "Some rules aren't saved yet",
+    "allPublished": "Everything is published",
+    "published": "Published. The bot now runs these rules.",
+    "publishFailed": "Could not publish.",
+    "buildFailed": "Couldn't build that, try rephrasing",
+    "back": "← Bots",
+    "ruleCount_one": "{{count}} rule",
+    "ruleCount_other": "{{count}} rules",
+    "publishTitle": "Make the drafts live",
+    "publishing": "Publishing…",
+    "publish": "Publish",
+    "pausedNotice": "Paused after repeated errors. Check Activity, fix the rules, then resume.",
+    "resume": "Resume",
+    "missingCapabilities": "These rules need the bot to be allowed to <strong>{{list}}</strong>. Without it those actions fail.",
+    "allow": "Allow",
+    "sections": "Bot sections",
+    "tabs": {
+      "rules": "Rules",
+      "test": "Test",
+      "activity": "Activity",
+      "settings": "Settings"
+    }
+  },
+  "section": {
+    "loadFailed": "Could not load bots.",
+    "loading": "Loading bots…",
+    "retry": "Retry",
+    "title": "Bots",
+    "intro": "Bots answer commands, greet members, hand out roles and more. No code needed.",
+    "newBot": "New bot",
+    "emptyTitle": "No bots yet",
+    "emptyHint": "Start from a template such as Welcome or Dice. It takes a minute.",
+    "paused": "Paused after repeated errors — check Activity",
+    "turnOff": "Turn off",
+    "turnOn": "Turn on",
+    "isOn": "{{name}} is on",
+    "tokenBots": "Token bots (for developers)"
+  },
+  "describe": {
+    "label": "Describe what the bot should do",
+    "remaining": "{{remaining}} of {{total}} left today",
+    "building": "Building…",
+    "submit": "Build it"
+  },
+  "newBot": {
+    "fileProblems_one": "The file has {{count}} problem(s): {{path}} {{message}}",
+    "fileProblems_other": "The file has {{count}} problem(s): {{path}} {{message}}",
+    "genericError": "Something went wrong.",
+    "fileTooLarge": "That file is too large to be a bot export.",
+    "fileInvalid": "That file isn't a DeCave bot export.",
+    "importedUnresolved": "Imported. These weren't found in this Hub, so pick them again: {{names}}",
+    "imported": "Imported. Review the rules, then publish.",
+    "close": "Close",
+    "templates": "Start from a template",
+    "createdFromTemplate": "Created from a template. Check each rule, then publish.",
+    "creating": "Creating…",
+    "describe": "Describe it",
+    "describePlaceholder": "e.g. When someone joins, welcome them in #general and give them the Member role",
+    "scratch": "From scratch",
+    "name": "Bot name",
+    "create": "Create",
+    "import": "Import",
+    "importing": "Importing…",
+    "chooseFile": "Choose a bot file"
+  },
+  "ruleCard": {
+    "scope": "Where and how often",
+    "rooms": "Rooms",
+    "allRooms": "All rooms",
+    "cooldownMember": "Cooldown per member (seconds)",
+    "cooldownRoom": "Cooldown per room (seconds)",
+    "aiLabel": "Change this rule with AI",
+    "aiPlaceholder": "Change it with AI, e.g. “only on weekends”",
+    "thinking": "Thinking…",
+    "change": "Change",
+    "paused": "Paused",
+    "new": "New",
+    "changed": "Changed",
+    "status": {
+      "saved": "Draft saved",
+      "pending": "Saving…",
+      "saving": "Saving…",
+      "invalid": "Needs fixing",
+      "failed": "Not saved"
+    },
+    "pauseTitle": "Pause this rule",
+    "resumeTitle": "Resume this rule",
+    "pause": "Pause {{label}}",
+    "resume": "Resume {{label}}",
+    "moveUp": "Move {{label}} up",
+    "moveDown": "Move {{label}} down",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "error": "{{message}} Open the rule to fix it.",
+    "errorsMore_one": "{{message}} (+{{count}} more) Open the rule to fix it.",
+    "errorsMore_other": "{{message}} (+{{count}} more) Open the rule to fix it.",
+    "generated": "Generated, review before publishing",
+    "when": "When",
+    "if": "If",
+    "match": "Match",
+    "all": "all of these",
+    "any": "any of these",
+    "always": "Always, unless you add a condition.",
+    "addCondition": "Add condition",
+    "addConditionTo": "Add condition ({{key}})",
+    "do": "Do",
+    "addAction": "Add action",
+    "otherwise": "Otherwise"
+  },
+  "rules": {
+    "unsupported": "The AI couldn't do all of it:",
+    "emptyTitle": "No rules yet",
+    "emptyHint": "A rule says what starts it, when it applies and what the bot does.",
+    "limit_one": "A bot can have at most {{count}} rules.",
+    "limit_other": "A bot can have at most {{count}} rules.",
+    "add": "Add rule",
+    "describePlaceholder": "Or describe a rule, e.g. “give @Member when someone reacts ✅ in #rules”",
+    "deleteLabel": "Delete rule",
+    "deletePublished": "Delete {{label}}? It keeps running until you publish.",
+    "deleteDraft": "Delete {{label}}? It was never published, so it's removed now.",
+    "cancel": "Cancel"
+  },
+  "schedule": {
+    "label": "Schedule",
+    "every": "Every …",
+    "daily": "Every day at",
+    "weekly": "Every week on",
+    "cron": "Cron",
+    "minutesLabel": "Minutes",
+    "minutes": "minutes",
+    "time": "Time",
+    "day": "Day",
+    "cronExpression": "Cron expression",
+    "timezone": "Time zone",
+    "hint": "At least 5 minutes apart. Time zone is an IANA name such as Europe/Berlin."
+  },
+  "settings": {
+    "saveFailed": "Could not save.",
+    "on": "Bot is on",
+    "onHint": "When off, none of its rules run. Drafts are kept.",
+    "name": "Name",
+    "avatar": "Avatar emoji",
+    "colour": "Colour",
+    "description": "Description",
+    "save": "Save",
+    "rooms": "Allowed rooms",
+    "roomsHint": "The bot only acts in these rooms. None picked means every room.",
+    "capabilities": "Capabilities",
+    "capabilitiesHint": "What the bot may do. Actions it isn't allowed show an error in Activity.",
+    "export": "Export",
+    "exportHint": "A file with the bot and its rules. Rooms and roles are saved by name.",
+    "exportFailed": "Could not export.",
+    "delete": "Delete bot",
+    "deleteHint": "Removes the bot, its rules and its activity.",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteDescription": "The bot stops at once and its rules and activity are removed.",
+    "deleteFailed": "Could not delete."
+  },
+  "test": {
+    "empty": "Add and save a rule first, then test it here.",
+    "failed": "The test could not run.",
+    "intro": "Pick a rule, fill in example input and see each step. Nothing is sent or changed.",
+    "rule": "Rule",
+    "room": "Happens in",
+    "firstRoom": "The first room",
+    "message": "Message",
+    "unsaved": "This rule has edits that aren't saved yet; the test uses the last saved draft.",
+    "running": "Running…",
+    "run": "Run test",
+    "steps": "Test steps",
+    "noMatch": "The rule didn't run: its trigger or conditions didn't match."
+  },
+  "api": {
+    "problems_one": "{{count}} problem to fix",
+    "problems_other": "{{count}} problems to fix"
+  },
+  "card": {
+    "badge": "BOT",
+    "noAnswerStatus": "The bot did not answer ({{status}}).",
+    "noAnswer": "The bot did not answer.",
+    "privateNotice": "Only you can see this",
+    "openImage": "Open image",
+    "chooseOption": "Choose an option",
+    "choose": "Choose…",
+    "commands": "Bot commands",
+    "form": {
+      "required": "{{field}} is required.",
+      "sendFailedStatus": "Could not send the form ({{status}}).",
+      "sendFailed": "Could not send the form.",
+      "cancel": "Cancel",
+      "sending": "Sending…",
+      "submit": "Submit",
+      "untitled": "Form"
+    }
+  },
+  "server": {
+    "commandUsage": "Usage: {{usage}}"
+  },
+  "validation": {
+    "notObject": "Must be an object.",
+    "unknownField": "Unknown field.",
+    "nonEmptyString": "Must be a non-empty string.",
+    "maxLength": "Must be at most {{max}} characters.",
+    "boolean": "Must be true or false.",
+    "numberRange": "Must be a number from {{min}} to {{max}}.",
+    "oneOf": "Must be one of: {{values}}.",
+    "time": "Must be a time like 09:30.",
+    "idRequired": {
+      "role": "Must be a role id.",
+      "voiceRoom": "Must be a voice room id.",
+      "channel": "Must be a channel id.",
+      "rule": "Must be a rule id."
+    },
+    "unknownId": {
+      "role": "Unknown role in this hub.",
+      "voiceRoom": "Unknown voice room in this hub.",
+      "channel": "Unknown channel in this hub.",
+      "rule": "Unknown rule in this hub."
+    },
+    "numberOrText": "Must be a number or short text.",
+    "commandName": "Use 1-32 lowercase letters, digits or dashes.",
+    "builtInCommand": "This name is already used by a built-in command.",
+    "list": "Must be a list.",
+    "choices": "Must be up to 25 short texts.",
+    "invalidRegex": "Not a valid regular expression.",
+    "scheduleOneMode": "Set exactly one of every, daily, weekly or cron.",
+    "scheduleMinimum": "Schedules must run at least every {{minutes}} minutes.",
+    "cronFields": "Cron must be 5 fields: minute hour day month weekday.",
+    "unknownTrigger": "Unknown trigger type.",
+    "weekdays": "Must be a list of days from 0 to 6.",
+    "unknownCondition": "Unknown condition type.",
+    "color": "Must be a colour like #aabbcc.",
+    "httpsLink": "Must be an https link.",
+    "cardFields": "Must be a list of at most 25 fields.",
+    "buttonsOrSelect": "A card can have buttons or a select menu, not both.",
+    "maxButtons": "At most {{max}} buttons.",
+    "selectOptions": "Must be a list of 1 to 25 options.",
+    "formFields": "A form needs 1 to {{max}} fields.",
+    "pollOptions": "Needs 2 to 10 short options.",
+    "waitRange": "Wait must be between 1 and {{max}} minutes (7 days).",
+    "webhookHttps": "Webhook URLs must start with https://.",
+    "unknownAction": "Unknown action type.",
+    "actionList": "Must be a list of actions.",
+    "actionRequired": "Needs at least one action.",
+    "maxActions": "At most {{max}} actions per rule.",
+    "ruleVersion": "Unsupported rule version.",
+    "conditionList": "Must be a list of at most 20 conditions.",
+    "regex": {
+      "trailingBackslash": "A pattern can't end with \\.",
+      "backreference": "Backreferences are not allowed.",
+      "escapeNotAllowed": "\\{{char}} is not allowed.",
+      "emptyClass": "Empty [ ] classes are not allowed.",
+      "classEscape": "Only \\d \\w \\s \\D \\W \\S \\n \\t or escaped symbols inside [ ].",
+      "classBracket": "Use \\[ for a literal [ inside [ ].",
+      "rangePlain": "A range in [ ] needs a plain character on both sides.",
+      "rangeOrder": "A range in [ ] is out of order.",
+      "unclosedClass": "Unclosed [ ].",
+      "literalBrace": "Use \\{ for a literal {.",
+      "repeatCount": "Repeat counts above {{max}} aren't allowed.",
+      "repeatOrder": "In {n,m}, m must be at least n.",
+      "repeatRepeat": "A repeat can't be repeated or made lazy.",
+      "charNotAllowed": "\"{{char}}\" is not allowed here.",
+      "nestedGroup": "Groups can't be nested.",
+      "groupSyntax": "Lookarounds, named groups and inline flags are not allowed.",
+      "unclosedGroup": "Unclosed ( ).",
+      "emptyGroup": "Empty groups are not allowed.",
+      "emptyChoice": "Choices inside ( | ) can't be empty.",
+      "choicePlain": "Choices inside ( | ) must be plain text without repeats.",
+      "groupRepeat": "Groups ( ) can't be repeated.",
+      "bareChoice": "Put choices inside ( | ).",
+      "unmatchedParen": "Unmatched ).",
+      "unboundedRepeats": "Use at most 1 open-ended repeat (*, + or {n,}).",
+      "boundedExtra": "Bounded repeats (?, {n,m}) can add at most {{max}} characters in total.",
+      "tooComplex": "Pattern is too complex."
+    }
+  },
+  "mobile": {
+    "hubBots": {
+      "nameCreated": "{{name}} created.",
+      "couldNotCreateTheBot": "Could not create the bot.",
+      "hubControl": "HUB CONTROL",
+      "noBotsYetStartFrom": "No bots yet. Start from a template below.",
+      "nameEnabled": "{{name}} enabled",
+      "hideActivity": "Hide activity",
+      "showActivity": "Show activity",
+      "noRunsYet": "No runs yet.",
+      "startFromATemplate": "START FROM A TEMPLATE",
+      "createBot": "Create bot",
+      "createdPublishOnDesktop": "{{name}} created. Publish it on desktop or web to make it live.",
+      "unpublishedEditOnDesktop": "Unpublished changes · Edit rules on desktop or web",
+      "editOnDesktop": "Edit rules on desktop or web.",
+      "manageOnDesktop": "Manage on desktop or web"
+    },
+    "publishOnDesktop": "Publish it on desktop or web to make it live",
+    "editOnDesktop": "Edit rules on desktop or web",
+    "tokenBot": "Manage on desktop or web",
+    "pausedAfterErrors": "Paused after errors",
+    "summary": "{{rules}} · {{last}}",
+    "lastRun": "last run {{time}}",
+    "noRuns": "No runs yet",
+    "time": {
+      "minutes_one": "{{count}} min ago",
+      "minutes_other": "{{count}} min ago",
+      "hours_one": "{{count}} h ago",
+      "hours_other": "{{count}} h ago",
+      "days_one": "{{count}} d ago",
+      "days_other": "{{count}} d ago"
+    }
+  },
+  "run": {
+    "server": {
+      "publisherLeft": "Publisher is no longer in this hub",
+      "noChannel": "This trigger has no channel",
+      "hubChannelsOnly": "Bots can only act in hub channels",
+      "channelGone": "Channel no longer exists",
+      "channelOtherHub": "Channel isn't in this hub",
+      "textChannelsOnly": "Bots can only post in text channels and forums",
+      "channelNotAllowed": "Bot isn't allowed in this channel",
+      "publisherNoAccess": "Publisher can't access this channel",
+      "publisherCantPost": "Publisher can't post in this hub",
+      "roleGone": "Role no longer exists",
+      "publisherCantManageRole": "Publisher can't manage this role",
+      "noMember": "This trigger has no member",
+      "memberLeft": "Member is no longer in this hub",
+      "noMessage": "This trigger has no message",
+      "messageGone": "Message no longer exists",
+      "variableLimit": "Variable limit reached",
+      "notANumber": "Value isn't a number",
+      "waitNeedsChannel": "Waiting needs a text channel in this hub",
+      "rulesUnavailable": "Rules can't be run here",
+      "pollIncomplete": "Polls need a question and two options",
+      "messageLimit": "Message limit reached",
+      "publisherCantCreateEvents": "Publisher can't create events",
+      "eventTitleEmpty": "Event title is empty",
+      "eventTimesInvalid": "Event times are invalid",
+      "tooManyEvents": "This hub has too many upcoming events",
+      "formsNeedInteraction": "Forms need a command or button",
+      "postFailed": "Could not post the message",
+      "forumReplyTarget": "Forum replies must target a forum post",
+      "postLocked": "This post is locked",
+      "memberNoAccess": "Member can't see this channel",
+      "editOwnOnly": "Bots can only edit their own messages",
+      "cantEdit": "This message can't be edited",
+      "publisherCantModerate": "Publisher can't moderate messages",
+      "publisherCantDelete": "Publisher can't delete this message",
+      "cantDeleteKind": "Bots can't delete this kind of message",
+      "emojiRequired": "Emoji required",
+      "emojiReserved": "That emoji is reserved",
+      "threadsNeedForum": "Threads need a forum channel",
+      "publisherCantPostForum": "Publisher can't post in this forum",
+      "threadNameEmpty": "Thread name is empty",
+      "timedRoleNeedsChannel": "Timed roles need a text channel in this hub",
+      "webhookLimit": "Webhook limit reached",
+      "webhookUrlInvalid": "Webhook URL isn't valid",
+      "webhookHttpsOnly": "Webhook URL must use https",
+      "webhookNoLogin": "Webhook URL can't contain a login",
+      "webhookNoPort": "Webhook URL can't use a custom port",
+      "webhookHostRefused": "Webhook host isn't allowed",
+      "webhookRedirect": "Webhook redirects aren't followed",
+      "webhookTooLarge": "Webhook response too large",
+      "webhookTimedOut": "Webhook timed out",
+      "webhookFailed": "Webhook request failed",
+      "unknownAction": "Unknown action {{action}}",
+      "capabilityMissing": "Bot isn't allowed to {{capability}}",
+      "actionFailed": "Action failed",
+      "ranActions": "Ran actions",
+      "ranNothing": "Ran nothing",
+      "patternNotAllowed": "Pattern not allowed",
+      "chainTooDeep": "Bot chain too deep",
+      "coolingDown": "Cooling down",
+      "runLimit": "Hub run limit reached for this minute",
+      "conditionsNotMet": "Conditions not met",
+      "ruleUnavailable": "That rule isn't published or is paused",
+      "ruleFailed": "Rule failed",
+      "runFailed": "Run failed",
+      "commandMissingOption": "Missing {{option}}. Usage: {{usage}}",
+      "commandInvalidOption": "Invalid {{option}}. Usage: {{usage}}",
+      "timerDropped": "Timer failed twice; {{kind}} dropped",
+      "wouldCall": "Would call {{method}} {{url}}",
+      "wouldWait_one": "Would wait {{count}} minutes",
+      "wouldWait_other": "Would wait {{count}} minutes",
+      "roleStep": "{{action}}: role {{role}}"
+    }
+  }
+}

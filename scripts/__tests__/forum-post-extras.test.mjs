@@ -97,11 +97,11 @@ test("LFG, media and type validation", () => {
 test("server wires extension validation into post create/edit and staff-only lock-on-create", () => {
   const hubRoom = read("worker/HubRoom.ts");
   const worker = readWorkerSource();
-  assert.match(hubRoom, /validateForumPostExtras\(rawForumPostJson\(text\)\)/);
+  assert.match(hubRoom, /forumPostExtrasProblem\(rawForumPostJson\(text\)\)/);
   assert.match(hubRoom, /payload\.repliesLocked && !\(await isForumStaff\(/);
   assert.match(hubRoom, /UPDATE decave_forum_post_state SET locked=1 WHERE message_id=\?/);
   assert.match(
     worker,
-    /validateForumPostExtras\(rawForumPostJson\(text\),\s*Date\.now\(\),\s*\{\s*isEdit:\s*true\s*\}\)/,
+    /forumPostExtrasProblem\(rawForumPostJson\(text\),\s*Date\.now\(\),\s*\{\s*isEdit:\s*true\s*\}\)/,
   );
 });

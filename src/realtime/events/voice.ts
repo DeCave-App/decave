@@ -18,6 +18,8 @@ import type {
 } from "../../app/types";
 import { HTTP_URL } from "../../app/env";
 import type { RealtimeFrame } from "../connection";
+import { i18next } from "../../i18n/index.ts";
+import { realtimeErrorMessage } from "../../i18n/apiError.ts";
 import type { ScreenSfuSharer } from "../../voice/screen-sfu/sharer";
 
 export type VoiceEventContext = {
@@ -257,7 +259,7 @@ export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext
   }
 
   if (data.type === "VOICE_KICKED") {
-    const message = typeof data.message === "string" ? data.message : "You were disconnected by a moderator.";
+    const message = typeof data.message === "string" ? data.message : i18next.t("chat.actions.voice.kicked");
     cleanupVoiceLocal(false);
     setVoiceError(message);
     return true;
@@ -276,16 +278,19 @@ export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext
       audio.volume = 0.82;
       void setAudioSink(audio as SinkableAudioElement, audioSettingsRef.current.outputDeviceId);
       void audio.play().catch(() => undefined);
-      const playedBy = typeof data.username === "string" ? data.username : "Someone";
-      const soundName = typeof data.name === "string" ? data.name : "a sound";
-      setSoundboardNotice(`${playedBy} played ${soundName}.`);
+      const playedBy = typeof data.username === "string" ? data.username : i18next.t("chat.actions.soundboard.someone");
+      setSoundboardNotice(
+        typeof data.name === "string"
+          ? i18next.t("chat.actions.soundboard.played", { username: playedBy, sound: data.name })
+          : i18next.t("chat.actions.soundboard.playedUnnamed", { username: playedBy }),
+      );
     } catch {}
     return true;
   }
 
   if (data.type === "VOICE_ERROR") {
     if (voiceJoinAttemptRef.current) cleanupVoiceLocal(false);
-    setVoiceError(typeof data.message === "string" ? data.message : "Voice connection error.");
+    setVoiceError(realtimeErrorMessage(data, i18next.t("chat.actions.voice.connectionError")));
     setVoiceStatus("Disconnected");
     return true;
   }

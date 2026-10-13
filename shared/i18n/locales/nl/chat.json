@@ -1,0 +1,1105 @@
+{
+  "dmNotice": {
+    "kicker": "NIEUW PRIVÉBERICHT"
+  },
+  "composer": {
+    "jumpToLatest": "Naar nieuwste ↓",
+    "editing": "Je bericht bewerken",
+    "replyingTo": "Antwoorden aan {{name}}",
+    "typing": "{{names}} typt…",
+    "sendGif": "Gif sturen",
+    "gif": "Gif",
+    "emoji": "Emoji",
+    "uploading": "Bijlage uploaden…",
+    "retryUpload": "Opnieuw uploaden",
+    "addToMessage": "Aan bericht toevoegen",
+    "uploadHint": "Afbeeldingen, video of documenten",
+    "pollHint": "Laat het kanaal stemmen",
+    "gifHint": "Zoek in de gifbibliotheek",
+    "eventHint": "Voeg het toe aan de Hub-agenda",
+    "send": "Bericht sturen",
+    "sizeMb": "{{size}} MB",
+    "placeholder": "Bericht in #{{room}}",
+    "readOnly": "#{{room}} is alleen-lezen",
+    "ownerOnly": "Alleen de Hub-eigenaar kan in deze Hub posten"
+  },
+  "groupMembers": {
+    "kicker": "Groepsleden",
+    "addTitle": "Vriend toevoegen",
+    "noneToAdd": "Er zijn geen andere vrienden om toe te voegen.",
+    "ownerNote": "Als eigenaar moet je eerst de andere leden verwijderen voordat je de groep verlaat.",
+    "deleteGroup": "Groep verwijderen",
+    "youSuffix": " · Jij",
+    "owner": "Groepseigenaar",
+    "member": "Lid"
+  },
+  "messageSearch": {
+    "kicker": "Berichten zoeken",
+    "placeholder": "Zoek in berichten of gebruikersnamen",
+    "title": "#{{room}} doorzoeken"
+  },
+  "newConversation": {
+    "kicker": "Nieuw gesprek",
+    "title": "Vrienden een bericht sturen",
+    "lead": "Stuur één vriend een privébericht, of kies minstens twee vrienden om een groepschat te maken.",
+    "empty": "Voeg eerst vrienden toe om een gesprek te starten.",
+    "selected": "Geselecteerd",
+    "message": "Bericht",
+    "createTitle": "Groepschat maken",
+    "groupName": "Groepsnaam (optioneel)",
+    "hint": "Kies 2–19 vrienden. Jij wordt de eigenaar van de groep.",
+    "creating": "Maken…",
+    "create": "Groep maken ({{members}})",
+    "select": "Selecteren"
+  },
+  "poll": {
+    "kicker": "Nieuwe peiling",
+    "title": "Peiling maken",
+    "lead": "Stel een vraag en voeg 2 tot 8 keuzes toe.",
+    "question": "Vraag",
+    "questionPlaceholder": "Wat gaan we vanavond spelen?",
+    "addOption": "Optie toevoegen",
+    "post": "Peiling plaatsen",
+    "option": "Optie {{number}}",
+    "removeOption": "Optie {{number}} verwijderen"
+  },
+  "roomHero": {
+    "announcements": "Aankondigingen van de Hub-eigenaar komen hier terecht. Zet meldingen aan zodat je niets mist.",
+    "private": "Privékanaal",
+    "public": "Zichtbaar voor alle leden",
+    "ownerOnly": "Alleen de eigenaar kan posten",
+    "sendMessage": "Bericht sturen",
+    "uploadFile": "Bestand uploaden",
+    "createPoll": "Peiling maken",
+    "scheduleEvent": "Evenement plannen",
+    "roomSettings": "Kanaalinstellingen",
+    "kickerCategory": "{{hub}} · {{category}}",
+    "title": "Welkom in #{{room}}",
+    "beginning": "Dit is het begin van #{{room}}. Zeg hoi, deel een clip of trap af met een peiling."
+  },
+  "messages": {
+    "tapToDownload": "Tik om te downloaden",
+    "addReaction": "Reactie toevoegen",
+    "reply": "Antwoorden",
+    "reportMessage": "Bericht rapporteren",
+    "editMessage": "Bericht bewerken",
+    "deleteMessage": "Bericht verwijderen",
+    "rightClickUser": "Rechtermuisklik op {{name}}",
+    "replyTo": "↳ Antwoord aan {{name}}: {{preview}}",
+    "replyToMessage": "↳ Antwoord op bericht",
+    "imageAttachment": "Afbeelding · {{name}}",
+    "videoAttachment": "Video · {{name}}",
+    "attachmentMeta": "{{size}} MB · {{type}}",
+    "file": "Bestand",
+    "download": "Downloaden",
+    "pinned": "VASTGEPIND",
+    "unpin": "Losmaken",
+    "pin": "Vastpinnen",
+    "unpinMessage": "Bericht losmaken",
+    "pinMessage": "Bericht vastpinnen",
+    "deleteOwn": "Je bericht verwijderen",
+    "deleteAsModerator": "Bericht verwijderen als moderator",
+    "you": "Jij",
+    "waitingForConnection": "Wachten op verbinding…",
+    "couldNotSend": "Niet verstuurd"
+  },
+  "report": {
+    "forumPostEvidence": "Forumpost van {{name}}",
+    "forumReplyEvidence": "Forumantwoord van {{name}}",
+    "messageEvidence": "Bericht van {{name}}",
+    "groupMessageEvidence": "Groepsbericht van {{name}}",
+    "dmContext": "Privégesprek met {{name}}",
+    "dmEvidence": "Privébericht van {{name}}"
+  },
+  "social": {
+    "searchConversations": "Gesprekken zoeken",
+    "filters": "Gespreksfilters",
+    "incomingRequest": "Inkomend vriendschapsverzoek",
+    "noRequests": "Geen vriendschapsverzoeken in afwachting.",
+    "dmLabel": "Directe berichten",
+    "friendsTitle": "Vrienden",
+    "dmTitle": "Berichten",
+    "dmLead": "Je privé- en groepsgesprekken.",
+    "friendsLead": "Kijk wie er online is, deel je ID en voeg vrienden toe.",
+    "conversations": "Gesprekken",
+    "filterAll": "Alle",
+    "filterUnread": "Ongelezen",
+    "filterUnreadCount": "Ongelezen {{number}}",
+    "filterRequests": "Verzoeken",
+    "filterRequestsCount": "Verzoeken {{number}}",
+    "archived": "Gearchiveerd",
+    "groupMembers_one": "{{count}} lid",
+    "groupMembers_other": "{{count}} leden",
+    "noUnread": "Je hebt geen ongelezen gesprekken.",
+    "noArchived": "Geen gearchiveerde chats.",
+    "noConversations": "Nog geen gesprekken. Gebruik de knop Nieuw bericht om een vriend een bericht te sturen.",
+    "backToChats": "Terug naar chats",
+    "archivedCount": "Gearchiveerd ({{number}})",
+    "groupChatMeta_one": "{{count}} lid · Groepschat",
+    "groupChatMeta_other": "{{count}} leden · Groepschat",
+    "members": "Leden",
+    "loadOlder": "Oudere berichten laden",
+    "today": "Vandaag",
+    "groupBeginning": "Dit is het begin van {{name}}.",
+    "cancelReply": "Antwoord annuleren",
+    "add": "Toevoegen",
+    "voiceCall": "Spraakoproep",
+    "videoCall": "Video-oproep",
+    "options": "Gespreksopties",
+    "deleteConversation": "Gesprek verwijderen",
+    "dmBeginning": "Dit is het begin van je privégesprek.",
+    "deleteAsGroupOwner": "Bericht verwijderen als groepseigenaar",
+    "replyingToPreview": "Antwoorden aan {{name}}: {{preview}}",
+    "messagePlaceholder": "Bericht aan {{name}}",
+    "removeFavorite": "Favoriet verwijderen",
+    "addFavorite": "Favoriet toevoegen",
+    "unarchive": "Chat dearchiveren",
+    "archive": "Chat archiveren",
+    "saveEdit": "Bewerking opslaan",
+    "cancelEdit": "Bewerken annuleren",
+    "pollHint": "Laat de chat stemmen",
+    "startTitle": "Gesprek starten",
+    "startBody": "Kies iemand uit je gesprekken of stuur een nieuw privébericht.",
+    "newMessage": "Nieuw bericht",
+    "findFriend": "Vriend zoeken",
+    "recent": "RECENTE GESPREKKEN",
+    "messageFallback": "bericht",
+    "uploadingNamed": "{{name}} uploaden…",
+    "attachmentReady": "Bijlage klaar: {{name}}",
+    "dmPlaceholder": "Bericht aan @{{name}}",
+    "deleteDmTitle": "Deze DM verwijderen?",
+    "deleteDmBody": "Het bericht wordt voor jullie allebei verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "deleteDmConfirm": "Bericht verwijderen",
+    "deleteConversationBody": "Het gesprek wordt alleen uit jouw DeCave-account gewist. De kopie van de ander blijft bestaan. Als een van jullie later een nieuwe DM stuurt, verschijnt het gesprek weer.",
+    "deleteConversationConfirm": "Gesprek verwijderen",
+    "openFailed": "Kan privéberichten niet openen.",
+    "loadFailed": "Kan privéberichten niet laden.",
+    "deleteConversationTitle": "Gesprek met {{name}} verwijderen?"
+  },
+  "actions": {
+    "account": {
+      "usernameAvailableOn": "Je kunt je gebruikersnaam weer wijzigen op {{date}}.",
+      "usernameUpdated": "Gebruikersnaam bijgewerkt.",
+      "verificationEmailSent": "Verificatie-e-mail verstuurd.",
+      "updateUnconfirmed": "Kan de accountwijziging niet bevestigen. Verifieer je account en probeer het opnieuw.",
+      "sessionNotReady": "Je sessie is nog niet klaar.",
+      "passwordFieldsMissing": "Vul alle wachtwoordvelden in.",
+      "passwordsMismatch": "De nieuwe wachtwoorden komen niet overeen.",
+      "passwordUnchanged": "Je nieuwe wachtwoord moet verschillen van je huidige wachtwoord.",
+      "passwordLength": "Gebruik 10-128 tekens voor het nieuwe wachtwoord.",
+      "passwordChanged": "Wachtwoord gewijzigd. Log opnieuw in met je nieuwe wachtwoord.",
+      "confirmLogoutSession": "{{device}} uitloggen?",
+      "sessionLoggedOut": "Sessie uitgelogd.",
+      "dangerUnconfirmed": "Kan de accountactie niet bevestigen. Misschien is die al uitgevoerd; controleer de accountstatus voordat je het opnieuw probeert.",
+      "enterCurrentPassword": "Voer eerst je huidige wachtwoord in.",
+      "disabled": "Account uitgeschakeld. Log opnieuw in wanneer je het weer wilt activeren.",
+      "deletionScheduledOn": "Je account wordt verwijderd op {{date}}. Log daarvoor in om dat te annuleren.",
+      "deletionScheduled": "Je account wordt over 30 dagen verwijderd. Log daarvoor in om dat te annuleren.",
+      "disableNotAuthenticated": "Kan account niet uitschakelen. De authenticatie is niet voltooid.",
+      "deleteNotAuthenticated": "Kan account niet verwijderen. De authenticatie is niet voltooid."
+    },
+    "activity": {
+      "localDetectionUnavailable": "Lokale gamedetectie is niet beschikbaar op {{platform}}.",
+      "desktopScanFailedWithReason": "Scan van desktopactiviteit mislukt: {{reason}}",
+      "desktopScanFailed": "Scan van desktopactiviteit mislukt.",
+      "steamCompleteSignIn": "Rond de Steam-login af in een browser die is ingelogd op hetzelfde DeCave-account. Log daar zo nodig in en start het koppelen van Steam opnieuw via Instellingen → Activiteit; DeCave detecteert de koppeling automatisch.",
+      "steamConnectedAs": "Steam gekoppeld als {{name}}.",
+      "steamConnected": "Steam gekoppeld.",
+      "steamSignInFailed": "Kan Steam-login niet openen.",
+      "steamDisconnected": "Steam ontkoppeld."
+    },
+    "owner": {
+      "mfaAddSecret": "Voeg het geheim toe aan je authenticator en voer daarna de 6-cijferige code in.",
+      "mfaSetupUnconfirmed": "Kan het instellen van MFA niet bevestigen. Misschien is er al iets gewijzigd; controleer de beveiligingsstatus van de eigenaar voordat je opnieuw begint.",
+      "mfaSetupCancelled": "Instellen van eigenaar-MFA geannuleerd of authenticatie niet voltooid.",
+      "mfaEnabled": "Eigenaar-MFA is ingeschakeld. Bewaar de herstelcodes offline.",
+      "reauthUnlocked": "Bevoorrechte eigenaartoegang is 10 minuten ontgrendeld.",
+      "reauthUnconfirmed": "Kan de bevoorrechte authenticatie niet bevestigen. Er is mogelijk een token uitgegeven; de toegang is hier niet bewaard. Controleer de beveiligingsstatus van de eigenaar.",
+      "reauthCancelled": "Eigenaar-authenticatie geannuleerd of niet voltooid.",
+      "actionUnconfirmed": "Kan de eigenaaractie niet bevestigen. Misschien is die al uitgevoerd; controleer de beveiligingsstatus van de eigenaar voordat je het opnieuw probeert.",
+      "unlockFirst": "Ontgrendel eerst bevoorrechte eigenaartoegang.",
+      "promoted": "Platformeigenaar bijgewerkt.",
+      "demoted": "Platformeigenaar verwijderd.",
+      "recoveryCodesCreated": "Nieuwe herstelcodes gemaakt. De vorige set is nu ongeldig."
+    },
+    "admin": {
+      "ownerRequired": "Toegang als platformeigenaar is vereist.",
+      "loadFailed": "Kan het beheerdashboard niet laden.",
+      "gameApproved": "Game goedgekeurd en toegevoegd aan Squad Finder.",
+      "gameRejected": "Gamevoorstel afgewezen.",
+      "unlockFirst": "Ontgrendel eerst bevoorrechte eigenaaracties met je wachtwoord + MFA.",
+      "ownSessionsRevoked": "Je sessies zijn ingetrokken. Log opnieuw in.",
+      "sessionsRevoked": "Alle actieve sessies van dat account zijn ingetrokken.",
+      "suspendReasonMissing": "Voer een reden voor de schorsing in.",
+      "suspended": "Account geschorst en alle sessies ingetrokken.",
+      "unsuspended": "Accountschorsing opgeheven.",
+      "birthDateMissing": "Voer de gecorrigeerde geboortedatum in.",
+      "ageCorrected": "Leeftijd gecorrigeerd en leeftijdsbeperking opgeheven.",
+      "resetForced": "Wachtwoordreset vereist en reset-e-mail verstuurd.",
+      "deleteReasonMissing": "Voer een reden in voordat je de verwijdering inplant.",
+      "erasureAvailableAfter": "Account nu uitgeschakeld. Permanent wissen is mogelijk na {{date}}.",
+      "deletionScheduled": "Account ingepland voor verwijdering.",
+      "restored": "Account hersteld.",
+      "erased": "Persoonsgegevens van account permanent gewist.",
+      "roleChanged": "Platformrol bijgewerkt. Bestaande sessies zijn ingetrokken.",
+      "transferTargetMissing": "Voer de DeCave-ID, gebruikersnaam of het geverifieerde e-mailadres van de nieuwe eigenaar in.",
+      "hubTransferred": "Hub-eigendom overgedragen."
+    },
+    "auth": {
+      "enterEmail": "Voer het e-mailadres van je account in.",
+      "acceptTerms": "Ga akkoord met de Voorwaarden en bevestig dat je de Privacyverklaring hebt gelezen om een account te maken.",
+      "invalidEmail": "Voer een geldig e-mailadres in.",
+      "passwordsMismatch": "Wachtwoorden komen niet overeen.",
+      "passwordTooShort": "Gebruik een wachtwoord van minstens 10 tekens.",
+      "birthDateRequired": "Voer je geboortedatum in om te bevestigen dat je {{age}} jaar of ouder bent.",
+      "checkEmail": "Kijk in je mail om je account te verifiëren.",
+      "enterMfaCode": "Voer je authenticatorcode of een eenmalige herstelcode in.",
+      "confirmLogoutAll": "Alle actieve DeCave-sessies uitloggen, inclusief dit apparaat?",
+      "loggedOutAll": "Alle actieve sessies zijn uitgelogd. Log opnieuw in om door te gaan."
+    },
+    "feedback": {
+      "empty": "Beschrijf eerst de bug of je idee."
+    },
+    "friends": {
+      "newRequestTitle": "Nieuw vriendschapsverzoek",
+      "newRequestBody": "{{username}} wil vrienden worden.",
+      "enterId": "Voer een DeCave-ID in.",
+      "ownId": "Dat is je eigen DeCave-ID.",
+      "alreadyFriends": "Jullie zijn al vrienden.",
+      "alreadySent": "Vriendschapsverzoek al verstuurd.",
+      "requestSent": "Vriendschapsverzoek verstuurd.",
+      "idCopied": "Je DeCave-ID is gekopieerd.",
+      "idShown": "Je DeCave-ID: {{id}}"
+    },
+    "home": {
+      "calendarSyncFailed": "Agenda-evenementen kunnen nu niet worden gesynchroniseerd.",
+      "quickLinkInvalid": "Elke snelkoppeling heeft een geldige naam en een openbare HTTPS-URL nodig, zonder poorten, inloggegevens of privéadressen.",
+      "widgetLimit_one": "Je kunt maximaal {{count}} externe widget toevoegen.",
+      "widgetLimit_other": "Je kunt maximaal {{count}} externe widgets toevoegen.",
+      "widgetTitleLength_one": "Voer een titel van maximaal {{count}} teken in.",
+      "widgetTitleLength_other": "Voer een titel van maximaal {{count}} tekens in.",
+      "widgetUrlInvalid": "Gebruik een openbare HTTPS-URL zonder poort, inloggegevens of lokale/privé-hostnaam."
+    },
+    "profile": {
+      "imageType": "Kies een PNG-, JPEG- of WebP-afbeelding.",
+      "bannerTooLarge": "Bannerafbeeldingen mogen maximaal 3 MB zijn.",
+      "readImageFailed": "Kan afbeelding niet lezen.",
+      "uploadBannerFailed": "Kan de banner niet uploaden.",
+      "avatarTooLarge": "Profielafbeeldingen mogen maximaal 2 MB zijn.",
+      "uploadAvatarFailed": "Kan profielfoto niet uploaden.",
+      "dateUnavailable": "Niet beschikbaar"
+    },
+    "safety": {
+      "birthDateMissing": "Voer je geboortedatum in om door te gaan."
+    },
+    "settings": {
+      "desktopSaveFailed": "Kan desktopsysteeminstellingen niet opslaan.",
+      "saved": "Instellingen opgeslagen.",
+      "sectionReset": "Deze sectie is gereset. Sla de wijzigingen op om de standaardwaarden te behouden."
+    },
+    "dm": {
+      "yesterday": "Gisteren",
+      "daysAgo_one": "{{count}} d geleden",
+      "daysAgo_other": "{{count}} d geleden",
+      "encryptFailed": "Kan dit bericht niet versleutelen.",
+      "prepareFailed": "Kan dit bericht niet voorbereiden om te versturen. Probeer het opnieuw.",
+      "confirmDeleteMessage": "Dit bericht verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "confirmDeleteGroup": "“{{name}}” voor iedereen verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "sendFailed": "Privébericht mislukt.",
+      "groupFallback": "Groepschat",
+      "groupSendFailed": "Groepsbericht mislukt."
+    },
+    "message": {
+      "attachmentReconnecting": "Realtime maakt opnieuw verbinding. Probeer de bijlage zo nog eens.",
+      "uploadCanceledRetry": "Upload geannuleerd. Je kunt hetzelfde bestand opnieuw proberen.",
+      "attachmentTooLarge": "Bijlagen mogen maximaal 25 MB zijn.",
+      "uploadCanceled": "Upload geannuleerd.",
+      "ownerOnly": "Alleen de Hub-eigenaar kan in deze Hub posten.",
+      "previousPostPending": "Je vorige post wordt nog verstuurd.",
+      "postUnconfirmed": "De server heeft de post niet bevestigd. Controleer het forum voordat je het opnieuw probeert.",
+      "idPending": "De Hub heeft het bericht geaccepteerd, maar de bericht-ID is nog niet binnen. Probeer het opnieuw nadat de verbinding is hersteld.",
+      "searchUnavailable": "Zoeken is nu niet beschikbaar. Probeer het zo opnieuw.",
+      "confirmDelete": "Dit bericht verwijderen?",
+      "confirmDeleteAsOwner": "Bericht van {{username}} verwijderen als eigenaar?",
+      "confirmDeleteAsAdmin": "Bericht van {{username}} verwijderen als beheerder?",
+      "confirmDeleteAsMember": "Bericht van {{username}} verwijderen als lid?",
+      "confirmDeleteAsModerator": "Bericht van {{username}} verwijderen als moderator?",
+      "deleteOffline": "Kan geen verbinding maken met de server om dit bericht te verwijderen.",
+      "downloadFailed": "Kan bijlage niet downloaden.",
+      "botBadge": "BOT",
+      "edited": "bewerkt",
+      "postRejected": "De server heeft de post geweigerd."
+    },
+    "gif": {
+      "unsafe": "Deze gif kan niet veilig worden gebruikt.",
+      "sendFailed": "Kan gif niet versturen.",
+      "reconnecting": "Realtime maakt opnieuw verbinding. Probeer de gif zo nog eens.",
+      "searchPlaceholder": "Zoeken op GIPHY",
+      "search": "Zoeken",
+      "loading": "Gifs laden…",
+      "empty": "Geen gifs gevonden.",
+      "fallbackTitle": "Gif",
+      "attribution": "Powered by GIPHY"
+    },
+    "emoji": {
+      "hubAssets": "Hub-emotes en -stickers",
+      "emoteTitle": "emote: {{name}}",
+      "stickerTitle": "sticker: {{name}}",
+      "groups": {
+        "smileys": "Smileys",
+        "hands": "Handen",
+        "gaming": "Gaming",
+        "hearts": "Hartjes",
+        "objects": "Objecten",
+        "nature": "Natuur"
+      }
+    },
+    "poll": {
+      "kicker": "PEILING",
+      "votes_one": "{{count}} stem",
+      "votes_other": "{{count}} stemmen"
+    },
+    "event": {
+      "invitedAll": "Uitgenodigd: alle Hub-leden",
+      "invited": "Uitgenodigd: {{names}}",
+      "selectedMembers": "Geselecteerde leden",
+      "openHubFirst": "Open een Hub voordat je een evenement koppelt.",
+      "noTextRoom": "Deze Hub heeft geen tekstkanaal voor het gekoppelde evenement.",
+      "reconnecting": "De Hub maakt opnieuw verbinding; het gekoppelde evenement is niet gepost."
+    },
+    "attachment": {
+      "details": "{{type}} · {{size}} MB · {{security}}",
+      "fallbackType": "Bijlage",
+      "encrypted": "End-to-end versleuteld",
+      "legacy": "Geauthenticeerde legacy-download"
+    },
+    "session": {
+      "changed": "Deze accountsessie is gewijzigd.",
+      "expired": "Sessie verlopen.",
+      "signedInElsewhere": "Je DeCave-account is ingelogd in een andere browser of desktop-app.",
+      "ended": "Je sessie is beëindigd.",
+      "expiredSignIn": "Je sessie is verlopen. Log opnieuw in."
+    },
+    "history": {
+      "loadFailedStatus": "Oudere berichten konden niet worden geladen ({{status}})."
+    },
+    "notifications": {
+      "hiddenBody": "Je hebt een nieuwe melding.",
+      "senderSentMessage": "{{sender}} heeft een bericht gestuurd.",
+      "senderSentYouMessage": "{{sender}} heeft je een bericht gestuurd."
+    },
+    "voiceTest": {
+      "previewUnavailable": "Microfoonvoorbeeld is niet beschikbaar. Open Spraak en audio en kies eerst een invoerapparaat.",
+      "noReading": "De lokale spraakmeter heeft nog geen meting gegeven. Probeer de test opnieuw.",
+      "restoreFailed": "De microfoonketen kon na de lokale vergelijking niet worden hersteld."
+    },
+    "decision": {
+      "openRoomFirst": "Open een tekstkanaal voordat je een beslissingskaart plaatst.",
+      "reconnecting": "De Hub maakt opnieuw verbinding; de beslissingskaart is niet geplaatst."
+    },
+    "soundboard": {
+      "tooLarge": "Soundboardbestanden mogen maximaal 1,5 MB zijn.",
+      "badType": "Upload een MP3-, WAV-, OGG-, M4A- of WebM-audiobestand.",
+      "readFailed": "Kan audiobestand niet lezen.",
+      "added": "{{name}} toegevoegd.",
+      "someone": "Iemand",
+      "played": "{{username}} speelde {{sound}} af.",
+      "playedUnnamed": "{{username}} speelde een geluid af."
+    },
+    "camera": {
+      "blurUnsupported": "Achtergrondvervaging wordt niet ondersteund door deze browser of camera-driver; de camera is zonder vervaging gestart.",
+      "replaceUnsupported": "Achtergrondvervanging wordt niet ondersteund door deze browser of camera-driver; de camera is zonder vervanging gestart.",
+      "noTrack": "Geen cameravideotrack beschikbaar.",
+      "startFailed": "Kan beveiligde camera niet starten."
+    },
+    "screen": {
+      "noTrack": "Er is geen schermvideotrack geselecteerd.",
+      "systemAudioDropped": "Scherm delen is gestart zonder systeemgeluid: dit apparaat kan DeCave-stemmen niet uit het gedeelde geluid houden, waardoor iedereen zichzelf als echo zou horen.",
+      "startFailed": "Kan beveiligd scherm delen niet starten."
+    },
+    "desktopUpdate": {
+      "statusFailed": "Kan de status van de desktop-update niet lezen.",
+      "checkFailed": "DeCave kon niet op updates controleren. Probeer het later opnieuw.",
+      "restartRefused": "DeCave kon niet herstarten om de update toe te passen. Sla je werk op en probeer het opnieuw.",
+      "restartFailed": "DeCave kon niet herstarten om de update toe te passen. Probeer het later opnieuw.",
+      "versionLoading": "Laden…",
+      "webVersion": "Web (live)",
+      "webOnly": "Desktop-updates zijn beschikbaar in de DeCave-desktop-app voor Windows.",
+      "loading": "Geïnstalleerde versie wordt geladen via de desktop-bridge.",
+      "checking": "Geïnstalleerde versie {{installed}} · Controleren op updates…",
+      "downloadingPercent": "Geïnstalleerde versie {{installed}} · Update {{available}} downloaden · {{percent}}%",
+      "downloading": "Geïnstalleerde versie {{installed}} · Update {{available}} downloaden",
+      "downloaded": "Geïnstalleerde versie {{installed}} · Update {{available}} gedownload en klaar. Herstart om toe te passen.",
+      "upToDate": "Geïnstalleerde versie {{installed}} · Je bent up-to-date.",
+      "failed": "Geïnstalleerde versie {{installed}} · Updatecontrole mislukt: {{reason}}",
+      "tryLater": "Probeer het later opnieuw.",
+      "disabled": "Geïnstalleerde versie {{installed}} · Desktop-updates zijn uitgeschakeld in deze build.",
+      "ready": "Geïnstalleerde versie {{installed}} · Klaar om op updates te controleren."
+    },
+    "desktopBridge": {
+      "unavailable": "De DeCave-desktop-bridge is niet beschikbaar.",
+      "failed": "Verzoek aan desktop-bridge mislukt.",
+      "timedOut": "Time-out van de DeCave-desktop-bridge."
+    },
+    "device": {
+      "unknownDetails": "Apparaatgegevens niet beschikbaar",
+      "unknownClient": "Onbekende client",
+      "unknownSystem": "Onbekend besturingssysteem",
+      "browserOnSystem": "{{browser}} op {{system}}"
+    },
+    "presence": {
+      "offline": "Offline",
+      "idle": "Inactief",
+      "dnd": "Niet storen",
+      "online": "Online"
+    },
+    "noise": {
+      "standard": "Standaard",
+      "off": "Uit",
+      "standardShort": "STD",
+      "offShort": "UIT"
+    },
+    "microphone": {
+      "blocked": "Microfoontoegang is geblokkeerd. Sta microfoontoegang voor DeCave toe in je browserinstellingen en probeer het opnieuw.",
+      "notFound": "Er is geen microfoon gevonden op dit apparaat.",
+      "busy": "De microfoon is bezet of niet beschikbaar. Sluit andere apps die hem gebruiken en probeer het opnieuw.",
+      "overconstrained": "De geselecteerde microfoon ondersteunt de gevraagde audio-instellingen niet.",
+      "failed": "Geen toegang tot de microfoon."
+    },
+    "realtime": {
+      "unknownUser": "Onbekend",
+      "mention": "Vermelding",
+      "someUser": "DeCave-gebruiker",
+      "roomFallback": "kanaal",
+      "mentionedHidden": "Je bent vermeld in een Hub.",
+      "mentionedIn": "Heeft je vermeld in #{{channel}}.",
+      "newMessageHidden": "Nieuw bericht in een Hub.",
+      "encryptedMessage": "🔒 Versleuteld bericht"
+    },
+    "voice": {
+      "kicked": "Je verbinding is verbroken door een moderator.",
+      "connectionError": "Fout in spraakverbinding."
+    }
+  },
+  "session": {
+    "storage": {
+      "unavailable": "Lokale opslag is niet beschikbaar op dit apparaat.",
+      "readFailed": "Opgeslagen lokale gegevens konden niet worden gelezen; er wordt een veilige lege staat gebruikt.",
+      "unavailableNotSaved": "Lokale opslag is niet beschikbaar op dit apparaat; je wijziging is niet opgeslagen.",
+      "writeRejected": "Lokale opslag heeft deze wijziging geweigerd; je huidige sessie blijft bruikbaar.",
+      "unavailableKept": "Lokale opslag is niet beschikbaar op dit apparaat; opgeslagen gegevens zijn behouden.",
+      "clearRejected": "Lokale opslag weigerde deze gegevens te wissen; er is niets verwijderd."
+    },
+    "recap": {
+      "readFailed": "Lokale sessierecap kon niet worden gelezen.",
+      "invalidAction": "Deze recap-actie is ongeldig en is niet vastgelegd.",
+      "saveFailed": "Lokale sessierecap kon niet worden opgeslagen.",
+      "clearFailed": "Lokale sessierecap kon niet worden gewist.",
+      "yourSession": "je sessie",
+      "actionsRecorded_one": "{{count}} lokale actie vastgelegd in {{hub}}.",
+      "actionsRecorded_other": "{{count}} lokale acties vastgelegd in {{hub}}.",
+      "participantsVisible_one": "{{count}} deelnemer zichtbaar.",
+      "participantsVisible_other": "{{count}} deelnemers zichtbaar.",
+      "roomsVisited_one": "{{count}} kanaal bezocht.",
+      "roomsVisited_other": "{{count}} kanalen bezocht.",
+      "sharedLinks_one": "{{count}} gedeelde link.",
+      "sharedLinks_other": "{{count}} gedeelde links.",
+      "planningItems_one": "{{count}} planningsitem.",
+      "planningItems_other": "{{count}} planningsitems."
+    },
+    "quiet": {
+      "readFailed": "Stille aanwezigheid kon niet worden gelezen.",
+      "saveFailed": "Stille aanwezigheid kon niet worden opgeslagen.",
+      "intentAvailable": "Beschikbaar",
+      "intentPlaying": "Aan het gamen",
+      "intentWatching": "Aan het kijken",
+      "intentPlanning": "Aan het plannen",
+      "intentQuiet": "Stil",
+      "saveFailedDevice": "Stille aanwezigheid kon niet op dit apparaat worden opgeslagen.",
+      "kicker": "STILLE AANWEZIGHEID",
+      "title": "Deel je intentie, houd de controle",
+      "mapping": "Aanwezigheid gebruikt de bestaande status {{status}} en meldingsvoorinstelling {{preset}}.",
+      "intent": "Intentie",
+      "intentLabel": "Aanwezigheidsintentie",
+      "expires": "Verloopt",
+      "expiryLabel": "Verloop van aanwezigheid",
+      "expiryNone": "Tot ik het wijzig",
+      "expiryHour": "1 uur",
+      "expiryFourHours": "4 uur",
+      "expiryToday": "Tot het einde van de dag",
+      "interrupts": "ONDERBREKINGEN",
+      "urgentMentions": "Dringende vermeldingen",
+      "ordinaryJoins": "Gewone binnenkomers",
+      "soundboardEvents": "Soundboard-gebeurtenissen",
+      "recommendations": "Aanbevelingen",
+      "note": "Lokaal opgeslagen door de integratie. Beschikbaarheid in Squad Finder volgt deze intentie; dringende vermeldingen worden apart geregeld."
+    },
+    "kits": {
+      "readFailed": "Opgeslagen sessiekits konden niet worden gelezen.",
+      "saveFailed": "Wijzigingen in sessiekit konden niet worden opgeslagen.",
+      "invalid": "Deze sessiekit is ongeldig en is niet opgeslagen.",
+      "clearFailed": "Sessiekits konden niet worden gewist."
+    },
+    "squad": {
+      "playStyle": "Speelstijl",
+      "playStyleDetail": "Opgeslagen op dit apparaat; de huidige matcher filtert niet op speelstijl.",
+      "timeWindow": "Tijdvak",
+      "timeWindowDetail": "Opgeslagen op dit apparaat; de huidige matcher filtert niet op tijdvak.",
+      "partySize": "Groepsgrootte",
+      "partySizeDetail": "Opgeslagen op dit apparaat; de huidige matcher filtert niet op groepsgrootte.",
+      "defaultName": "Squad-voorinstelling",
+      "savedOnlyExtra": "{{label}}: alleen opgeslagen",
+      "readFailed": "Squad-voorinstellingen konden niet worden gelezen.",
+      "saveFailed": "Squad-voorinstellingen konden niet worden opgeslagen.",
+      "invalid": "Deze Squad-voorinstelling is ongeldig en is niet opgeslagen.",
+      "clearFailed": "Squad-voorinstellingen konden niet worden gewist."
+    },
+    "voice": {
+      "inputFallback": "Invoer {{number}}",
+      "outputFallback": "Uitvoer {{number}}",
+      "permissionGranted": "Microfoon toegestaan",
+      "permissionDenied": "Microfoon geblokkeerd",
+      "permissionPrompt": "Microfoontoestemming nodig",
+      "permissionUnknown": "Microfoontoestemming onbekend",
+      "modeHighQuality": "Hoge kwaliteit",
+      "modeLowCpu": "Laag CPU-gebruik",
+      "modeStandard": "Standaard",
+      "rawInput": "Ruwe invoer",
+      "processedInput": "Verwerkte invoer",
+      "durationMs": "{{ms}} ms",
+      "durationUnavailable": "duur niet beschikbaar",
+      "activityPercent": "{{percent}}% activiteit",
+      "activityUnavailable": "activiteit niet beschikbaar",
+      "testSummary": "{{variant}}: {{duration}} gemeten · {{activity}}"
+    },
+    "decision": {
+      "noDeadline": "Geen deadline",
+      "deadlineUnavailable": "Deadline niet beschikbaar",
+      "closes": "Sluit {{date}}",
+      "voteFailed": "Je stem kon niet worden opgeslagen.",
+      "pinFailed": "Het vastpinnen van de kaart kon niet worden opgeslagen.",
+      "kickerAvailability": "BESCHIKBAARHEIDSKAART",
+      "kickerChooseGame": "GAMEKEUZEKAART",
+      "kickerPoll": "PEILINGKAART",
+      "closed": "Gesloten",
+      "open": "Open",
+      "votes_one": "{{count}} stem",
+      "votes_other": "{{count}} stemmen",
+      "openEvent": "Evenement openen",
+      "unpin": "Losmaken",
+      "pin": "Kaart vastpinnen"
+    },
+    "composer": {
+      "eventFailed": "Het gekoppelde evenement kon niet worden gemaakt.",
+      "pollFailed": "De beslissingspeiling kon niet worden gemaakt.",
+      "createFailed": "Kan deze beslissingskaart niet maken.",
+      "kicker": "GEDEELDE BESLISSING",
+      "title": "Vraag het aan het kanaal",
+      "cardType": "Kaarttype",
+      "kindPoll": "Peiling",
+      "kindAvailability": "Beschikbaarheid",
+      "kindChooseGame": "Kies een game",
+      "deadline": "Deadline",
+      "optional": "optioneel",
+      "question": "Vraag",
+      "questionPlaceholder": "Wat gaan we spelen?",
+      "option": "Optie {{number}}",
+      "addOption": "Optie toevoegen",
+      "linkEvent": "Koppel een evenement aan de deadline",
+      "posting": "Plaatsen…",
+      "post": "Beslissing plaatsen"
+    },
+    "cancel": "Annuleren",
+    "recapCard": {
+      "clearFailed": "De lokale recap kon niet op dit apparaat worden gewist.",
+      "kicker": "LOKALE SESSIERECAP",
+      "title": "Wat je wilde bewaren",
+      "clear": "Recap wissen",
+      "totals": "Recaptotalen",
+      "participants": "Zichtbare deelnemers",
+      "rooms": "Bezochte kanalen",
+      "links": "Gedeelde links",
+      "planning": "Planningsitems",
+      "followUps": "Vervolgacties: {{items}}",
+      "privacyNote": "Alleen expliciete lokale acties en sessieacties worden meegenomen. Spraak en de inhoud van privéberichten worden niet vastgelegd."
+    },
+    "kitPanel": {
+      "saveFailed": "De sessiekit kon niet op dit apparaat worden opgeslagen.",
+      "removeFailed": "De sessiekit kon niet van dit apparaat worden verwijderd.",
+      "kicker": "LOKALE SESSIEKITS",
+      "title": "Begin met je context",
+      "savedCount_one": "{{count}} opgeslagen op dit apparaat",
+      "savedCount_other": "{{count}} opgeslagen op dit apparaat",
+      "saveCurrent": "Huidige opslaan",
+      "kitName": "Kitnaam",
+      "kitNamePlaceholder": "Co-op op vrijdagavond",
+      "intent": "Intentie",
+      "intentPlay": "Spelen",
+      "intentWatch": "Kijken",
+      "intentChat": "Chatten",
+      "intentPlan": "Plannen",
+      "saveNote": "Slaat deze Hub, dit kanaal, je spraakapparaten, meldingsvoorinstelling en gamecontext op dit apparaat op. Microfoon en camera blijven uit totdat je ze zelf kiest.",
+      "saveKit": "Kit opslaan",
+      "empty": "Nog geen kits opgeslagen. Sla je huidige Hub, kanaal en spraakvoorkeuren op om er een te maken.",
+      "kickerPlay": "SPELEN",
+      "kickerWatch": "KIJKEN",
+      "kickerChat": "CHATTEN",
+      "kickerPlan": "PLANNEN",
+      "noGame": "Geen game",
+      "reviewLaunch": "Start controleren",
+      "remove": "Verwijderen",
+      "reviewKicker": "CONTROLEER VOORDAT JE START",
+      "canLaunch": "Beschikbare onderdelen worden voor deze sessie hersteld.",
+      "cannotLaunch": "Deze Hub is niet beschikbaar, dus de kit kan zijn context niet openen.",
+      "inviteNote": "Uitnodigingskandidaten staan klaar om te controleren. Als je deze sessie start, worden er geen uitnodigingen of berichten verstuurd.",
+      "skippedLabel": "Overgeslagen kitverwijzingen die niet beschikbaar zijn",
+      "start": "Sessie starten"
+    },
+    "presets": {
+      "newName": "Nieuwe Squad-voorinstelling",
+      "saveFailed": "De Squad-voorinstelling kon niet op dit apparaat worden opgeslagen.",
+      "removeFailed": "De Squad-voorinstelling kon niet van dit apparaat worden verwijderd.",
+      "kicker": "SQUAD FINDER",
+      "title": "Opgeslagen voorinstellingen",
+      "new": "Nieuwe voorinstelling",
+      "name": "Naam",
+      "game": "Game",
+      "platform": "Platform",
+      "language": "Taal",
+      "region": "Regio",
+      "requireMic": "Microfoon vereisen",
+      "savedOnly": "alleen opgeslagen",
+      "styleAny": "Alle",
+      "styleCasual": "Casual",
+      "styleCompetitive": "Competitief",
+      "timeWindowPlaceholder": "bijv. 's avonds",
+      "partyMin": "Minimale groepsgrootte",
+      "partyMax": "Maximale groepsgrootte",
+      "matcherNote": "Game, platform, taal, regio en microfoon worden via de huidige matcher verstuurd. De extra voorkeuren blijven op dit apparaat totdat de matcher ze ondersteunt.",
+      "save": "Voorinstelling opslaan",
+      "empty": "Nog geen voorinstellingen opgeslagen.",
+      "anyGame": "Elke game",
+      "micRequired": "Mic vereist",
+      "micOptional": "Mic optioneel",
+      "savedOnlyList": "Alleen opgeslagen: {{items}}",
+      "use": "Gebruiken",
+      "edit": "Bewerken"
+    },
+    "readiness": {
+      "testFailed": "De lokale spraaktest kon niet worden uitgevoerd.",
+      "compareFailed": "De lokale vergelijking kon niet worden uitgevoerd.",
+      "kicker": "KLAAR VOOR SPRAAK?",
+      "title": "Check voordat je deelneemt",
+      "noiseNotMeasured": "Ruis niet gemeten",
+      "environment": "Omgeving {{environment}}",
+      "refresh": "Apparaten vernieuwen",
+      "input": "Invoer",
+      "systemInput": "Systeeminvoer",
+      "unavailable": "Niet beschikbaar",
+      "output": "Uitvoer",
+      "systemOutput": "Systeemuitvoer",
+      "systemOutputSelectable": "Systeemuitvoer · selecteerbaar",
+      "processing": "Verwerking",
+      "latency": "Verwachte vertraging",
+      "notMeasured": "Niet gemeten",
+      "processingMode": "Verwerkingsmodus",
+      "measuringRaw": "Ruwe invoer meten…",
+      "testRaw": "Ruwe invoer testen",
+      "measuringProcessed": "Verwerkte invoer meten…",
+      "testProcessed": "Opgeschoonde invoer testen",
+      "comparing": "Vergelijken…",
+      "runAb": "Lokale A/B-test uitvoeren",
+      "note": "Tests draaien lokaal nadat je een knop kiest en worden niet door dit onderdeel opgeslagen."
+    },
+    "kitLaunch": {
+      "issues": {
+        "hubUnavailable": "Deze Hub is niet meer beschikbaar; de kit opent in de veilige startstaat.",
+        "channelUnavailable": "Dit kanaal is niet meer beschikbaar en is overgeslagen.",
+        "eventUnavailable": "Dit evenement is niet beschikbaar en is overgeslagen.",
+        "inviteMemberUnavailable": "Een niet-beschikbare uitnodiging is overgeslagen.",
+        "inputDeviceUnavailable": "De opgeslagen invoer is niet beschikbaar; de systeeminvoer blijft behouden.",
+        "outputDeviceUnavailable": "De opgeslagen uitvoer is niet beschikbaar; de systeemuitvoer blijft behouden."
+      },
+      "summary": {
+        "hub": "Hub: {{hub}}",
+        "hubUnavailable": "Hub: niet beschikbaar (veilige startstaat)",
+        "room": "Kanaal: {{room}}",
+        "roomUnavailable": "Kanaal: niet beschikbaar (overgeslagen)",
+        "roomUnchanged": "Kanaal: ongewijzigd",
+        "game": "Game: {{game}}",
+        "gameWithPlatform": "Game: {{game}} · {{platform}}",
+        "gameNotSet": "Game: niet ingesteld",
+        "event": "Evenement: {{event}}",
+        "eventUnavailable": "Evenement: niet beschikbaar (overgeslagen)",
+        "eventNone": "Evenement: geen",
+        "invites_one": "Uitnodigingen: {{count}} beschikbaar; ongewijzigd tot je Uitnodigen kiest",
+        "invites_other": "Uitnodigingen: {{count}} beschikbaar; ongewijzigd tot je Uitnodigen kiest",
+        "invitesNone": "Uitnodigingen: geen",
+        "microphone": "Microfoon: ongewijzigd tot je Deelnemen kiest en hem inschakelt",
+        "camera": "Camera: ongewijzigd tot je Camera kiest"
+      }
+    }
+  },
+  "shared": {
+    "typeToConfirm": {
+      "prompt": "Typ <strong>{{text}}</strong> om te bevestigen",
+      "cancel": "Annuleren",
+      "working": "Bezig…"
+    }
+  },
+  "media": {
+    "download": {
+      "originInvalid": "De herkomst van de bijlage is ongeldig.",
+      "originProtocol": "De herkomst van de bijlage moet HTTP(S) gebruiken.",
+      "originState": "De herkomst van de bijlage mag geen inloggegevens of URL-status bevatten.",
+      "urlEmpty": "De bijlage-URL is leeg.",
+      "urlSeparator": "De bijlage-URL bevat een gecodeerd of letterlijk padscheidingsteken.",
+      "urlTraversal": "De bijlage-URL bevat path traversal.",
+      "urlInvalid": "De bijlage-URL is ongeldig.",
+      "urlCrossOrigin": "De bijlage-URL heeft niet dezelfde herkomst.",
+      "urlState": "De bijlage-URL mag geen inloggegevens, query of fragment bevatten.",
+      "urlEncodedTraversal": "De bijlage-URL bevat gecodeerde path traversal.",
+      "urlOutsideRoute": "De bijlage-URL valt buiten de legacy-bijlageroute.",
+      "urlUnsafeSegment": "De bijlage-URL bevat een onveilig padsegment.",
+      "limitInvalid": "De groottelimiet van de bijlage is ongeldig.",
+      "sizeInvalid": "De grootte van de bijlage is ongeldig.",
+      "tooLarge": "De bijlage overschrijdt de limiet van 25 MiB.",
+      "noBoundedBody": "Het bijlageantwoord heeft geen begrensde body.",
+      "incomplete": "De grootte van het bijlageantwoord was onvolledig.",
+      "downloadFailed": "Het downloaden van de bijlage is mislukt.",
+      "redirected": "Het bijlageantwoord is omgeleid.",
+      "noVerifiedUrl": "Het bijlageantwoord heeft geen geverifieerde URL.",
+      "urlNotApproved": "De URL van het bijlageantwoord is niet goedgekeurd.",
+      "requestFailed": "Het bijlageverzoek is mislukt.",
+      "exportUnavailable": "Bestanden exporteren via desktop is niet beschikbaar in deze omgeving.",
+      "requestFailedStatus": "Het bijlageverzoek is mislukt ({{status}})."
+    },
+    "image": {
+      "failedName": "Afbeelding · {{name}}",
+      "failedHint": "Kan het voorbeeld niet tonen. Download de afbeelding.",
+      "open": "Afbeelding {{name}} openen",
+      "loading": "Afbeelding laden…",
+      "download": "Downloaden",
+      "close": "Sluiten"
+    }
+  },
+  "outbox": {
+    "noReply": "Geen antwoord van DeCave. Controleer je verbinding en probeer het opnieuw."
+  },
+  "home": {
+    "hero": {
+      "greeting": {
+        "lateNight": "Nog laat aan het grinden, <em>{{name}}</em>",
+        "morning": "Goedemorgen, <em>{{name}}</em>",
+        "afternoon": "Goedemiddag, <em>{{name}}</em>",
+        "evening": "Goedenavond, <em>{{name}}</em>"
+      },
+      "inVoice": "Je bent verbonden met {{room}}. Je crew wacht op je.",
+      "friendsOnline_one": "{{count}} vriend is nu online.",
+      "friendsOnline_other": "{{count}} vrienden zijn nu online.",
+      "ready": "Klaar wanneer jij het bent. Ga verder waar je gebleven was.",
+      "kicker": "My Cave · Persoonlijk dashboard"
+    },
+    "jumpBack": {
+      "connectedToVoice": "Verbonden met spraak",
+      "inRoom_one": "{{count}} in kanaal",
+      "inRoom_other": "{{count}} in kanaal",
+      "jumpBackIn": "Spring er weer in",
+      "getStarted": "Aan de slag",
+      "discoverHubs": "Hubs ontdekken",
+      "discoverHint": "Vind een community voor je games",
+      "friends": "Vrienden",
+      "discover": "Ontdekken",
+      "findSquad": "Find a Squad",
+      "createHub": "＋ Hub maken",
+      "settings": "Instellingen"
+    },
+    "stats": {
+      "friendsOnline": "Vrienden online",
+      "inVoice": "Mensen in spraak",
+      "hubs": "Je Hubs",
+      "unreadDms": "Ongelezen DM's"
+    },
+    "friends": {
+      "emptyTitle": "Nog niemand online",
+      "emptyHint": "Vrienden verschijnen hier zodra ze online komen.",
+      "add": "Vrienden toevoegen",
+      "message": "{{name}} een bericht sturen",
+      "online": "Online"
+    },
+    "voice": {
+      "emptyTitle": "Geen spraakkanalen",
+      "emptyHint": "Word lid van een Hub of maak er een om samen in spraak te hangen.",
+      "connected": "Verbonden · {{hub}}",
+      "open": "Openen",
+      "join": "Deelnemen"
+    },
+    "events": {
+      "liveNow": "Nu live",
+      "syncingTitle": "Evenementen synchroniseren",
+      "syncingHint": "Je Hubs worden gecontroleerd op geplande sessies.",
+      "emptyTitle": "Niets gepland",
+      "emptyHint": "Raidavonden, toernooien en hangouts uit je Hubs verschijnen hier."
+    },
+    "hubs": {
+      "emptyTitle": "Nog geen Hubs",
+      "emptyHint": "Maak je eigen Hub of zoek een community om lid van te worden.",
+      "membershipPrivate": "Lidmaatschap privé",
+      "online_one": "{{count}} online",
+      "online_other": "{{count}} online"
+    },
+    "messages": {
+      "emptyTitle": "Geen recente DM's",
+      "emptyHint": "Je laatste gesprekken staan hier binnen handbereik.",
+      "open": "Berichten openen"
+    },
+    "nowPlaying": {
+      "emptyTitle": "Geen game gedetecteerd",
+      "emptyHint": "Start een ondersteunde game en DeCave werkt dit automatisch bij.",
+      "kicker": "Speelt nu"
+    },
+    "profile": {
+      "edit": "Bewerken"
+    },
+    "notes": {
+      "placeholder": "Maak hier een snelle notitie…",
+      "label": "Notities"
+    },
+    "board": {
+      "emptyTitle": "Je startpagina is leeg",
+      "emptyHint": "Kies widgets om hier te tonen.",
+      "addWidgets": "＋ Widgets toevoegen",
+      "options": "Opties voor widget {{title}}",
+      "size": "Grootte van {{title}}",
+      "moveEarlierNamed": "{{title}} naar voren",
+      "moveEarlier": "Naar voren",
+      "moveLaterNamed": "{{title}} naar achteren",
+      "moveLater": "Naar achteren",
+      "hideNamed": "{{title}} verbergen",
+      "hide": "Widget verbergen"
+    },
+    "library": {
+      "label": "Widgetbibliotheek",
+      "kicker": "Startpagina aanpassen",
+      "title": "Kies je widgets",
+      "hint": "Zet widgets aan of uit en sleep kaarten (of gebruik ↑ ↓) om ze te herschikken.",
+      "reset": "Standaard herstellen",
+      "done": "Klaar",
+      "presets": "Begin met een voorinstelling",
+      "show": "{{title}} tonen"
+    },
+    "category": {
+      "Gaming": "Gaming",
+      "Social": "Sociaal",
+      "Voice": "Spraak",
+      "Hubs": "Hubs",
+      "Personal": "Persoonlijk"
+    },
+    "size": {
+      "small": "Klein",
+      "medium": "Middel",
+      "wide": "Breed"
+    },
+    "widget": {
+      "jumpBack": {
+        "title": "Spring er weer in",
+        "description": "Ga verder met je laatste kanaal, spraakoproep en snelle acties"
+      },
+      "stats": {
+        "title": "In één oogopslag",
+        "description": "Vrienden online, mensen in spraak, Hubs en ongelezen DM's"
+      },
+      "friendsOnline": {
+        "title": "Vrienden online",
+        "description": "Wie online is en wat ze spelen"
+      },
+      "voiceRooms": {
+        "title": "Spraakkanalen",
+        "description": "Doe mee in spraakkanalen in al je Hubs"
+      },
+      "events": {
+        "title": "Komende evenementen",
+        "description": "Geplande sessies uit je Hubs"
+      },
+      "hubs": {
+        "title": "Je Hubs",
+        "description": "Snel naar je communities"
+      },
+      "messages": {
+        "title": "Berichten",
+        "description": "Spring terug in privéchats"
+      },
+      "nowPlaying": {
+        "title": "Speelt nu",
+        "description": "Je gedetecteerde game en sessietijd"
+      },
+      "quickLinks": {
+        "title": "Snelle links",
+        "description": "Snelkoppelingen naar je favoriete websites"
+      },
+      "profile": {
+        "title": "Profiel",
+        "description": "Je aanwezigheid in één oogopslag"
+      },
+      "clock": {
+        "title": "Klok",
+        "description": "Lokale tijd en datum"
+      },
+      "notes": {
+        "title": "Notities",
+        "description": "Een privé-kladblok op dit apparaat"
+      }
+    },
+    "preset": {
+      "gaming": {
+        "label": "Gaming",
+        "description": "Speelt nu, spraak en evenementen vooraan"
+      },
+      "social": {
+        "label": "Sociaal",
+        "description": "Vrienden, berichten en je Hubs eerst"
+      },
+      "minimal": {
+        "label": "Minimaal",
+        "description": "Alleen de essentie"
+      }
+    }
+  },
+  "server": {
+    "authTimedOut": "Time-out bij authenticatie. Maak opnieuw verbinding.",
+    "rateLimited": "Te veel realtime-verzoeken. Doe even rustig aan.",
+    "payloadTooLarge": "Realtime-payload is te groot.",
+    "invalidJson": "Ongeldige JSON-payload",
+    "unknownType": "Onbekend type realtime-bericht.",
+    "authTooManyAttempts": "Te veel authenticatiepogingen. Probeer het later opnieuw.",
+    "authUnavailable": "Authenticatie is tijdelijk niet beschikbaar. Probeer het opnieuw.",
+    "sessionExpired": "Sessie verlopen. Log opnieuw in.",
+    "authenticateFirst": "Je moet eerst authenticeren",
+    "noHubAccess": "Je hebt geen toegang tot deze Hub",
+    "roomNotFound": "Kanaal niet gevonden of niet toegankelijk",
+    "officialPolicyUnavailable": "Het postbeleid van de officiële Hub is tijdelijk niet beschikbaar.",
+    "ownerOnlyPosting": "Alleen de Hub-eigenaar kan in deze Hub posten.",
+    "roomReadOnly": "#{{room}} is alleen-lezen.",
+    "timedOut": "Je hebt op dit moment een time-out in deze Hub.",
+    "slowMode": "Slow-modus staat aan. Wacht {{seconds}} seconden tussen berichten.",
+    "attachmentNotOwned": "Die bijlage is niet van jou of is niet beschikbaar in dit kanaal.",
+    "replyTargetMissingInRoom": "Het bericht waarop je antwoordt is niet gevonden in dit kanaal.",
+    "forumReplyTarget": "Forumantwoorden moeten bij een forumpost horen.",
+    "forumReplyNotPost": "Forumantwoorden kunnen geen posts zijn.",
+    "forumPostLocked": "Deze post is vergrendeld.",
+    "forumPostsOnlyInForums": "Forumposts kunnen alleen in forumkanalen worden gemaakt.",
+    "forumTopLevelPosts": "Berichten op het hoogste niveau van een forum moeten als post worden gemaakt.",
+    "forumTooManyTags": "Posts kunnen maximaal {{max}} tags hebben.",
+    "forumTagInvalid": "Kies tags uit de taglijst van dit forum.",
+    "forumRoleCannotPost": "Met jouw rol kun je geen posts maken in dit forum.",
+    "forumLockForbidden": "Alleen forummoderators kunnen posts maken waarop niet gereageerd kan worden.",
+    "attachmentUnavailable": "Die bijlage is niet beschikbaar.",
+    "dmFriendsOnly": "Privéberichten zijn alleen mogelijk tussen vrienden.",
+    "dmBlocked": "Deze gebruiker is geblokkeerd. Deblokkeer diegene voordat je privéberichten stuurt.",
+    "replyTargetMissing": "Het bericht waarop je antwoordt is niet gevonden.",
+    "alreadySent": "Dat bericht is al verstuurd.",
+    "groupNotMember": "Je bent geen lid van deze groepschat.",
+    "voiceRoomNotFound": "Spraakkanaal niet gevonden",
+    "voiceRoomFull": "Dit kanaal is vol ({{cap}}/{{cap}}).",
+    "soundUnavailable": "Dat soundboardgeluid is niet beschikbaar.",
+    "soundboardUnavailable": "Soundboard is nu niet beschikbaar.",
+    "voiceRoomDeleted": "Dit spraakkanaal is verwijderd.",
+    "voiceAccessRevoked": "Je hebt geen toegang meer tot dit spraakkanaal.",
+    "roomAccessRevoked": "Je hebt geen toegang meer tot dit kanaal.",
+    "roomDeleted": "Dit kanaal is verwijderd.",
+    "leftHub": "Je hebt deze Hub verlaten.",
+    "removedFromHub": "Je bent uit deze Hub verwijderd.",
+    "kickedFromHub": "Je bent uit deze Hub gekickt.",
+    "bannedFromHub": "Je bent verbannen uit deze Hub.",
+    "leftSquadRoom": "Je hebt het Squad-kanaal verlaten."
+  },
+  "mobile": {
+    "channel": {
+      "couldNotDownloadAttachment": "Kan bijlage niet downloaden",
+      "theAuthenticatedAttachmentDownloadFailed": "De geauthenticeerde download van de bijlage is mislukt.",
+      "couldNotLoadMessages": "Kan berichten niet laden.",
+      "realtimeIsReconnectingTryAgain": "Realtime maakt opnieuw verbinding. Probeer het zo opnieuw.",
+      "couldNotSendAttachment": "Kan bijlage niet versturen",
+      "pleaseTryAgain": "Probeer het opnieuw.",
+      "couldNotSendGif": "Kan GIF niet versturen",
+      "couldNotUnpinMessage": "Kan bericht niet losmaken",
+      "couldNotPinMessage": "Kan bericht niet vastpinnen",
+      "olderMessage": "Ouder bericht",
+      "thisMessageIsFurtherBack": "Dit bericht ligt verder terug dan de geladen geschiedenis.",
+      "couldNotAddReaction": "Kan reactie niet toevoegen",
+      "deleteMessage": "Bericht verwijderen?",
+      "thisRemovesTheMessageFor": "Hiermee wordt het bericht voor iedereen in dit kanaal verwijderd.",
+      "couldNotDeleteMessage": "Kan bericht niet verwijderen",
+      "couldNotEditMessage": "Kan bericht niet bewerken",
+      "theMessageWasNotChanged": "Het bericht is niet gewijzigd.",
+      "live": "Live",
+      "connecting": "Verbinden…",
+      "searchMessages": "Berichten zoeken",
+      "pinnedMessages": "Vastgepinde berichten",
+      "returnToVoiceControls": "Terug naar spraakbediening",
+      "voiceAndMessagesLiveTogether": "Spraak en berichten zitten samen in dit kanaal.",
+      "noPostsInThisForum": "Nog geen posts in dit forum.",
+      "thisIsTheBeginningOf": "Dit is het begin van dit tekstkanaal.",
+      "longPressForMessageActions": "Houd ingedrukt voor berichtacties",
+      "pinned": "Vastgepind",
+      "newsincescrollNewMessagesJumpTo": "{{newSinceScroll}} nieuwe berichten. Naar nieuwste",
+      "jumpToLatestMessages": "Naar nieuwste berichten",
+      "latest": "Nieuwste",
+      "severalPeopleAreTyping": "Meerdere mensen typen…",
+      "editingMessage": "Bericht bewerken",
+      "replyingToNameValue": "Antwoord aan {{name}}: {{value}}",
+      "longPressAPostTo": "Houd een post ingedrukt om te antwoorden. Nieuwe forumposts kun je starten op desktop of web.",
+      "addPhotoVideoOrGif": "Foto, video of gif toevoegen",
+      "writeAReply": "Schrijf een antwoord",
+      "messageName": "Bericht in #{{name}}",
+      "couldNotUpdateMute": "Kan demping niet bijwerken",
+      "unmuteUsername": "Dempen van {{username}} opheffen",
+      "muteNotificationsFromUsername": "Meldingen van {{username}} dempen",
+      "roomFallback": "Kanaal",
+      "welcomeVoice": "Welkom in {{name}}",
+      "welcomeText": "Welkom in #{{name}}",
+      "reactedByYou": "{{emoji}} {{count}}, jij hebt gereageerd",
+      "newCount": "{{number}} nieuw",
+      "isTyping": "{{name}} typt…",
+      "twoTyping": "{{first}} en {{second}} typen…"
+    },
+    "finder": {
+      "searchFailed": "Zoeken mislukt.",
+      "pinsEmpty": "Nog geen vastgepinde berichten. Moderators kunnen een bericht vastpinnen door het ingedrukt te houden.",
+      "noMatches": "Geen berichten gevonden.",
+      "searchHint": "Zoek op berichttekst of gebruikersnaam.",
+      "searchTitle": "Berichten zoeken",
+      "placeholder": "Dit kanaal doorzoeken"
+    },
+    "media": {
+      "gifLoadFailed": "Kan gifs niet laden.",
+      "photos": "Foto's",
+      "camera": "Camera",
+      "searchGiphy": "Zoeken op GIPHY",
+      "poweredByGiphy": "Powered by GIPHY",
+      "saveOrShare": "Opslaan of delen",
+      "cameraOff": "Cameratoegang staat uit voor DeCave. Zet het aan in Instellingen.",
+      "photosOff": "Fototoegang staat uit voor DeCave. Zet het aan in Instellingen.",
+      "tooLarge": "Bijlagen mogen maximaal 25 MB zijn.",
+      "uploadFailed": "Kan de bijlage niet uploaden."
+    },
+    "preview": {
+      "mine": "Je bericht: {{body}}",
+      "from": "Bericht van {{author}}: {{body}}"
+    },
+    "sendFailed": {
+      "text": "Niet verstuurd: je bent offline of maakt opnieuw verbinding.",
+      "retryLabel": "Opnieuw versturen"
+    },
+    "size": {
+      "bytes": "{{size}} B"
+    },
+    "download": {
+      "imageRequestFailed": "Het verzoek voor de bijlageafbeelding is mislukt.",
+      "unsupportedImage": "Het bijlageantwoord is geen ondersteunde afbeelding.",
+      "unsupportedPlatform": "Bijlagen opslaan wordt ondersteund op Android en iOS.",
+      "cannotSave": "Dit apparaat kan geen bijlagen opslaan.",
+      "chooseFolder": "Kies een map om de bijlage op te slaan."
+    }
+  }
+}

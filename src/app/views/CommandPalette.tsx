@@ -1,6 +1,7 @@
 // Search and quick switch: jump to people, Hubs, rooms, forums and settings.
 
 import { Fragment, type Dispatch, type SetStateAction } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Icon } from "../../components/Icon";
 import type { GlobalCommandItem } from "../types";
 
@@ -23,6 +24,7 @@ export function CommandPalette({
   setShowInbox,
   visibleGlobalCommands,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div
       className="modal-overlay dc-command-overlay"
@@ -30,7 +32,12 @@ export function CommandPalette({
         if (event.target === event.currentTarget) setShowCommandPalette(false);
       }}
     >
-      <section className="dc-command-palette" role="dialog" aria-modal="true" aria-label="Search and quick switch">
+      <section
+        className="dc-command-palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("common.commandPalette.label")}
+      >
         <label className="dc-command-input ds-search">
           <Icon name="search" size="sm" />
           <input
@@ -57,8 +64,8 @@ export function CommandPalette({
                 }
               }
             }}
-            placeholder="Search people, Hubs, rooms, forums, and settings"
-            aria-label="Search people, Hubs, rooms, forums, and settings"
+            placeholder={t("common.commandPalette.placeholder")}
+            aria-label={t("common.commandPalette.placeholder")}
             autoFocus
           />
         </label>
@@ -67,7 +74,17 @@ export function CommandPalette({
             const showGroup = index === 0 || visibleGlobalCommands[index - 1].group !== item.group;
             return (
               <Fragment key={item.id}>
-                {showGroup && <div className="dc-cmd-group">{item.group}</div>}
+                {showGroup && (
+                  <div className="dc-cmd-group">
+                    {item.group === "Go to"
+                      ? t("common.commandPalette.groupGoTo")
+                      : item.group === "Your Hubs"
+                        ? t("common.commandPalette.groupHubs")
+                        : item.group === "Rooms"
+                          ? t("common.commandPalette.groupRooms")
+                          : t("common.commandPalette.groupFriends")}
+                  </div>
+                )}
                 <button
                   type="button"
                   className={`dc-cmd-row${index === commandPaletteIndex ? " is-selected" : ""}`}
@@ -106,15 +123,14 @@ export function CommandPalette({
               <span className="ds-empty-icon">
                 <Icon name="search" />
               </span>
-              <h3>No results</h3>
-              <p>Try a Hub, room, friend, or settings section.</p>
+              <h3>{t("common.commandPalette.noResults")}</h3>
+              <p>{t("common.commandPalette.noResultsHint")}</p>
             </div>
           )}
         </div>
         <footer>
           <span>
-            <kbd>Ctrl</kbd>
-            <kbd>K</kbd> to open anywhere · <kbd>Esc</kbd> to close
+            <Trans t={t} i18nKey="common.commandPalette.footer" components={[<kbd key="kbd" />]} />
           </span>
           <button
             type="button"
@@ -125,7 +141,7 @@ export function CommandPalette({
             }}
           >
             <Icon name="bell" />
-            Open Inbox
+            {t("common.commandPalette.openInbox")}
           </button>
         </footer>
       </section>

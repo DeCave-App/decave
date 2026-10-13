@@ -1,0 +1,120 @@
+{
+  "category": {
+    "HARASSMENT_BULLYING": "Harcèlement ou intimidation",
+    "HATE_SPEECH": "Discours haineux",
+    "SEXUAL_INAPPROPRIATE": "Contenu sexuel ou inapproprié",
+    "SUSPECTED_GROOMING": "Suspicion de pédopiégeage (grooming)",
+    "CHILD_SAFETY": "Problème de sécurité des enfants",
+    "THREATS_VIOLENCE": "Menaces ou violence",
+    "SPAM_SCAM": "Spam ou arnaque",
+    "IMPERSONATION": "Usurpation d'identité",
+    "UNDERAGE_USER": "Utilisateur mineur",
+    "INAPPROPRIATE_MEDIA": "Média inapproprié",
+    "SELF_HARM": "Risque d'automutilation",
+    "OTHER": "Autre"
+  },
+  "urgency": {
+    "critical": "Critique",
+    "high": "Élevée",
+    "medium": "Moyenne",
+    "low": "Faible",
+    "spam_invalid": "Spam ou invalide"
+  },
+  "report": {
+    "title": {
+      "content": "Signaler le contenu",
+      "user": "Signaler {{name}}",
+      "thisUser": "Signaler cet utilisateur",
+      "item": "Signaler {{label}}",
+      "thisContent": "Signaler ce contenu"
+    },
+    "failed": "Le signalement n'a pas pu être envoyé.",
+    "submitted": "Signalement envoyé. Merci de contribuer à la sécurité de DeCave.",
+    "submittedNoEvidence": "Signalement envoyé, mais le message signalé n'a pas pu être joint, donc l'équipe sécurité ne peut pas le lire. Tu peux fermer cette fenêtre.",
+    "connectFailed": "Impossible de se connecter à DeCave.",
+    "kicker": "Confiance et sécurité",
+    "private": "Ton signalement est privé. La personne signalée ne verra pas ton identité.",
+    "category": "Que s'est-il passé ?",
+    "urgency": "Urgence",
+    "details": "Détails <optional>(facultatif)</optional>",
+    "detailsPlaceholder": "Dis-nous ce qu'on doit savoir",
+    "evidence": "Preuves sélectionnées",
+    "evidenceEncrypted": "Elles seront chiffrées sur cet appareil avant l'envoi.",
+    "blockAfter": "Bloquer cet utilisateur après l'envoi",
+    "cancel": "Annuler",
+    "submitting": "Envoi…",
+    "submit": "Envoyer le signalement"
+  },
+  "myReports": {
+    "loadFailed": "Impossible de charger tes signalements.",
+    "connectFailed": "Impossible de se connecter à DeCave.",
+    "kicker": "VISIBLE PAR TOI SEUL",
+    "title": "Mes signalements",
+    "intro": "Suis les signalements que tu as envoyés. Les détails de l'examen restent privés.",
+    "loading": "Chargement…",
+    "refresh": "Actualiser",
+    "empty": "Tu n'as envoyé aucun signalement.",
+    "rowMeta": "{{target}} · {{date}}",
+    "report": "Signalement",
+    "close": "Fermer",
+    "noDetails": "Aucun détail supplémentaire n'a été fourni.",
+    "statusLine": "Statut : {{status}} · envoyé le {{date}}",
+    "status": {
+      "submitted": "Envoyé",
+      "under_review": "En cours d'examen",
+      "awaiting_information": "En attente d'infos",
+      "action_taken": "Mesures prises",
+      "no_violation": "Aucune infraction",
+      "escalated": "Transmis",
+      "appealed": "Contesté",
+      "closed": "Clôturé"
+    },
+    "urgency": {
+      "critical": "critique",
+      "high": "élevée",
+      "medium": "moyenne",
+      "low": "faible",
+      "spam_invalid": "spam ou invalide"
+    },
+    "target": {
+      "user": "utilisateur",
+      "message": "message",
+      "content": "contenu",
+      "attachment": "pièce jointe",
+      "profile": "profil",
+      "voice_participant": "participant vocal"
+    }
+  },
+  "qrLogin": {
+    "creating": "Création d'un code de connexion sécurisé…",
+    "createFailed": "Impossible de créer la connexion par QR code.",
+    "instructions": "Ouvre DeCave Mobile → Paramètres → Appareils → Connexion par QR code.",
+    "updating": "Mise à jour du code de connexion sécurisé…",
+    "expired": "La connexion par QR code a expiré.",
+    "codeAlt": "QR code de connexion DeCave",
+    "preparing": "Préparation…",
+    "scan": "Scanne avec l'appli DeCave"
+  },
+  "mobile": {
+    "myReports": {
+      "reportValue": "Signalement {{value}}"
+    },
+    "category": {
+      "HARASSMENT_BULLYING": "Harcèlement",
+      "SEXUAL_INAPPROPRIATE": "Contenu sexuel",
+      "SUSPECTED_GROOMING": "Grooming",
+      "CHILD_SAFETY": "Sécurité des enfants",
+      "THREATS_VIOLENCE": "Menaces",
+      "SELF_HARM": "Automutilation"
+    },
+    "report": {
+      "submittedNoEvidenceShort": "Signalement envoyé, mais le message signalé n'a pas pu être joint.",
+      "failed": "Impossible d'envoyer le signalement.",
+      "kicker": "CONFIANCE ET SÉCURITÉ",
+      "private": "Ton signalement est privé. La personne signalée ne verra pas ton identité.",
+      "detailsPlaceholder": "Dis-nous ce qu'on doit savoir (facultatif)",
+      "evidenceNote": "Le message signalé est joint, chiffré pour que seule l'équipe sécurité de DeCave puisse le lire.",
+      "contextNote": "Ton signalement et son contexte sont envoyés à l'équipe sécurité de DeCave."
+    }
+  }
+}

@@ -100,6 +100,8 @@ export type DmE2eeStatus = "off" | "loading" | "locked" | "ready" | "error";
 export type DmLinkApproval = {
   id: string;
   deviceLabel: string;
+  /** Parts of the label for showing it in the UI language (shared/session-device.ts). */
+  device?: unknown;
   code: string;
   linkPublicKey: string;
   expiresAt: string;
@@ -111,7 +113,9 @@ export type DmE2eeState = {
   available: boolean;
   accountId: string | null;
   keyId: string | null;
+  /** English; `errorKey` is its catalog key when known. */
   error: string;
+  errorKey: string | null;
   /** A recovery code that was just created and must be shown once. */
   pendingRecoveryCode: string | null;
   /** This device asking another device for the key. */
@@ -173,10 +177,60 @@ export function toggledReactions(reactions: Record<string, string[]> | undefined
 export type RtcVerdict = "verified" | "unverified" | "rejected";
 
 export class DmE2eeUnavailableError extends Error {
-  constructor(message: string) {
+  /** Catalog key of the message (dm.e2ee.errors.*, or errors.* for a server code) for apps that translate. */
+  readonly key: string | null;
+  constructor(message: string, key: string | null = null) {
     super(message);
     this.name = "DmE2eeUnavailableError";
+    this.key = key;
   }
+}
+
+/** Label of a device asking for approval that sent no name; apps show dm.e2ee.approve.unnamedDevice. */
+export const UNKNOWN_DEVICE_LABEL = "New device";
+
+/**
+ * English text of the errors this session raises. Apps show `dm.e2ee.errors.<name>`
+ * in their language (the catalog holds the same English); this file can't import
+ * the catalogs because the mobile app keeps a copy of it.
+ */
+export const DM_E2EE_ERROR_TEXT = {
+  accountChanged: "The encryption account changed during this operation.",
+  loadKeyFailed: "Could not load your encryption key.",
+  disabledByServer: "Encryption was disabled by the server. Your messages were not sent.",
+  unavailable: "Encryption is unavailable.",
+  setupFailed: "Could not set up encryption.",
+  signInFirst: "Sign in first.",
+  loadBackupFailed: "Could not load your recovery backup.",
+  noBackup: "There is no recovery backup for this account.",
+  backupOutdated: "The recovery backup is out of date. Approve this device from another one.",
+  askDevicesFailed: "Could not ask your other devices.",
+  resetFailed: "Could not reset your key.",
+  deviceCantRead: "This device can't read encrypted messages yet.",
+  saveCodeFailed: "Could not save the new code.",
+  chooseOffered: "Choose one of the offered options.",
+  saveSettingFailed: "Could not save the setting.",
+  approveFailed: "Could not approve the device.",
+  peerKeyUnavailable: "Their encryption key is unavailable. Your messages were not sent.",
+  loadPeerKeyFailed: "Could not load their encryption key.",
+  unlockToSend: "Unlock encrypted messages on this device to send this.",
+  notReady: "Encryption isn't ready on this device yet.",
+  peerCantReact: "They can't receive encrypted reactions.",
+  groupMemberCantReceive: "Someone in this group can't receive encrypted messages yet.",
+} as const;
+
+export type DmE2eeErrorName = keyof typeof DM_E2EE_ERROR_TEXT;
+
+function unavailable(name: DmE2eeErrorName): DmE2eeUnavailableError {
+  return new DmE2eeUnavailableError(DM_E2EE_ERROR_TEXT[name], `dm.e2ee.errors.${name}`);
+}
+
+/** A failed request's server message (keyed by its error code), else this session's own. */
+function serverUnavailable(data: Record<string, unknown>, name: DmE2eeErrorName): DmE2eeUnavailableError {
+  if (data.error === undefined || data.error === null) return unavailable(name);
+  // `i18nKey` is the catalog key when `code` is a legacy machine code (e.g. DM_KEY_STALE).
+  const key = typeof data.i18nKey === "string" ? data.i18nKey : typeof data.code === "string" ? data.code : null;
+  return new DmE2eeUnavailableError(String(data.error), key ? `errors.${key}` : null);
 }
 
 type PublishedKey = DmChainedKey & { createdAt: string | null; retiredAt: string | null };
@@ -232,6 +286,7 @@ const INITIAL: DmE2eeState = {
   accountId: null,
   keyId: null,
   error: "",
+  errorKey: null,
   pendingRecoveryCode: null,
   link: null,
   approvals: [],
@@ -287,7 +342,7 @@ export class DmE2eeSession {
 
   private assertOwns(accountId: string | null, generation: number): void {
     if (!this.owns(accountId, generation)) {
-      throw new DmE2eeUnavailableError("The encryption account changed during this operation.");
+      throw unavailable("accountChanged");
     }
   }
 
@@ -306,13 +361,13 @@ export class DmE2eeSession {
         this.adapter.request("/api/dm-keys/me"),
       ]);
       if (generation !== this.generation) return;
-      if (!me.ok) throw new Error(String(me.data.error ?? "Could not load your encryption key."));
+      if (!me.ok) throw serverUnavailable(me.data, "loadKeyFailed");
       this.recoveryCodeUnconfirmed = device.recoveryCodeUnconfirmed === true;
       this.set({ pins: device.pins ?? {} });
       if (me.data.enabled === false) {
         // Server capability flags cannot lower this device's remembered protection.
         if (stored || Object.keys(this.state.pins).length) {
-          throw new DmE2eeUnavailableError("Encryption was disabled by the server. Your messages were not sent.");
+          throw unavailable("disabledByServer");
         }
         this.set({ status: "off", available: false });
         return;
@@ -338,7 +393,16 @@ export class DmE2eeSession {
       await this.maintain(accountId, generation, me.data).catch(() => undefined);
     } catch (error) {
       if (!this.owns(accountId, generation)) return;
-      this.set({ status: "error", error: error instanceof Error ? error.message : "Encryption is unavailable." });
+      this.set({
+        status: "error",
+        error: error instanceof Error ? error.message : DM_E2EE_ERROR_TEXT.unavailable,
+        errorKey:
+          error instanceof DmE2eeUnavailableError
+            ? error.key
+            : error instanceof Error
+              ? null
+              : "dm.e2ee.errors.unavailable",
+      });
     }
   }
 
@@ -412,7 +476,7 @@ export class DmE2eeSession {
       this.keyring = keyring;
       this.keys = keyring[0];
       if (changed) this.opened.clear();
-      this.set({ status: "ready", keyId: serverKey.keyId, error: "" });
+      this.set({ status: "ready", keyId: serverKey.keyId, error: "", errorKey: null });
       return;
     }
     // A key from before a reset can't follow the account any more.
@@ -461,7 +525,9 @@ export class DmE2eeSession {
     const published = this.ownKeys(data);
     const createdAt = Date.parse(String(published.get(this.keys.keyId)?.createdAt ?? ""));
     const rotateAfter = this.adapter.rotateAfterMs ?? DEFAULT_ROTATE_AFTER_MS;
-    if (rotate && Number.isFinite(createdAt) && this.now() - createdAt > rotateAfter) {
+    // A device holding the key was removed (Settings → Devices with your key): replace the key now.
+    const requested = data.rotationRequested === true;
+    if (rotate && (requested || (Number.isFinite(createdAt) && this.now() - createdAt > rotateAfter))) {
       await this.rotate(accountId, generation);
       return;
     }
@@ -580,7 +646,7 @@ export class DmE2eeSession {
         await this.start(accountId);
         return;
       }
-      throw new Error(String(response.data.error ?? "Could not set up encryption."));
+      throw serverUnavailable(response.data, "setupFailed");
     }
     await this.adapter.saveKeyring(accountId, keyringToBytes(keyring));
     if (!this.owns(accountId, generation)) return;
@@ -626,7 +692,7 @@ export class DmE2eeSession {
     this.keys = keyring[0];
     this.opened.clear();
     this.openedReactions.clear();
-    this.set({ status: "ready", keyId: keyring[0].keyId, link: null, error: "" });
+    this.set({ status: "ready", keyId: keyring[0].keyId, link: null, error: "", errorKey: null });
     void this.refreshApprovals();
   }
 
@@ -634,16 +700,16 @@ export class DmE2eeSession {
 
   async unlockWithRecoveryCode(code: string): Promise<void> {
     const accountId = this.state.accountId;
-    if (!accountId) throw new DmE2eeUnavailableError("Sign in first.");
+    if (!accountId) throw unavailable("signInFirst");
     const generation = this.generation;
     // Always fetch it fresh: the code may have been replaced from another device.
     const me = await this.adapter.request("/api/dm-keys/me");
-    if (!me.ok) throw new DmE2eeUnavailableError(String(me.data.error ?? "Could not load your recovery backup."));
+    if (!me.ok) throw serverUnavailable(me.data, "loadBackupFailed");
     if (!this.readAccount(accountId, generation, me.data)) return;
     const backup = this.backup;
-    if (!backup) throw new DmE2eeUnavailableError("There is no recovery backup for this account.");
+    if (!backup) throw unavailable("noBackup");
     if (this.state.keyId && backup.keyId !== this.state.keyId) {
-      throw new DmE2eeUnavailableError("The recovery backup is out of date. Approve this device from another one.");
+      throw unavailable("backupOutdated");
     }
     await this.adopt(openKeyBackup(backup, code, accountId), accountId, generation);
   }
@@ -660,7 +726,7 @@ export class DmE2eeSession {
     });
     const request = response.data.request as { id?: unknown } | undefined;
     if (!response.ok || typeof request?.id !== "string") {
-      throw new DmE2eeUnavailableError(String(response.data.error ?? "Could not ask your other devices."));
+      throw serverUnavailable(response.data, "askDevicesFailed");
     }
     if (!this.owns(accountId, generation) || this.state.status !== "locked") return;
     this.linkSecret = pair.secret;
@@ -723,7 +789,7 @@ export class DmE2eeSession {
   /** Throw away the account's keys and start again. Everyone sees that the key changed. */
   async resetKey(currentPassword: string): Promise<void> {
     const accountId = this.state.accountId;
-    if (!accountId) throw new DmE2eeUnavailableError("Sign in first.");
+    if (!accountId) throw unavailable("signInFirst");
     const generation = this.generation;
     const keys = deriveAccountKeys(generateAccountSeed());
     const code = generateRecoveryCode();
@@ -732,7 +798,7 @@ export class DmE2eeSession {
       method: "POST",
       body: { key: publicKeyOf(keys), backup, reset: true, currentPassword },
     });
-    if (!response.ok) throw new DmE2eeUnavailableError(String(response.data.error ?? "Could not reset your key."));
+    if (!response.ok) throw serverUnavailable(response.data, "resetFailed");
     if (!this.owns(accountId, generation)) return;
     this.backup = backup;
     this.peers.delete(accountId);
@@ -743,13 +809,13 @@ export class DmE2eeSession {
   /** Replace the recovery code. The old code stops working. */
   async replaceRecoveryCode(): Promise<void> {
     const accountId = this.state.accountId;
-    if (!accountId || !this.keys) throw new DmE2eeUnavailableError("This device can't read encrypted messages yet.");
+    if (!accountId || !this.keys) throw unavailable("deviceCantRead");
     const generation = this.generation;
     const keyring = this.keyring;
     const code = generateRecoveryCode();
     const backup = sealKeyBackup(keyring, code, accountId);
     const response = await this.adapter.request("/api/dm-keys/me/backup", { method: "PUT", body: { backup } });
-    if (!response.ok) throw new DmE2eeUnavailableError(String(response.data.error ?? "Could not save the new code."));
+    if (!response.ok) throw serverUnavailable(response.data, "saveCodeFailed");
     if (!this.owns(accountId, generation)) return;
     this.backup = backup;
     await this.showRecoveryCode(code, accountId, generation);
@@ -762,14 +828,14 @@ export class DmE2eeSession {
    */
   async setHistoryDays(days: number | null): Promise<void> {
     const accountId = this.state.accountId;
-    if (!accountId || !this.keys) throw new DmE2eeUnavailableError("This device can't read encrypted messages yet.");
+    if (!accountId || !this.keys) throw unavailable("deviceCantRead");
     const generation = this.generation;
-    if (!DM_HISTORY_CHOICES.includes(days)) throw new DmE2eeUnavailableError("Choose one of the offered options.");
+    if (!DM_HISTORY_CHOICES.includes(days)) throw unavailable("chooseOffered");
     const response = await this.adapter.request("/api/dm-keys/me/settings", {
       method: "PUT",
       body: { historyDays: days },
     });
-    if (!response.ok) throw new DmE2eeUnavailableError(String(response.data.error ?? "Could not save the setting."));
+    if (!response.ok) throw serverUnavailable(response.data, "saveSettingFailed");
     if (!this.owns(accountId, generation)) return;
     const me = await this.adapter.request("/api/dm-keys/me");
     if (!me.ok || !this.readAccount(accountId, generation, me.data)) return;
@@ -795,7 +861,8 @@ export class DmE2eeSession {
       if (raw.fromThisDevice === true || typeof raw.id !== "string" || typeof raw.linkPublicKey !== "string") continue;
       approvals.push({
         id: raw.id,
-        deviceLabel: typeof raw.deviceLabel === "string" ? raw.deviceLabel : "New device",
+        deviceLabel: typeof raw.deviceLabel === "string" ? raw.deviceLabel : UNKNOWN_DEVICE_LABEL,
+        device: raw.device,
         linkPublicKey: raw.linkPublicKey,
         expiresAt: typeof raw.expiresAt === "string" ? raw.expiresAt : "",
         code: linkComparisonCode(accountId, raw.id, raw.linkPublicKey),
@@ -818,7 +885,7 @@ export class DmE2eeSession {
       method: "POST",
       body: { sealed },
     });
-    if (!response.ok) throw new DmE2eeUnavailableError(String(response.data.error ?? "Could not approve the device."));
+    if (!response.ok) throw serverUnavailable(response.data, "approveFailed");
   }
 
   /** Feed realtime events here; returns true when the event was about encryption. */
@@ -847,7 +914,7 @@ export class DmE2eeSession {
     const cached = this.peers.get(userId);
     if (cached && !refresh && this.now() - cached.fetchedAt < PEER_KEY_TTL_MS) {
       if (!cached.current && this.state.pins[userId]) {
-        throw new DmE2eeUnavailableError("Their encryption key is unavailable. Your messages were not sent.");
+        throw unavailable("peerKeyUnavailable");
       }
       return cached;
     }
@@ -856,7 +923,7 @@ export class DmE2eeSession {
     const fetching: Promise<PeerKeys> = (async () => {
       const response = await this.adapter.request(`/api/dm-keys/users/${encodeURIComponent(userId)}`);
       this.assertOwns(accountId, generation);
-      if (!response.ok) throw new DmE2eeUnavailableError("Could not load their encryption key.");
+      if (!response.ok) throw unavailable("loadPeerKeyFailed");
       const all = new Map<string, PublishedKey>();
       // A key whose id isn't derived from its material is a forgery; parsePublishedKey drops it.
       for (const raw of Array.isArray(response.data.keys) ? response.data.keys : []) {
@@ -875,7 +942,7 @@ export class DmE2eeSession {
       if (userId !== accountId) await this.pin(userId, result.root, accountId, generation);
       this.assertOwns(accountId, generation);
       if (!result.current && this.state.pins[userId]) {
-        throw new DmE2eeUnavailableError("Their encryption key is unavailable. Your messages were not sent.");
+        throw unavailable("peerKeyUnavailable");
       }
       this.peers.set(userId, result);
       return result;
@@ -1097,13 +1164,15 @@ export class DmE2eeSession {
     return known ? bareKey(known) : null;
   }
 
+  /** The start-up error when there was one, else "not ready". */
+  private notReadyError(): DmE2eeUnavailableError {
+    if (!this.state.error) return unavailable("notReady");
+    return new DmE2eeUnavailableError(this.state.error, this.state.errorKey);
+  }
+
   private requireKeys(): DmAccountKeys {
     if (this.keys) return this.keys;
-    throw new DmE2eeUnavailableError(
-      this.state.status === "locked"
-        ? "Unlock encrypted messages on this device to send this."
-        : "Encryption isn't ready on this device yet.",
-    );
+    throw unavailable(this.state.status === "locked" ? "unlockToSend" : "notReady");
   }
 
   /**
@@ -1117,10 +1186,10 @@ export class DmE2eeSession {
     options: { id?: string; refreshKeys?: boolean; replyToId?: string | null } = {},
   ): Promise<{ envelope: DmEnvelope } | { text: string }> {
     const accountId = this.state.accountId;
-    if (!accountId) throw new DmE2eeUnavailableError("Sign in first.");
+    if (!accountId) throw unavailable("signInFirst");
     const generation = this.generation;
     if (this.state.status === "loading" || this.state.status === "error") {
-      throw new DmE2eeUnavailableError(this.state.error || "Encryption isn't ready on this device yet.");
+      throw this.notReadyError();
     }
     if (!this.state.available) return { text };
     const peer = await this.peerKeys(peerId, options.refreshKeys);
@@ -1155,11 +1224,11 @@ export class DmE2eeSession {
     options: { refreshKeys?: boolean } = {},
   ): Promise<DmEnvelope> {
     const accountId = this.state.accountId;
-    if (!accountId) throw new DmE2eeUnavailableError("Sign in first.");
+    if (!accountId) throw unavailable("signInFirst");
     const generation = this.generation;
     const peer = await this.peerKeys(peerId, options.refreshKeys);
     this.assertOwns(accountId, generation);
-    if (!peer.current) throw new DmE2eeUnavailableError("They can't receive encrypted reactions.");
+    if (!peer.current) throw unavailable("peerCantReact");
     const envelope = sealReactions({
       messageId,
       from: accountId,
@@ -1183,7 +1252,7 @@ export class DmE2eeSession {
     const accountId = this.state.accountId;
     const generation = this.generation;
     if (this.state.status === "loading" || this.state.status === "error") {
-      throw new DmE2eeUnavailableError(this.state.error || "Encryption isn't ready on this device yet.");
+      throw this.notReadyError();
     }
     if (markedEncrypted) return true;
     if (!this.state.available || !accountId) return false;
@@ -1247,7 +1316,7 @@ export class DmE2eeSession {
     options: { markedEncrypted: boolean; refreshKeys?: boolean; replyToId?: string | null },
   ): Promise<{ envelope: DmEnvelope } | { text: string }> {
     const accountId = this.state.accountId;
-    if (!accountId) throw new DmE2eeUnavailableError("Sign in first.");
+    if (!accountId) throw unavailable("signInFirst");
     const generation = this.generation;
     const encrypted = await this.groupEncrypted(memberIds, options.markedEncrypted, options.refreshKeys);
     this.assertOwns(accountId, generation);
@@ -1259,7 +1328,7 @@ export class DmE2eeSession {
     );
     this.assertOwns(accountId, generation);
     if (memberKeys.some((key) => !key)) {
-      throw new DmE2eeUnavailableError("Someone in this group can't receive encrypted messages yet.");
+      throw unavailable("groupMemberCantReceive");
     }
     const id = crypto.randomUUID();
     const replyToId = options.replyToId ?? undefined;
@@ -1295,7 +1364,7 @@ export class DmE2eeSession {
     recipientUserIds: readonly string[],
   ): Promise<{ envelopes: { envelope: DmEnvelope; sealedFor: string[] }[] }> {
     const accountId = this.state.accountId;
-    if (!accountId) throw new DmE2eeUnavailableError("Sign in first.");
+    if (!accountId) throw unavailable("signInFirst");
     const generation = this.generation;
     const keys = this.requireKeys();
     const others = [...new Set(recipientUserIds)].filter((id) => id !== accountId);

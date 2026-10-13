@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { useTranslation } from "react-i18next";
+import { serverErrorOr } from "../safety/server-error";
 
 type QrLoginProps = {
   client: "web" | "desktop";
@@ -7,8 +9,9 @@ type QrLoginProps = {
 };
 
 export function QrLogin({ client, onAuthenticated }: QrLoginProps) {
+  const { t } = useTranslation(["safety"]);
   const [image, setImage] = useState("");
-  const [message, setMessage] = useState("Creating a secure login code…");
+  const [message, setMessage] = useState(() => t("safety.qrLogin.creating"));
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
@@ -29,9 +32,10 @@ export function QrLogin({ client, onAuthenticated }: QrLoginProps) {
           secret?: string;
           payload?: string;
           error?: string;
+          code?: string;
         };
         if (!response.ok || !data.challengeId || !data.secret || !data.payload)
-          throw new Error(data.error || "Could not create QR login.");
+          throw new Error(serverErrorOr(data, t("safety.qrLogin.createFailed")));
         const dataUrl = await QRCode.toDataURL(data.payload, {
           width: 150,
           margin: 2,
@@ -40,11 +44,11 @@ export function QrLogin({ client, onAuthenticated }: QrLoginProps) {
         });
         if (stopped) return;
         setImage(dataUrl);
-        setMessage("Open DeCave Mobile → Settings → Devices → Scan QR login.");
+        setMessage(t("safety.qrLogin.instructions"));
         refreshTimer = window.setTimeout(() => {
           if (!stopped) {
             setImage("");
-            setMessage("Updating secure login code…");
+            setMessage(t("safety.qrLogin.updating"));
             setNonce((value) => value + 1);
           }
         }, 105000);
@@ -63,6 +67,7 @@ export function QrLogin({ client, onAuthenticated }: QrLoginProps) {
               wsToken?: string;
               safety?: unknown;
               error?: string;
+              code?: string;
             };
             if (claimResponse.ok && claimData.user && claimData.wsToken) {
               onAuthenticated({ user: claimData.user, wsToken: claimData.wsToken, safety: claimData.safety });
@@ -72,14 +77,14 @@ export function QrLogin({ client, onAuthenticated }: QrLoginProps) {
               claimTimer = window.setTimeout(claim, 1400);
               return;
             }
-            throw new Error(claimData.error || "QR login expired.");
+            throw new Error(serverErrorOr(claimData, t("safety.qrLogin.expired")));
           } catch (cause) {
-            if (!stopped) setMessage(cause instanceof Error ? cause.message : "QR login expired.");
+            if (!stopped) setMessage(cause instanceof Error ? cause.message : t("safety.qrLogin.expired"));
           }
         };
         claimTimer = window.setTimeout(claim, 1000);
       } catch (cause) {
-        if (!stopped) setMessage(cause instanceof Error ? cause.message : "Could not create QR login.");
+        if (!stopped) setMessage(cause instanceof Error ? cause.message : t("safety.qrLogin.createFailed"));
       }
     })();
     return () => {
@@ -92,11 +97,11 @@ export function QrLogin({ client, onAuthenticated }: QrLoginProps) {
   return (
     <div className="dc-qr-login" title={message}>
       {image ? (
-        <img className="dc-qr-login-code" src={image} alt="DeCave QR login code" width={88} height={88} />
+        <img className="dc-qr-login-code" src={image} alt={t("safety.qrLogin.codeAlt")} width={88} height={88} />
       ) : (
-        <div className="dc-qr-login-code is-pending">Preparing…</div>
+        <div className="dc-qr-login-code is-pending">{t("safety.qrLogin.preparing")}</div>
       )}
-      <small>Scan with the DeCave app</small>
+      <small>{t("safety.qrLogin.scan")}</small>
     </div>
   );
 }

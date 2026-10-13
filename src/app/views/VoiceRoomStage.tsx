@@ -1,5 +1,7 @@
 // Voice room stage: participants, screen shares and voice controls.
 
+import { connectionStatusLabel } from "./statusLabels";
+import { useTranslation } from "react-i18next";
 import type { MouseEvent as ReactMouseEvent, Dispatch, SetStateAction, MutableRefObject } from "react";
 import { Icon } from "../../components/Icon";
 import { VoiceLobby } from "../../features/voice-room/VoiceLobby";
@@ -76,6 +78,7 @@ export function VoiceRoomStage({
   callMedia,
   voiceControls,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { loadSoundboardSounds, uploadSoundboardSound, deleteSoundboardSound } = voiceControls;
   const {
     watchedScreenConnections,
@@ -103,12 +106,10 @@ export function VoiceRoomStage({
           <h2>{currentChannel.name}</h2>
           <span className={`vr-stage-status${voiceChannelId === currentChannel.id ? " live" : ""}`}>
             {voiceChannelId === currentChannel.id
-              ? voiceStatus === "Connected"
-                ? "Connected"
-                : voiceStatus
+              ? connectionStatusLabel(voiceStatus)
               : currentVoiceParticipants.length > 0
-                ? `${currentVoiceParticipants.length} in voice`
-                : "Empty"}
+                ? t("hub.voiceStage.inVoice", { count: currentVoiceParticipants.length })
+                : t("hub.voiceStage.empty")}
           </span>
         </div>
       </header>
@@ -118,8 +119,8 @@ export function VoiceRoomStage({
           <button
             type="button"
             className={`dc-soundboard-toggle${soundboardOpen ? " active" : ""}`}
-            title={`Soundboard · ${soundboardSounds.length} shared sound${soundboardSounds.length === 1 ? "" : "s"}`}
-            aria-label="Toggle soundboard"
+            title={t("hub.voiceStage.soundboardTitle", { count: soundboardSounds.length })}
+            aria-label={t("hub.voiceControls.toggleSoundboard")}
             onClick={() => {
               const next = !soundboardOpen;
               setSoundboardOpen(next);
@@ -139,14 +140,14 @@ export function VoiceRoomStage({
         {soundboardOpen && (
           <div className="dc-soundboard-expanded">
             <div className="dc-soundboard-tools">
-              <span>Available to every member in every voice room of {currentServer.name}.</span>
+              <span>{t("hub.voiceStage.soundboardScope", { hub: currentServer.name })}</span>
               <label
                 className={
                   soundboardBusy ? "ds-btn ds-btn-sm dc-sound-upload disabled" : "ds-btn ds-btn-sm dc-sound-upload"
                 }
               >
                 <Icon name="upload" />
-                Upload Sound
+                {t("hub.voiceStage.uploadSound")}
                 <input
                   type="file"
                   accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/webm"
@@ -168,8 +169,8 @@ export function VoiceRoomStage({
                     onClick={() => playSoundboardSound(sound)}
                     title={
                       voiceChannelId === currentChannel.id
-                        ? `Play ${sound.name}`
-                        : "Join this voice room to play sounds"
+                        ? t("hub.voiceStage.playSound", { name: sound.name })
+                        : t("hub.voiceStage.joinToPlay")
                     }
                   >
                     <span>
@@ -183,8 +184,8 @@ export function VoiceRoomStage({
                       className="delete"
                       disabled={soundboardBusy}
                       onClick={() => void deleteSoundboardSound(sound)}
-                      title="Delete sound"
-                      aria-label={`Delete ${sound.name}`}
+                      title={t("hub.voiceStage.deleteSound")}
+                      aria-label={t("hub.voiceStage.deleteSoundNamed", { name: sound.name })}
                     >
                       <Icon name="close" size="sm" />
                     </button>
@@ -192,9 +193,7 @@ export function VoiceRoomStage({
                 </div>
               ))}
               {soundboardSounds.length === 0 && (
-                <div className="ds-empty dc-soundboard-empty">
-                  Upload short MP3, WAV, OGG, M4A or WebM sounds for this Hub.
-                </div>
+                <div className="ds-empty dc-soundboard-empty">{t("hub.voiceStage.soundboardEmpty")}</div>
               )}
             </div>
             {soundboardNotice && <small className="dc-soundboard-notice">{soundboardNotice}</small>}
@@ -205,38 +204,43 @@ export function VoiceRoomStage({
       {hasActiveScreenShare ? (
         <>
           {activeScreenShareCount > 1 && (
-            <div className="dc-screen-layout-toolbar" role="group" aria-label="Screen share layout">
-              <span>{activeScreenShareCount} people sharing</span>
+            <div className="dc-screen-layout-toolbar" role="group" aria-label={t("hub.voiceStage.layoutLabel")}>
+              <span>{t("hub.voiceStage.peopleSharing", { count: activeScreenShareCount })}</span>
               <button
                 type="button"
                 className={screenGalleryLayout === "focus" ? "active" : ""}
                 onClick={() => setScreenGalleryLayout("focus")}
               >
-                Focus
+                {t("hub.voiceStage.layoutFocus")}
               </button>
               <button
                 type="button"
                 className={screenGalleryLayout === "grid" ? "active" : ""}
                 onClick={() => setScreenGalleryLayout("grid")}
               >
-                Grid
+                {t("hub.voiceStage.layoutGrid")}
               </button>
             </div>
           )}
           <div className={`dc-screen-gallery ${screenGalleryLayout}`} style={screenGridStyle}>
             {localScreenStream && (
               <div style={screenCardStyle} className="stream-view-card">
-                <div style={screenLabelStyle}>You · screen share</div>
+                <div style={screenLabelStyle}>{t("hub.voiceStage.youScreenShare")}</div>
                 <ScreenVideo stream={localScreenStream} muted />
                 <div className="stream-card-actions">
                   <button
                     type="button"
-                    onClick={() => setFocusedVideo({ title: "You · Screen Share", stream: localScreenStream })}
+                    onClick={() =>
+                      setFocusedVideo({ title: t("hub.voiceStage.youScreenShareTitle"), stream: localScreenStream })
+                    }
                   >
-                    Fullscreen
+                    {t("hub.voiceStage.fullscreen")}
                   </button>
-                  <button type="button" onClick={() => popOutStream("You · Screen Share", localScreenStream)}>
-                    Pop Out
+                  <button
+                    type="button"
+                    onClick={() => popOutStream(t("hub.voiceStage.youScreenShareTitle"), localScreenStream)}
+                  >
+                    {t("hub.streamFocus.popOut")}
                   </button>
                 </div>
               </div>
@@ -251,7 +255,7 @@ export function VoiceRoomStage({
                   style={screenCardStyle}
                   className={`stream-view-card${watching ? " watching" : " awaiting-watch"}`}
                 >
-                  <div style={screenLabelStyle}>{screen.username} · screen share</div>
+                  <div style={screenLabelStyle}>{t("hub.voiceStage.userScreenShare", { name: screen.username })}</div>
                   {watching ? (
                     <ScreenVideo
                       stream={screen.stream}
@@ -269,18 +273,18 @@ export function VoiceRoomStage({
                           <span>
                             <Icon name="screen" size="lg" />
                           </span>
-                          <strong>Preview disabled</strong>
+                          <strong>{t("hub.voiceStage.previewDisabled")}</strong>
                         </div>
                       )}
                       <div className="dc-stream-gate-overlay">
-                        <strong>{screen.username} is sharing their screen</strong>
+                        <strong>{t("hub.voiceStage.isSharing", { name: screen.username })}</strong>
                         <button
                           type="button"
                           onClick={() =>
                             setWatchedScreenConnections((current) => ({ ...current, [screen.connectionId]: true }))
                           }
                         >
-                          Start Watching
+                          {t("hub.voiceStage.startWatching")}
                         </button>
                       </div>
                     </div>
@@ -293,19 +297,24 @@ export function VoiceRoomStage({
                           type="button"
                           onClick={() =>
                             setFocusedVideo({
-                              title: `${screen.username} · Screen Share`,
+                              title: t("hub.voiceStage.userScreenShareTitle", { name: screen.username }),
                               stream: screen.stream,
                               connectionId: screen.connectionId,
                             })
                           }
                         >
-                          Fullscreen
+                          {t("hub.voiceStage.fullscreen")}
                         </button>
                         <button
                           type="button"
-                          onClick={() => popOutStream(`${screen.username} · Screen Share`, screen.stream)}
+                          onClick={() =>
+                            popOutStream(
+                              t("hub.voiceStage.userScreenShareTitle", { name: screen.username }),
+                              screen.stream,
+                            )
+                          }
                         >
-                          Pop Out
+                          {t("hub.streamFocus.popOut")}
                         </button>
                         <button
                           type="button"
@@ -316,7 +325,7 @@ export function VoiceRoomStage({
                             );
                           }}
                         >
-                          Stop Watching
+                          {t("hub.voiceStage.stopWatching")}
                         </button>
                       </>
                     )}
@@ -377,19 +386,24 @@ export function VoiceRoomStage({
                     <VoiceStatusIcons participant={participant} />
                   </div>
                   <div style={{ color: "var(--ds-muted)", fontSize: "12px" }}>
-                    {participant.serverDeafened
-                      ? "Server deafened"
-                      : participant.selfDeafened
-                        ? "Deafened"
-                        : participant.muted
-                          ? "Muted"
-                          : isParticipantSpeaking(participant)
-                            ? "Speaking"
-                            : "Microphone active"}
-                    {participant.screenSharing ? " · Sharing screen" : ""}
+                    {t(participant.screenSharing ? "hub.voiceStage.stateSharing" : "hub.voiceStage.state", {
+                      state: participant.serverDeafened
+                        ? t("hub.voiceControls.serverDeafened")
+                        : participant.selfDeafened
+                          ? t("hub.voiceStage.deafened")
+                          : participant.muted
+                            ? t("hub.voiceStage.muted")
+                            : isParticipantSpeaking(participant)
+                              ? t("hub.voiceStage.speaking")
+                              : t("hub.voiceStage.micActive"),
+                    })}
                   </div>
-                  {participant.serverMuted && <div className="voice-moderation-badge">Server muted</div>}
-                  {participant.serverDeafened && <div className="voice-moderation-badge">Server deafened</div>}
+                  {participant.serverMuted && (
+                    <div className="voice-moderation-badge">{t("hub.voiceControls.serverMuted")}</div>
+                  )}
+                  {participant.serverDeafened && (
+                    <div className="voice-moderation-badge">{t("hub.voiceControls.serverDeafened")}</div>
+                  )}
                   {participant.screenSharing &&
                     participant.connectionId !== selfConnectionIdRef.current &&
                     watchedScreenConnections[participant.connectionId] !== true && (
@@ -401,7 +415,7 @@ export function VoiceRoomStage({
                           setWatchedScreenConnections((current) => ({ ...current, [participant.connectionId]: true }));
                         }}
                       >
-                        Start Watching
+                        {t("hub.voiceStage.startWatching")}
                       </button>
                     )}
                 </div>
@@ -413,17 +427,17 @@ export function VoiceRoomStage({
         <div className="camera-stage-grid">
           {localCameraStream && (
             <div className="camera-stage-card">
-              <div>You · Camera</div>
+              <div>{t("hub.voiceStage.youCamera")}</div>
               <ScreenVideo stream={localCameraStream} muted />
               <div className="stream-card-actions">
                 <button
                   type="button"
-                  onClick={() => setFocusedVideo({ title: "You · Camera", stream: localCameraStream })}
+                  onClick={() => setFocusedVideo({ title: t("hub.voiceStage.youCamera"), stream: localCameraStream })}
                 >
-                  Fullscreen
+                  {t("hub.voiceStage.fullscreen")}
                 </button>
-                <button type="button" onClick={() => popOutStream("You · Camera", localCameraStream)}>
-                  Pop Out
+                <button type="button" onClick={() => popOutStream(t("hub.voiceStage.youCamera"), localCameraStream)}>
+                  {t("hub.streamFocus.popOut")}
                 </button>
               </div>
             </div>
@@ -438,12 +452,20 @@ export function VoiceRoomStage({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setFocusedVideo({ title: `${camera.username} · Camera`, stream: camera.stream })}
+                  onClick={() =>
+                    setFocusedVideo({
+                      title: t("hub.voiceStage.userCamera", { name: camera.username }),
+                      stream: camera.stream,
+                    })
+                  }
                 >
-                  Fullscreen
+                  {t("hub.voiceStage.fullscreen")}
                 </button>
-                <button type="button" onClick={() => popOutStream(`${camera.username} · Camera`, camera.stream)}>
-                  Pop Out
+                <button
+                  type="button"
+                  onClick={() => popOutStream(t("hub.voiceStage.userCamera", { name: camera.username }), camera.stream)}
+                >
+                  {t("hub.streamFocus.popOut")}
                 </button>
               </div>
             </div>
@@ -475,8 +497,8 @@ export function VoiceRoomStage({
               <div className="voice-presence-empty-icon">
                 <Icon name="mic" size="xl" />
               </div>
-              <strong>Connecting to {currentChannel.name}…</strong>
-              <span>Participants will appear here as they connect.</span>
+              <strong>{t("hub.voiceStage.connectingTo", { room: currentChannel.name })}</strong>
+              <span>{t("hub.voiceStage.participantsHint")}</span>
             </div>
           ) : (
             <>
@@ -531,16 +553,16 @@ export function VoiceRoomStage({
                     <VoiceStatusIcons participant={participant} standalone />
                     <small>
                       {participant.serverDeafened
-                        ? "Server deafened"
+                        ? t("hub.voiceControls.serverDeafened")
                         : participant.selfDeafened
-                          ? "Deafened"
+                          ? t("hub.voiceStage.deafened")
                           : participant.serverMuted
-                            ? "Server muted"
+                            ? t("hub.voiceControls.serverMuted")
                             : isParticipantSpeaking(participant)
-                              ? "Speaking"
+                              ? t("hub.voiceStage.speaking")
                               : participant.muted
-                                ? "Muted"
-                                : "Connected"}
+                                ? t("hub.voiceStage.muted")
+                                : t("common.connection.connected")}
                     </small>
                   </div>
                 ))}

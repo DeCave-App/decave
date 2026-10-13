@@ -2,6 +2,7 @@
 
 import { guardPublisher, refused } from "./guard";
 import { getRuleRunner, registerAction } from "./registry";
+import { refusal } from "../reasons";
 
 registerAction("stop", {
   capability: null,
@@ -13,9 +14,9 @@ registerAction("runRule", {
   async run(ctx, action) {
     if (action.type !== "runRule") return { ok: true };
     const publisher = await guardPublisher(ctx);
-    if (refused(publisher)) return { ok: false, reason: publisher.reason };
+    if (refused(publisher)) return { ok: false, reason: publisher.reason, notice: publisher.notice };
     const runner = getRuleRunner();
-    if (!runner) return { ok: false, reason: "Rules can't be run here" };
+    if (!runner) return { ok: false, ...refusal("bots.run.server.rulesUnavailable") };
     return runner(ctx, action.ruleId);
   },
 });

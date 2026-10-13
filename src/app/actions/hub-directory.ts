@@ -6,6 +6,8 @@ import { normalizeHubHomeConfig, type HubHomeConfig } from "../../../shared/hub-
 import type { Server, DiscoverServer, ChatMessage, ApiError } from "../types";
 import { HTTP_URL } from "../env";
 import { authorizedFetch } from "../http";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import { commitForSession, type AccountSessionGuard, type AccountSessionSnapshot } from "../account-session-guard";
 
 export type HubDirectoryActionsDeps = {
@@ -91,27 +93,27 @@ export function createHubDirectoryActions(deps: HubDirectoryActionsDeps) {
   };
 
   const saveHubHome = async (hubId: number, config: HubHomeConfig): Promise<void> => {
-    if (!ownsSession()) throw new Error("This account session changed.");
+    if (!ownsSession()) throw new Error(i18next.t("chat.actions.session.changed"));
     const response = await authorizedFetch(`${HTTP_URL}/api/servers/${hubId}/home`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(config),
     });
     const data = (await response.json().catch(() => null)) as (Server & ApiError) | null;
-    if (!ownsSession()) throw new Error("This account session changed.");
-    if (!response.ok || !data) throw new Error(data?.error || "Could not save Hub Home.");
+    if (!ownsSession()) throw new Error(i18next.t("chat.actions.session.changed"));
+    if (!response.ok || !data) throw new Error(apiErrorMessage(data, "client.hub.saveHome"));
     const savedHome = normalizeHubHomeConfig(data.home ?? config);
     setServers((current) => current.map((server) => (server.id === hubId ? { ...server, home: savedHome } : server)));
   };
 
   const loadHubPreview = async (hubId: number, signal: AbortSignal): Promise<HubPreview> => {
-    if (!ownsSession()) throw new Error("This account session changed.");
+    if (!ownsSession()) throw new Error(i18next.t("chat.actions.session.changed"));
     const response = await authorizedFetch(`${HTTP_URL}/api/servers/${hubId}/preview`, { signal });
     const data: unknown = await response.json().catch(() => null);
-    if (!ownsSession()) throw new Error("This account session changed.");
-    if (!response.ok) throw new Error((data as ApiError | null)?.error || "Could not load this Hub.");
+    if (!ownsSession()) throw new Error(i18next.t("chat.actions.session.changed"));
+    if (!response.ok) throw new Error(apiErrorMessage(data as ApiError | null, "client.hub.load"));
     const preview = parseHubPreview(data);
-    if (!preview) throw new Error("This Hub preview could not be read.");
+    if (!preview) throw new Error(i18next.t("hub.actions.preview.unreadable"));
     return preview;
   };
 
@@ -127,11 +129,11 @@ export function createHubDirectoryActions(deps: HubDirectoryActionsDeps) {
       if (!ownsSession()) return null;
       if (!response.ok) {
         const errorData = data as ApiError;
-        setDiscoverError(errorData.error || "Could not load public hubs.");
+        setDiscoverError(apiErrorMessage(errorData, "client.hub.loadPublic"));
         return null;
       }
       if (!Array.isArray(data)) {
-        setDiscoverError("Invalid hub browser response.");
+        setDiscoverError(i18next.t("hub.actions.browser.invalidResponse"));
         return null;
       }
       const publicServers = data as DiscoverServer[];
@@ -140,7 +142,7 @@ export function createHubDirectoryActions(deps: HubDirectoryActionsDeps) {
     } catch (error) {
       if (!ownsSession()) return null;
       console.error("Could not load public servers:", error);
-      setDiscoverError("Could not connect to the hub browser.");
+      setDiscoverError(i18next.t("hub.actions.browser.offline"));
       return null;
     } finally {
       if (ownsSession()) setDiscoverLoading(false);

@@ -149,21 +149,23 @@ test("turning auto-live on links the hub and subscribes once per channel", async
 
 test("auto-live explains what's wrong instead of failing silently", async () => {
   const hub = makeStreamerHub({});
-  assert.match(
-    await syncTwitchAutoLive(env, hub, { streamUrl: "https://www.youtube.com/@x", twitchAutoLive: true }),
-    /Twitch channel link/,
-  );
-  assert.match(
-    await syncTwitchAutoLive(env, hub, { streamUrl: "https://www.twitch.tv/nobody_here", twitchAutoLive: true }),
-    /no channel called/,
-  );
-  assert.match(
-    await syncTwitchAutoLive({ ...env, TWITCH_CLIENT_ID: "" }, hub, {
-      streamUrl: "https://www.twitch.tv/demo_streamer",
-      twitchAutoLive: true,
-    }),
-    /isn't available/,
-  );
+  const needsLink = await syncTwitchAutoLive(env, hub, {
+    streamUrl: "https://www.youtube.com/@x",
+    twitchAutoLive: true,
+  });
+  assert.match(needsLink.message, /Twitch channel link/);
+  assert.deepEqual(needsLink.notice, { code: "streamer.server.autoLiveNeedsLink" });
+  const noChannel = await syncTwitchAutoLive(env, hub, {
+    streamUrl: "https://www.twitch.tv/nobody_here",
+    twitchAutoLive: true,
+  });
+  assert.equal(noChannel.message, 'Twitch has no channel called "nobody_here". Check the stream URL.');
+  assert.deepEqual(noChannel.notice, { code: "streamer.server.autoLiveNoChannel", params: { login: "nobody_here" } });
+  const unavailable = await syncTwitchAutoLive({ ...env, TWITCH_CLIENT_ID: "" }, hub, {
+    streamUrl: "https://www.twitch.tv/demo_streamer",
+    twitchAutoLive: true,
+  });
+  assert.match(unavailable.message, /isn't available/);
 });
 
 test("EventSub: challenge, signature, replay and live/offline", async () => {

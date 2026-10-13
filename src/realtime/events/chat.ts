@@ -10,6 +10,7 @@ import type { NotificationPreview } from "../../privacy/notification-preview";
 import { resolveEcho, type OutboxItem } from "../../features/outbox/outbox";
 import type { AccountUser, AttachmentMeta, ChatMessage, NotificationSettings, UiSoundEvent } from "../../app/types";
 import type { RealtimeFrame } from "../connection";
+import { i18next } from "../../i18n/index.ts";
 import { messageBotFields } from "../../../shared/bots/card-view";
 
 export type ChatEventContext = {
@@ -92,7 +93,7 @@ export function handleChatEvent(data: RealtimeFrame, context: ChatEventContext):
     const incoming: ChatMessage = {
       id: typeof data.id === "string" ? data.id : crypto.randomUUID(),
       userId: typeof data.userId === "string" ? data.userId : undefined,
-      username: typeof data.username === "string" ? data.username : "Unknown",
+      username: typeof data.username === "string" ? data.username : i18next.t("chat.actions.realtime.unknownUser"),
       avatarUrl: typeof data.avatarUrl === "string" ? data.avatarUrl : null,
       avatarUpdatedAt: typeof data.avatarUpdatedAt === "string" ? data.avatarUpdatedAt : null,
       text: typeof data.text === "string" ? data.text : "",
@@ -122,7 +123,12 @@ export function handleChatEvent(data: RealtimeFrame, context: ChatEventContext):
         isMention &&
         shouldInterruptQuietPresence(quietPresence, "urgent-mention")
       ) {
-        const preview = notificationPreviewText(incoming.username, incoming.text, "DeCave", "Mention");
+        const preview = notificationPreviewText(
+          incoming.username,
+          incoming.text,
+          "DeCave",
+          i18next.t("chat.actions.realtime.mention"),
+        );
         desktopNotify(preview.title, preview.body, "dm", null, "mention");
       }
     }
@@ -192,20 +198,26 @@ export function handleChatEvent(data: RealtimeFrame, context: ChatEventContext):
       !mutedHubIdsRef.current.has(serverId) &&
       !(typeof data.userId === "string" && mutedUserIdsRef.current.has(data.userId))
     ) {
-      const senderName = String(data.username || "DeCave user");
-      const channelName = String(data.channelName || "room");
+      const senderName = String(data.username || i18next.t("chat.actions.realtime.someUser"));
+      const channelName = String(data.channelName || i18next.t("chat.actions.realtime.roomFallback"));
       const text = String(data.text || "");
       const mode = notificationPreviewMode();
       const preview = mentioned
         ? mode === "hidden"
-          ? { title: "DeCave", body: "You were mentioned in a Hub." }
+          ? { title: "DeCave", body: i18next.t("chat.actions.realtime.mentionedHidden") }
           : mode === "sender"
-            ? { title: senderName, body: `Mentioned you in #${channelName}.` }
-            : { title: senderName, body: text.slice(0, 120) || `Mentioned you in #${channelName}.` }
+            ? { title: senderName, body: i18next.t("chat.actions.realtime.mentionedIn", { channel: channelName }) }
+            : {
+                title: senderName,
+                body: text.slice(0, 120) || i18next.t("chat.actions.realtime.mentionedIn", { channel: channelName }),
+              }
         : mode === "hidden"
-          ? { title: "DeCave", body: "New message in a Hub." }
+          ? { title: "DeCave", body: i18next.t("chat.actions.realtime.newMessageHidden") }
           : mode === "sender"
-            ? { title: `#${channelName}`, body: `${senderName} sent a message.` }
+            ? {
+                title: `#${channelName}`,
+                body: i18next.t("chat.actions.notifications.senderSentMessage", { sender: senderName }),
+              }
             : { title: `#${channelName}`, body: `${senderName}: ${text.slice(0, 120)}` };
       desktopNotify(
         preview.title,

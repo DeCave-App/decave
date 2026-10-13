@@ -179,6 +179,18 @@ export function getHubTemplateDefinitions(streamerHubsEnabled = false): readonly
   return streamerHubsEnabled ? [...HUB_TEMPLATE_DEFINITIONS, STREAMER_HUB_TEMPLATE] : HUB_TEMPLATE_DEFINITIONS;
 }
 
+/**
+ * Catalog key part for a template room or category name ("off-topic" -> "offTopic",
+ * "Squad 1" -> "squad1"). Template text is translated where it is shown
+ * (hub.templates.*); the rooms a template creates keep these English names.
+ */
+export function hubTemplateTextKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+(.)?/g, (_match, next: string | undefined) => (next ? next.toUpperCase() : ""))
+    .replace(/^[0-9]/, (digit) => `n${digit}`);
+}
+
 export function getHubTemplate(id: unknown, streamerHubsEnabled = false): HubTemplateDefinition {
   return (
     getHubTemplateDefinitions(streamerHubsEnabled).find((template) => template.id === id) ?? HUB_TEMPLATE_DEFINITIONS[0]

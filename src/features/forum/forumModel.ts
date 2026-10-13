@@ -1,13 +1,18 @@
 // Forum feature: shared types, permission rules, API helpers and local
 // "last seen" bookkeeping. Wire format lives in shared/forum.ts.
+import { messageBotFields } from "../../../shared/bots/card-view";
 import {
   FORUM_POST_PREFIX,
+  forumPostNotices,
   parseForumPostPayload,
   type ForumPostPayload,
   type ForumPostType,
   type ForumSort,
 } from "../../../shared/forum";
-import { localeForLanguage } from "../../app/locale";
+import { i18next } from "../../i18n/index.ts";
+import { noticeText } from "../../i18n/notice.ts";
+import { apiErrorText } from "../shared/apiErrorText";
+import { formatDateParts } from "../shared/dateParts";
 
 export type ForumAttachment = { id: string; name: string; mimeType: string; size: number; url: string };
 
@@ -56,26 +61,97 @@ export type ForumViewer = {
   canPostInHub: boolean;
 };
 
+/** Labels are getters, so they read in the current UI language. */
 export const FORUM_SORT_LABELS: Record<ForumSort, string> = {
-  active: "Active",
-  new: "New",
-  top: "Top",
-  unanswered: "Unanswered",
+  get active() {
+    return i18next.t("forum.sort.active");
+  },
+  get new() {
+    return i18next.t("forum.sort.new");
+  },
+  get top() {
+    return i18next.t("forum.sort.top");
+  },
+  get unanswered() {
+    return i18next.t("forum.sort.unanswered");
+  },
 };
 export const FORUM_TITLE_MAX = 120;
 export const FORUM_BODY_MAX = 3200;
 export const FORUM_REPLY_MAX = 3800;
 
 export { FORUM_POST_PREFIX, parseForumPostPayload };
+
+/**
+ * A post's payload for display: a bot's post (Twitch clips) shows DeCave's
+ * wording in the UI language; the clip title and anything members write stay
+ * as written.
+ */
+export function displayForumPayload(message: { text: string }): ForumPostPayload | null {
+  const payload = parseForumPostPayload(message.text);
+  if (!payload || !messageBotFields(message).bot) return payload;
+  const notices = forumPostNotices(message.text);
+  const title = noticeText(notices.title);
+  const body = noticeText(notices.body);
+  return { ...payload, ...(title ? { title } : {}), ...(body ? { body } : {}) };
+}
 export type { ForumPostPayload, ForumPostType, ForumSort };
 
 export const FORUM_TYPE_META: Record<ForumPostType, { label: string; icon: string; hint: string }> = {
-  discussion: { label: "Discussion", icon: "💬", hint: "Start an open conversation" },
-  question: { label: "Question", icon: "❓", hint: "Ask for help, then mark the best answer" },
-  guide: { label: "Guide", icon: "📘", hint: "Share a tutorial, build or walkthrough" },
-  media: { label: "Clip / Media", icon: "🎬", hint: "Show off a clip, screenshot or video" },
-  poll: { label: "Poll", icon: "📊", hint: "Let the community vote" },
-  lfg: { label: "LFG", icon: "🎮", hint: "Looking for group: find teammates" },
+  discussion: {
+    get label() {
+      return i18next.t("forum.type.discussion.label");
+    },
+    icon: "💬",
+    get hint() {
+      return i18next.t("forum.type.discussion.hint");
+    },
+  },
+  question: {
+    get label() {
+      return i18next.t("forum.type.question.label");
+    },
+    icon: "❓",
+    get hint() {
+      return i18next.t("forum.type.question.hint");
+    },
+  },
+  guide: {
+    get label() {
+      return i18next.t("forum.type.guide.label");
+    },
+    icon: "📘",
+    get hint() {
+      return i18next.t("forum.type.guide.hint");
+    },
+  },
+  media: {
+    get label() {
+      return i18next.t("forum.type.media.label");
+    },
+    icon: "🎬",
+    get hint() {
+      return i18next.t("forum.type.media.hint");
+    },
+  },
+  poll: {
+    get label() {
+      return i18next.t("forum.type.poll.label");
+    },
+    icon: "📊",
+    get hint() {
+      return i18next.t("forum.type.poll.hint");
+    },
+  },
+  lfg: {
+    get label() {
+      return i18next.t("forum.type.lfg.label");
+    },
+    icon: "🎮",
+    get hint() {
+      return i18next.t("forum.type.lfg.hint");
+    },
+  },
 };
 
 /** Legacy posts carry no type and behave like discussions (solving stays available). */
@@ -177,25 +253,20 @@ export function postRestriction(
   viewer: ForumViewer,
   roleNames: Record<string, string>,
 ): string | null {
-  if (!viewer.canPostInHub) return "Only the Hub owner can post in this Hub.";
+  if (!viewer.canPostInHub) return i18next.t("forum.restriction.ownerOnly");
   if (isHubManager(viewer)) return null;
   const policy = room.forumPostPolicy ?? "everyone";
   if (policy === "everyone") return null;
-  if (policy === "staff")
-    return isForumStaff(viewer)
-      ? null
-      : "Only moderators and Hub admins can start new posts here. You can still reply.";
+  if (policy === "staff") return isForumStaff(viewer) ? null : i18next.t("forum.restriction.staff");
   if (policy === "roles") {
     const allowed = room.forumPostRoleIds ?? [];
     if (viewer.customRoles.some((role) => allowed.includes(role.id))) return null;
     const names = allowed.map((id) => roleNames[id]).filter(Boolean);
     return names.length
-      ? `Only members with the ${names.join(", ")} role${names.length === 1 ? "" : "s"} can start new posts here. You can still reply.`
-      : "Only members with specific roles can start new posts here. You can still reply.";
+      ? i18next.t("forum.restriction.namedRoles", { roles: names.join(", "), count: names.length })
+      : i18next.t("forum.restriction.roles");
   }
-  return (room.forumPostMemberIds ?? []).includes(viewer.userId)
-    ? null
-    : "Only selected members can start new posts here. You can still reply.";
+  return (room.forumPostMemberIds ?? []).includes(viewer.userId) ? null : i18next.t("forum.restriction.members");
 }
 
 // ---------- API ----------
@@ -212,7 +283,7 @@ type RawEntry = {
 };
 
 export function toEntry(raw: RawEntry): ForumEntry | null {
-  const payload = raw?.message ? parseForumPostPayload(raw.message.text) : null;
+  const payload = raw?.message ? displayForumPayload(raw.message) : null;
   if (!payload) return null;
   return {
     message: raw.message,
@@ -227,8 +298,7 @@ export function toEntry(raw: RawEntry): ForumEntry | null {
 
 async function readJson<T>(response: Response, fallback: string): Promise<T> {
   const data = (await response.json().catch(() => null)) as (T & { error?: string }) | null;
-  if (!response.ok || !data)
-    throw new Error((data && typeof data.error === "string" && data.error) || `${fallback} (${response.status})`);
+  if (!response.ok || !data) throw new Error(apiErrorText(data, `${fallback} (${response.status})`));
   return data;
 }
 
@@ -246,7 +316,7 @@ export async function fetchForumPosts(
   if (query.cursor) params.set("cursor", query.cursor);
   const data = await readJson<{ posts: RawEntry[]; nextCursor: string | null }>(
     await fetcher(`${base}/api/channels/${roomId}/forum/posts?${params}`, { signal }),
-    "Could not load posts",
+    i18next.t("forum.api.loadPosts"),
   );
   return {
     posts: (data.posts ?? []).map(toEntry).filter((entry): entry is ForumEntry => entry !== null),
@@ -263,7 +333,7 @@ export async function fetchForumPost(
 ) {
   const data = await readJson<{ post: RawEntry }>(
     await fetcher(`${base}/api/channels/${roomId}/forum/posts/${encodeURIComponent(postId)}`, { signal }),
-    "Could not load the post",
+    i18next.t("forum.api.loadPost"),
   );
   return toEntry(data.post);
 }
@@ -281,7 +351,7 @@ export async function fetchForumReplies(
     await fetcher(`${base}/api/channels/${roomId}/forum/posts/${encodeURIComponent(postId)}/replies${params}`, {
       signal,
     }),
-    "Could not load replies",
+    i18next.t("forum.api.loadReplies"),
   );
   return { replies: data.replies ?? [], nextCursor: data.nextCursor ?? null };
 }
@@ -309,7 +379,7 @@ export async function patchForumPost(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     }),
-    "Could not update the post",
+    i18next.t("forum.api.updatePost"),
   );
 }
 
@@ -330,8 +400,8 @@ export async function uploadForumFile(
     body: file,
     signal,
   });
-  const data = await readJson<{ attachment?: ForumAttachment }>(response, "Could not upload the file");
-  if (!data.attachment) throw new Error("Could not upload the file.");
+  const data = await readJson<{ attachment?: ForumAttachment }>(response, i18next.t("forum.api.upload"));
+  if (!data.attachment) throw new Error(i18next.t("forum.api.uploadFailed"));
   return data.attachment;
 }
 
@@ -387,14 +457,14 @@ export function relativeTime(iso: string, now = Date.now()): string {
   const time = ts(iso);
   if (!time) return "";
   const seconds = Math.max(0, Math.round((now - time) / 1000));
-  if (seconds < 45) return "just now";
+  if (seconds < 45) return i18next.t("forum.time.justNow");
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return i18next.t("forum.time.minutesAgo", { count: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return i18next.t("forum.time.hoursAgo", { count: hours });
   const days = Math.round(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(time).toLocaleDateString(localeForLanguage(), {
+  if (days < 7) return i18next.t("forum.time.daysAgo", { count: days });
+  return formatDateParts(time, {
     month: "short",
     day: "numeric",
     year: days > 300 ? "numeric" : undefined,

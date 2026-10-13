@@ -1,5 +1,6 @@
 // Report a bug or suggest a feature.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { selectStyle, settingsLabelStyle } from "../inline-styles";
 
@@ -44,36 +45,35 @@ export function FeedbackDialog({
   feedbackBusy,
   submitFeedback,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
       <div className="modal" onClick={(event) => event.stopPropagation()} style={{ width: "min(560px, 92vw)" }}>
-        <span className="ds-kicker">Feedback</span>
-        <h2>Help improve DeCave</h2>
-        <p>Report a bug/issue or suggest a feature.</p>
+        <span className="ds-kicker">{t("common.feedback.kicker")}</span>
+        <h2>{t("common.feedback.title")}</h2>
+        <p>{t("common.feedback.lead")}</p>
 
         <label style={settingsLabelStyle}>
-          Type
+          {t("common.feedback.type")}
           <select
             value={feedbackType}
             onChange={(event) => setFeedbackType(event.target.value as "bug" | "feature")}
             style={selectStyle}
           >
-            <option value="bug">Bug / Issue</option>
-            <option value="feature">Feature Suggestion</option>
+            <option value="bug">{t("common.feedback.typeBug")}</option>
+            <option value="feature">{t("common.feedback.typeFeature")}</option>
           </select>
         </label>
 
         <label style={settingsLabelStyle}>
-          Details
+          {t("common.feedback.details")}
           <textarea
             value={feedbackMessage}
             onChange={(event) => setFeedbackMessage(event.target.value)}
             rows={6}
             maxLength={4000}
             placeholder={
-              feedbackType === "bug"
-                ? "What happened? What were you doing when it happened?"
-                : "Describe the feature and how you would use it."
+              feedbackType === "bug" ? t("common.feedback.bugPlaceholder") : t("common.feedback.featurePlaceholder")
             }
           />
         </label>
@@ -85,33 +85,30 @@ export function FeedbackDialog({
             onChange={(event) => setFeedbackShareContact(event.target.checked)}
           />
           <span>
-            <strong>Let the DeCave team contact me</strong>
-            <small>Your account email is never shared unless you enable this option and enter it below.</small>
+            <strong>{t("common.feedback.contactConsent")}</strong>
+            <small>{t("common.feedback.contactConsentHint")}</small>
           </span>
         </label>
         {feedbackShareContact && (
           <label style={settingsLabelStyle}>
-            Contact email
+            {t("common.feedback.contactEmail")}
             <input
               type="email"
               value={feedbackContact}
               onChange={(event) => setFeedbackContact(event.target.value)}
               maxLength={254}
-              placeholder="Email for a reply"
+              placeholder={t("common.feedback.contactPlaceholder")}
             />
           </label>
         )}
 
         <div className="dc-feedback-attachment">
           <div>
-            <strong>Optional diagnostic log</strong>
-            <small>
-              Attach a small .txt or .log file (up to 50 KB). Its text is included with this report only after you
-              consent.
-            </small>
+            <strong>{t("common.feedback.logTitle")}</strong>
+            <small>{t("common.feedback.logHint")}</small>
           </div>
           <label className="modal-secondary">
-            {feedbackDiagnosticName || "Choose log"}
+            {feedbackDiagnosticName || t("common.feedback.chooseLog")}
             <input
               type="file"
               hidden
@@ -121,7 +118,7 @@ export function FeedbackDialog({
                 event.currentTarget.value = "";
                 if (!file) return;
                 if (file.size > 50 * 1024) {
-                  setFeedbackNotice("Diagnostic logs must be 50 KB or smaller.");
+                  setFeedbackNotice(t("common.feedback.logTooLarge"));
                   return;
                 }
                 const reader = new FileReader();
@@ -129,7 +126,7 @@ export function FeedbackDialog({
                   setFeedbackDiagnosticName(file.name);
                   setFeedbackDiagnosticText(typeof reader.result === "string" ? reader.result.slice(0, 2400) : "");
                 };
-                reader.onerror = () => setFeedbackNotice("Could not read that diagnostic file.");
+                reader.onerror = () => setFeedbackNotice(t("common.feedback.logUnreadable"));
                 reader.readAsText(file);
               }}
             />
@@ -144,7 +141,7 @@ export function FeedbackDialog({
                 setFeedbackDiagnosticsConsent(false);
               }}
             >
-              Remove
+              {t("common.actions.remove")}
             </button>
           )}
         </div>
@@ -156,8 +153,8 @@ export function FeedbackDialog({
               onChange={(event) => setFeedbackDiagnosticsConsent(event.target.checked)}
             />
             <span>
-              <strong>Include this diagnostic text</strong>
-              <small>Review the selected file yourself first; it may contain device or account details.</small>
+              <strong>{t("common.feedback.includeLog")}</strong>
+              <small>{t("common.feedback.includeLogHint")}</small>
             </span>
           </label>
         )}
@@ -168,7 +165,7 @@ export function FeedbackDialog({
 
         <div className="modal-buttons">
           <button type="button" className="modal-secondary" onClick={() => setShowFeedback(false)}>
-            Close
+            {t("common.actions.close")}
           </button>
           <button
             type="button"
@@ -176,7 +173,7 @@ export function FeedbackDialog({
             disabled={feedbackBusy || !feedbackMessage.trim()}
             onClick={() => void submitFeedback()}
           >
-            {feedbackBusy ? "Sending..." : "Send Feedback"}
+            {feedbackBusy ? t("common.status.sendingDots") : t("common.feedback.send")}
           </button>
         </div>
       </div>

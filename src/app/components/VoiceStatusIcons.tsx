@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { VoiceParticipant } from "../types";
 
 export function VoiceStatusIcons({
@@ -7,6 +8,7 @@ export function VoiceStatusIcons({
   participant: VoiceParticipant;
   standalone?: boolean;
 }) {
+  const { t } = useTranslation(["hub"]);
   const deafened =
     participant.deafened === true || participant.selfDeafened === true || participant.serverDeafened === true;
   const muted =
@@ -19,8 +21,8 @@ export function VoiceStatusIcons({
       {muted && (
         <span
           className="voice-status-icon"
-          title={participant.serverMuted ? "Server muted" : "Muted"}
-          aria-label={participant.serverMuted ? "Server muted" : "Muted"}
+          title={participant.serverMuted ? t("hub.voicePanel.serverMuted") : t("hub.voiceStage.muted")}
+          aria-label={participant.serverMuted ? t("hub.voicePanel.serverMuted") : t("hub.voiceStage.muted")}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -39,8 +41,8 @@ export function VoiceStatusIcons({
       {deafened && (
         <span
           className="voice-status-icon"
-          title={participant.serverDeafened ? "Server deafened" : "Deafened"}
-          aria-label={participant.serverDeafened ? "Server deafened" : "Deafened"}
+          title={participant.serverDeafened ? t("hub.voicePanel.serverDeafened") : t("hub.voiceStage.deafened")}
+          aria-label={participant.serverDeafened ? t("hub.voicePanel.serverDeafened") : t("hub.voiceStage.deafened")}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
             <path

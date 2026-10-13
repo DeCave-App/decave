@@ -4,9 +4,9 @@
 // hourly ELO refresh.
 
 import { createRawToken, nowIso } from "../db";
-import { json } from "../lib/http";
+import { apiError, json } from "../lib/http";
 import { requireUser } from "../lib/sessions";
-import { steamCallbackPage } from "../lib/activity";
+import { linkPageLocale, linkResultPage, type LinkOutcome } from "../lib/link-pages";
 import type { Env } from "../lib/env";
 import type { ApiContext } from "../routes/context";
 import {
@@ -24,8 +24,14 @@ const STALE_MS = 6 * 60 * 60 * 1000;
 const REFRESH_BATCH = 40;
 const STATE_TTL_MS = 10 * 60 * 1000;
 
-function page(title: string, message: string, ok: boolean, showOpenDeCaveLink = false): Response {
-  return steamCallbackPage(title, message, ok, showOpenDeCaveLink, "FACEIT");
+async function page(
+  env: Env,
+  request: Request,
+  userId: string | null,
+  outcome: LinkOutcome,
+  options?: { account?: string; showOpenDeCaveLink?: boolean },
+): Promise<Response> {
+  return linkResultPage(await linkPageLocale(env.DB, request, userId), "faceit", outcome, options);
 }
 
 function callbackUrl(request: Request): string {
@@ -48,7 +54,7 @@ export async function handleFaceitRoutes({ request, env, url, p, method }: ApiCo
   if (p === "/api/account/faceit/connect" && method === "POST") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-    if (!faceitLoginConfigured(env)) return json({ error: "FACEIT sign-in isn't available yet." }, 503);
+    if (!faceitLoginConfigured(env)) return apiError("faceit.signInUnavailable", 503);
     const state = createRawToken();
     const verifier = createRawToken() + createRawToken();
     const createdAt = nowIso();
@@ -72,9 +78,8 @@ export async function handleFaceitRoutes({ request, env, url, p, method }: ApiCo
           .bind(state, nowIso())
           .first<{ user_id: string; code_verifier: string }>()
       : null;
-    if (!claimed) return page("FACEIT link expired", "Start linking FACEIT again from the Leaderboard.", false);
-    if (url.searchParams.get("error"))
-      return page("FACEIT not linked", "You cancelled the FACEIT sign-in. Nothing was linked.", false);
+    if (!claimed) return page(env, request, null, "expired");
+    if (url.searchParams.get("error")) return page(env, request, claimed.user_id, "cancelled");
 
     // FACEIT returns through a top-level cross-site GET, so only the browser's
     // SameSite=Lax session cookie can prove this browser belongs to the member
@@ -84,12 +89,7 @@ export async function handleFaceitRoutes({ request, env, url, p, method }: ApiCo
     browserHeaders.delete("authorization");
     const browserUser = await requireUser(new Request(request.url, { method: "GET", headers: browserHeaders }), env);
     if (browserUser instanceof Response || browserUser.id !== claimed.user_id) {
-      return page(
-        "Sign in to finish FACEIT linking",
-        "FACEIT was not linked. Open DeCave in this browser, sign in to the same account that started linking, then link FACEIT again from the Leaderboard.",
-        false,
-        true,
-      );
+      return page(env, request, claimed.user_id, "signIn", { showOpenDeCaveLink: true });
     }
 
     const code = url.searchParams.get("code") ?? "";
@@ -100,13 +100,12 @@ export async function handleFaceitRoutes({ request, env, url, p, method }: ApiCo
       console.error("FACEIT sign-in exchange failed", error instanceof Error ? error.message : "UnknownError");
       faceitUser = null;
     }
-    if (!faceitUser) return page("FACEIT verification failed", "FACEIT didn't confirm the sign-in. Try again.", false);
+    if (!faceitUser) return page(env, request, claimed.user_id, "failed");
 
     const taken = await env.DB.prepare("SELECT user_id FROM decave_faceit_links WHERE player_id=?")
       .bind(faceitUser.playerId)
       .first<{ user_id: string }>();
-    if (taken && taken.user_id !== claimed.user_id)
-      return page("FACEIT account already linked", "That FACEIT account is linked to another DeCave account.", false);
+    if (taken && taken.user_id !== claimed.user_id) return page(env, request, claimed.user_id, "taken");
 
     // ELO and level come from the Data API; the link is valid even if that lookup fails.
     let stats: { elo: number | null; level: number | null; nickname: string } | null = null;
@@ -131,11 +130,7 @@ export async function handleFaceitRoutes({ request, env, url, p, method }: ApiCo
         nowIso(),
       )
       .run();
-    return page(
-      "FACEIT linked",
-      `Your FACEIT account ${stats?.nickname || faceitUser.nickname} is now linked to DeCave.`,
-      true,
-    );
+    return page(env, request, claimed.user_id, "linked", { account: stats?.nickname || faceitUser.nickname });
   }
 
   return null;

@@ -1,0 +1,1660 @@
+{
+  "groups": {
+    "you": "Ty",
+    "session": "W trakcie sesji",
+    "app": "Aplikacja"
+  },
+  "tabs": {
+    "setup": {
+      "label": "Twoja konfiguracja",
+      "description": "Rzeczy do poprawy, każda z naprawą jednym kliknięciem",
+      "keywords": "kontrola sprawdzenie problemy napraw zalecane uwaga"
+    },
+    "profile": {
+      "label": "Profil i status",
+      "description": "Zdjęcie, baner, wyświetlana nazwa, zaimki, bio i status",
+      "keywords": "awatar zdjęcie obraz baner nagłówek bio o mnie status własny wyświetlana nazwa pseudonim zaimki kolor akcent podgląd cicha obecność"
+    },
+    "account": {
+      "label": "Konto i urządzenia",
+      "description": "Nazwa użytkownika, e-mail, hasło, logowanie dwuskładnikowe, aktywne logowania i twoje dane",
+      "keywords": "nazwa użytkownika e-mail email hasło dwuskładnikowe dwuetapowe 2fa mfa uwierzytelnianie totp kody odzyskiwania sesje urządzenia zalogowany ostatnio aktywny wyloguj alerty logowania nowe urządzenie eksport pobierz dane rodo gdpr usuń wyłącz konto decave id"
+    },
+    "privacy": {
+      "label": "Prywatność i szyfrowanie",
+      "description": "Zaszyfrowane wiadomości, zaproszenia do znajomych, zablokowane konta i streamowanie",
+      "keywords": "szyfrowanie zaszyfrowane e2ee end-to-end klucz kod odzyskiwania dm pw prywatne wiadomości tylko znajomi zaproszenia blokuj zablokowani odblokuj wskaźnik pisania podgląd streamu tryb streamera automatyczny zgłoszenia trust safety wiek"
+    },
+    "connections": {
+      "label": "Połączenia",
+      "description": "Konta Steam, Twitch i FACEIT połączone z DeCave",
+      "keywords": "steam twitch faceit połącz połączone konto integracja pokaż na profilu"
+    },
+    "gaming": {
+      "label": "Gry i nakładka",
+      "description": "Twoja aktywność w grach, nakładka w grze i skróty klawiszowe",
+      "keywords": "gra granie rich presence epic wykrywanie wykluczone gry kto widzi widoczność nakładka overlay skróty klawisze naciśnij i mów ptt push to talk wycisz wyłącz dźwięk"
+    },
+    "voice": {
+      "label": "Głos i wideo",
+      "description": "Mikrofon, głośniki, kamera i głośność poszczególnych osób",
+      "keywords": "mikrofon mic wejście głośnik słuchawki wyjście głośność test głośników kamera webcam wideo podgląd naciśnij i mów ptt redukcja szumów tłumienie szumów echo wzmocnienie czułość próg głośność osoby diagnostyka"
+    },
+    "notifications": {
+      "label": "Powiadomienia i dźwięki",
+      "description": "Alerty, podglądy wiadomości, godziny ciszy, dźwięki i wyciszone Hubs",
+      "keywords": "powiadomienia na pulpicie alerty wzmianki dm grupy zaproszenia godziny ciszy harmonogram noc nie przeszkadzać wycisz wyciszone hubs pokoje wszystkie wiadomości nic dla hub dla pokoju preset zgoda dźwięk motyw wiadomość wysłana odebrana głos dołączenie wyjście"
+    },
+    "chat": {
+      "label": "Czat",
+      "description": "Wysyłanie wiadomości, GIF-y i emotki, emoji i spoilery",
+      "keywords": "enter wyślij ctrl nowa linia gif emotka animowane autoodtwarzanie najechanie emoji duże spoiler sprawdzanie pisowni pisownia edytor"
+    },
+    "appearance": {
+      "label": "Wygląd i dostępność",
+      "description": "Skórka, jasny i ciemny motyw, rozmiar tekstu, animacje i czytelność",
+      "keywords": "motyw skórka ciemny jasny tryb systemowy automatyczny rozmiar tekstu skala powiększenie czcionka ruch animacja ogranicz kompaktowy wygodny gęstość kontrast wysoki podkreśl linki tekst alternatywny opis obrazu dostępność"
+    },
+    "language": {
+      "label": "Język i region",
+      "description": "Język oraz sposób zapisu dat i godzin",
+      "keywords": "język tłumaczenie data godzina format 12h 24h zegar region ustawienia regionalne"
+    },
+    "app": {
+      "label": "Aplikacja i informacje",
+      "description": "Uruchamianie, zasobnik, aktualizacje aplikacji, pomoc i nowości",
+      "keywords": "uruchamianie start z windows macos logowanie autostart zasobnik pasek menu aktualizacje komputer wersja pomoc zgłoś błąd kontakt e-mail informacje co nowego patch notes lista zmian platforma"
+    }
+  },
+  "anchors": {
+    "avatar": {
+      "label": "Zdjęcie profilowe",
+      "keywords": "awatar obraz"
+    },
+    "banner": {
+      "label": "Baner"
+    },
+    "displayName": {
+      "label": "Wyświetlana nazwa",
+      "keywords": "pseudonim zaimki"
+    },
+    "status": {
+      "label": "Status",
+      "keywords": "online zaraz wracam nie przeszkadzać niewidoczny własny status"
+    },
+    "bio": {
+      "label": "Bio",
+      "keywords": "o mnie"
+    },
+    "accent": {
+      "label": "Akcent profilu",
+      "keywords": "kolor barwa"
+    },
+    "quietPresence": {
+      "label": "Cicha obecność",
+      "keywords": "zamiar przerwania wygaśnięcie"
+    },
+    "username": {
+      "label": "Nazwa użytkownika"
+    },
+    "email": {
+      "label": "E-mail"
+    },
+    "password": {
+      "label": "Hasło"
+    },
+    "decaveId": {
+      "label": "Twój DeCave ID",
+      "keywords": "udostępnij znajomy"
+    },
+    "twoFactor": {
+      "label": "Logowanie dwuskładnikowe",
+      "keywords": "2fa mfa dwuskładnikowe dwuetapowe uwierzytelnianie totp kody odzyskiwania"
+    },
+    "signInAlerts": {
+      "label": "Alerty logowania"
+    },
+    "sessions": {
+      "label": "Aktywne logowania",
+      "keywords": "sesje urządzenia wyloguj"
+    },
+    "yourData": {
+      "label": "Twoje dane",
+      "keywords": "eksport pobierz rodo gdpr"
+    },
+    "deleteAccount": {
+      "label": "Wyłącz lub usuń konto",
+      "keywords": "usuń zamknij"
+    },
+    "encryption": {
+      "label": "Zaszyfrowane wiadomości",
+      "keywords": "e2ee klucz kod odzyskiwania odblokuj resetuj"
+    },
+    "keyDevices": {
+      "label": "Urządzenia z twoim kluczem"
+    },
+    "friendRequests": {
+      "label": "Zaproszenia do znajomych"
+    },
+    "directMessages": {
+      "label": "Prywatne wiadomości",
+      "keywords": "dm pw tylko znajomi"
+    },
+    "blocked": {
+      "label": "Zablokowane konta",
+      "keywords": "blokuj odblokuj"
+    },
+    "streamPrivacy": {
+      "label": "Prywatność streamu",
+      "keywords": "podgląd streamu tryb streamera przechwytywanie"
+    },
+    "typing": {
+      "label": "Wskaźniki pisania"
+    },
+    "reports": {
+      "label": "Twoje zgłoszenia",
+      "keywords": "trust safety wiek"
+    },
+    "steam": {
+      "label": "Steam"
+    },
+    "twitch": {
+      "label": "Twitch"
+    },
+    "faceit": {
+      "label": "FACEIT"
+    },
+    "activityVisibility": {
+      "label": "Kto widzi twoją grę"
+    },
+    "automaticActivity": {
+      "label": "Automatyczna aktywność",
+      "keywords": "wykrywanie gier rich presence epic"
+    },
+    "excludedGames": {
+      "label": "Wykluczone gry"
+    },
+    "overlay": {
+      "label": "Nakładka w grze",
+      "keywords": "overlay rozmiar głos awatary"
+    },
+    "keybinds": {
+      "label": "Skróty klawiszowe",
+      "keywords": "globalne skróty klawisze wycisz wyłącz dźwięk"
+    },
+    "pushToTalk": {
+      "label": "Naciśnij i mów",
+      "keywords": "ptt push to talk klawisz przytrzymaj"
+    },
+    "shortcuts": {
+      "label": "Wszystkie skróty",
+      "keywords": "klawiatura skróty klawiszowe"
+    },
+    "devices": {
+      "label": "Urządzenia",
+      "keywords": "mikrofon mic wejście głośnik słuchawki"
+    },
+    "inputMode": {
+      "label": "Tryb wprowadzania",
+      "keywords": "aktywność głosowa naciśnij i mów push to talk"
+    },
+    "inputVolume": {
+      "label": "Głośność wejścia"
+    },
+    "noiseSuppression": {
+      "label": "Redukcja szumów",
+      "keywords": "clearvoice szum tła tłumienie"
+    },
+    "voiceProcessing": {
+      "label": "Przetwarzanie głosu",
+      "keywords": "usuwanie echa automatyczna regulacja wzmocnienia"
+    },
+    "output": {
+      "label": "Wyjście",
+      "keywords": "głośność wyjścia test głośników"
+    },
+    "camera": {
+      "label": "Kamera",
+      "keywords": "webcam wideo podgląd"
+    },
+    "micTest": {
+      "label": "Test mikrofonu"
+    },
+    "peopleVolume": {
+      "label": "Osoby z dostosowaną głośnością",
+      "keywords": "głośność osoby użytkownika"
+    },
+    "notificationPreset": {
+      "label": "Zestaw powiadomień"
+    },
+    "desktopNotifications": {
+      "label": "Powiadomienia na pulpicie",
+      "keywords": "alerty wzmianki dm grupy zgoda"
+    },
+    "messagePreviews": {
+      "label": "Podglądy wiadomości"
+    },
+    "quietHours": {
+      "label": "Godziny ciszy",
+      "keywords": "harmonogram noc nie przeszkadzać"
+    },
+    "soundTheme": {
+      "label": "Dźwięki",
+      "keywords": "motyw dźwięków wiadomość wysłana odebrana głos dołączenie wyjście"
+    },
+    "mutedPlaces": {
+      "label": "Wyciszone Hubs i pokoje",
+      "keywords": "wycisz wyłącz wyciszenie poziom"
+    },
+    "sendKey": {
+      "label": "Wysyłaj wiadomości klawiszem",
+      "keywords": "enter ctrl nowa linia"
+    },
+    "animate": {
+      "label": "Animowane GIF-y i emotki",
+      "keywords": "autoodtwarzanie najechanie"
+    },
+    "largeEmoji": {
+      "label": "Duże emoji"
+    },
+    "spoilers": {
+      "label": "Spoilery"
+    },
+    "spellcheck": {
+      "label": "Sprawdzanie pisowni",
+      "keywords": "pisownia"
+    },
+    "skin": {
+      "label": "Skórka",
+      "keywords": "motyw"
+    },
+    "themeMode": {
+      "label": "Jasny i ciemny",
+      "keywords": "motyw ciemny jasny tryb systemowy automatyczny"
+    },
+    "textSize": {
+      "label": "Rozmiar tekstu i interfejsu",
+      "keywords": "skala powiększenie czcionka"
+    },
+    "readability": {
+      "label": "Animacje i czytelność",
+      "keywords": "animacja ogranicz kompaktowy wygodny gęstość kontrast podkreśl linki tekst alternatywny opis obrazu"
+    },
+    "appLanguage": {
+      "label": "Język"
+    },
+    "dateStyle": {
+      "label": "Format daty"
+    },
+    "timeFormat": {
+      "label": "Format godziny",
+      "keywords": "12h 24h zegar"
+    },
+    "startup": {
+      "label": "Uruchamiaj z komputerem",
+      "keywords": "uruchamianie logowanie autostart"
+    },
+    "tray": {
+      "label": "Minimalizuj do zasobnika",
+      "keywords": "pasek menu zamknij"
+    },
+    "updates": {
+      "label": "Aktualizacje aplikacji",
+      "keywords": "wersja uruchom ponownie"
+    },
+    "support": {
+      "label": "Pomoc",
+      "keywords": "zgłoś błąd kontakt wsparcie"
+    },
+    "whatsNew": {
+      "label": "Co nowego",
+      "keywords": "patch notes lista zmian"
+    }
+  },
+  "toast": {
+    "saved": "Zapisano",
+    "undone": "Cofnięto zmianę",
+    "undo": "Cofnij"
+  },
+  "field": {
+    "couldntSave": "Nie udało się zapisać",
+    "retry": "Spróbuj ponownie",
+    "on": "WŁ.",
+    "off": "WYŁ."
+  },
+  "window": {
+    "title": "Ustawienia",
+    "signedInAs": "Zalogowano jako",
+    "closeTitle": "Zamknij ustawienia (Esc)",
+    "close": "Zamknij ustawienia",
+    "sections": "Sekcje ustawień",
+    "search": "Szukaj ustawień",
+    "clearSearch": "Wyczyść wyszukiwanie ustawień",
+    "clear": "Wyczyść",
+    "matchingSettings": "Pasujące ustawienia",
+    "setupBadge_one": "{{count}} rzecz do sprawdzenia",
+    "setupBadge_few": "{{count}} rzeczy do sprawdzenia",
+    "setupBadge_many": "{{count}} rzeczy do sprawdzenia",
+    "setupBadge_other": "{{count}} rzeczy do sprawdzenia",
+    "noMatches": "Brak ustawień pasujących do „{{query}}”.",
+    "moreInDesktop": "Więcej opcji w aplikacji na komputer",
+    "downloadDesktop": "Pobierz aplikację na komputer"
+  },
+  "profile": {
+    "photoTitle": "Profil",
+    "photoHelp": "PNG, JPEG lub WebP · maksymalnie 2 MB",
+    "savingDots": "Zapisywanie…",
+    "saving": "Zapisywanie…",
+    "changePhoto": "Zmień zdjęcie",
+    "remove": "Usuń",
+    "bannerTitle": "Baner i nazwa",
+    "changeBanner": "Zmień baner",
+    "addBanner": "Dodaj baner",
+    "bannerHelp": "PNG, JPEG lub WebP · do 3 MB · najlepiej 3:1",
+    "displayName": "Wyświetlana nazwa",
+    "displayNameHelp": "Wyświetlana na profilu zamiast nazwy użytkownika. Zostaw puste, aby używać {{username}}.",
+    "pronouns": "Zaimki",
+    "pronounsPlaceholder": "np. ona/jej, on/jego, oni/ich",
+    "pronounsHelp": "Opcjonalnie. Wyświetlane obok twojej nazwy na profilu.",
+    "previewCaption": "Podgląd · jak inni widzą twój profil",
+    "presenceTitle": "Profil i obecność",
+    "status": "Status",
+    "statuses": {
+      "online": "Online",
+      "idle": "Zaraz wracam",
+      "dnd": "Nie przeszkadzać",
+      "invisible": "Niewidoczny"
+    },
+    "customStatus": "Własny status",
+    "customStatusPlaceholder": "Dziś grind rankedów",
+    "bio": "Bio",
+    "accent": "Akcent profilu",
+    "accentHelp": "Akcent profilu koloruje obramowanie twojego awatara i wyróżnienia na profilu. Zmiany widać od razu i zapisują się automatycznie."
+  },
+  "quietPresence": {
+    "kicker": "Cicha obecność",
+    "title": "Pokaż zamiary, zachowaj kontrolę",
+    "mapping": "Obecność używa istniejącego statusu {{status}} i zestawu powiadomień {{preset}}.",
+    "saveError": "Nie udało się zapisać cichej obecności na tym urządzeniu.",
+    "intent": "Zamiar",
+    "intentLabel": "Zamiar obecności",
+    "intents": {
+      "available": "Dostępny",
+      "playing": "Gram",
+      "watching": "Oglądam",
+      "planning": "Planuję",
+      "quiet": "Cisza"
+    },
+    "expires": "Wygasa",
+    "expiryLabel": "Wygaśnięcie obecności",
+    "expiry": {
+      "none": "Dopóki nie zmienię",
+      "hour": "Na 1 godzinę",
+      "fourHours": "Na 4 godziny",
+      "today": "Do końca dnia"
+    },
+    "interrupts": "Co może przerywać",
+    "interrupt": {
+      "urgentMentions": "Pilne wzmianki",
+      "ordinaryJoins": "Zwykłe dołączenia",
+      "soundboardEvents": "Zdarzenia panelu dźwięków",
+      "recommendations": "Rekomendacje"
+    },
+    "note": "Zapisywane lokalnie przez integrację. Dostępność w Squad Finder zależy od tego zamiaru; pilne wzmianki są kontrolowane osobno."
+  },
+  "account": {
+    "detailsTitle": "Dane konta",
+    "username": "Nazwa użytkownika",
+    "usernameAgain": "Można zmienić ponownie {{date}}",
+    "usernameRule": "Można zmieniać raz na 30 dni",
+    "edit": "Edytuj",
+    "email": "E-mail",
+    "verified": "Zweryfikowany",
+    "verificationRequired": "Wymagana weryfikacja",
+    "noEmail": "Nie dodano e-maila",
+    "hiddenByStreamerMode": "Ukryte przez tryb streamera",
+    "notAdded": "Nie dodano",
+    "password": "Hasło",
+    "passwordHelp": "Zmiana hasła wylogowuje wszystkie aktywne sesje.",
+    "localVerification": "Otwórz lokalny link weryfikacyjny e-maila",
+    "decaveIdTitle": "Twój DeCave ID",
+    "decaveIdHelp": "Udostępnij ten unikalny ID zaufanej osobie, żeby mogła wysłać ci zaproszenie do znajomych. Twój status online/offline zobaczy dopiero wtedy, gdy zostaniecie znajomymi.",
+    "copyDecaveId": "Kopiuj DeCave ID",
+    "twoFactorTitle": "Logowanie dwuskładnikowe",
+    "loginAlerts": "Powiadamiaj mnie e-mailem o nowych logowaniach",
+    "loginAlertsHelp": "Gdy na twoje konto zaloguje się nowe urządzenie, aplikacja lub kraj, wyślemy e-mail na {{email}} z przyciskiem „To nie ja”.",
+    "yourVerifiedAddress": "twój zweryfikowany adres",
+    "loginAlertsNeedEmail": "Dodaj i zweryfikuj adres e-mail, aby dostawać alerty logowania.",
+    "sessionsTitle": "Aktywne logowania",
+    "yourDataTitle": "Twoje dane",
+    "dangerTitle": "Wyłącz lub usuń konto",
+    "disable": "Wyłącz konto",
+    "delete": "Usuń konto"
+  },
+  "sessions": {
+    "none": "Nie zwrócono aktywnych sesji. Odśwież, aby spróbować ponownie.",
+    "unknownDevice": "Nieznane urządzenie",
+    "thisDevice": "To urządzenie",
+    "activeNow": "Aktywne teraz",
+    "active": "Aktywne {{when}}",
+    "notUsedSince": "Nieużywane od {{date}}",
+    "notRecorded": "Ostatnia aktywność jeszcze niezapisana",
+    "signedIn": "Zalogowano {{signedIn}} · Sesja ważna do {{until}}",
+    "signingOut": "Wylogowywanie…",
+    "signOut": "Wyloguj",
+    "refresh": "Odśwież",
+    "signOutAll_one": "Wyloguj {{count}} urządzenie",
+    "signOutAll_few": "Wyloguj wszystkie {{count}} urządzenia",
+    "signOutAll_many": "Wyloguj wszystkie {{count}} urządzeń",
+    "signOutAll_other": "Wyloguj wszystkie urządzenia ({{count}})",
+    "help": "Wylogowanie wszystkich urządzeń obejmuje także to. Nie rozpoznajesz urządzenia? Wyloguj je, a potem zmień hasło i włącz logowanie dwuskładnikowe."
+  },
+  "yourData": {
+    "title": "Pobierz moje dane",
+    "description": "Twój profil, ustawienia, znajomi, Hubs, blokady, logowania i napisane przez ciebie wiadomości jako plik JSON.",
+    "preparing": "Przygotowywanie…",
+    "download": "Pobierz",
+    "downloaded": "Twoje dane zostały pobrane.",
+    "prepareRetry": "Nie udało się przygotować danych. Spróbuj ponownie.",
+    "prepareFailed": "Nie udało się przygotować danych."
+  },
+  "twoFactor": {
+    "title": "Logowanie dwuskładnikowe",
+    "checking": "Sprawdzanie…",
+    "on_one": "Włączone · został {{count}} kod odzyskiwania",
+    "on_few": "Włączone · zostały {{count}} kody odzyskiwania",
+    "on_many": "Włączone · zostało {{count}} kodów odzyskiwania",
+    "on_other": "Włączone · zostało {{count}} kodu odzyskiwania",
+    "off": "Wyłączone · Wymagaj kodu z aplikacji uwierzytelniającej przy logowaniu na nowym urządzeniu.",
+    "turnOn": "Włącz",
+    "newCodes": "Nowe kody odzyskiwania",
+    "turnOff": "Wyłącz",
+    "runningOut": "Kończą ci się kody odzyskiwania. Utwórz nowy zestaw, żeby nie stracić dostępu do konta.",
+    "installApp": "Zainstaluj aplikację uwierzytelniającą (Google Authenticator, Microsoft Authenticator, 1Password, Authy…), a potem potwierdź hasło, aby zacząć.",
+    "cancel": "Anuluj",
+    "continue": "Dalej",
+    "qrAlt": "Kod QR dla aplikacji uwierzytelniającej",
+    "scan": "Zeskanuj ten kod aplikacją uwierzytelniającą.",
+    "cantScan": "Nie możesz zeskanować? Wpisz ten klucz:",
+    "typeCode": "Wpisz 6-cyfrowy kod pokazany w aplikacji.",
+    "sixDigit": "6-cyfrowy kod",
+    "turnOnTwoFactor": "Włącz 2FA",
+    "saveCodesNow": "Zapisz teraz te kody odzyskiwania.",
+    "saveCodesDetail": "Każdy działa raz, jeśli zgubisz telefon. Nie zobaczysz ich ponownie.",
+    "copied": "Skopiowano",
+    "copy": "Kopiuj",
+    "downloadTxt": "Pobierz .txt",
+    "savedThem": "Kody zapisane",
+    "fileHeader": "Kody odzyskiwania DeCave\nKażdy kod działa raz. Przechowuj je w bezpiecznym miejscu.",
+    "disableWarning": "Wyłączenie logowania dwuskładnikowego ułatwia przejęcie twojego konta. Potwierdź, że to ty.",
+    "regenerateWarning": "Stare kody odzyskiwania przestaną działać, gdy tylko utworzysz nowe. Potwierdź, że to ty.",
+    "turnOffTwoFactor": "Wyłącz 2FA",
+    "makeNewCodes": "Utwórz nowe kody",
+    "codeLabel": "Kod z aplikacji uwierzytelniającej lub kod odzyskiwania",
+    "currentPassword": "Obecne hasło",
+    "error": "Coś poszło nie tak.",
+    "errorRetry": "Coś poszło nie tak. Spróbuj ponownie."
+  },
+  "owner": {
+    "title": "Właściciel platformy",
+    "intro": "MFA jest wymagane przy logowaniu zarejestrowanego właściciela platformy. Uprzywilejowane akcje zarządzania właścicielami wymagają też ponownej weryfikacji hasłem i MFA.",
+    "mfaEnabled": "✓ MFA właściciela włączone",
+    "currentPassword": "Obecne hasło",
+    "pleaseWait": "Poczekaj…",
+    "setUpMfa": "Skonfiguruj MFA właściciela",
+    "addSecret": "Dodaj ten sekret do aplikacji uwierzytelniającej:",
+    "sixDigit": "6-cyfrowy kod z aplikacji uwierzytelniającej",
+    "enableMfa": "Włącz MFA właściciela",
+    "unlockTitle": "Odblokuj uprzywilejowane akcje właściciela",
+    "codePlaceholder": "Kod z aplikacji uwierzytelniającej lub kod odzyskiwania",
+    "unlock": "Odblokuj na 10 minut",
+    "replaceMfa": "Zastąp MFA właściciela",
+    "replaceHelp": "Zastąpienie MFA wymaga obecnego hasła i kodu z aplikacji uwierzytelniającej lub kodu odzyskiwania. Aktywne odblokowanie właściciela może posłużyć jako dowód drugiego składnika.",
+    "ownersTitle": "Właściciele platformy",
+    "demote": "Zdegraduj",
+    "promotePlaceholder": "Awansuj przez DeCave ID, nazwę użytkownika lub zweryfikowany e-mail",
+    "promote": "Awansuj na właściciela platformy",
+    "regenerate": "Wygeneruj ponownie moje kody odzyskiwania",
+    "saveCodes": "Zapisz teraz te kody odzyskiwania offline.",
+    "codesHelp": "Każdy kod działa raz. Wygenerowanie nowego zestawu unieważnia stary."
+  },
+  "encryption": {
+    "intro": "Prywatne wiadomości i czaty grupowe są szyfrowane end-to-end, gdy wszyscy ich uczestnicy używają aktualnej wersji DeCave: czytać je mogą tylko osoby w rozmowie, a nie DeCave. Twoje urządzenia współdzielą jeden klucz, który zmienia się co miesiąc. Przechowuj kod odzyskiwania w bezpiecznym miejscu: bez niego lub innego zalogowanego urządzenia zaszyfrowanej historii nie da się odzyskać.",
+    "statusLabel": "Status:",
+    "status": {
+      "ready": "To urządzenie może czytać i wysyłać wiadomości szyfrowane end-to-end.",
+      "locked": "Zablokowane: zatwierdź to urządzenie z innego albo wpisz kod odzyskiwania.",
+      "error": "Niedostępne: {{error}}",
+      "starting": "Uruchamianie…"
+    },
+    "keyId": "ID klucza:",
+    "unlock": "Odblokuj na tym urządzeniu",
+    "newCode": "Utwórz nowy kod odzyskiwania",
+    "newCodeFailed": "Nie udało się utworzyć nowego kodu odzyskiwania.",
+    "reset": "Zresetuj klucz szyfrowania",
+    "historyTitle": "Zachowaj czytelność starych zaszyfrowanych wiadomości",
+    "historyHelp": "Krótszy okres oznacza, że skradzione urządzenie lub kod odzyskiwania pozwolą odczytać mniej twojej przeszłości. Starsze zaszyfrowane wiadomości staną się nieczytelne na wszystkich twoich urządzeniach. Urządzenia drugiej osoby stosują jej własne ustawienie.",
+    "historyConfirm": "Zaszyfrowane wiadomości starsze niż {{when}} staną się nieczytelne na wszystkich twoich urządzeniach. Tego nie da się cofnąć. Kontynuować?",
+    "historyFailed": "Nie udało się zapisać ustawienia.",
+    "history": {
+      "always": "Zawsze",
+      "year": "1 rok",
+      "days_one": "{{count}} dzień",
+      "days_few": "{{count}} dni",
+      "days_many": "{{count}} dni",
+      "days_other": "{{count}} dnia"
+    }
+  },
+  "privacy": {
+    "encryptionTitle": "Zaszyfrowane wiadomości",
+    "safetyTitle": "Trust & Safety",
+    "reportsTitle": "Twoje zgłoszenia",
+    "reportsHelp": "Zobacz zgłoszenia wysłane do zespołu bezpieczeństwa DeCave i co się z nimi stało.",
+    "openReports": "Otwórz moje zgłoszenia",
+    "ageSetting": "Ustawienie wieku",
+    "age": {
+      "adult": "Tryb dla dorosłych",
+      "teen": "Tryb bezpieczeństwa nastolatków",
+      "unknown": "Niepotwierdzony"
+    },
+    "friendRequestsTitle": "Zaproszenia do znajomych",
+    "friendRequestsLabel": "Kto może wysyłać ci zaproszenia do znajomych",
+    "friendRequestPolicy": {
+      "everyone": "Wszyscy",
+      "friends_of_friends": "Znajomi znajomych",
+      "none": "Nikt"
+    },
+    "friendRequestsHelp": "DeCave egzekwuje to przy wysyłaniu zaproszenia, a nie tylko ukrywa w interfejsie.",
+    "dmTitle": "Prywatne wiadomości",
+    "dmOnlyFriends": "Pisać do ciebie mogą tylko znajomi",
+    "dmHelp": "DeCave nie dostarcza prywatnych wiadomości ani zaproszeń do grup od osób, które nie są twoimi znajomymi, i nigdy od osób, które blokujesz. Kto może zostać twoim znajomym, ustawisz wyżej, w sekcji Zaproszenia do znajomych.",
+    "blockedTitle": "Zablokowane konta",
+    "streamTitle": "Prywatność streamu",
+    "streamPreviews": "Zezwalaj na podglądy streamu",
+    "streamPreviewsHelp": "Osoby w pokoju głosowym mogą zobaczyć mały podgląd, zanim klikną Oglądaj.",
+    "streamerMode": "Tryb streamera",
+    "streamerModeHelp": "Maskuj dane osobowe konta i chroń okna DeCave na komputerze przed zwykłymi API przechwytywania.",
+    "autoStreamer": "Włączaj tryb streamera, gdy streamuję",
+    "autoStreamerHelp": "Włącza się sam, gdy otwarta jest aplikacja do nadawania, i wyłącza, gdy ją zamkniesz.",
+    "autoStreamerUpdate": "Zaktualizuj aplikację DeCave na komputer, aby z tego korzystać. Wymaga najnowszej wersji.",
+    "autoStreamerLive": "Tryb streamera jest teraz włączony, bo działa {{apps}}.",
+    "captureWeb": "Ochrona przed przechwytywaniem okien jest dostępna w aplikacji DeCave na Windows i macOS. Wrażliwe dane są nadal maskowane w tym interfejsie.",
+    "presenceTitle": "Prywatność obecności",
+    "typing": "Wysyłaj wskaźniki pisania",
+    "typingHelp": "Po wyłączeniu osoby w pokojach tekstowych Hub nie zobaczą, że piszesz."
+  },
+  "blocked": {
+    "title": "Zablokowane konta",
+    "titleCount": "Zablokowane konta · {{count}}",
+    "help": "Zablokowane osoby nie mogą do ciebie pisać, wysyłać zaproszeń do znajomych ani dodawać cię do grup. Nie dowiedzą się, że są przez ciebie zablokowane.",
+    "loading": "Wczytywanie…",
+    "none": "Nie masz zablokowanych kont.",
+    "find": "Znajdź zablokowane konto",
+    "blockedOn": "Zablokowano {{date}}",
+    "unblocking": "Odblokowywanie…",
+    "unblock": "Odblokuj",
+    "loadFailed": "Nie udało się wczytać zablokowanych kont.",
+    "unblockFailed": "Nie udało się odblokować {{name}}. Spróbuj ponownie."
+  },
+  "connections": {
+    "title": "Połączone konta",
+    "intro": "Konta połączone z DeCave. Każde robi tylko to, co opisano tutaj.",
+    "loading": "Wczytywanie…",
+    "loadFailed": "Nie udało się wczytać połączeń.",
+    "retry": "Spróbuj ponownie",
+    "connected": "Połączono jako {{name}}",
+    "notConnected": "Niepołączone",
+    "connect": "Połącz",
+    "connecting": "Otwieranie…",
+    "disconnect": "Odłącz",
+    "showOnProfile": "Pokaż na moim profilu",
+    "actionFailed": "Nie zadziałało. Spróbuj ponownie.",
+    "finishInBrowser": "Dokończ logowanie w oknie przeglądarki, a potem tu wróć.",
+    "providers": {
+      "steam": {
+        "name": "Steam",
+        "use": "Pokazuje grę, w którą grasz, gdy na tym komputerze nie wykryto żadnej gry. Hasło do Steam wpisujesz tylko na stronie Steam."
+      },
+      "twitch": {
+        "name": "Twitch",
+        "use": "Daje ci role subskrybenta w Hubs, które nagradzają subskrybentów na Twitch."
+      },
+      "faceit": {
+        "name": "FACEIT",
+        "use": "Pokazuje twój poziom FACEIT i ELO w rankingach oraz w Hubs, które używają odznak FACEIT."
+      }
+    },
+    "steamPresence": "Używaj obecności Steam",
+    "steamPresenceHelp": "Używaj połączonego konta Steam, gdy nie wykryto lokalnej gry",
+    "steamPlaying": "Grasz w {{game}}",
+    "steamIdle": "Brak publicznej aktywności w grach na Steam",
+    "checkActivity": "Sprawdź aktywność teraz"
+  },
+  "gaming": {
+    "visibilityTitle": "Kto widzi twoją grę",
+    "visibilityLabel": "Kto widzi grę, w którą grasz",
+    "visibility": {
+      "everyone": {
+        "label": "Wszyscy",
+        "detail": "Każdy, kto widzi twój profil"
+      },
+      "friends": {
+        "label": "Znajomi",
+        "detail": "Tylko osoby z listy znajomych"
+      },
+      "nobody": {
+        "label": "Nikt",
+        "detail": "Zachowaj to dla siebie"
+      }
+    },
+    "visibilityHelp": "DeCave egzekwuje to wobec wszystkich innych. Ty zawsze widzisz tu swoją grę.",
+    "automaticTitle": "Automatyczna aktywność",
+    "noActivity": "Brak aktywności",
+    "detectedSource": "wykryto",
+    "automaticSource": "Automatycznie · {{source}}",
+    "automaticFor": "Automatycznie · {{source}} · W grze od {{elapsed}}",
+    "noAutomatic": "Nie wykryto automatycznej aktywności w grach",
+    "live": "NA ŻYWO",
+    "publish": "Pokazuj automatyczną aktywność",
+    "publishHelp": "Publikuj wykryte gry na swoim profilu DeCave",
+    "detect": "Wykrywaj gry na tym komputerze",
+    "detectHelp": "Sprawdza uruchomione aplikacje na tym urządzeniu i dopasowuje twoje gry ze Steam i Epic. Poza nazwą gry nic nie opuszcza twojego komputera.",
+    "detected": "Wykryto {{store}}: {{game}}",
+    "detectedFor": "Wykryto {{store}}: {{game}} · W grze od {{elapsed}}",
+    "noneDetected": "Nie wykryto teraz uruchomionej gry ze Steam ani Epic.",
+    "excluded": "Wykluczone gry",
+    "excludedPlaceholder": "Gra pierwsza, Gra druga",
+    "excludedHelp": "Dokładne nazwy gier oddzielone przecinkami. Wykrywanie działa lokalnie; wykluczone tytuły nie są publikowane.",
+    "overlayTitle": "Nakładka w grze",
+    "overlay": "Nakładka głosowa w grze",
+    "overlayHelp": "Pokazuj kompaktowe awatary rozmowy głosowej nad grami i wyróżniaj osobę, która mówi.",
+    "overlaySize": "Rozmiar nakładki",
+    "overlaySizeUpdate": "Zaktualizuj aplikację DeCave na komputer, aby zmienić rozmiar i dostać nową kompaktową nakładkę.",
+    "overlaySizeHelp": "Jak duże są etykiety głosowe nad grą. Podgląd pokazuje mniej więcej, jak wyglądają.",
+    "overlaySample": "Głos Squad · {{count}}",
+    "keybindsTitle": "Skróty klawiszowe",
+    "keybindsHelp": "Te skróty działają nawet wtedy, gdy aktywna jest gra. Użyj co najmniej jednego klawisza modyfikującego, np. Ctrl, Alt lub Shift.",
+    "keybindsWeb": "Tryb „Naciśnij i mów” działa, gdy DeCave jest aktywne. Globalne skróty wyciszania mikrofonu i wyłączania dźwięku wymagają aplikacji DeCave na komputer, bo karta przeglądarki nie odbiera klawiszy, gdy aktywna jest gra.",
+    "keybind": {
+      "toggleMute": {
+        "label": "Wycisz / włącz mikrofon",
+        "detail": "Wycisz lub przywróć mikrofon."
+      },
+      "toggleDeafen": {
+        "label": "Wyłącz / włącz dźwięk",
+        "detail": "Wycisz przychodzący głos i swój mikrofon jednocześnie."
+      }
+    },
+    "pressShortcut": "Naciśnij skrót…",
+    "pushToTalk": "Naciśnij i mów",
+    "pushToTalkHelp": "Przytrzymaj ten klawisz, aby nadawać.",
+    "pushToTalkOff": "Używany, gdy w sekcji Głos i wideo wybrano tryb „Naciśnij i mów”.",
+    "pressKey": "Naciśnij klawisz…",
+    "noKey": "Nie ustawiono klawisza",
+    "keybindHint": "Kliknij skrót, a potem naciśnij nową kombinację klawiszy.",
+    "resetDefaults": "Przywróć domyślne",
+    "sameShortcut": "Te akcje nie mogą mieć tego samego skrótu.",
+    "shortcutsTitle": "Wszystkie skróty"
+  },
+  "shortcuts": {
+    "anywhere": "Wszędzie",
+    "search": "Szukaj i przejdź do Hub, pokoju lub osoby",
+    "inbox": "Otwórz skrzynkę",
+    "escape": "Zamknij otwarte menu, okno dialogowe lub Ustawienia",
+    "voice": "Głos",
+    "pushToTalk": "Przytrzymaj, aby mówić (Naciśnij i mów)",
+    "mute": "Wycisz lub włącz mikrofon (aplikacja na komputer, działa w grach)",
+    "deafen": "Wyłącz lub włącz dźwięk (aplikacja na komputer, działa w grach)",
+    "sidebar": "Pasek boczny Hub (właściciele i admini)",
+    "moveUp": "Przesuń zaznaczony pokój w górę w jego sekcji",
+    "moveDown": "Przesuń zaznaczony pokój w dół w jego sekcji",
+    "forum": "Pisanie posta na forum",
+    "bold": "Pogrubienie",
+    "italic": "Kursywa",
+    "link": "Dodaj link",
+    "publish": "Opublikuj"
+  },
+  "voice": {
+    "kicker": "Głos i dźwięk",
+    "headline": "Dźwięk, który brzmi dobrze",
+    "intro": "Wybierz urządzenia, dostrój mikrofon i zdecyduj, jak DeCave przetwarza twój głos.",
+    "db": "{{value}} dB",
+    "mic": {
+      "starting": "Uruchamianie mikrofonu…",
+      "unavailable": "Mikrofon niedostępny",
+      "testLive": "Test mikrofonu trwa",
+      "live": "Mikrofon aktywny",
+      "off": "Mikrofon wyłączony"
+    },
+    "devices": {
+      "title": "Urządzenia",
+      "help": "Skąd pochodzi twój głos i dokąd trafia dźwięk",
+      "input": "Urządzenie wejściowe",
+      "defaultInput": "Domyślny mikrofon",
+      "microphoneNumbered": "Mikrofon {{number}}",
+      "output": "Urządzenie wyjściowe",
+      "defaultOutput": "Domyślne wyjście",
+      "outputNumbered": "Wyjście {{number}}"
+    },
+    "level": {
+      "title": "Poziom wejścia",
+      "live": "Bieżący poziom mikrofonu",
+      "afterSuppression": "Twój mikrofon po redukcji szumów i próg aktywacji",
+      "withThreshold": "Bieżący poziom mikrofonu i próg aktywacji",
+      "threshold": "Próg {{value}} dB",
+      "thresholdTitle": "Próg aktywacji"
+    },
+    "diagnostics": "Pokaż techniczne odczyty dźwięku",
+    "metrics": {
+      "transmit": "Nadawanie {{value}} dB",
+      "rms": "RMS {{value}}",
+      "activity": "Aktywność {{value}}%",
+      "post": "Po {{value}} dB",
+      "raw": "Surowy {{value}} dB",
+      "floor": "Tło {{value}} dB",
+      "vad": "VAD {{value}}%"
+    },
+    "activation": {
+      "title": "Aktywność głosowa",
+      "help": "Dostosuj bramkę, obserwując bieżący poziom wejścia",
+      "auto": {
+        "label": "Automatyczna",
+        "detail": "DeCave dopasowuje się do otoczenia"
+      },
+      "manual": {
+        "label": "Ręczna",
+        "detail": "Próg aktywacji ustawiasz ręcznie"
+      },
+      "threshold": "Próg aktywacji",
+      "thresholdHelp": "Przesuń znacznik powyżej, aż szum tła przestanie przechodzić"
+    },
+    "inputVolume": {
+      "title": "Głośność wejścia",
+      "help": "Zwiększ lub zmniejsz poziom mikrofonu"
+    },
+    "mode": {
+      "title": "Tryb wprowadzania",
+      "help": "Wybierz aktywność głosową lub tryb „Naciśnij i mów”",
+      "activation": "Aktywność głosowa",
+      "activationHelp": "Mikrofon włącza się, gdy mówisz",
+      "pushToTalk": "Naciśnij i mów",
+      "pushToTalkHelp": "Nadawaj tylko, gdy przytrzymujesz wybrany klawisz",
+      "key": "Klawisz „Naciśnij i mów”: {{key}}.",
+      "noKey": "Nie ustawiono jeszcze klawisza „Naciśnij i mów”.",
+      "changeKey": "Zmień klawisz"
+    },
+    "noise": {
+      "title": "Redukcja szumów",
+      "help": "Usuwaj odgłosy klawiatury, wentylatora i szum tła, zanim twój głos zostanie wysłany",
+      "unavailable": "Niedostępne",
+      "unsupported": "Nieobsługiwane przez tę przeglądarkę",
+      "modes": {
+        "off": {
+          "label": "Wyłączona",
+          "subtitle": "Surowy mikrofon",
+          "description": "Bez przetwarzania"
+        },
+        "strong": {
+          "label": "Standardowa",
+          "subtitle": "Wbudowany filtr",
+          "description": "Redukcja szumów nastawiona na granie, działa na każdym urządzeniu"
+        },
+        "ai": {
+          "label": "DeCave ClearVoice",
+          "subtitle": "Redukcja szumów od DeCave",
+          "description": "Lokalne przetwarzanie AI dla czystszego głosu w hałaśliwym otoczeniu"
+        },
+        "deepfilter": {
+          "label": "DeepFilterNet",
+          "subtitle": "Głębokie filtrowanie szumów",
+          "description": "Najmocniejsze lokalne filtrowanie AI na klawiatury, kliknięcia i głośne pokoje"
+        }
+      }
+    },
+    "processing": {
+      "title": "Przetwarzanie głosu",
+      "help": "Dodatkowe przetwarzanie stosowane przez przeglądarkę",
+      "echo": "Usuwanie echa",
+      "echoHelp": "Ogranicz przenikanie dźwięku z głośników do mikrofonu",
+      "gain": "Automatyczna regulacja wzmocnienia",
+      "gainHelp": "Utrzymuje głośność twojego głosu na stałym poziomie"
+    },
+    "output": {
+      "title": "Wyjście",
+      "help": "Jak głośno słyszysz innych i szybki test, czy dźwięk dociera do głośników lub słuchawek",
+      "volume": "Głośność wyjścia",
+      "volumeHelp": "Dotyczy wszystkich w rozmowie głosowej. Głośność poszczególnych osób ustawiana jest dodatkowo.",
+      "playing": "Odtwarzanie…",
+      "test": "Testuj głośniki",
+      "testFailed": "Nie udało się odtworzyć dźwięku testowego na tym urządzeniu."
+    },
+    "camera": {
+      "title": "Kamera",
+      "help": "Używana, gdy włączasz kamerę w pokoju głosowym",
+      "preview": "Podgląd kamery",
+      "previewOff": "Podgląd wyłączony",
+      "default": "Domyślna kamera",
+      "numbered": "Kamera {{number}}",
+      "stop": "Zatrzymaj podgląd",
+      "start": "Podgląd kamery",
+      "openFailed": "DeCave nie może otworzyć tej kamery. Sprawdź, czy nie używa jej inna aplikacja i czy dostęp do kamery jest dozwolony."
+    },
+    "people": {
+      "title": "Osoby z dostosowaną głośnością",
+      "help": "Kliknij kogoś prawym przyciskiem w pokoju głosowym, aby go pogłośnić lub ściszyć",
+      "empty": "Wszyscy mają normalną głośność.",
+      "muted": "Wyciszony dla ciebie",
+      "volumeFor": "Głośność: {{name}}",
+      "reset": "Resetuj",
+      "resetAll": "Resetuj wszystkich",
+      "unknown": "Osoba z rozmowy głosowej"
+    },
+    "liveNote": "Zmiany głosu działają od razu i są zapisywane na tym urządzeniu.",
+    "micTest": {
+      "title": "Test mikrofonu",
+      "help": "Posłuchaj, jak brzmi twój mikrofon z bieżącym przetwarzaniem.",
+      "stop": "Zatrzymaj test",
+      "start": "Testuj mikrofon"
+    }
+  },
+  "notifications": {
+    "title": "Powiadomienia",
+    "preset": "Zestaw powiadomień",
+    "presetHelp": "Wybierz rozsądne ustawienia bazowe, a potem dostosuj poszczególne przełączniki poniżej.",
+    "presets": {
+      "all": "Cała aktywność",
+      "mentions": "Tylko wzmianki",
+      "quiet": "Cisza"
+    },
+    "desktop": "Powiadomienia na pulpicie",
+    "desktopHelp": "Wyskakujące alerty, gdy DeCave działa w tle",
+    "kinds": {
+      "friendRequests": "Zaproszenia do znajomych",
+      "dms": "Prywatne wiadomości",
+      "groups": "Wiadomości grupowe",
+      "mentions": "Wzmianki"
+    },
+    "permissionDesktop": "Wymagana zgoda w {{platform}}",
+    "permissionBrowser": "Wymagana zgoda przeglądarki",
+    "permissionDesktopHelp": "Zezwól na powiadomienia DeCave w ustawieniach {{platform}}, aby dostawać alerty, gdy DeCave działa w tle.",
+    "permissionBrowserHelp": "Zezwól na powiadomienia z app.de-cave.com w przeglądarce, aby dostawać alerty, gdy ta karta działa w tle.",
+    "requestPermission": "Poproś o zgodę",
+    "previewsTitle": "Podglądy wiadomości",
+    "previewsHelp": "Wybierz, ile treści prywatnych wiadomości DeCave pokazuje w powiadomieniach na pulpicie i w aplikacji.",
+    "previews": {
+      "full": {
+        "label": "Pełny podgląd",
+        "detail": "Pokazuj nadawcę i treść wiadomości."
+      },
+      "sender": {
+        "label": "Tylko nadawca",
+        "detail": "Pokazuj, kto wysłał, ale ukrywaj treść."
+      },
+      "hidden": {
+        "label": "Ukryte",
+        "detail": "Pokazuj tylko ogólne powiadomienie DeCave."
+      }
+    },
+    "quiet": {
+      "sectionTitle": "Godziny ciszy",
+      "title": "Godziny ciszy",
+      "now": "Teraz cisza. Powiadomienia i dźwięki alertów są wstrzymane.",
+      "daily": "Codziennie od {{start}} do {{end}}.",
+      "help": "Wstrzymuj powiadomienia i dźwięki alertów codziennie o tej samej porze.",
+      "from": "Od",
+      "until": "Do",
+      "allowMentions": "Nadal powiadamiaj mnie o prywatnych wiadomościach i wzmiankach"
+    },
+    "soundsTitle": "Dźwięki",
+    "theme": "Motyw dźwięków",
+    "themeHelp": "Wybierz charakter dźwięków interfejsu DeCave. Opcja „Wyłączone” wycisza dźwięki interfejsu bez zmiany powiadomień na pulpicie.",
+    "themes": {
+      "off": {
+        "label": "Wyłączone",
+        "detail": "Cichy interfejs"
+      },
+      "soft": {
+        "label": "Miękki",
+        "detail": "Subtelny i czysty"
+      },
+      "pulse": {
+        "label": "Pulse",
+        "detail": "Nowoczesny i energiczny"
+      },
+      "arcade": {
+        "label": "Arcade",
+        "detail": "Retro gaming"
+      }
+    },
+    "events": {
+      "send": {
+        "label": "Wiadomość wysłana",
+        "detail": "Gdy wysyłasz wiadomość"
+      },
+      "receive": {
+        "label": "Wiadomość odebrana",
+        "detail": "Przychodzące prywatne wiadomości i wiadomości z pokoi"
+      },
+      "voiceJoin": {
+        "label": "Dołączenie do rozmowy",
+        "detail": "Ktoś dołącza do rozmowy głosowej"
+      },
+      "voiceLeave": {
+        "label": "Wyjście z rozmowy",
+        "detail": "Ktoś opuszcza rozmowę głosową"
+      },
+      "friendRequest": {
+        "label": "Zaproszenie do znajomych",
+        "detail": "Nowe zaproszenie do znajomych"
+      },
+      "mention": {
+        "label": "Wzmianka",
+        "detail": "Gdy ktoś cię oznaczy"
+      },
+      "mute": {
+        "label": "Wyciszenie",
+        "detail": "Mikrofon wyciszony"
+      },
+      "unmute": {
+        "label": "Włączenie mikrofonu",
+        "detail": "Mikrofon włączony"
+      },
+      "deafen": {
+        "label": "Wyłączenie dźwięku",
+        "detail": "Przychodzący dźwięk głosu wyłączony"
+      },
+      "undeafen": {
+        "label": "Włączenie dźwięku",
+        "detail": "Przychodzący dźwięk głosu przywrócony"
+      },
+      "screenShare": {
+        "label": "Udostępnianie ekranu",
+        "detail": "Rozpoczęcie lub zakończenie udostępniania ekranu"
+      }
+    },
+    "variants": {
+      "default": "Domyślny",
+      "bright": "Jasny",
+      "deep": "Głęboki",
+      "digital": "Cyfrowy",
+      "glass": "Szkło",
+      "warm": "Ciepły",
+      "chime": "Dzwonek",
+      "minimal": "Minimalny"
+    },
+    "soundFor": "Dźwięk: {{event}}",
+    "enableSound": "Włącz dźwięk: {{event}}",
+    "preview": "Odsłuchaj",
+    "placesTitle": "Wyciszone Hubs i pokoje",
+    "mutedTitle": "Wyciszone Hubs i pokoje",
+    "mutedCount_one": "Wyciszone Hubs i pokoje · {{count}}",
+    "mutedCount_few": "Wyciszone Hubs i pokoje · {{count}}",
+    "mutedCount_many": "Wyciszone Hubs i pokoje · {{count}}",
+    "mutedCount_other": "Wyciszone Hubs i pokoje · {{count}}",
+    "mutedHelp": "Wyciszone Hubs i pokoje nie wysyłają powiadomień ani dźwięków. Nadal możesz je otwierać i czytać. Znaczniki nieprzeczytanych są zawsze widoczne.",
+    "noneMuted": "Nic nie jest wyciszone. Aby coś wyciszyć, kliknij prawym przyciskiem Hub na górnym pasku, użyj dzwonka na stronie głównej Hub albo dzwonka w pokoju.",
+    "mutedUntil": "Wyciszone do {{when}}",
+    "mutedForever": "Wyciszone, dopóki tego nie wyłączysz",
+    "roomIn": "Wyciszony pokój w {{hub}}",
+    "unmute": "Wyłącz wyciszenie",
+    "levelFor": "Powiadomienia: {{name}}",
+    "levelForRoom": "Powiadomienia: #{{name}}",
+    "sameAsHub": "Jak w Hub ({{level}})",
+    "levels": {
+      "all": "Wszystkie wiadomości",
+      "mentions": "Tylko wzmianki",
+      "nothing": "Nic"
+    },
+    "otherHubs_one": "Inne Hubs ({{count}})",
+    "otherHubs_few": "Inne Hubs ({{count}})",
+    "otherHubs_many": "Inne Hubs ({{count}})",
+    "otherHubs_other": "Inne Hubs ({{count}})",
+    "levelsHelp": "Wszystkie wiadomości: powiadomienie o każdej nowej wiadomości. Tylko wzmianki: gdy ktoś cię oznaczy lub użyje @everyone. Nic: bez dźwięków i wyskakujących okienek. Znaczniki nieprzeczytanych są zawsze widoczne.",
+    "roomsDifferent_one": "{{count}} pokój ustawiony inaczej",
+    "roomsDifferent_few": "{{count}} pokoje ustawione inaczej",
+    "roomsDifferent_many": "{{count}} pokoi ustawionych inaczej",
+    "roomsDifferent_other": "{{count}} pokoju ustawionego inaczej",
+    "hideRooms": "Ukryj pokoje",
+    "showRooms_one": "Ustaw pokoje inaczej ({{count}})",
+    "showRooms_few": "Ustaw pokoje inaczej ({{count}})",
+    "showRooms_many": "Ustaw pokoje inaczej ({{count}})",
+    "showRooms_other": "Ustaw pokoje inaczej ({{count}})"
+  },
+  "chat": {
+    "sendTitle": "Wysyłaj wiadomości klawiszem",
+    "send": {
+      "enter": {
+        "label": "Enter",
+        "detail": "Shift+Enter zaczyna nową linię"
+      },
+      "ctrlEnter": {
+        "label": "Ctrl+Enter",
+        "detail": "Enter zaczyna nową linię",
+        "labelMac": "Cmd+Enter",
+        "detailMac": "Enter zaczyna nową linię"
+      }
+    },
+    "animateTitle": "Animowane GIF-y i emotki",
+    "animate": {
+      "always": {
+        "label": "Odtwarzaj automatycznie",
+        "detail": "GIF-y i emotki ruszają się, gdy tylko pojawią się na ekranie"
+      },
+      "hover": {
+        "label": "Odtwarzaj po najechaniu",
+        "detail": "Są nieruchome, dopóki nie najedziesz na nie kursorem"
+      }
+    },
+    "messagesTitle": "Wiadomości",
+    "largeEmoji": "Duże emoji",
+    "largeEmojiHelp": "Pokazuj większe emoji, gdy wiadomość składa się tylko z jednego do trzech emoji",
+    "spellcheck": "Sprawdzanie pisowni",
+    "spellcheckHelp": "Podkreślaj błędnie napisane słowa podczas pisania wiadomości",
+    "spoilersTitle": "Spoilery",
+    "spoilers": {
+      "click": {
+        "label": "Odkrywaj po kliknięciu",
+        "detail": "Ukryte, dopóki ich nie klikniesz"
+      },
+      "always": {
+        "label": "Zawsze pokazuj",
+        "detail": "Spoilery w postach na forum są od razu widoczne"
+      }
+    }
+  },
+  "keyDevices": {
+    "title": "Urządzenia z twoim kluczem",
+    "help": "Te zalogowane urządzenia mogą czytać twoje zaszyfrowane wiadomości. Twoje konto ma jeden klucz wspólny dla nich wszystkich, więc usunięcie urządzenia wylogowuje je i przełącza konto na nowy klucz, którego to urządzenie nigdy nie dostanie: nie odczyta nowych wiadomości.",
+    "loading": "Wczytywanie…",
+    "none": "Żadne inne urządzenie nie ma twojego klucza.",
+    "unknownDevice": "Nieznane urządzenie",
+    "thisDevice": "To urządzenie",
+    "added": "Dodano {{date}}",
+    "lastUsed": "Ostatnio użyte {{date}}",
+    "lastUsedUnknown": "Ostatnie użycie jeszcze niezapisane",
+    "remove": "Usuń",
+    "removing": "Usuwanie…",
+    "confirm": "Usunąć {{device}}? Zostanie wylogowane, a twoje konto przełączy się na nowy klucz szyfrowania, którego to urządzenie nigdy nie dostanie.",
+    "removed": "Wylogowano {{device}}. Twoje konto przełącza się na nowy klucz.",
+    "failed": "Nie udało się zaktualizować urządzeń. Spróbuj ponownie."
+  },
+  "checkup": {
+    "allSet": "Wszystko gotowe",
+    "allSetHelp": "Nic teraz nie wymaga twojej uwagi.",
+    "dismiss": "Ukryj",
+    "dismissed": "Ukryto",
+    "severity": {
+      "high": "Ważne",
+      "medium": "Zalecane",
+      "low": "Warto mieć"
+    },
+    "items": {
+      "twoFactor": {
+        "title": "Logowanie dwuskładnikowe jest wyłączone",
+        "description": "Wymagaj kodu z aplikacji uwierzytelniającej, gdy ktoś loguje się na nowym urządzeniu, żeby samo skradzione hasło nie wystarczyło.",
+        "fix": "Włącz 2FA"
+      },
+      "recoveryCode": {
+        "title": "Zapisz kod odzyskiwania",
+        "description": "Bez kodu odzyskiwania lub innego zalogowanego urządzenia twoich zaszyfrowanych wiadomości nie da się odzyskać.",
+        "fix": "Otwórz zaszyfrowane wiadomości"
+      },
+      "pttKey": {
+        "title": "Tryb „Naciśnij i mów” nie ma klawisza",
+        "description": "Wybrano tryb „Naciśnij i mów”, ale nie ustawiono klawisza, więc nikt cię nie słyszy.",
+        "fix": "Wybierz klawisz"
+      },
+      "notificationsBlocked": {
+        "title": "Powiadomienia na pulpicie są zablokowane",
+        "description": "Powiadomienia na pulpicie są włączone w DeCave, ale przeglądarka lub system ich nie pokazuje.",
+        "fix": "Zezwól na powiadomienia"
+      },
+      "micTest": {
+        "title": "Przetestuj mikrofon",
+        "description": "Mikrofon na tym urządzeniu nie był jeszcze testowany. Posłuchaj, jak brzmisz, zanim dołączysz do rozmowy.",
+        "fix": "Testuj mikrofon"
+      },
+      "updateReady": {
+        "title": "Aktualizacja aplikacji jest gotowa",
+        "description": "Nowa wersja została pobrana. Uruchom ponownie DeCave, aby dokończyć aktualizację.",
+        "fix": "Uruchom ponownie"
+      },
+      "avatar": {
+        "title": "Dodaj zdjęcie profilowe",
+        "description": "Zdjęcie pomaga znajomym rozpoznać cię w Hubs, rozmowach głosowych i wiadomościach.",
+        "fix": "Dodaj zdjęcie"
+      }
+    }
+  },
+  "appearance": {
+    "skinTitle": "Skórka",
+    "skinSystemNote": "Wygląd dopasowuje się do jasnego i ciemnego trybu komputera. Wybierz dwie skórki w sekcji Jasny i ciemny poniżej; skórka wybrana tutaj zostanie użyta, jeśli wyłączysz to dopasowanie.",
+    "skins": {
+      "nebula": {
+        "name": "Nebula Pulse",
+        "detail": "Elektryczny fiolet · cyjanowa poświata"
+      },
+      "arctic": {
+        "name": "Arctic Flux",
+        "detail": "Mroźny błękit · grafit"
+      },
+      "crimson": {
+        "name": "Crimson Glass",
+        "detail": "Głęboka czerwień · polerowane przydymione szkło"
+      },
+      "royal": {
+        "name": "Royal Violet",
+        "detail": "Nasycony fiolet · świetliste szkło"
+      },
+      "pearl": {
+        "name": "Pearl Glass",
+        "detail": "Biel i srebro · przydymiony kryształ"
+      },
+      "obsidian": {
+        "name": "Obsidian Glass",
+        "detail": "Czysta czerń · szkło w kolorze gunmetal"
+      },
+      "verdant": {
+        "name": "Verdant Raid",
+        "detail": "Szmaragdowa zieleń · taktyczne szkło"
+      },
+      "bright": {
+        "name": "Bright Grey",
+        "detail": "Jasna szarość · czysty, kontrastowy jasny motyw"
+      }
+    },
+    "themeTitle": "Jasny i ciemny",
+    "theme": {
+      "label": "Motyw",
+      "manual": "Wybierz skórkę",
+      "manualHelp": "Zawsze używaj skórki wybranej powyżej",
+      "system": "Jak w komputerze",
+      "systemHelp": "Automatycznie przełączaj między jasną a ciemną skórką",
+      "lightSkin": "Skórka trybu jasnego",
+      "darkSkin": "Skórka trybu ciemnego",
+      "nowDark": "Twój komputer jest teraz w trybie ciemnym.",
+      "nowLight": "Twój komputer jest teraz w trybie jasnym."
+    },
+    "accessibilityTitle": "Dostępność",
+    "size": {
+      "title": "Rozmiar tekstu i interfejsu",
+      "help": "Powiększ lub pomniejsz jednocześnie tekst, kontrolki, panele i odstępy w DeCave.",
+      "label": "Rozmiar tekstu i interfejsu DeCave",
+      "smaller": "Mniejszy",
+      "default": "Domyślny",
+      "larger": "Większy",
+      "extraLarge": "Bardzo duży",
+      "preview": "Podgląd: Pchnąć w tę łódź jeża lub ośm skrzyń fig."
+    },
+    "readabilityTitle": "Animacje i czytelność",
+    "motion": {
+      "label": "Animacje",
+      "systemReduced": "Twój komputer prosi o mniej animacji",
+      "systemFull": "Twój komputer zezwala na animacje",
+      "system": {
+        "label": "Jak w komputerze"
+      },
+      "reduce": {
+        "label": "Ogranicz animacje",
+        "detail": "Wyłącz animacje i płynne przewijanie"
+      },
+      "full": {
+        "label": "Pełne animacje",
+        "detail": "Zachowaj wszystkie animacje"
+      }
+    },
+    "density": {
+      "label": "Gęstość wiadomości",
+      "cozy": {
+        "label": "Wygodna",
+        "detail": "Przestronne wiadomości z dużymi awatarami"
+      },
+      "compact": {
+        "label": "Kompaktowa",
+        "detail": "Więcej wiadomości na ekranie"
+      }
+    },
+    "contrast": "Wysoki kontrast",
+    "contrastHelp": "Mocniejsze obramowania, jaśniejszy tekst pomocniczy i wyraźniejsze obwódki fokusu.",
+    "underline": "Zawsze podkreślaj linki",
+    "underlineHelp": "Linki w wiadomościach będą łatwe do zauważenia bez polegania na kolorze.",
+    "altText": "Pokazuj opisy obrazów",
+    "altTextHelp": "Pokazuj tytuł GIF-ów i naklejek pod nimi."
+  },
+  "language": {
+    "title": "Daty i godziny",
+    "englishForNow": "Menu i przyciski DeCave są na razie po angielsku. Te ustawienia zmieniają sposób zapisu dat i godzin w całej aplikacji.",
+    "language": "Język",
+    "matchSystem": "Jak w systemie",
+    "beta": "{{name}} (beta)",
+    "languageHelp": "Język, w którym wyświetlane są menu i przyciski DeCave.",
+    "dateStyle": "Format daty",
+    "dateStyleHelp": "Nazwy miesięcy oraz kolejność dnia, miesiąca i roku.",
+    "timeFormat": "Format godziny",
+    "timeFormats": {
+      "system": "Domyślny systemu",
+      "12h": "12-godzinny",
+      "24h": "24-godzinny"
+    },
+    "timeFormatHelp": "Godziny wiadomości aktualizują się od razu i stosują to ustawienie.",
+    "preview": "Podgląd · {{time}}"
+  },
+  "app": {
+    "systemTitle": "System",
+    "yourComputer": "twój komputer",
+    "startup": "Uruchamiaj DeCave wraz z systemem {{platform}}",
+    "startupHelp": "Otwieraj DeCave automatycznie po zalogowaniu do systemu {{platform}}.",
+    "tray": "Minimalizuj do zasobnika przy zamykaniu",
+    "trayHelp": "Kliknięcie X ukrywa DeCave. Użyj menu w zasobniku, aby otworzyć ponownie lub całkowicie zamknąć.",
+    "trayMac": "Działaj na pasku menu po zamknięciu okna",
+    "trayMacHelp": "Zamknięcie okna ukrywa DeCave. Użyj ikony na pasku menu, aby otworzyć ponownie lub zamknąć.",
+    "updatesTitle": "Aktualizacje",
+    "updates": "Aktualizacje aplikacji",
+    "installedVersion": "Zainstalowana wersja",
+    "downloadPercent": "Pobieranie aktualizacji: {{percent}} procent",
+    "progress": "{{done}} z {{total}}",
+    "progressSpeed": "{{done}} z {{total}} · {{speed}}/s",
+    "checking": "Sprawdzanie…",
+    "checkNow": "Sprawdź teraz",
+    "restarting": "Ponowne uruchamianie…",
+    "restart": "Uruchom ponownie",
+    "helpTitle": "Pomoc"
+  },
+  "support": {
+    "bug": "Zgłoś błąd",
+    "bugHelp": "Wersja aplikacji i urządzenie zostaną uzupełnione za ciebie.",
+    "bugTemplate": "Co się stało?\n\nCo powinno się stać?\n\nKroki, aby to powtórzyć:\n1.\n2.\n3.",
+    "contact": "Skontaktuj się z pomocą",
+    "contactHelp": "Pytania o twoje konto lub Hubs. Odpowiadamy e-mailem.",
+    "helpTemplate": "Jak możemy pomóc?",
+    "copiedTemplate": "Skopiowano. Wklej to do e-maila na adres {{email}}.",
+    "copiesTemplate": "{{detail}} Kopiuje gotową treść e-maila do wklejenia.",
+    "whatsNew": "Co nowego",
+    "whatsNewHelp": "Przeczytaj najnowsze patch notes w DeCave Official.",
+    "whatsNewJoin": "Dołącz do DeCave Official, aby czytać patch notes.",
+    "about": {
+      "app": "Aplikacja",
+      "version": "Wersja",
+      "platform": "Platforma",
+      "service": "Usługa",
+      "email": "E-mail",
+      "legal": "Informacje prawne"
+    },
+    "privacy": "Polityka prywatności",
+    "terms": "Warunki korzystania z usługi",
+    "copied": "Skopiowano",
+    "copyDetails": "Kopiuj dane dla pomocy"
+  },
+  "mobile": {
+    "profile": {
+      "couldNotUpdateStatus": "Nie udało się zaktualizować statusu.",
+      "profileUpdated": "Zaktualizowano profil.",
+      "couldNotUpdateProfile": "Nie udało się zaktualizować profilu.",
+      "yourAccount": "TWOJE KONTO",
+      "profileBanner": "Baner profilu",
+      "statusLabel": "Status: {{label}}",
+      "memberSinceMembersince": "W DeCave od {{memberSince}}",
+      "customStatusStatustextEdit": "Własny status: {{statusText}}. Edytuj",
+      "setACustomStatus": "Ustaw własny status",
+      "id": "ID",
+      "decaveIdCopied": "Skopiowano DeCave ID",
+      "profileDetails": "SZCZEGÓŁY PROFILU",
+      "notSetShowsUsername": "Nie ustawiono (pokazuje {{username}})",
+      "notSet": "Nie ustawiono",
+      "profile": "PROFIL",
+      "editLabel": "Edytuj: {{label}}",
+      "status": {
+        "onlineDetail": "Dostępny",
+        "idleDetail": "Na chwilę nieobecny",
+        "dndDetail": "Ogranicz powiadomienia",
+        "invisibleDetail": "Pokazuj się jako offline"
+      },
+      "fields": {
+        "statusTextPlaceholder": "Co się dzieje?",
+        "displayNamePlaceholder": "Jak inni widzą twoją nazwę",
+        "pronounsPlaceholder": "np. ona/jej, on/jego, oni/ich",
+        "statusTextEdit": "Edytuj własny status",
+        "displayNameEdit": "Edytuj wyświetlaną nazwę",
+        "pronounsEdit": "Edytuj zaimki"
+      }
+    },
+    "settings": {
+      "logOut": "Wylogować się?",
+      "youLlNeedToSign": "Na tym urządzeniu trzeba będzie zalogować się ponownie.",
+      "couldnTLoadYourAccount": "Nie udało się wczytać ustawień konta. Zmiany są zapisywane na tym telefonie.",
+      "couldNotLoadYourHubs": "Nie udało się wczytać twoich Hubs.",
+      "couldnTSyncToYour": "Nie udało się zsynchronizować z kontem. Twoje wybory są zapisane na tym telefonie.",
+      "useA24HourTime": "Użyj formatu 24-godzinnego, np. 22:00.",
+      "decaveMicrophoneAccess": "Dostęp DeCave do mikrofonu",
+      "decaveNeedsYourMicrophoneSo": "DeCave potrzebuje mikrofonu do rozmów w pokojach głosowych.",
+      "allow": "Zezwól",
+      "notNow": "Nie teraz",
+      "microphonePermissionIsNotEnabled": "Zgoda na mikrofon nie jest włączona.",
+      "microphoneIsReady": "Mikrofon jest gotowy.",
+      "decaveCouldNotOpenThe": "DeCave nie może otworzyć mikrofonu.",
+      "decaveControlCenter": "CENTRUM STEROWANIA DECAVE",
+      "accountAndSecurity": "Konto i bezpieczeństwo",
+      "yourAccount": "Twoje konto",
+      "accountEmailPassword": "Konto, e-mail, hasło",
+      "accountSettings": "USTAWIENIA KONTA",
+      "accountSecurity": "Konto i bezpieczeństwo",
+      "passwordAccountAccessDisableOr": "Hasło, dostęp do konta, wyłączenie lub usunięcie",
+      "appearance": "Wygląd",
+      "themeSkinAndVisualPreferences": "Motyw, skórka i preferencje wyglądu",
+      "devicesSessions": "Urządzenia i sesje",
+      "reviewAndLogOutActive": "Przeglądaj i wylogowuj aktywne urządzenia",
+      "privacySafety": "Prywatność i bezpieczeństwo",
+      "friendRequestsActivityAndBlocked": "Zaproszenia do znajomych, aktywność i zablokowane konta",
+      "myReports": "Moje zgłoszenia",
+      "trackReportsAndSafetyCases": "Śledź wysłane zgłoszenia i sprawy bezpieczeństwa",
+      "scanQrCode": "Skanuj kod QR",
+      "signInToDecaveOn": "Zaloguj się do DeCave w przeglądarce lub na komputerze",
+      "appSettings": "USTAWIENIA APLIKACJI",
+      "voiceAudio": "Głos i dźwięk",
+      "microphoneProcessingAndScreenShare": "Przetwarzanie mikrofonu i jakość udostępniania ekranu",
+      "notificationsPrivacy": "Powiadomienia i prywatność",
+      "alertsSoundsMentionsAndPreview": "Alerty, dźwięki, wzmianki i prywatność podglądów",
+      "on": "Wł.",
+      "support": "POMOC",
+      "helpFeedback": "Pomoc i opinie",
+      "contactDecaveSupport": "Skontaktuj się z pomocą DeCave",
+      "whatDecaveCollectsAndHow": "Co DeCave zbiera i jak to wykorzystuje",
+      "theRulesForUsingDecave": "Zasady korzystania z DeCave",
+      "aboutDecave": "O DeCave",
+      "mobileAppAndServiceInformation": "Informacje o aplikacji mobilnej i usłudze",
+      "clearComfortableVoice": "Czysty, wygodny głos",
+      "alertsWithoutOversharing": "Alerty bez zdradzania za dużo",
+      "tuneMicrophoneProcessingAndHow": "Dostrój przetwarzanie mikrofonu i zachowanie połączeń na tym urządzeniu.",
+      "chooseWhatCanNotifyYou": "Wybierz, co może cię powiadamiać i ile treści wiadomości pojawia się poza DeCave.",
+      "privacyNotifications": "PRYWATNOŚĆ I POWIADOMIENIA",
+      "deviceNotifications": "Powiadomienia urządzenia",
+      "controlMessageAlertsShownBy": "Zarządzaj alertami o wiadomościach pokazywanymi przez to urządzenie.",
+      "checking": "SPRAWDZANIE",
+      "allowed": "DOZWOLONE",
+      "blocked": "ZABLOKOWANE",
+      "enableNotifications": "Włącz powiadomienia",
+      "masterSwitchForDecaveMessage": "Główny przełącznik powiadomień o wiadomościach DeCave.",
+      "notificationSounds": "Dźwięki powiadomień",
+      "playASoundWhenDecave": "Odtwarzaj dźwięk, gdy DeCave pokazuje alert o wiadomości.",
+      "notifyWhenAFriendSends": "Powiadamiaj, gdy znajomy wyśle ci prywatną wiadomość.",
+      "groupChats": "Czaty grupowe",
+      "notifyWhenSomebodyPostsIn": "Powiadamiaj, gdy ktoś napisze w jednym z twoich czatów grupowych.",
+      "hubMessages": "Wiadomości w Hubs",
+      "notifyForHubTextMessages": "Powiadamiaj o wiadomościach tekstowych w Hub, gdy ten pokój nie jest otwarty.",
+      "notifyForYournameAndEveryone": "Powiadamiaj o wzmiankach @twojanazwa i @everyone.",
+      "notificationPreview": "Podgląd powiadomień",
+      "chooseHowMuchPrivateContent": "Wybierz, ile prywatnych treści może pojawić się poza DeCave.",
+      "resetNotificationSettings": "Resetuj ustawienia powiadomień",
+      "quietHours": "GODZINY CISZY",
+      "silenceNotificationsOnAllYour": "Wyciszaj w nocy powiadomienia na wszystkich urządzeniach.",
+      "quietHoursStartTime": "Początek godzin ciszy",
+      "quietHoursEndTime": "Koniec godzin ciszy",
+      "use24HourTimeTimes": "Użyj formatu 24-godzinnego. Godziny są w strefie czasowej tego telefonu.",
+      "importantMessagesStillComeThrough": "Ważne wiadomości nadal docierają w godzinach ciszy.",
+      "hubs": "HUBS",
+      "chooseWhatEachHubCan": "Wybierz, o czym może cię powiadamiać każdy Hub. Domyślnie tylko wzmianki.",
+      "youHavenTJoinedAny": "Nie jesteś jeszcze w żadnym Hub.",
+      "voiceAudio2": "GŁOS I DŹWIĘK",
+      "voiceConnection": "Połączenie głosowe",
+      "connectedToAVoiceRoom": "Połączono z pokojem głosowym.",
+      "notConnectedToAVoice": "Brak połączenia z pokojem głosowym.",
+      "offline": "OFFLINE",
+      "reduceSteadyBackgroundNoiseBefore": "Ograniczaj stały szum tła, zanim twój głos zostanie wysłany.",
+      "reduceSpeakerEchoFeedingBack": "Ograniczaj echo z głośnika wracające do mikrofonu.",
+      "letWebrtcAutomaticallyBalanceMicrophone": "Pozwól WebRTC automatycznie wyrównywać głośność mikrofonu.",
+      "joinVoiceMuted": "Dołączaj z wyciszeniem",
+      "startEveryNewVoiceRoom": "Zaczynaj każdy nowy pokój głosowy z wyciszonym mikrofonem, dopóki nie zechcesz mówić.",
+      "screenShareQuality": "Jakość udostępniania ekranu",
+      "resolutionRequestedWhenYouStart": "Rozdzielczość żądana przy rozpoczęciu udostępniania ekranu telefonu.",
+      "captureProcessingChangesApplyNext": "Zmiany przetwarzania zadziałają przy następnym otwarciu mikrofonu.",
+      "checkingMicrophone": "Sprawdzanie mikrofonu…",
+      "checkMicrophone": "Sprawdź mikrofon",
+      "resetVoiceSettings": "Resetuj ustawienia głosu",
+      "senderMessageText": "Nadawca + treść wiadomości",
+      "hideTheMessageText": "Ukryj treść wiadomości",
+      "genericDecaveAlertOnly": "Tylko ogólny alert DeCave",
+      "quality": {
+        "balanced": "Zrównoważona",
+        "full": "Pełna",
+        "saver": "Oszczędna"
+      }
+    },
+    "accountSecurity": {
+      "couldNotLoadTwoFactor": "Nie udało się wczytać ustawień logowania dwuskładnikowego.",
+      "couldNotLoadThisSetting": "Nie udało się wczytać tego ustawienia.",
+      "enterYourCurrentPassword": "Wpisz obecne hasło.",
+      "couldNotStartSetup": "Nie udało się rozpocząć konfiguracji.",
+      "enterThe6DigitCode": "Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej.",
+      "twoFactorSignInIs": "Logowanie dwuskładnikowe jest włączone.",
+      "thatCodeDidnTWork": "Ten kod nie zadziałał. Spróbuj ponownie.",
+      "enterYourPasswordAndA": "Wpisz hasło i kod z aplikacji uwierzytelniającej.",
+      "twoFactorSignInIs2": "Logowanie dwuskładnikowe jest wyłączone.",
+      "newRecoveryCodesAreReady": "Nowe kody odzyskiwania są gotowe. Stare kody już nie działają.",
+      "decaveRecoveryCodes": "Kody odzyskiwania DeCave",
+      "noAuthenticatorAppOpenedCopy": "Nie otworzyła się żadna aplikacja uwierzytelniająca. Skopiuj klucz i dodaj go ręcznie.",
+      "couldNotSaveThisSetting": "Nie udało się zapisać tego ustawienia.",
+      "thisPhoneHasNoSpace": "Na tym telefonie brakuje miejsca na zapisanie pliku.",
+      "couldNotDownloadYourData": "Nie udało się pobrać twoich danych.",
+      "enterTheNewEmailAnd": "Wpisz nowy e-mail i obecne hasło.",
+      "verificationEmailSentOpenIt": "Wysłano e-mail weryfikacyjny. Otwórz go, aby zweryfikować nowy adres.",
+      "enterYourCurrentPasswordUse": "Wpisz obecne hasło, użyj co najmniej 10 znaków i upewnij się, że nowe hasła są takie same.",
+      "couldNotChangePassword": "Nie udało się zmienić hasła.",
+      "enterYourCurrentPasswordTo": "Wpisz obecne hasło, aby kontynuować.",
+      "settings": "USTAWIENIA",
+      "emailAddress": "ADRES E-MAIL",
+      "addAnEmailForRecovery": "Dodaj e-mail do odzyskiwania i ochrony konta.",
+      "newEmailAddress": "Nowy adres e-mail",
+      "emailAddress2": "Adres e-mail",
+      "changeVerifyEmail": "Zmień / zweryfikuj e-mail",
+      "addEmail": "Dodaj e-mail",
+      "changePassword": "ZMIEŃ HASŁO",
+      "changingYourPasswordSignsOut": "Zmiana hasła wylogowuje wszystkie aktywne sesje DeCave.",
+      "twoFactorSignIn": "LOGOWANIE DWUSKŁADNIKOWE",
+      "twoFactorSignInIs3": "Logowanie dwuskładnikowe jest włączone",
+      "askForACodeFrom": "Przy każdym logowaniu wymagany jest kod z aplikacji uwierzytelniającej.",
+      "youReRunningOutOf": "Kończą ci się kody odzyskiwania. Utwórz nowe, żeby nie stracić dostępu do konta.",
+      "firstConfirmItSYou": "Najpierw potwierdź, że to ty.",
+      "n1AddDecaveToYour": "1. Dodaj DeCave do aplikacji uwierzytelniającej. Stuknij przycisk poniżej albo skopiuj ten klucz do aplikacji.",
+      "copyKey": "Kopiuj klucz",
+      "openInAuthenticatorApp": "Otwórz w aplikacji uwierzytelniającej",
+      "n2EnterThe6Digit": "2. Wpisz 6-cyfrowy kod pokazany w aplikacji.",
+      "toTurnOffTwoFactor": "Aby wyłączyć logowanie dwuskładnikowe, wpisz hasło i kod z aplikacji uwierzytelniającej.",
+      "toMakeNewRecoveryCodes": "Aby utworzyć nowe kody odzyskiwania, wpisz hasło i kod z aplikacji uwierzytelniającej. Stare kody przestaną działać.",
+      "authenticatorCode": "Kod z aplikacji uwierzytelniającej",
+      "saveTheseRecoveryCodesSomewhere": "Zapisz te kody odzyskiwania w bezpiecznym miejscu. Każdy działa raz, jeśli zgubisz telefon. Nie zobaczysz ich ponownie.",
+      "signInAlerts": "ALERTY LOGOWANIA",
+      "whenANewDeviceApp": "Gdy zaloguje się nowe urządzenie, aplikacja lub kraj, wyślemy ci e-mail z przyciskiem „To nie ja”.",
+      "addAnEmailAddressAbove": "Dodaj adres e-mail powyżej, aby dostawać te alerty.",
+      "yourData": "TWOJE DANE",
+      "preparingYourFile": "Przygotowywanie pliku…",
+      "getACopyOfYour": "Pobierz kopię konta, profilu i wiadomości jako plik.",
+      "accountState": "STAN KONTA",
+      "disableAccount": "Wyłącz konto",
+      "endsActiveSessionsYourNext": "Kończy aktywne sesje. Następne udane logowanie ponownie aktywuje konto.",
+      "deleteAccount": "Usuń konto",
+      "schedulesDeletionAfter30Days": "Planuje usunięcie po 30 dniach. Zaloguj się przed tym terminem, aby anulować.",
+      "yourAccountWillBeScheduled": "Twoje konto zostanie zaplanowane do usunięcia za 30 dni. Zaloguj się przed tym terminem, aby anulować.",
+      "yourAccountAndActiveSessions": "Twoje konto i aktywne sesje zostaną wyłączone. Ponowne zalogowanie aktywuje je z powrotem.",
+      "recoveryCodesFor": "Kody odzyskiwania DeCave dla {{name}}",
+      "yourAccount": "twoje konto",
+      "downloadFailed": "Pobieranie nie powiodło się ({{status}})",
+      "couldNotUpdateEmail": "Nie udało się zaktualizować e-maila.",
+      "passwordChangedSignIn": "Hasło zmienione. Zaloguj się ponownie nowym hasłem.",
+      "accountDisabled": "Twoje konto DeCave zostało wyłączone.",
+      "deletionScheduledFor": "Usunięcie konta zaplanowano na {{date}}.",
+      "deletionScheduled": "Zaplanowano usunięcie konta.",
+      "turnedOn": "Włączono {{date}}. {{codes}}",
+      "recoveryCodesLeft_one": "Został {{count}} kod odzyskiwania.",
+      "recoveryCodesLeft_few": "Zostały {{count}} kody odzyskiwania.",
+      "recoveryCodesLeft_many": "Zostało {{count}} kodów odzyskiwania.",
+      "recoveryCodesLeft_other": "Zostało {{count}} kodu odzyskiwania.",
+      "keyCopied": "Skopiowano klucz.",
+      "recoveryCodesCopied": "Skopiowano kody odzyskiwania.",
+      "couldNotDisableAccount": "Nie udało się wyłączyć konta.",
+      "couldNotDeleteAccount": "Nie udało się usunąć konta."
+    },
+    "appearance": {
+      "appearance": "WYGLĄD",
+      "skins": "Skórki",
+      "mode": "TRYB",
+      "dark": "Ciemny",
+      "light": "Jasny",
+      "inLightModeASkin": "W trybie jasnym skórka ustawia kolor akcentu; tryb ciemny używa jej pełnego wyglądu.",
+      "chooseAVisualStylePreview": "Wybierz styl, obejrzyj podgląd tutaj, a potem stuknij Zapisz skórkę. DeCave uruchomi się ponownie z nowym wyglądem, a twój wybór zostanie zapisany na tym urządzeniu.",
+      "skinSaved": "Zapisano skórkę",
+      "saveSkin": "Zapisz skórkę"
+    },
+    "devices": {
+      "couldNotLoadActiveSessions": "Nie udało się wczytać aktywnych sesji.",
+      "logOutAllSessions": "Wylogować wszystkie sesje?",
+      "thisSignsYourAccountOut": "To wyloguje twoje konto na telefonach, w przeglądarkach i na komputerach.",
+      "logOutAll": "Wyloguj wszystkie",
+      "couldNotLogOutAll": "Nie udało się wylogować wszystkich sesji",
+      "tryAgain": "Spróbuj ponownie.",
+      "logOutThisDevice": "Wylogować to urządzenie?",
+      "logOutThisSession": "Wylogować tę sesję?",
+      "endTheDevicelabelSession": "Zakończyć sesję {{deviceLabel}}?",
+      "couldNotLogOutSession": "Nie udało się wylogować sesji",
+      "mobileMayStaySignedIn": "Telefon może pozostać zalogowany razem z jedną sesją w przeglądarce lub aplikacji na komputer. Przeglądarka i aplikacja na komputer zastępują się nawzajem.",
+      "scanQrLogin": "Skanuj kod QR do logowania",
+      "signInOnWebOr": "Zaloguj się w przeglądarce lub na komputerze przy użyciu tej sesji mobilnej.",
+      "noActiveSessionsWereReturned": "Nie zwrócono aktywnych sesji.",
+      "thisDevice": "TO URZĄDZENIE",
+      "logOutDevicelabel": "Wyloguj {{deviceLabel}}",
+      "logOutAllActiveSessions": "Wyloguj wszystkie aktywne sesje",
+      "endEveryDecaveLoginFor": "Zakończ każde logowanie do DeCave na tym koncie.",
+      "activity": {
+        "activeNow": "Aktywne teraz",
+        "notUsedSince": "Nieużywane od {{date}}",
+        "notUsedRecently": "Nieużywane ostatnio",
+        "minutesAgo_one": "Aktywne {{count}} minutę temu",
+        "minutesAgo_few": "Aktywne {{count}} minuty temu",
+        "minutesAgo_many": "Aktywne {{count}} minut temu",
+        "minutesAgo_other": "Aktywne {{count}} minuty temu",
+        "hoursAgo_one": "Aktywne {{count}} godzinę temu",
+        "hoursAgo_few": "Aktywne {{count}} godziny temu",
+        "hoursAgo_many": "Aktywne {{count}} godzin temu",
+        "hoursAgo_other": "Aktywne {{count}} godziny temu",
+        "daysAgo_one": "Aktywne {{count}} dzień temu",
+        "daysAgo_few": "Aktywne {{count}} dni temu",
+        "daysAgo_many": "Aktywne {{count}} dni temu",
+        "daysAgo_other": "Aktywne {{count}} dnia temu"
+      },
+      "allSessionsSignedOut": "Wszystkie sesje DeCave zostały wylogowane.",
+      "thisDeviceLoggedOut": "To urządzenie zostało wylogowane.",
+      "clientSignedIn": "{{client}} · Zalogowano {{date}}",
+      "expires": "Wygasa {{date}}"
+    },
+    "privacy": {
+      "couldNotLoadYourPrivacy": "Nie udało się wczytać ustawień prywatności.",
+      "couldNotLoadBlockedAccounts": "Nie udało się wczytać zablokowanych kont.",
+      "unblockUsername": "Odblokować {{username}}?",
+      "theyLlBeAbleTo": "Ta osoba znowu będzie mogła cię widzieć i kontaktować się z tobą. Możesz ją zablokować ponownie w dowolnej chwili.",
+      "couldNotUnblockThisAccount": "Nie udało się odblokować tego konta.",
+      "friendRequests": "ZAPROSZENIA DO ZNAJOMYCH",
+      "whoCanSendYouFriend": "Kto może wysyłać ci zaproszenia do znajomych",
+      "activity": "AKTYWNOŚĆ",
+      "messages": "WIADOMOŚCI",
+      "onlyFriendsCanMessageYou": "Pisać do ciebie mogą tylko znajomi. DeCave nie dostarcza prywatnych wiadomości od osób, które nie są twoimi znajomymi.",
+      "encryptedMessages": "ZASZYFROWANE WIADOMOŚCI",
+      "blockedAccounts": "ZABLOKOWANE KONTA",
+      "unblockUsername2": "Odblokuj {{username}}",
+      "blockedOn": "Zablokowano {{date}}",
+      "requests": {
+        "everyone": "Wszyscy",
+        "everyoneDetail": "Każdy może wysłać ci zaproszenie do znajomych.",
+        "friendsOfFriends": "Znajomi znajomych",
+        "friendsOfFriendsDetail": "Tylko osoby, z którymi masz wspólnego znajomego.",
+        "none": "Nikt",
+        "noneDetail": "Nikt nie może wysyłać ci nowych zaproszeń."
+      },
+      "activityOptions": {
+        "everyone": "Wszyscy",
+        "friends": "Znajomi",
+        "nobody": "Nikt"
+      }
+    },
+    "skins": {
+      "neon": {
+        "name": "Neon Lounge",
+        "description": "Prawie czerń z fioletową poświatą i cyjanowymi akcentami."
+      },
+      "nebula": {
+        "description": "Domyślny fiolet i cyjan DeCave."
+      },
+      "arctic": {
+        "description": "Chłodne niebieskie szkło z lodowymi akcentami."
+      },
+      "crimson": {
+        "description": "Ciemny grafit z ciepłą karmazynową poświatą."
+      },
+      "royal": {
+        "description": "Głęboki fiolet z jasnymi królewskimi akcentami."
+      },
+      "pearl": {
+        "description": "Miękkie łupkowe szkło z perłowymi akcentami."
+      },
+      "obsidian": {
+        "description": "Prawie czarne szkło z czystą srebrną krawędzią."
+      }
+    }
+  },
+  "linkPage": {
+    "closeTab": "Możesz zamknąć tę kartę i wrócić do DeCave.",
+    "openDeCave": "Otwórz DeCave w tej przeglądarce",
+    "steam": {
+      "expiredTitle": "Link Steam wygasł",
+      "expired": "Rozpocznij łączenie ze Steam ponownie w DeCave.",
+      "signInTitle": "Zaloguj się, aby dokończyć łączenie Steam",
+      "signIn": "Steam nie został połączony. Otwórz DeCave w tej przeglądarce, zaloguj się na to samo konto, które rozpoczęło łączenie, a potem ponownie połącz Steam w Ustawienia → Aktywność.",
+      "failedTitle": "Weryfikacja Steam nie powiodła się",
+      "failed": "Steam nie zwrócił prawidłowej odpowiedzi z tożsamością.",
+      "takenTitle": "Konto Steam jest już połączone",
+      "taken": "To konto Steam jest połączone z innym kontem DeCave.",
+      "linkedTitle": "Połączono Steam",
+      "linked": "Twoje konto Steam jest teraz połączone z DeCave."
+    },
+    "twitch": {
+      "expiredTitle": "Link Twitch wygasł",
+      "expired": "Rozpocznij łączenie Twitch ponownie w Hub.",
+      "cancelledTitle": "Twitch nie został połączony",
+      "cancelled": "Logowanie do Twitch zostało anulowane. Nic nie zostało połączone.",
+      "signInTitle": "Zaloguj się, aby dokończyć łączenie Twitch",
+      "signIn": "Twitch nie został połączony. Otwórz DeCave w tej przeglądarce, zaloguj się na to samo konto, które rozpoczęło łączenie, a potem ponownie połącz Twitch.",
+      "failedTitle": "Weryfikacja Twitch nie powiodła się",
+      "failed": "Twitch nie potwierdził logowania.",
+      "takenTitle": "Konto Twitch jest już połączone",
+      "taken": "To konto Twitch jest połączone z innym kontem DeCave.",
+      "linkedTitle": "Połączono Twitch",
+      "linked": "Twoje konto Twitch {{account}} jest teraz połączone z DeCave."
+    },
+    "faceit": {
+      "expiredTitle": "Link FACEIT wygasł",
+      "expired": "Rozpocznij łączenie FACEIT ponownie w rankingu.",
+      "cancelledTitle": "FACEIT nie został połączony",
+      "cancelled": "Logowanie do FACEIT zostało anulowane. Nic nie zostało połączone.",
+      "signInTitle": "Zaloguj się, aby dokończyć łączenie FACEIT",
+      "signIn": "FACEIT nie został połączony. Otwórz DeCave w tej przeglądarce, zaloguj się na to samo konto, które rozpoczęło łączenie, a potem ponownie połącz FACEIT w rankingu.",
+      "failedTitle": "Weryfikacja FACEIT nie powiodła się",
+      "failed": "FACEIT nie potwierdził logowania. Spróbuj ponownie.",
+      "takenTitle": "Konto FACEIT jest już połączone",
+      "taken": "To konto FACEIT jest połączone z innym kontem DeCave.",
+      "linkedTitle": "Połączono FACEIT",
+      "linked": "Twoje konto FACEIT {{account}} jest teraz połączone z DeCave."
+    }
+  },
+  "accountExport": {
+    "failed": "Nie udało się ukończyć eksportu. Spróbuj pobrać ponownie.",
+    "unfinished": "Eksport się nie zakończył. Spróbuj pobrać ponownie."
+  },
+  "sessionDevice": {
+    "apps": {
+      "browser": "Przeglądarka",
+      "mobileApp": "Aplikacja mobilna",
+      "desktopApp": "Aplikacja na komputer",
+      "legacy": "Starsza sesja"
+    },
+    "appOnOs": "{{app}} w systemie {{os}}",
+    "withPlace": "{{name}} · {{place}}"
+  }
+}

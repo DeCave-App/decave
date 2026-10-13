@@ -18,10 +18,13 @@ test("login accepts email only across server, web and mobile", () => {
   assert.match(loginRoute, /WHERE email_normalized = \?/);
   assert.doesNotMatch(loginRoute, /WHERE username\s*=/);
   assert.doesNotMatch(loginRoute, /body\.username/);
-  assert.match(loginRoute, /Invalid email or password/);
-  assert.match(app, /placeholder=\{authMode === "login" \? "Email" : "Username"\}/);
+  assert.match(loginRoute, /apiError\("auth\.invalidCredentials", 401\)/);
+  assert.match(
+    app,
+    /placeholder=\{authMode === "login" \? t\("common\.auth\.email"\) : t\("common\.auth\.username"\)\}/,
+  );
   assert.match(app, /authMode === "login" && !\/\^\\S\+@\\S\+\\\.\\S\+\$\//);
-  assert.match(mobileLogin, /placeholder="Email"/);
+  assert.match(mobileLogin, /placeholder=\{t\("common\.auth\.email"\)\}/);
   assert.match(mobileLogin, /keyboardType="email-address"/);
 });
 

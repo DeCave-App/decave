@@ -1,5 +1,7 @@
 // Right-hand friends sidebar shown next to Hub rooms.
 
+import { hubRoleName } from "./roleLabels";
+import { useTranslation } from "react-i18next";
 import type { MouseEvent as ReactMouseEvent, Dispatch, SetStateAction, MutableRefObject } from "react";
 import { Icon } from "../../components/Icon";
 import type {
@@ -55,12 +57,13 @@ export function FriendsSidebar({
   accessibleVoiceFriends,
   openFriendVoiceRoom,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <aside className={`members dc-global-friends-sidebar${rightFriendsCollapsed ? " collapsed" : ""}`}>
       <button
         type="button"
         className="dc-friends-rail-fold"
-        title={rightFriendsCollapsed ? "Show friends sidebar" : "Hide friends sidebar"}
+        title={rightFriendsCollapsed ? t("common.friendsSidebar.show") : t("common.friendsSidebar.hide")}
         onClick={() =>
           setRightFriendsCollapsed((current) => {
             const next = !current;
@@ -117,13 +120,13 @@ export function FriendsSidebar({
                   type="search"
                   value={rightFriendSearch}
                   onChange={(event) => setRightFriendSearch(event.target.value)}
-                  placeholder="Search friends"
-                  aria-label="Search friends"
+                  placeholder={t("common.friendsSidebar.search")}
+                  aria-label={t("common.friendsSidebar.search")}
                 />
                 <button
                   type="button"
-                  title="Add friend"
-                  aria-label="Add friend"
+                  title={t("common.friendsSidebar.addFriend")}
+                  aria-label={t("common.friendsSidebar.addFriend")}
                   onClick={() => {
                     setShowHome(false);
                     setShowSocial(true);
@@ -141,11 +144,11 @@ export function FriendsSidebar({
               </div>
 
               {friendVoiceGroups.length > 0 && (
-                <section className="dc-friends-voice-panel" aria-label="Friends in voice rooms">
+                <section className="dc-friends-voice-panel" aria-label={t("common.friendsSidebar.voiceLabel")}>
                   <div className="dc-friends-panel-title">
                     <span>
-                      <small>LIVE TOGETHER</small>
-                      <strong>Friends in voice</strong>
+                      <small>{t("common.friendsSidebar.voiceKicker")}</small>
+                      <strong>{t("common.friendsSidebar.voiceTitle")}</strong>
                     </span>
                     <b>{visibleVoiceFriends.length}</b>
                   </div>
@@ -160,10 +163,19 @@ export function FriendsSidebar({
                         key={`voice-group-${group.server.id}-${group.channel.id}`}
                         title={
                           inThisVoiceRoom
-                            ? `Already in ${group.channel.name}`
-                            : `Join ${group.channel.name} in ${group.server.name}`
+                            ? t("common.friendsSidebar.alreadyIn", { room: group.channel.name })
+                            : t("common.friendsSidebar.joinRoom", { room: group.channel.name, hub: group.server.name })
                         }
-                        aria-label={`${inThisVoiceRoom ? "Already in" : "Join"} ${group.channel.name} in ${group.server.name}. ${group.members.map(({ friend }) => friend.username).join(", ")}`}
+                        aria-label={t(
+                          inThisVoiceRoom
+                            ? "common.friendsSidebar.alreadyInLabel"
+                            : "common.friendsSidebar.joinRoomLabel",
+                          {
+                            room: group.channel.name,
+                            hub: group.server.name,
+                            names: group.members.map(({ friend }) => friend.username).join(", "),
+                          },
+                        )}
                         onClick={() => {
                           if (!inThisVoiceRoom) openFriendVoiceRoom(group.server, group.channel);
                         }}
@@ -173,7 +185,9 @@ export function FriendsSidebar({
                             <strong>{group.channel.name}</strong>
                             <small>{group.server.name}</small>
                           </span>
-                          <b>{inThisVoiceRoom ? "IN VOICE" : "JOIN"}</b>
+                          <b>
+                            {inThisVoiceRoom ? t("common.friendsSidebar.inVoice") : t("common.friendsSidebar.join")}
+                          </b>
                         </span>
                         <span className="dc-friends-voice-avatars">
                           {group.members.slice(0, 4).map(({ friend }) => (
@@ -190,13 +204,13 @@ export function FriendsSidebar({
                 </section>
               )}
               {onlineMembers.length > 0 && (
-                <section className="dc-active-now-panel" aria-label="Active friends">
+                <section className="dc-active-now-panel" aria-label={t("common.friendsSidebar.activeLabel")}>
                   <div className="dc-active-now-title">
                     <span className="dc-active-now-heading">
                       <small>
-                        <i aria-hidden="true" /> YOUR CREW
+                        <i aria-hidden="true" /> {t("common.friendsSidebar.activeKicker")}
                       </small>
-                      <strong>Active Now</strong>
+                      <strong>{t("common.friendsSidebar.activeTitle")}</strong>
                     </span>
                     <span className="dc-active-now-count">{onlineMembers.length}</span>
                   </div>
@@ -225,7 +239,7 @@ export function FriendsSidebar({
                       <UserAvatar username={member.username} avatarUrl={member.avatarUrl} />
                       <span>
                         <strong>{member.username}</strong>
-                        <small>{member.activityText || member.statusText || "Online"}</small>
+                        <small>{member.activityText || member.statusText || t("common.presence.online")}</small>
                       </span>
                       <i className="online" />
                     </button>
@@ -233,12 +247,12 @@ export function FriendsSidebar({
                 </section>
               )}
               {offlineMembers.length > 0 && (
-                <section className="dc-friends-status-panel" aria-label="Offline friends">
+                <section className="dc-friends-status-panel" aria-label={t("common.friendsSidebar.offlineLabel")}>
                   <div className="dc-friends-status-group">
                     <div className="dc-friends-panel-title">
                       <span>
-                        <small>NOT CURRENTLY ACTIVE</small>
-                        <strong>Offline friends</strong>
+                        <small>{t("common.friendsSidebar.offlineKicker")}</small>
+                        <strong>{t("common.friendsSidebar.offlineTitle")}</strong>
                       </span>
                       <b>{offlineMembers.length}</b>
                     </div>
@@ -264,7 +278,11 @@ export function FriendsSidebar({
                           <UserAvatar username={member.username} avatarUrl={member.avatarUrl} />
                           <span>
                             <strong>{member.username}</strong>
-                            <small>Offline · {member.role}</small>
+                            <small>
+                              {t("common.friendsSidebar.offlineRole", {
+                                role: member.role ? hubRoleName(member.role) : null,
+                              })}
+                            </small>
                           </span>
                           <i className="offline" />
                         </button>

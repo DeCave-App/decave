@@ -1,0 +1,43 @@
+{
+  "tray": {
+    "open": "Abrir o DeCave",
+    "toggleMute": "Ativar/desativar microfone",
+    "toggleDeafen": "Ativar/desativar áudio",
+    "quit": "Sair do DeCave"
+  },
+  "window": {
+    "streamTitle": "Transmissão do DeCave"
+  },
+  "update": {
+    "checkFailed": "O DeCave não conseguiu verificar atualizações. Confira sua conexão e tente de novo.",
+    "publisherUnverified": "As atualizações automáticas estão desativadas porque não foi possível verificar o editor da versão instalada para Windows.",
+    "installFailed": "O DeCave não conseguiu concluir a atualização. Tente de novo mais tarde."
+  },
+  "keybinds": {
+    "mustDiffer": "Os atalhos de silenciar e de desativar áudio precisam ser diferentes.",
+    "inUse": "Um desses atalhos já está sendo usado pelo Windows ou por outro app."
+  },
+  "picker": {
+    "windowTitle": "Escolha o que compartilhar · DeCave",
+    "title": "Escolha o que compartilhar",
+    "subtitle": "Selecione uma tela ou janela de aplicativo para compartilhar tela no DeCave.",
+    "cancel": "Cancelar",
+    "entireScreen": "Tela inteira",
+    "window": "Janela",
+    "noPreview": "Sem prévia"
+  },
+  "turnstile": {
+    "windowTitle": "Verificação de segurança do DeCave",
+    "invalidToken": "A verificação de segurança retornou um token inválido.",
+    "unsupportedAction": "Ação de verificação de segurança não suportada.",
+    "replaced": "A verificação de segurança foi substituída por uma nova solicitação.",
+    "timedOut": "A verificação de segurança expirou.",
+    "loadFailed": "Não foi possível carregar a verificação de segurança."
+  },
+  "overlay": {
+    "voice": "Voz",
+    "unknown": "Desconhecido",
+    "muted": "Silenciado",
+    "deafened": "Áudio desativado"
+  }
+}

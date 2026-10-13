@@ -1,5 +1,6 @@
 // One builder bot: header with Publish, and the Rules / Test / Activity / Settings tabs.
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import type { BotRule } from "../../../shared/bots/types.ts";
 import { ActivityTab } from "./ActivityTab";
 import { BotApiError, type BotsApi, type BuilderBot, type PublishError } from "./api";
@@ -10,12 +11,7 @@ import { TestTab } from "./TestTab";
 import { useRuleDrafts } from "./useRuleDrafts";
 
 type Tab = "rules" | "test" | "activity" | "settings";
-const TABS: { id: Tab; label: string }[] = [
-  { id: "rules", label: "Rules" },
-  { id: "test", label: "Test" },
-  { id: "activity", label: "Activity" },
-  { id: "settings", label: "Settings" },
-];
+const TABS: Tab[] = ["rules", "test", "activity", "settings"];
 
 type Props = {
   api: BotsApi;
@@ -33,6 +29,7 @@ type Props = {
 };
 
 export function BotPage(props: Props) {
+  const { t } = useTranslation(["bots"]);
   const { api, bot, hub, ai } = props;
   const [tab, setTab] = useState<Tab>("rules");
   const [publishing, setPublishing] = useState(false);
@@ -65,7 +62,7 @@ export function BotPage(props: Props) {
     try {
       props.onBotChanged(await api.update(bot.id, { capabilities: [...bot.capabilities, ...missing] }));
     } catch (caught) {
-      setMessage({ kind: "error", text: caught instanceof Error ? caught.message : "Could not update the bot." });
+      setMessage({ kind: "error", text: caught instanceof Error ? caught.message : t("bots.page.updateFailed") });
     }
   };
 
@@ -73,20 +70,20 @@ export function BotPage(props: Props) {
     try {
       props.onBotChanged(await api.update(bot.id, { enabled: true }));
     } catch (caught) {
-      setMessage({ kind: "error", text: caught instanceof Error ? caught.message : "Could not resume the bot." });
+      setMessage({ kind: "error", text: caught instanceof Error ? caught.message : t("bots.page.resumeFailed") });
     }
   };
 
   const { busy, invalid, unsaved } = drafts.summary;
   const hasChanges = bot.hasUnpublishedChanges;
   const blockReason = invalid
-    ? `${invalid} rule${invalid === 1 ? " needs" : "s need"} fixing`
+    ? t("bots.page.needsFixing", { count: invalid })
     : busy
-      ? "Saving…"
+      ? t("bots.page.saving")
       : unsaved
-        ? "Some rules aren't saved yet"
+        ? t("bots.page.unsaved")
         : !hasChanges
-          ? "Everything is published"
+          ? t("bots.page.allPublished")
           : "";
 
   const publish = async () => {
@@ -94,13 +91,13 @@ export function BotPage(props: Props) {
     setMessage(null);
     try {
       props.onBotChanged(await api.publish(bot.id));
-      setMessage({ kind: "info", text: "Published. The bot now runs these rules." });
+      setMessage({ kind: "info", text: t("bots.page.published") });
     } catch (caught) {
       if (caught instanceof BotApiError && caught.errors.length) {
         drafts.showPublishErrors(caught.errors as PublishError[]);
         setTab("rules");
       }
-      setMessage({ kind: "error", text: caught instanceof Error ? caught.message : "Could not publish." });
+      setMessage({ kind: "error", text: caught instanceof Error ? caught.message : t("bots.page.publishFailed") });
     } finally {
       setPublishing(false);
     }
@@ -117,10 +114,10 @@ export function BotPage(props: Props) {
       if (caught instanceof BotApiError && caught.status === 429) props.onAiRemaining(0);
       const text =
         caught instanceof BotApiError && caught.status === 422
-          ? "Couldn't build that, try rephrasing"
+          ? t("bots.page.buildFailed")
           : caught instanceof Error
             ? caught.message
-            : "Couldn't build that, try rephrasing";
+            : t("bots.page.buildFailed");
       setMessage({ kind: "error", text });
       return null;
     }
@@ -130,7 +127,7 @@ export function BotPage(props: Props) {
     <div className="bb-page">
       <header className="bb-page-head">
         <button type="button" className="dcx-btn dcx-btn-sm dcx-btn-ghost" onClick={props.onBack}>
-          ← Bots
+          {t("bots.page.back")}
         </button>
         <span className="bb-avatar" style={{ background: bot.color ?? undefined }} aria-hidden="true">
           {bot.avatarEmoji || "🤖"}
@@ -138,8 +135,8 @@ export function BotPage(props: Props) {
         <span className="bb-page-title">
           <strong>{bot.name}</strong>
           <small>
-            {!bot.enabled ? "Off" : hasChanges ? "Unpublished changes" : "Live"} · {drafts.rules.length} rule
-            {drafts.rules.length === 1 ? "" : "s"}
+            {!bot.enabled ? t("bots.status.off") : hasChanges ? t("bots.status.unpublished") : t("bots.status.live")} ·{" "}
+            {t("bots.page.ruleCount", { count: drafts.rules.length })}
           </small>
         </span>
         <span className="bb-publish">
@@ -148,10 +145,10 @@ export function BotPage(props: Props) {
             type="button"
             className="dcx-btn dcx-btn-primary"
             disabled={Boolean(blockReason) || publishing}
-            title={blockReason || "Make the drafts live"}
+            title={blockReason || t("bots.page.publishTitle")}
             onClick={() => void publish()}
           >
-            {publishing ? "Publishing…" : "Publish"}
+            {publishing ? t("bots.page.publishing") : t("bots.page.publish")}
           </button>
         </span>
       </header>
@@ -164,9 +161,9 @@ export function BotPage(props: Props) {
 
       {bot.pausedReason === "errors" && (
         <div className="dcx-notice dcx-notice-error bb-capability-notice" role="status">
-          <span>Paused after repeated errors. Check Activity, fix the rules, then resume.</span>
+          <span>{t("bots.page.pausedNotice")}</span>
           <button type="button" className="dcx-btn dcx-btn-sm" onClick={() => void resume()}>
-            Resume
+            {t("bots.page.resume")}
           </button>
         </div>
       )}
@@ -174,27 +171,30 @@ export function BotPage(props: Props) {
       {missing.length > 0 && (
         <div className="dcx-notice dcx-notice-warn bb-capability-notice" role="status">
           <span>
-            These rules need the bot to be allowed to{" "}
-            <strong>{missing.map((c) => CAPABILITY_LABELS[c].label.toLowerCase()).join(", ")}</strong>. Without it those
-            actions fail.
+            <Trans
+              t={t}
+              i18nKey="bots.page.missingCapabilities"
+              values={{ list: missing.map((c) => CAPABILITY_LABELS[c].phrase).join(", ") }}
+              components={{ strong: <strong /> }}
+            />
           </span>
           <button type="button" className="dcx-btn dcx-btn-sm" onClick={() => void allowMissing()}>
-            Allow
+            {t("bots.page.allow")}
           </button>
         </div>
       )}
 
-      <nav className="dcx-tabs bb-tabs" role="tablist" aria-label="Bot sections">
-        {TABS.map((t) => (
+      <nav className="dcx-tabs bb-tabs" role="tablist" aria-label={t("bots.page.sections")}>
+        {TABS.map((id) => (
           <button
-            key={t.id}
+            key={id}
             type="button"
             role="tab"
-            aria-selected={tab === t.id}
-            className={`dcx-tab${tab === t.id ? " active" : ""}`}
-            onClick={() => setTab(t.id)}
+            aria-selected={tab === id}
+            className={`dcx-tab${tab === id ? " active" : ""}`}
+            onClick={() => setTab(id)}
           >
-            {t.label}
+            {t(`bots.page.tabs.${id}`)}
           </button>
         ))}
       </nav>

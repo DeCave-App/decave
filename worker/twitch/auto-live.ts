@@ -7,8 +7,10 @@
 
 import { DEFAULT_STREAMER_CONFIG, twitchLoginFromUrl, type StreamerConfig } from "../../shared/streamer-mode";
 import { queueBotEvent } from "../bots/events";
-import { authBaseUrlForEnvironment, json } from "../lib/http";
+import { apiError, authBaseUrlForEnvironment } from "../lib/http";
 import type { Env } from "../lib/env";
+import { serverNotice } from "../lib/notices";
+import type { ServerNotice } from "../../shared/i18n/server-notices.ts";
 import {
   createStreamSubscription,
   deleteSubscription,
@@ -76,13 +78,14 @@ async function ensureBroadcaster(env: Env, broadcasterId: string, login: string)
 
 /**
  * Brings a hub's Twitch link in line with its saved stream settings. Returns a
- * notice for the creator when auto-live is on but can't work, else null.
+ * notice for the creator ({ code, params?, error }) when auto-live is on but
+ * can't work, else null.
  */
 export async function syncTwitchAutoLive(
   env: Env,
   hubId: number,
   config: Pick<StreamerConfig, "streamUrl" | "twitchAutoLive">,
-): Promise<string | null> {
+): Promise<{ message: string; notice: ServerNotice } | null> {
   const login = config.twitchAutoLive ? twitchLoginFromUrl(config.streamUrl) : null;
   const current = await linkFor(env, hubId);
   if (!login) {
@@ -91,12 +94,12 @@ export async function syncTwitchAutoLive(
       await releaseBroadcaster(env, current.broadcaster_id);
     }
     if (!config.twitchAutoLive) return null;
-    return "Automatic live status needs a Twitch channel link, like https://www.twitch.tv/yourname.";
+    return serverNotice("streamer.server.autoLiveNeedsLink");
   }
-  if (!twitchConfigured(env)) return "Automatic live status from Twitch isn't available on this server yet.";
+  if (!twitchConfigured(env)) return serverNotice("streamer.server.autoLiveUnavailable");
   try {
     const user = await twitchUserByLogin(env, login);
-    if (!user) return `Twitch has no channel called "${login}". Check the stream URL.`;
+    if (!user) return serverNotice("streamer.server.autoLiveNoChannel", { login });
     if (current?.broadcaster_id === user.id) {
       await ensureBroadcaster(env, user.id, user.login);
       return null;
@@ -112,7 +115,7 @@ export async function syncTwitchAutoLive(
     return null;
   } catch (error) {
     console.error("Twitch auto-live link failed", error instanceof Error ? error.message : "UnknownError");
-    return "Couldn't reach Twitch to turn on automatic live status. Save again in a minute.";
+    return serverNotice("streamer.server.autoLiveUnreachable");
   }
 }
 
@@ -224,19 +227,20 @@ export async function handleTwitchEventSub(
   waitUntil: WaitUntil,
   now = Date.now(),
 ): Promise<Response> {
-  if (!twitchConfigured(env)) return json({ error: "Not found" }, 404);
+  if (!twitchConfigured(env)) return apiError("twitch.eventSub.notFound", 404);
   const messageId = request.headers.get("Twitch-Eventsub-Message-Id") ?? "";
   const timestamp = request.headers.get("Twitch-Eventsub-Message-Timestamp") ?? "";
   const signature = request.headers.get("Twitch-Eventsub-Message-Signature") ?? "";
   const messageType = request.headers.get("Twitch-Eventsub-Message-Type") ?? "";
   const body = await request.text();
-  if (body.length > 64 * 1024) return json({ error: "Too large" }, 413);
-  if (!messageId || !timestamp || !signature) return json({ error: "Missing signature" }, 403);
+  if (body.length > 64 * 1024) return apiError("twitch.eventSub.tooLarge", 413);
+  if (!messageId || !timestamp || !signature) return apiError("twitch.eventSub.missingSignature", 403);
   if (!(await verifyEventSubSignature(env.TWITCH_EVENTSUB_SECRET!, messageId, timestamp, body, signature))) {
-    return json({ error: "Bad signature" }, 403);
+    return apiError("twitch.eventSub.badSignature", 403);
   }
   const sentAt = Date.parse(timestamp);
-  if (!Number.isFinite(sentAt) || Math.abs(now - sentAt) > MAX_MESSAGE_AGE_MS) return json({ error: "Stale" }, 403);
+  if (!Number.isFinite(sentAt) || Math.abs(now - sentAt) > MAX_MESSAGE_AGE_MS)
+    return apiError("twitch.eventSub.stale", 403);
 
   let payload: {
     challenge?: string;
@@ -246,7 +250,7 @@ export async function handleTwitchEventSub(
   try {
     payload = JSON.parse(body);
   } catch {
-    return json({ error: "Bad JSON" }, 400);
+    return apiError("twitch.eventSub.badJson", 400);
   }
 
   if (messageType === "webhook_callback_verification") {

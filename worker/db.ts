@@ -24,6 +24,8 @@ export type UserRow = {
   avatar_updated_at: string | null;
   /** Added in migration 0061: "everyone" | "friends" | "nobody". */
   activity_visibility?: string;
+  /** Added in migration 0088: the chosen UI language, or NULL to follow the device. */
+  locale?: string | null;
   /** Added in migration 0060; undefined on databases that have not run it yet. */
   display_name?: string;
   pronouns?: string;
@@ -82,6 +84,9 @@ export type RoomRow = {
   /** Chat rooms: who can post ('everyone' | 'staff' | 'roles'); absent before migration 0085. */
   post_policy?: string;
   post_role_ids_json?: string;
+  /** Per-room styling ('#rrggbb' or null = Hub accent); absent before migration 0087. */
+  accent?: string | null;
+  background_key?: string | null;
   forum_post_role_ids_json: string;
   forum_post_member_ids_json: string;
   forum_tags_json?: string;

@@ -1,9 +1,11 @@
 import { useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { useDialogA11y } from "../shared/useDialogA11y";
 import { TypeToConfirmDialog } from "../shared/TypeToConfirmDialog";
 import "../shared/shared.css";
 import "./room-settings.css";
 import { filterRoomIcons } from "./roomIcons";
+import { RoomStyleSection, type RoomBackgroundChange } from "./RoomStyleSection";
 
 export type RoomType = "text" | "voice" | "forum";
 export type ForumPostPolicy = "everyone" | "staff" | "roles" | "members";
@@ -40,6 +42,8 @@ export type RoomSettingsSubmitExtra = {
   userLimit?: number;
   postPolicy?: ChatPostPolicy;
   postRoleIds?: string[];
+  accent?: string | null;
+  background?: File | null;
 };
 
 type RoomSettingsPanelProps = {
@@ -66,18 +70,17 @@ type RoomSettingsPanelProps = {
   initialUserLimit?: number;
   /** Chat rooms: current "who can post" setting; undefined hides it (voice/forum rooms). */
   initialPostPolicy?: { policy: ChatPostPolicy; roleIds: string[] };
+  /** Room accent and background (absolute URL); undefined hides the Style section. */
+  initialStyle?: { accent: string | null; backgroundUrl: string | null };
 };
 
 type TabId = "general" | "permissions" | "forum";
 
-const POLICY_LABELS: Record<ForumPostPolicy, string> = {
-  everyone: "Everyone in the Hub",
-  staff: "Owner, admins and moderators",
-  roles: "Only selected roles",
-  members: "Only selected members",
-};
+// Labels: hub.roomSettings.forum.policies.<policy>.
+const FORUM_POLICIES: ForumPostPolicy[] = ["everyone", "staff", "roles", "members"];
 
 const MAX_TAGS = 20;
+const DEFAULT_ROOM_ICON: Record<RoomType, string> = { text: "💬", voice: "🔊", forum: "🗂️" };
 
 function normalizeTag(value: string): string {
   return value.replace(/\s+/g, " ").trim().slice(0, 24);
@@ -103,7 +106,11 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
     deleteConfirmName,
     initialUserLimit,
     initialPostPolicy,
+    initialStyle,
   } = props;
+  const { t } = useTranslation(["hub"]);
+  const [accent, setAccent] = useState<string | null>(initialStyle?.accent ?? null);
+  const [background, setBackground] = useState<RoomBackgroundChange>(undefined);
   const [postPolicy, setPostPolicy] = useState<ChatPostPolicy>(initialPostPolicy?.policy ?? "everyone");
   const [postRoleIds, setPostRoleIds] = useState<string[]>(initialPostPolicy?.roleIds ?? []);
   const showPostPolicy = mode === "manage" && values.type === "text" && initialPostPolicy !== undefined;
@@ -124,9 +131,9 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const tabs: Array<{ id: TabId; label: string }> = [
-    { id: "general", label: "General" },
-    { id: "permissions", label: "Permissions" },
-    ...(values.type === "forum" ? [{ id: "forum" as const, label: "Forum" }] : []),
+    { id: "general", label: t("hub.roomSettings.tabs.general") },
+    { id: "permissions", label: t("hub.roomSettings.tabs.permissions") },
+    ...(values.type === "forum" ? [{ id: "forum" as const, label: t("hub.roomSettings.tabs.forum") }] : []),
   ];
   const activeTab: TabId = tabs.some((item) => item.id === tab) ? tab : "general";
 
@@ -152,22 +159,20 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
 
   const warnings: string[] = [];
   if (values.type === "forum" && values.forumPostPolicy === "roles") {
-    if (!values.forumPostRoleIds.length)
-      warnings.push(
-        "“Only selected roles” is chosen but no roles are selected — only the owner and admins will be able to post.",
-      );
+    if (!values.forumPostRoleIds.length) warnings.push(t("hub.roomSettings.forum.warnings.noRoles"));
     const emptyRoles = roles.filter(
       (role) => values.forumPostRoleIds.includes(role.id) && !roleMemberCounts.get(role.id),
     );
     if (emptyRoles.length)
       warnings.push(
-        `${emptyRoles.map((role) => role.name).join(", ")} ${emptyRoles.length === 1 ? "has" : "have"} no members yet, so nobody gains posting access from ${emptyRoles.length === 1 ? "it" : "them"}.`,
+        t("hub.roomSettings.forum.warnings.emptyRoles", {
+          count: emptyRoles.length,
+          names: emptyRoles.map((role) => role.name).join(", "),
+        }),
       );
   }
   if (values.type === "forum" && values.forumPostPolicy === "members" && !values.forumPostMemberIds.length) {
-    warnings.push(
-      "“Only selected members” is chosen but no members are selected — only the owner and admins will be able to post.",
-    );
+    warnings.push(t("hub.roomSettings.forum.warnings.noMembers"));
   }
 
   const changeType = (type: RoomType) => {
@@ -203,6 +208,8 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
         ...(values.type === "forum" && forumTagsSupported ? { forumTags: tags } : {}),
         ...(showUserLimit ? { userLimit } : {}),
         ...(showPostPolicy ? { postPolicy, postRoleIds: postPolicy === "roles" ? postRoleIds : [] } : {}),
+        ...(initialStyle && accent !== initialStyle.accent ? { accent } : {}),
+        ...(initialStyle && background !== undefined ? { background } : {}),
       });
     } finally {
       setBusy(false);
@@ -237,18 +244,21 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
       >
         <header className="dcr-head">
           <div className="dcr-head-icon" aria-hidden="true">
-            {values.icon || (values.type === "voice" ? "🔊" : values.type === "forum" ? "🗂️" : "💬")}
+            {values.icon || DEFAULT_ROOM_ICON[values.type]}
           </div>
           <div className="dcr-head-copy">
-            <h2 id={titleId}>{mode === "create" ? "Create room" : "Room settings"}</h2>
+            <h2 id={titleId}>{mode === "create" ? t("hub.roomSettings.createTitle") : t("hub.roomSettings.title")}</h2>
             <p>
               {mode === "create" ? (
-                <>
-                  New room in <strong>{hubName}</strong>
-                </>
+                <Trans
+                  t={t}
+                  i18nKey="hub.roomSettings.newRoomIn"
+                  values={{ hub: hubName }}
+                  components={{ strong: <strong /> }}
+                />
               ) : (
                 <>
-                  {values.name || "Untitled room"} · {hubName}
+                  {values.name || t("hub.roomSettings.untitled")} · {hubName}
                 </>
               )}
             </p>
@@ -257,13 +267,13 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
             type="button"
             className="dcx-btn dcx-btn-ghost dcr-close"
             onClick={onClose}
-            aria-label="Close room settings"
+            aria-label={t("hub.roomSettings.close")}
           >
             <span aria-hidden="true">×</span>
           </button>
         </header>
 
-        <div className="dcx-tabs dcr-tabs" role="tablist" aria-label="Room settings sections">
+        <div className="dcx-tabs dcr-tabs" role="tablist" aria-label={t("hub.roomSettings.sections")}>
           {tabs.map((item) => (
             <button
               key={item.id}
@@ -296,7 +306,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
               <section className="dcx-card">
                 <div className="dcx-row-stack">
                   <label className="dcx-field-label" htmlFor={fieldId("name")}>
-                    Room name
+                    {t("hub.roomSettings.name")}
                   </label>
                   <input
                     id={fieldId("name")}
@@ -304,7 +314,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                     value={values.name}
                     maxLength={40}
                     data-autofocus
-                    placeholder="e.g. general-chat"
+                    placeholder={t("hub.roomSettings.namePlaceholder")}
                     onChange={(event) => set.name(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") void submit();
@@ -313,7 +323,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                 </div>
                 <div className="dcx-row-stack">
                   <label className="dcx-field-label" htmlFor={fieldId("icon")}>
-                    Icon or emoji
+                    {t("hub.roomSettings.icon.label")}
                   </label>
                   <div className="dcr-icon-editor">
                     <input
@@ -323,14 +333,14 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                       maxLength={8}
                       onChange={(event) => set.icon(Array.from(event.target.value).slice(0, 4).join(""))}
                     />
-                    <div className="dcr-icon-choices" role="group" aria-label="Suggested icons">
+                    <div className="dcr-icon-choices" role="group" aria-label={t("hub.roomSettings.icon.suggested")}>
                       {iconChoices.map((icon) => (
                         <button
                           key={icon}
                           type="button"
                           className={`dcr-icon-choice${values.icon === icon ? " is-selected" : ""}`}
                           aria-pressed={values.icon === icon}
-                          aria-label={`Use ${icon} as icon`}
+                          aria-label={t("hub.roomSettings.icon.use", { icon })}
                           onClick={() => set.icon(icon)}
                         >
                           {icon}
@@ -342,7 +352,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                         aria-expanded={iconPickerOpen}
                         onClick={() => setIconPickerOpen((open) => !open)}
                       >
-                        {iconPickerOpen ? "Fewer icons" : "More icons"}
+                        {iconPickerOpen ? t("hub.roomSettings.icon.fewer") : t("hub.roomSettings.icon.more")}
                       </button>
                     </div>
                   </div>
@@ -351,15 +361,15 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                       <input
                         className="dcx-input dcr-icon-search"
                         type="search"
-                        placeholder="Search icons, e.g. rules, clips, cs, music"
-                        aria-label="Search icons"
+                        placeholder={t("hub.roomSettings.icon.searchPlaceholder")}
+                        aria-label={t("hub.roomSettings.icon.search")}
                         value={iconSearch}
                         onChange={(event) => setIconSearch(event.target.value)}
                       />
                       <div className="dcr-icon-groups">
                         {filterRoomIcons(iconSearch).map((group) => (
-                          <section key={group.id} aria-label={group.label}>
-                            <h4>{group.label}</h4>
+                          <section key={group.id} aria-label={t(`hub.roomSettings.iconGroups.${group.id}`)}>
+                            <h4>{t(`hub.roomSettings.iconGroups.${group.id}`)}</h4>
                             <div className="dcr-icon-choices" role="group">
                               {group.icons.map(([icon, words]) => (
                                 <button
@@ -367,7 +377,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                                   type="button"
                                   className={`dcr-icon-choice${values.icon === icon ? " is-selected" : ""}`}
                                   aria-pressed={values.icon === icon}
-                                  aria-label={`Use ${icon} (${words.split(" ")[0]}) as icon`}
+                                  aria-label={t("hub.roomSettings.icon.useNamed", { icon, name: words.split(" ")[0] })}
                                   title={words}
                                   onClick={() => set.icon(icon)}
                                 >
@@ -378,9 +388,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                           </section>
                         ))}
                         {filterRoomIcons(iconSearch).length === 0 && (
-                          <small className="dcx-hint">
-                            No icons match. You can type or paste any emoji in the box.
-                          </small>
+                          <small className="dcx-hint">{t("hub.roomSettings.icon.noMatch")}</small>
                         )}
                       </div>
                     </div>
@@ -388,16 +396,10 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                 </div>
                 {mode === "create" ? (
                   <fieldset className="dcx-row-stack dcr-fieldset">
-                    <legend className="dcx-field-label">Room type</legend>
-                    <span className="dcx-hint">The type can’t be changed after the room is created.</span>
+                    <legend className="dcx-field-label">{t("hub.roomSettings.type.label")}</legend>
+                    <span className="dcx-hint">{t("hub.roomSettings.type.fixed")}</span>
                     <div className="dcr-choice-grid">
-                      {(
-                        [
-                          ["text", "Text", "Conversations, links and media."],
-                          ["voice", "Voice", "Talk, share your screen and stream."],
-                          ["forum", "Forum", "Organized posts with replies and tags."],
-                        ] as const
-                      ).map(([type, label, copy]) => (
+                      {(["text", "voice", "forum"] as const).map((type) => (
                         <label key={type} className={`dcr-choice${values.type === type ? " is-selected" : ""}`}>
                           <input
                             type="radio"
@@ -407,8 +409,8 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                             onChange={() => changeType(type)}
                           />
                           <span>
-                            <strong>{label}</strong>
-                            <small>{copy}</small>
+                            <strong>{t(`hub.roomSettings.type.${type}.label`)}</strong>
+                            <small>{t(`hub.roomSettings.type.${type}.description`)}</small>
                           </span>
                         </label>
                       ))}
@@ -417,27 +419,23 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                 ) : (
                   <div className="dcx-row">
                     <div className="dcx-row-copy">
-                      <strong>Room type</strong>
-                      <small>Set when the room was created.</small>
+                      <strong>{t("hub.roomSettings.type.label")}</strong>
+                      <small>{t("hub.roomSettings.type.setAtCreation")}</small>
                     </div>
                     <div className="dcx-row-control">
                       <span className="dcr-pill">
-                        {values.type === "voice" ? "Voice" : values.type === "forum" ? "Forum" : "Text"}
+                        {t(
+                          `hub.roomSettings.type.${values.type === "voice" || values.type === "forum" ? values.type : "text"}.label`,
+                        )}
                       </span>
                     </div>
                   </div>
                 )}
                 {showPostPolicy && (
                   <fieldset className="dcx-row-stack">
-                    <legend className="dcx-field-label">Who can post</legend>
-                    <small>Everyone in the room can still read and react.</small>
-                    {(
-                      [
-                        ["everyone", "Everyone", "Anyone who can see the room."],
-                        ["staff", "Staff only (read-only)", "The owner, admins and moderators."],
-                        ["roles", "Selected roles", "Staff plus members with a role you pick."],
-                      ] as const
-                    ).map(([value, label, copy]) => (
+                    <legend className="dcx-field-label">{t("hub.roomSettings.post.label")}</legend>
+                    <small>{t("hub.roomSettings.post.hint")}</small>
+                    {(["everyone", "staff", "roles"] as const).map((value) => (
                       <label key={value} className={`dcr-choice${postPolicy === value ? " is-selected" : ""}`}>
                         <input
                           type="radio"
@@ -447,8 +445,8 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                           onChange={() => setPostPolicy(value)}
                         />
                         <span>
-                          <strong>{label}</strong>
-                          <small>{copy}</small>
+                          <strong>{t(`hub.roomSettings.post.${value}.label`)}</strong>
+                          <small>{t(`hub.roomSettings.post.${value}.description`)}</small>
                         </span>
                       </label>
                     ))}
@@ -472,7 +470,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                             </label>
                           ))
                         ) : (
-                          <small>This Hub has no custom roles yet.</small>
+                          <small>{t("hub.roomSettings.post.noRoles")}</small>
                         )}
                       </div>
                     )}
@@ -482,9 +480,9 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                   <div className="dcx-row">
                     <div className="dcx-row-copy">
                       <label htmlFor={fieldId("user-limit")}>
-                        <strong>Max players</strong>
+                        <strong>{t("hub.roomSettings.userLimit.label")}</strong>
                       </label>
-                      <small>0 means no limit. The owner and admins can still join a full room.</small>
+                      <small>{t("hub.roomSettings.userLimit.hint")}</small>
                     </div>
                     <div className="dcx-row-control">
                       <input
@@ -502,16 +500,27 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                   </div>
                 )}
               </section>
+              {mode === "manage" && initialStyle && (
+                <RoomStyleSection
+                  roomName={values.name}
+                  roomIcon={values.icon}
+                  accent={accent}
+                  onAccentChange={setAccent}
+                  savedBackgroundUrl={initialStyle.backgroundUrl}
+                  background={background}
+                  onBackgroundChange={setBackground}
+                />
+              )}
               {mode === "manage" && onDelete && (
                 <section className="dcx-card dcr-danger">
                   <div className="dcx-row">
                     <div className="dcx-row-copy">
-                      <strong>Delete room</strong>
-                      <small>Permanently removes the room and all of its saved messages.</small>
+                      <strong>{t("hub.roomSettings.delete.title")}</strong>
+                      <small>{t("hub.roomSettings.delete.description")}</small>
                     </div>
                     <div className="dcx-row-control">
                       <button type="button" className="dcx-btn dcx-btn-danger" onClick={() => setConfirmDelete(true)}>
-                        Delete room
+                        {t("hub.roomSettings.delete.action")}
                       </button>
                     </div>
                   </div>
@@ -523,7 +532,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
           {activeTab === "permissions" && (
             <>
               <fieldset className="dcx-card dcr-fieldset">
-                <legend className="dcx-sr-only">Room visibility</legend>
+                <legend className="dcx-sr-only">{t("hub.roomSettings.visibility.label")}</legend>
                 <div className="dcr-choice-grid dcr-choice-grid-2 dcr-pad">
                   <label className={`dcr-choice${!values.isPrivate ? " is-selected" : ""}`}>
                     <input
@@ -533,8 +542,8 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                       onChange={() => set.isPrivate(false)}
                     />
                     <span>
-                      <strong>Public</strong>
-                      <small>Every Hub member can see and join this room.</small>
+                      <strong>{t("hub.roomSettings.visibility.public")}</strong>
+                      <small>{t("hub.roomSettings.visibility.publicHint")}</small>
                     </span>
                   </label>
                   <label className={`dcr-choice${values.isPrivate ? " is-selected" : ""}`}>
@@ -545,8 +554,8 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                       onChange={() => set.isPrivate(true)}
                     />
                     <span>
-                      <strong>Private</strong>
-                      <small>Only selected members, plus the Hub owner and admins.</small>
+                      <strong>{t("hub.roomSettings.visibility.private")}</strong>
+                      <small>{t("hub.roomSettings.visibility.privateHint")}</small>
                     </span>
                   </label>
                 </div>
@@ -554,15 +563,12 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
               {values.isPrivate && (
                 <section className="dcx-card">
                   <div className="dcx-card-head">
-                    <h4>Member access</h4>
-                    <p>
-                      {values.memberIds.length} member{values.memberIds.length === 1 ? "" : "s"} selected. Owners and
-                      admins always have access.
-                    </p>
+                    <h4>{t("hub.roomSettings.access.title")}</h4>
+                    <p>{t("hub.roomSettings.access.selected", { count: values.memberIds.length })}</p>
                   </div>
                   <div className="dcx-row-stack">
                     <label className="dcx-sr-only" htmlFor={fieldId("member-search")}>
-                      Search members
+                      {t("hub.roomSettings.access.search")}
                     </label>
                     <input
                       id={fieldId("member-search")}
@@ -570,7 +576,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                       className="dcx-input"
                       value={memberSearch}
                       onChange={(event) => setMemberSearch(event.target.value)}
-                      placeholder="Search Hub members"
+                      placeholder={t("hub.roomSettings.access.searchPlaceholder")}
                     />
                   </div>
                   {staff
@@ -582,9 +588,13 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                           <div className="dcx-row-copy">
                             <strong>
                               {member.username}
-                              {member.userId === currentUserId ? " (you)" : ""}
+                              {member.userId === currentUserId ? t("hub.roomSettings.access.you") : ""}
                             </strong>
-                            <small>{member.role === "owner" ? "Owner" : "Admin"} · always has access</small>
+                            <small>
+                              {member.role === "owner"
+                                ? t("hub.roomSettings.access.ownerAlways")
+                                : t("hub.roomSettings.access.adminAlways")}
+                            </small>
                           </div>
                         </div>
                         <div className="dcx-row-control">
@@ -593,7 +603,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                               type="checkbox"
                               checked
                               disabled
-                              aria-label={`${member.username} always has access`}
+                              aria-label={t("hub.roomSettings.access.alwaysAria", { name: member.username })}
                             />
                             <span />
                           </label>
@@ -610,7 +620,9 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                             {renderAvatar(member)}
                             <div className="dcx-row-copy">
                               <strong>{member.username}</strong>
-                              <small>{enabled ? "Has access" : "No access"}</small>
+                              <small>
+                                {enabled ? t("hub.roomSettings.access.has") : t("hub.roomSettings.access.none")}
+                              </small>
                             </div>
                           </div>
                           <div className="dcx-row-control">
@@ -619,7 +631,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                                 type="checkbox"
                                 checked={enabled}
                                 onChange={() => set.memberIds(toggleId(values.memberIds, member.userId))}
-                                aria-label={`Room access for ${member.username}`}
+                                aria-label={t("hub.roomSettings.access.toggleAria", { name: member.username })}
                               />
                               <span />
                             </label>
@@ -630,7 +642,9 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                   {!regular.some((member) => matches(member, query)) && (
                     <div className="dcx-row">
                       <small className="dcx-hint">
-                        {regular.length === 0 ? "No other members in this Hub yet." : "No members match your search."}
+                        {regular.length === 0
+                          ? t("hub.roomSettings.access.noOthers")
+                          : t("hub.roomSettings.access.noMatch")}
                       </small>
                     </div>
                   )}
@@ -638,11 +652,13 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
               )}
               {values.type === "forum" && (
                 <p className="dcx-hint dcr-pad-x">
-                  Posting permissions for this forum are on the{" "}
-                  <button type="button" className="dcr-link" onClick={() => setTab("forum")}>
-                    Forum tab
-                  </button>
-                  .
+                  <Trans
+                    t={t}
+                    i18nKey="hub.roomSettings.access.forumTabHint"
+                    components={{
+                      tab: <button type="button" className="dcr-link" onClick={() => setTab("forum")} />,
+                    }}
+                  />
                 </p>
               )}
             </>
@@ -653,10 +669,10 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
               <section className="dcx-card">
                 <div className="dcx-row-stack">
                   <label className="dcx-field-label" htmlFor={fieldId("guidelines")}>
-                    Post guidelines
+                    {t("hub.roomSettings.forum.guidelines")}
                   </label>
                   <span className="dcx-hint" id={fieldId("guidelines-hint")}>
-                    Shown to people before they create a post.
+                    {t("hub.roomSettings.forum.guidelinesHint")}
                   </span>
                   <textarea
                     id={fieldId("guidelines")}
@@ -666,13 +682,13 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                     maxLength={500}
                     value={values.forumGuidelines}
                     onChange={(event) => set.forumGuidelines(event.target.value)}
-                    placeholder="Share the topic, rules, and what a useful post should include."
+                    placeholder={t("hub.roomSettings.forum.guidelinesPlaceholder")}
                   />
                 </div>
                 <div className="dcx-row">
                   <div className="dcx-row-copy">
-                    <label htmlFor={fieldId("policy")}>Who can post</label>
-                    <small>Everyone can still read and reply where they have access.</small>
+                    <label htmlFor={fieldId("policy")}>{t("hub.roomSettings.forum.policyLabel")}</label>
+                    <small>{t("hub.roomSettings.forum.policyHint")}</small>
                   </div>
                   <div className="dcx-row-control">
                     <select
@@ -681,9 +697,9 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                       value={values.forumPostPolicy}
                       onChange={(event) => set.forumPostPolicy(event.target.value as ForumPostPolicy)}
                     >
-                      {(Object.keys(POLICY_LABELS) as ForumPostPolicy[]).map((policy) => (
+                      {FORUM_POLICIES.map((policy) => (
                         <option key={policy} value={policy}>
-                          {POLICY_LABELS[policy]}
+                          {t(`hub.roomSettings.forum.policies.${policy}`)}
                         </option>
                       ))}
                     </select>
@@ -691,7 +707,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                 </div>
                 {values.forumPostPolicy === "roles" && (
                   <fieldset className="dcx-row-stack dcr-fieldset">
-                    <legend className="dcx-field-label">Roles allowed to post</legend>
+                    <legend className="dcx-field-label">{t("hub.roomSettings.forum.rolesAllowed")}</legend>
                     {roles.length ? (
                       <div className="dcr-check-list">
                         {roles.map((role) => {
@@ -712,25 +728,21 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                                 {role.icon ? `${role.icon} ` : ""}
                                 {role.name}
                               </span>
-                              <small>
-                                {count} member{count === 1 ? "" : "s"}
-                              </small>
+                              <small>{t("hub.roomSettings.forum.roleMembers", { count })}</small>
                             </label>
                           );
                         })}
                       </div>
                     ) : (
-                      <span className="dcx-hint">
-                        This Hub has no custom roles yet. Create them in Manage Hub → Roles.
-                      </span>
+                      <span className="dcx-hint">{t("hub.roomSettings.forum.noRoles")}</span>
                     )}
                   </fieldset>
                 )}
                 {values.forumPostPolicy === "members" && (
                   <fieldset className="dcx-row-stack dcr-fieldset">
-                    <legend className="dcx-field-label">Members allowed to post</legend>
+                    <legend className="dcx-field-label">{t("hub.roomSettings.forum.membersAllowed")}</legend>
                     <label className="dcx-sr-only" htmlFor={fieldId("forum-member-search")}>
-                      Search members
+                      {t("hub.roomSettings.access.search")}
                     </label>
                     <input
                       id={fieldId("forum-member-search")}
@@ -738,7 +750,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                       className="dcx-input"
                       value={forumMemberSearch}
                       onChange={(event) => setForumMemberSearch(event.target.value)}
-                      placeholder="Search Hub members"
+                      placeholder={t("hub.roomSettings.access.searchPlaceholder")}
                     />
                     <div className="dcr-check-list dcr-check-list-scroll">
                       {members
@@ -758,7 +770,13 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                               />
                               {renderAvatar(member)}
                               <span>{member.username}</span>
-                              <small>{automatic ? `${member.role} · always allowed` : member.role}</small>
+                              <small>
+                                {automatic
+                                  ? t("hub.roomSettings.forum.alwaysAllowed", {
+                                      role: t(`hub.roomSettings.roles.${member.role}`),
+                                    })
+                                  : t(`hub.roomSettings.roles.${member.role}`)}
+                              </small>
                             </label>
                           );
                         })}
@@ -778,22 +796,22 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
 
               <section className="dcx-card">
                 <div className="dcx-card-head">
-                  <h4>Post tags</h4>
-                  <p>Moderators define the tags people can pick when posting. Use the arrows to set their order.</p>
+                  <h4>{t("hub.roomSettings.tags.title")}</h4>
+                  <p>{t("hub.roomSettings.tags.description")}</p>
                 </div>
                 {forumTagsSupported ? (
                   <>
                     <div className="dcx-row-stack">
                       <div className="dcr-tag-add">
                         <label className="dcx-sr-only" htmlFor={fieldId("tag")}>
-                          New tag
+                          {t("hub.roomSettings.tags.new")}
                         </label>
                         <input
                           id={fieldId("tag")}
                           className="dcx-input"
                           value={tagDraft}
                           maxLength={24}
-                          placeholder="Add a tag, e.g. Question"
+                          placeholder={t("hub.roomSettings.tags.placeholder")}
                           onChange={(event) => setTagDraft(event.target.value)}
                           onKeyDown={(event) => {
                             if (event.key === "Enter") {
@@ -808,15 +826,15 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                           disabled={!normalizeTag(tagDraft) || tags.length >= MAX_TAGS}
                           onClick={addTag}
                         >
-                          Add tag
+                          {t("hub.roomSettings.tags.add")}
                         </button>
                       </div>
                       <span className="dcx-hint">
-                        {tags.length}/{MAX_TAGS} tags
+                        {t("hub.roomSettings.tags.count", { count: tags.length, max: MAX_TAGS })}
                       </span>
                     </div>
                     {tags.length > 0 && (
-                      <ul className="dcr-tag-list" aria-label="Forum tags">
+                      <ul className="dcr-tag-list" aria-label={t("hub.roomSettings.tags.list")}>
                         {tags.map((tag, index) => (
                           <li key={tag}>
                             <span className="dcr-tag-chip">{tag}</span>
@@ -826,7 +844,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                                 className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                                 disabled={index === 0}
                                 onClick={() => moveTag(index, -1)}
-                                aria-label={`Move ${tag} up`}
+                                aria-label={t("hub.roomSettings.tags.moveUp", { tag })}
                               >
                                 ↑
                               </button>
@@ -835,7 +853,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                                 className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                                 disabled={index === tags.length - 1}
                                 onClick={() => moveTag(index, 1)}
-                                aria-label={`Move ${tag} down`}
+                                aria-label={t("hub.roomSettings.tags.moveDown", { tag })}
                               >
                                 ↓
                               </button>
@@ -843,9 +861,9 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                                 type="button"
                                 className="dcx-btn dcx-btn-ghost dcx-btn-sm"
                                 onClick={() => setTags((current) => current.filter((item) => item !== tag))}
-                                aria-label={`Remove ${tag}`}
+                                aria-label={t("hub.roomSettings.tags.removeTag", { tag })}
                               >
-                                Remove
+                                {t("hub.roomSettings.tags.remove")}
                               </button>
                             </span>
                           </li>
@@ -855,9 +873,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
                   </>
                 ) : (
                   <div className="dcx-row-stack">
-                    <div className="dcx-notice dcx-notice-info">
-                      Moderator tag lists aren’t available on this server yet. Posts can still use free-form tags.
-                    </div>
+                    <div className="dcx-notice dcx-notice-info">{t("hub.roomSettings.tags.unsupported")}</div>
                   </div>
                 )}
               </section>
@@ -873,7 +889,7 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
 
         <footer className="dcr-footer">
           <button type="button" className="dcx-btn" onClick={onClose}>
-            Cancel
+            {t("hub.roomSettings.cancel")}
           </button>
           <button
             type="button"
@@ -881,17 +897,23 @@ export function RoomSettingsPanel(props: RoomSettingsPanelProps) {
             disabled={!values.name.trim() || busy}
             onClick={() => void submit()}
           >
-            {busy ? (mode === "create" ? "Creating…" : "Saving…") : mode === "create" ? "Create room" : "Save changes"}
+            {busy
+              ? mode === "create"
+                ? t("hub.roomSettings.creating")
+                : t("hub.roomSettings.saving")
+              : mode === "create"
+                ? t("hub.roomSettings.createTitle")
+                : t("hub.roomSettings.saveChanges")}
           </button>
         </footer>
       </div>
 
       {confirmDelete && onDelete && (
         <TypeToConfirmDialog
-          title="Delete room?"
-          description="This permanently deletes the room and every saved message in it. This can’t be undone."
-          confirmText={(deleteConfirmName ?? values.name).trim() || "delete"}
-          actionLabel="Delete room"
+          title={t("hub.roomSettings.delete.confirmTitle")}
+          description={t("hub.roomSettings.delete.confirmDescription")}
+          confirmText={(deleteConfirmName ?? values.name).trim() || t("hub.roomSettings.delete.confirmWord")}
+          actionLabel={t("hub.roomSettings.delete.action")}
           busy={busy}
           onCancel={() => setConfirmDelete(false)}
           onConfirm={async () => {

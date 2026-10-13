@@ -1,5 +1,6 @@
 // Full-size view of one video or screen-share tile; click outside to close.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import { ScreenVideo } from "../components/ScreenVideo";
@@ -20,6 +21,7 @@ export function StreamFocusOverlay({
   setScreenPlaybackMuted,
   popOutStream,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="stream-focus-overlay" onClick={() => setFocusedVideo(null)}>
       <div className="stream-focus-shell" onClick={(event) => event.stopPropagation()}>
@@ -28,8 +30,8 @@ export function StreamFocusOverlay({
           <button
             type="button"
             className="ds-btn ds-btn-ghost ds-icon-btn"
-            aria-label="Close stream"
-            title="Close"
+            aria-label={t("hub.streamFocus.close")}
+            title={t("common.actions.close")}
             onClick={() => setFocusedVideo(null)}
           >
             <Icon name="close" />
@@ -49,7 +51,7 @@ export function StreamFocusOverlay({
             onClick={() => popOutStream(focusedVideo.title, focusedVideo.stream)}
           >
             <Icon name="external" />
-            Pop Out
+            {t("hub.streamFocus.popOut")}
           </button>
           <button
             type="button"
@@ -60,7 +62,7 @@ export function StreamFocusOverlay({
             }}
           >
             <Icon name="maximize" />
-            Browser Fullscreen
+            {t("hub.streamFocus.fullscreen")}
           </button>
         </div>
       </div>

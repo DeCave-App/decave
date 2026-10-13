@@ -51,10 +51,33 @@ import {
   giphyMediaProxyUrl,
   safeGiphyUrl,
 } from "../message-payloads";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage, type ErrorCode } from "../../i18n/apiError.ts";
 import type { GifSearchState } from "../state/gif-search";
 import type { HubPanelsState } from "../state/hub-panels";
 import type { ComposerState } from "../state/composer";
 import type { ForumRoomUiState } from "../state/forum-room-ui";
+import { getChatPrefs, shouldSend } from "../../features/settings/chatPrefs";
+
+/** The picker heading for one of the EMOJI_GROUPS. */
+function emojiGroupLabel(name: string): string {
+  switch (name) {
+    case "Smileys":
+      return i18next.t("chat.actions.emoji.groups.smileys");
+    case "Hands":
+      return i18next.t("chat.actions.emoji.groups.hands");
+    case "Gaming":
+      return i18next.t("chat.actions.emoji.groups.gaming");
+    case "Hearts":
+      return i18next.t("chat.actions.emoji.groups.hearts");
+    case "Objects":
+      return i18next.t("chat.actions.emoji.groups.objects");
+    case "Nature":
+      return i18next.t("chat.actions.emoji.groups.nature");
+    default:
+      return name;
+  }
+}
 
 export type HubChatActionsDeps = {
   currentUser: AccountUser | null;
@@ -227,7 +250,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     if (!file || currentChannel.type !== "text") return;
     attachmentRetryFileRef.current = file;
     if (file.size > 25 * 1024 * 1024) {
-      setAttachmentError("Maximum attachment size is 25 MB.");
+      setAttachmentError(i18next.t("chat.actions.message.attachmentTooLarge"));
       return;
     }
 
@@ -249,7 +272,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
       });
       const data = (await response.json()) as { attachment?: AttachmentMeta; error?: string };
       if (!response.ok || !data.attachment) {
-        setAttachmentError(data.error || "Could not upload attachment.");
+        setAttachmentError(apiErrorMessage(data, "client.message.uploadAttachment"));
         return;
       }
       setPendingAttachment(data.attachment);
@@ -257,10 +280,10 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     } catch (error) {
       setAttachmentError(
         error instanceof DOMException && error.name === "AbortError"
-          ? "Upload canceled."
+          ? i18next.t("chat.actions.message.uploadCanceled")
           : error instanceof Error
             ? error.message
-            : "Could not upload attachment.",
+            : i18next.t("errors.client.message.uploadAttachment"),
       );
     } finally {
       setAttachmentBusy(false);
@@ -273,7 +296,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     attachmentAbortRef.current?.abort();
     attachmentAbortRef.current = null;
     setAttachmentBusy(false);
-    setAttachmentError("Upload canceled. You can retry the same file.");
+    setAttachmentError(i18next.t("chat.actions.message.uploadCanceledRetry"));
   };
 
   const publishForumText = async (
@@ -281,7 +304,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     replyToMessageId: string | null = null,
     attachment: AttachmentMeta | null = null,
   ): Promise<boolean> => {
-    if (!canPostInCurrentHub) throw new Error("Only the Hub owner can post in this Hub.");
+    if (!canPostInCurrentHub) throw new Error(i18next.t("chat.actions.message.ownerOnly"));
     return sendSocket({
       type: "CHAT_MESSAGE",
       text,
@@ -294,12 +317,13 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
   /** Sends a new forum post and resolves only once the server echoes it back.
       Rejects with the server's ERROR message (slow mode, permissions) or on timeout. */
   const publishForumPostAwaitingAck = (text: string, attachment: AttachmentMeta | null): Promise<boolean> => {
-    if (!canPostInCurrentHub) return Promise.reject(new Error("Only the Hub owner can post in this Hub."));
-    if (pendingForumPublishRef.current) return Promise.reject(new Error("Your previous post is still being sent."));
+    if (!canPostInCurrentHub) return Promise.reject(new Error(i18next.t("chat.actions.message.ownerOnly")));
+    if (pendingForumPublishRef.current)
+      return Promise.reject(new Error(i18next.t("chat.actions.message.previousPostPending")));
     const channelId = selectedChannel;
     return new Promise<boolean>((resolve, reject) => {
       const timer = window.setTimeout(
-        () => pending.settle(new Error("The server did not confirm the post. Check the forum before trying again.")),
+        () => pending.settle(new Error(i18next.t("chat.actions.message.postUnconfirmed"))),
         12_000,
       );
       const pending = {
@@ -335,7 +359,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
 
   const sendMessage = async () => {
     if (!canPostInCurrentHub) {
-      setAttachmentError("Only the Hub owner can post in this Hub.");
+      setAttachmentError(i18next.t("chat.actions.message.ownerOnly"));
       return;
     }
     const text = messageInput.trim();
@@ -353,11 +377,11 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
         );
         const data = (await response.json().catch(() => ({}))) as { error?: string };
         if (!response.ok) {
-          setAttachmentError(data.error || "Could not edit message.");
+          setAttachmentError(apiErrorMessage(data, "client.message.edit"));
           return;
         }
       } catch (error) {
-        setAttachmentError(error instanceof Error ? error.message : "Could not edit message.");
+        setAttachmentError(error instanceof Error ? error.message : i18next.t("errors.client.message.edit"));
         return;
       }
       setEditingMessage(null);
@@ -416,13 +440,13 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
       const data = (await response.json().catch(() => ({}))) as { gifs?: GiphyGif[]; error?: string };
       if (!response.ok) {
         setGifResults([]);
-        setGifError(data.error || "Could not load GIFs.");
+        setGifError(apiErrorMessage(data, "client.gif.load"));
         return;
       }
       setGifResults(Array.isArray(data.gifs) ? data.gifs : []);
     } catch {
       setGifResults([]);
-      setGifError("Could not load GIFs.");
+      setGifError(i18next.t("errors.client.gif.load"));
     } finally {
       setGifLoading(false);
     }
@@ -488,16 +512,14 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
       if (posted) return posted.id;
       await new Promise<void>((resolve) => window.setTimeout(resolve, 100));
     }
-    throw new Error(
-      "The Hub accepted the message, but its message ID has not arrived yet. Try again after reconnecting.",
-    );
+    throw new Error(i18next.t("chat.actions.message.idPending"));
   };
 
   const sendSelectedGif = async (gif: GiphyGif) => {
     const target = gifPickerTarget;
     const safeUrl = safeGiphyUrl(gif.url);
     if (!target || !safeUrl) {
-      setGifError("This GIF could not be used safely.");
+      setGifError(i18next.t("chat.actions.gif.unsafe"));
       return;
     }
     const text = `${GIF_PREFIX}${JSON.stringify({ id: gif.id, title: gif.title, url: safeUrl } satisfies GifPayload)}`;
@@ -505,11 +527,11 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     try {
       sent = await sendRichComposerText(target, text);
     } catch (error) {
-      setGifError(error instanceof Error ? error.message : "Could not send GIF.");
+      setGifError(error instanceof Error ? error.message : i18next.t("chat.actions.gif.sendFailed"));
       return;
     }
     if (!sent) {
-      setGifError("Realtime is reconnecting. Try the GIF again in a moment.");
+      setGifError(i18next.t("chat.actions.gif.reconnecting"));
       return;
     }
     playUiSound("send");
@@ -564,7 +586,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
       >
         {EMOJI_GROUPS.map((group) => (
           <section key={group.name}>
-            <h4>{group.name}</h4>
+            <h4>{emojiGroupLabel(group.name)}</h4>
             <div>
               {group.items.map((emoji) => (
                 <button
@@ -611,7 +633,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
       <div className="emoji-picker dc-composer-emoji-picker" data-composer-popover="true">
         {EMOJI_GROUPS.map((group) => (
           <section key={group.name}>
-            <h4>{group.name}</h4>
+            <h4>{emojiGroupLabel(group.name)}</h4>
             <div>
               {group.items.map((emoji) => (
                 <button key={`${target}-${group.name}-${emoji}`} type="button" onClick={() => choose(emoji)}>
@@ -623,14 +645,18 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
         ))}
         {target === "hub" && hubAssets.length > 0 && (
           <section>
-            <h4>Hub Emotes & Stickers</h4>
+            <h4>{i18next.t("chat.actions.emoji.hubAssets")}</h4>
             <div>
               {hubAssets.map((asset) => (
                 <button
                   key={asset.id}
                   type="button"
                   className="dc-custom-asset-button"
-                  title={`${asset.kind}: ${asset.name}`}
+                  title={
+                    asset.kind === "emote"
+                      ? i18next.t("chat.actions.emoji.emoteTitle", { name: asset.name })
+                      : i18next.t("chat.actions.emoji.stickerTitle", { name: asset.name })
+                  }
                   onClick={() => {
                     if (asset.kind === "emote") setMessageInput((value) => `${value}:${asset.name}:`);
                     else void sendRichComposerText("hub", `${STICKER_PREFIX}${JSON.stringify(asset)}`);
@@ -661,20 +687,20 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
                 void loadGiphy(gifQuery);
               }
             }}
-            placeholder="Search GIPHY"
+            placeholder={i18next.t("chat.actions.gif.searchPlaceholder")}
             maxLength={80}
             autoFocus
           />
           <button type="button" onClick={() => void loadGiphy(gifQuery)}>
-            Search
+            {i18next.t("chat.actions.gif.search")}
           </button>
         </div>
         {gifLoading ? (
-          <div className="dc-gif-status">Loading GIFs…</div>
+          <div className="dc-gif-status">{i18next.t("chat.actions.gif.loading")}</div>
         ) : gifError ? (
           <div className="dc-gif-status">{gifError}</div>
         ) : gifResults.length === 0 ? (
-          <div className="dc-gif-status">No GIFs found.</div>
+          <div className="dc-gif-status">{i18next.t("chat.actions.gif.empty")}</div>
         ) : (
           <div className="dc-gif-grid">
             {gifResults.flatMap((gif) => {
@@ -685,16 +711,16 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
                   key={gif.id}
                   type="button"
                   className="dc-gif-item"
-                  title={gif.title || "GIF"}
+                  title={gif.title || i18next.t("chat.actions.gif.fallbackTitle")}
                   onClick={() => sendSelectedGif(gif)}
                 >
-                  <img src={previewSrc} alt={gif.title || "GIF"} loading="lazy" />
+                  <img src={previewSrc} alt={gif.title || i18next.t("chat.actions.gif.fallbackTitle")} loading="lazy" />
                 </button>,
               ];
             })}
           </div>
         )}
-        <div className="dc-gif-attribution">Powered by GIPHY</div>
+        <div className="dc-gif-attribution">{i18next.t("chat.actions.gif.attribution")}</div>
       </div>
     );
   };
@@ -822,7 +848,8 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
   };
 
   const handleMessageKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    // Settings → Chat chooses Enter or Ctrl+Enter; Shift+Enter is always a new line.
+    if (shouldSend(event, getChatPrefs())) {
       event.preventDefault();
       void sendMessage();
     }
@@ -837,15 +864,16 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
   };
 
   /** Run a message action and surface a failure instead of silently dropping it. */
-  const runMessageAction = async (request: () => Promise<Response>, failure: string) => {
+  const runMessageAction = async (request: () => Promise<Response>, failure: ErrorCode) => {
     try {
       const response = await request();
       if (response.ok) return;
       const data = (await response.json().catch(() => ({}))) as ApiError;
-      setAttachmentError(data.error || failure);
+      setAttachmentError(apiErrorMessage(data, failure));
     } catch (error) {
-      console.warn(failure, error);
-      setAttachmentError(failure);
+      const message = apiErrorMessage(null, failure);
+      console.warn(message, error);
+      setAttachmentError(message);
     }
   };
 
@@ -857,14 +885,14 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ emoji }),
         }),
-      "Could not add that reaction. Try again.",
+      "client.message.addReaction",
     );
 
   const togglePinMessage = (message: ChatMessage) =>
     runMessageAction(
       () =>
         authorizedFetch(`${HTTP_URL}/api/channels/${message.channelId}/messages/${message.id}/pin`, { method: "POST" }),
-      "Could not change the pin. Try again.",
+      "client.message.togglePin",
     );
 
   const startEditMessage = (message: ChatMessage) => {
@@ -887,7 +915,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     } catch (error) {
       console.warn("Message search failed:", error);
       setMessageSearchResults([]);
-      setAttachmentError("Search is unavailable right now. Try again in a moment.");
+      setAttachmentError(i18next.t("chat.actions.message.searchUnavailable"));
     }
   };
 
@@ -897,8 +925,14 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     const deletingOwnMessage = message.userId === currentUser?.id;
     const confirmed = window.confirm(
       deletingOwnMessage
-        ? "Delete this message?"
-        : `Delete ${message.username}'s message as ${currentServer.myRole ?? "moderator"}?`,
+        ? i18next.t("chat.actions.message.confirmDelete")
+        : currentServer.myRole === "owner"
+          ? i18next.t("chat.actions.message.confirmDeleteAsOwner", { username: message.username })
+          : currentServer.myRole === "admin"
+            ? i18next.t("chat.actions.message.confirmDeleteAsAdmin", { username: message.username })
+            : currentServer.myRole === "member"
+              ? i18next.t("chat.actions.message.confirmDeleteAsMember", { username: message.username })
+              : i18next.t("chat.actions.message.confirmDeleteAsModerator", { username: message.username }),
     );
     if (!confirmed) return;
 
@@ -909,14 +943,14 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
       );
       const data = (await response.json()) as ApiError & { success?: boolean };
       if (!response.ok) {
-        window.alert(data.error || "Could not delete message.");
+        window.alert(apiErrorMessage(data, "client.message.delete"));
         return;
       }
 
       setMessages((current) => current.filter((item) => item.id !== message.id));
     } catch (error) {
       console.error("Could not delete message:", error);
-      window.alert("Could not connect to the server to delete this message.");
+      window.alert(i18next.t("chat.actions.message.deleteOffline"));
     }
   };
 

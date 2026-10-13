@@ -1,5 +1,6 @@
 // The Create a poll dialog opened from the Hub or DM composer.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { HubChatActions } from "../actions/hub-chat";
@@ -21,21 +22,22 @@ export function PollComposerDialog({
   setPollOptions,
   hubChat,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="modal-overlay" onClick={() => setShowPollComposer(null)}>
       <div className="modal dc-poll-composer" onClick={(event) => event.stopPropagation()}>
-        <span className="ds-kicker">New poll</span>
-        <h2>Create a poll</h2>
-        <p>Ask a question and add between 2 and 8 choices.</p>
+        <span className="ds-kicker">{t("chat.poll.kicker")}</span>
+        <h2>{t("chat.poll.title")}</h2>
+        <p>{t("chat.poll.lead")}</p>
         <label>
-          Question
+          {t("chat.poll.question")}
           <input
             className="ds-input"
             value={pollQuestion}
             onChange={(event) => setPollQuestion(event.target.value)}
             maxLength={180}
             autoFocus
-            placeholder="What should we play tonight?"
+            placeholder={t("chat.poll.questionPlaceholder")}
           />
         </label>
         <div className="dc-poll-option-editor">
@@ -50,13 +52,13 @@ export function PollComposerDialog({
                   )
                 }
                 maxLength={100}
-                placeholder={`Option ${index + 1}`}
+                placeholder={t("chat.poll.option", { number: index + 1 })}
               />
               {pollOptions.length > 2 && (
                 <button
                   type="button"
                   className="ds-btn ds-btn-ghost ds-icon-btn"
-                  aria-label={`Remove option ${index + 1}`}
+                  aria-label={t("chat.poll.removeOption", { number: index + 1 })}
                   onClick={() => setPollOptions((current) => current.filter((_item, itemIndex) => itemIndex !== index))}
                 >
                   <Icon name="close" />
@@ -68,12 +70,12 @@ export function PollComposerDialog({
         {pollOptions.length < 8 && (
           <button type="button" className="ds-btn" onClick={() => setPollOptions((current) => [...current, ""])}>
             <Icon name="plus" />
-            Add option
+            {t("chat.poll.addOption")}
           </button>
         )}
         <div className="modal-buttons ds-modal-actions">
           <button type="button" className="ds-btn" onClick={() => setShowPollComposer(null)}>
-            Cancel
+            {t("common.actions.cancel")}
           </button>
           <button
             type="button"
@@ -81,7 +83,7 @@ export function PollComposerDialog({
             disabled={!pollQuestion.trim() || pollOptions.filter((item) => item.trim()).length < 2}
             onClick={hubChat.submitPoll}
           >
-            Post Poll
+            {t("chat.poll.post")}
           </button>
         </div>
       </div>

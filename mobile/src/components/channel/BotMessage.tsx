@@ -4,12 +4,12 @@
 // no external image loads (a card image is an "Open image" link).
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiJson } from "@/src/lib/api";
 import { linkStyle, openLink } from "@/src/components/LinkifiedText";
 import { colors } from "@/src/theme";
 import {
-  PRIVATE_NOTICE_LABEL,
   cardButtons,
   cardFields,
   cardSelect,
@@ -37,10 +37,11 @@ type Props = {
 
 /** BOT badge; the bot's colour is only a small dot so any colour stays readable. */
 export function BotBadge({ color }: { color: string | null }) {
+  const { t } = useTranslation(["common", "bots"]);
   return (
     <View style={styles.badge}>
       {color ? <View style={[styles.badgeDot, { backgroundColor: color }]} /> : null}
-      <Text style={styles.badgeText}>BOT</Text>
+      <Text style={styles.badgeText}>{t("bots.card.badge")}</Text>
     </View>
   );
 }
@@ -62,6 +63,7 @@ function CardText({ text, style }: { text: unknown; style?: object }) {
 }
 
 function FormModal({ form, roomId, token, onClose }: { form: BotForm; roomId: number; token: string | null; onClose: () => void }) {
+  const { t } = useTranslation(["common", "bots"]);
   const [values, setValues] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -69,7 +71,7 @@ function FormModal({ form, roomId, token, onClose }: { form: BotForm; roomId: nu
   const submit = async () => {
     const missing = missingRequired(form.fields, values);
     if (missing.length) {
-      setError(`${missing[0]} is required.`);
+      setError(t("bots.card.form.required", { field: missing[0] }));
       return;
     }
     setBusy(true);
@@ -86,7 +88,7 @@ function FormModal({ form, roomId, token, onClose }: { form: BotForm; roomId: nu
       );
       onClose();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "Could not send the form.");
+      setError(failure instanceof Error ? failure.message : t("bots.card.form.sendFailed"));
     } finally {
       setBusy(false);
     }
@@ -117,7 +119,7 @@ function FormModal({ form, roomId, token, onClose }: { form: BotForm; roomId: nu
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <View style={styles.actions}>
             <Pressable accessibilityRole="button" style={[styles.button, styles.secondary]} onPress={onClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
+              <Text style={styles.buttonText}>{t("common.actions.cancel")}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -125,7 +127,7 @@ function FormModal({ form, roomId, token, onClose }: { form: BotForm; roomId: nu
               disabled={busy}
               onPress={() => void submit()}
             >
-              <Text style={[styles.buttonText, styles.onColor]}>{busy ? "Sending…" : "Submit"}</Text>
+              <Text style={[styles.buttonText, styles.onColor]}>{busy ? t("common.status.sending") : t("bots.card.form.submit")}</Text>
             </Pressable>
           </View>
         </View>
@@ -135,6 +137,7 @@ function FormModal({ form, roomId, token, onClose }: { form: BotForm; roomId: nu
 }
 
 export function BotMessage({ messageId, roomId, bot, card, privateNotice, text, token, showHead = true }: Props) {
+  const { t } = useTranslation(["common", "bots"]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState<BotForm | null>(null);
@@ -162,10 +165,10 @@ export function BotMessage({ messageId, roomId, bot, card, privateNotice, text, 
         },
         token,
       );
-      const next = formFromResponse(data);
+      const next = formFromResponse(data, t("bots.card.form.untitled"));
       if (next) setForm(next);
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "The bot did not answer.");
+      setError(failure instanceof Error ? failure.message : t("bots.card.noAnswer"));
     } finally {
       setBusy(false);
     }
@@ -181,10 +184,10 @@ export function BotMessage({ messageId, roomId, bot, card, privateNotice, text, 
           {bot.avatarEmoji ? <Text>{bot.avatarEmoji}</Text> : null}
           <BotBadge color={bot.color} />
           <Text style={styles.name}>{bot.name}</Text>
-          {privateNotice ? <Text style={styles.privateLabel}>{PRIVATE_NOTICE_LABEL}</Text> : null}
+          {privateNotice ? <Text style={styles.privateLabel}>{t("bots.card.privateNotice")}</Text> : null}
         </View>
       ) : privateNotice ? (
-        <Text style={styles.privateLabel}>{PRIVATE_NOTICE_LABEL}</Text>
+        <Text style={styles.privateLabel}>{t("bots.card.privateNotice")}</Text>
       ) : null}
       {text ? <CardText text={text} /> : null}
       {card ? (
@@ -199,7 +202,7 @@ export function BotMessage({ messageId, roomId, bot, card, privateNotice, text, 
           ))}
           {imageLink ? (
             <Text style={linkStyle} accessibilityRole="link" onPress={() => openLink(imageLink)}>
-              Open image
+              {t("bots.card.openImage")}
             </Text>
           ) : null}
           {buttons.length ? (
@@ -218,7 +221,7 @@ export function BotMessage({ messageId, roomId, bot, card, privateNotice, text, 
             </View>
           ) : null}
           {select ? (
-            <View style={styles.buttons} accessibilityLabel="Choose an option">
+            <View style={styles.buttons} accessibilityLabel={t("bots.card.chooseOption")}>
               {select.options.map((option) => (
                 <Pressable
                   key={option.value}

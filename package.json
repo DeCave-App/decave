@@ -1,7 +1,7 @@
 {
   "name": "decave",
   "private": true,
-  "version": "0.1.151",
+  "version": "0.1.152",
   "description": "DeCave gaming chat and voice desktop client",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
@@ -55,11 +55,13 @@
     "@noble/curves": "^2.4.0",
     "@noble/hashes": "^2.4.0",
     "electron-updater": "^6.8.9",
+    "i18next": "^26.4.4",
     "js-yaml": "^4.3.1",
     "onnxruntime-web": "^1.29.0",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-i18next": "^17.0.16"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -67,16 +69,17 @@
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@vitejs/plugin-react-swc": "^4.3.3",
+    "braces": "file:vendor/braces",
     "electron": "^43.4.0",
     "electron-builder": "^26.15.3",
     "eslint": "^10.12.0",
+    "eslint-plugin-i18next": "^6.1.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
     "png-to-ico": "^3.0.2",
     "prettier": "^3.9.9",
     "sharp": "^0.35.4",
     "simple-icons": "^16.33.0",
-    "braces": "file:vendor/braces",
     "sprintf-js": "file:vendor/sprintf-js",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.71.0",
@@ -106,6 +109,8 @@
       "electron/security-boundary.cjs",
       "electron/windows-update-trust.cjs",
       "electron/turnstile-preload.cjs",
+      "electron/i18n.cjs",
+      "shared/i18n/locales/*/desktop.json",
       "dist/**/*",
       "package.json"
     ],
@@ -148,7 +153,20 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "DeCave",
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "multiLanguageInstaller": true,
+      "installerLanguages": [
+        "en_US",
+        "el_GR",
+        "es_ES",
+        "pt_BR",
+        "fr_FR",
+        "nl_NL",
+        "de_DE",
+        "it_IT",
+        "pl_PL",
+        "uk_UA"
+      ]
     },
     "mac": {
       "category": "public.app-category.games",

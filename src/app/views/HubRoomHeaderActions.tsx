@@ -1,5 +1,6 @@
 // Hub room header buttons: room chat toggle in voice rooms, message search, manage room, leave a temporary squad room.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import type { Channel, Server, ChatMessage } from "../types";
 
@@ -39,14 +40,15 @@ export function HubRoomHeaderActions({
   roomMuted,
   toggleRoomMute,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <>
       {currentChannel.type === "voice" && (
         <button
           type="button"
           className="voice-chat-switch"
-          title={voiceChatOpen ? "Show voice controls" : "Open room chat"}
-          aria-label={voiceChatOpen ? "Show voice controls" : "Open room chat"}
+          title={voiceChatOpen ? t("hub.roomActions.showVoiceControls") : t("hub.roomActions.openRoomChat")}
+          aria-label={voiceChatOpen ? t("hub.roomActions.showVoiceControls") : t("hub.roomActions.openRoomChat")}
           onClick={() =>
             setVoiceChatOpen((open) => {
               const next = !open;
@@ -58,7 +60,7 @@ export function HubRoomHeaderActions({
             })
           }
         >
-          {voiceChatOpen ? "◉ Voice" : "💬 Chat"}
+          {voiceChatOpen ? t("hub.roomActions.voiceToggle") : t("hub.roomActions.chatToggle")}
           {!voiceChatOpen && (roomUnread[currentChannel.id] ?? 0) > 0 && (
             <b className="voice-chat-unread-badge">
               {(roomUnread[currentChannel.id] ?? 0) > 99 ? "99+" : roomUnread[currentChannel.id]}
@@ -70,19 +72,19 @@ export function HubRoomHeaderActions({
       {currentChannel.type === "voice" && currentServer.isSquad && (
         <button
           type="button"
-          title="Leave temporary squad room"
-          aria-label="Leave temporary squad room"
+          title={t("hub.roomActions.leaveSquad")}
+          aria-label={t("hub.roomActions.leaveSquad")}
           onClick={() => void leaveCurrentSquadRoom()}
         >
-          ↪ Leave
+          {t("hub.roomActions.leave")}
         </button>
       )}
 
       {(currentChannel.type === "text" || voiceChatOpen) && (
         <button
           type="button"
-          title="Search messages"
-          aria-label="Search messages"
+          title={t("hub.roomActions.searchMessages")}
+          aria-label={t("hub.roomActions.searchMessages")}
           onClick={() => setShowMessageSearch(true)}
         >
           ⌕
@@ -92,8 +94,16 @@ export function HubRoomHeaderActions({
       {(currentChannel.type === "text" || voiceChatOpen) && (
         <button
           type="button"
-          title={`Pinned messages${messages.filter((message) => message.pinned).length ? ` (${messages.filter((message) => message.pinned).length})` : ""}`}
-          aria-label={`Pinned messages${messages.filter((message) => message.pinned).length ? `, ${messages.filter((message) => message.pinned).length}` : ""}`}
+          title={
+            messages.filter((message) => message.pinned).length
+              ? t("hub.roomActions.pinnedCountTitle", { pinned: messages.filter((message) => message.pinned).length })
+              : t("hub.roomActions.pinned")
+          }
+          aria-label={
+            messages.filter((message) => message.pinned).length
+              ? t("hub.roomActions.pinnedCountLabel", { pinned: messages.filter((message) => message.pinned).length })
+              : t("hub.roomActions.pinned")
+          }
           onClick={() => setShowPinnedMessages(true)}
         >
           ⌖
@@ -106,8 +116,16 @@ export function HubRoomHeaderActions({
       <button
         type="button"
         className={roomMuted ? "is-muted" : undefined}
-        title={roomMuted ? `Unmute #${currentChannel.name}` : `Mute #${currentChannel.name}`}
-        aria-label={roomMuted ? `Unmute #${currentChannel.name}` : `Mute #${currentChannel.name}`}
+        title={
+          roomMuted
+            ? t("hub.roomActions.unmuteRoom", { room: currentChannel.name })
+            : t("hub.roomActions.muteRoom", { room: currentChannel.name })
+        }
+        aria-label={
+          roomMuted
+            ? t("hub.roomActions.unmuteRoom", { room: currentChannel.name })
+            : t("hub.roomActions.muteRoom", { room: currentChannel.name })
+        }
         aria-pressed={roomMuted}
         onClick={toggleRoomMute}
       >
@@ -115,7 +133,12 @@ export function HubRoomHeaderActions({
       </button>
 
       {canManageCurrentRooms && (
-        <button type="button" title="Manage room" aria-label="Manage room" onClick={openManageChannel}>
+        <button
+          type="button"
+          title={t("hub.roomActions.manageRoom")}
+          aria-label={t("hub.roomActions.manageRoom")}
+          onClick={openManageChannel}
+        >
           ...
         </button>
       )}

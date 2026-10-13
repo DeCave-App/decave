@@ -1,5 +1,6 @@
 // Toast for a new friend request; opens Friends.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { SocialUser } from "../types";
@@ -20,6 +21,7 @@ export function FriendRequestToast({
   friendRequestNotice,
   setFriendRequestNotice,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <button
       type="button"
@@ -59,10 +61,12 @@ export function FriendRequestToast({
       />
       <span style={{ display: "grid", gap: "2px", minWidth: 0 }}>
         <small style={{ color: "var(--ds-accent-2)", fontSize: "10px", fontWeight: 800, letterSpacing: ".1em" }}>
-          NEW FRIEND REQUEST
+          {t("common.friendRequestNotice.kicker")}
         </small>
         <strong style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{friendRequestNotice.username}</strong>
-        <em style={{ color: "var(--ds-muted)", fontSize: "12px", fontStyle: "normal" }}>Click to review</em>
+        <em style={{ color: "var(--ds-muted)", fontSize: "12px", fontStyle: "normal" }}>
+          {t("common.friendRequestNotice.review")}
+        </em>
       </span>
       <b className="ds-text-accent">
         <Icon name="user-plus" size="lg" />

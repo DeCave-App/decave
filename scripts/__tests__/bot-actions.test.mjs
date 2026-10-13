@@ -245,6 +245,7 @@ test("addRole works for an owner-published bot and records the change", async ()
     ruleId: steps.at(-1).ruleId,
     action: "addRole",
     description: steps.at(-1).description,
+    descriptionNotice: { code: "bots.run.server.roleStep", params: { action: "addRole", role: hub2.roleId } },
     ok: true,
   });
   const row = await db

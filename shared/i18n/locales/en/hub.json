@@ -1,0 +1,1506 @@
+{
+  "noHubs": {
+    "kicker": "DECAVE HOME",
+    "title": "You can join a Hub whenever you're ready",
+    "body": "Your account is ready. You can use Home, Friends and DMs without joining a Hub. Create one or discover public Hubs at any time.",
+    "create": "+ Create Hub",
+    "discover": "Discover Public Hubs",
+    "friends": "Friends",
+    "emptyHubName": "No Hub Yet"
+  },
+  "streamFocus": {
+    "close": "Close stream",
+    "popOut": "Pop Out",
+    "fullscreen": "Browser Fullscreen"
+  },
+  "voiceMini": {
+    "return": "Return to voice room",
+    "drag": "Drag voice window",
+    "activeRoom": "Active voice room:{{room}}"
+  },
+  "header": {
+    "switchHub": "Switch Hub",
+    "labelOverview": "Hubs · {{hub}} · Overview",
+    "labelHome": "Hubs · {{hub}} · Hub Home",
+    "labelRoom": "Hubs · {{hub}} · {{room}}",
+    "hubPicker": "Hub",
+    "roomPicker": "Room",
+    "switchRoom": "Switch room in{{hub}}",
+    "voicePrefix": "V"
+  },
+  "roomActions": {
+    "leaveSquad": "Leave temporary squad room",
+    "leave": "↪ Leave",
+    "searchMessages": "Search messages",
+    "manageRoom": "Manage room",
+    "showVoiceControls": "Show voice controls",
+    "openRoomChat": "Open room chat",
+    "voiceToggle": "◉ Voice",
+    "chatToggle": "💬 Chat",
+    "pinned": "Pinned messages",
+    "pinnedCountTitle": "Pinned messages ({{pinned}})",
+    "pinnedCountLabel": "Pinned messages, {{pinned}}",
+    "unmuteRoom": "Unmute #{{room}}",
+    "muteRoom": "Mute #{{room}}"
+  },
+  "onboarding": {
+    "title": "Welcome to DeCave",
+    "lead": "Create a Hub, join a public community, or skip this step and do it later.",
+    "skip": "Skip for now",
+    "search": "Search hubs",
+    "loading": "Loading public hubs...",
+    "noResults": "No public hubs match your search.",
+    "cardPrivate": "Membership private · {{category}}",
+    "card_one": "{{count}} members · {{online}} online · {{category}}",
+    "card_other": "{{count}} members · {{online}} online · {{category}}",
+    "defaultCategory": "Gaming",
+    "joined": "Joined"
+  },
+  "contextMenu": {
+    "copyShareLink": "Copy Share Link",
+    "hubKind": "HUB",
+    "textRoomKind": "text ROOM",
+    "voiceRoomKind": "voice ROOM",
+    "forumRoomKind": "forum ROOM",
+    "unmuteHub": "Unmute Hub",
+    "muteHub": "Mute Hub",
+    "unmuteRoom": "Unmute Room",
+    "muteRoom": "Mute Room",
+    "editHub": "Edit Hub",
+    "editRoom": "Edit Room"
+  },
+  "home": {
+    "roleLabel": "You are {{role}}",
+    "newInForum": "New in \"{{title}}\""
+  },
+  "sidebar": {
+    "membershipPrivate": "Membership private",
+    "official": "Official",
+    "private": "Private",
+    "leave": "Leave hub",
+    "membersTitle": "Hub members",
+    "searchMembers": "Search Hub members",
+    "filterRole": "Filter Hub members by role",
+    "allRoles": "All roles",
+    "owners": "Owners",
+    "admins": "Admins",
+    "moderators": "Moderators",
+    "membersFilter": "Members",
+    "noMembers": "No members match these filters.",
+    "navigation": "Hub navigation",
+    "show": "Show Hub sidebar",
+    "hide": "Hide Hub sidebar",
+    "online_one": "{{value}} online",
+    "online_other": "{{value}} online",
+    "members_one": "{{value}} members",
+    "members_other": "{{value}} members",
+    "roleTitle": "{{role}} role",
+    "memberMeta": "{{role}} · {{presence}}",
+    "membersCount": "Members ({{members}})",
+    "membersTooltip": "Members · {{members}}",
+    "calendar": "Calendar",
+    "calendarUpcoming_one": "Calendar, {{count}} upcoming",
+    "calendarUpcoming_other": "Calendar, {{count}} upcoming",
+    "calendarCount": "Calendar ({{upcoming}})",
+    "manage": "Manage Hub",
+    "voiceRoom": "Voice room",
+    "boxes": {
+      "forums": "Forums",
+      "voice": "Voice",
+      "rooms": "Rooms"
+    },
+    "aria": {
+      "private": "private",
+      "mentions_one": "{{count}} mentions",
+      "mentions_other": "{{count}} mentions",
+      "unread_one": "{{count}} unread",
+      "unread_other": "{{count}} unread",
+      "forum": "forum",
+      "newestThread": "newest thread {{title}}",
+      "new": "new",
+      "voiceRoom": "voice room",
+      "connectedCount_one": "{{count}} connected",
+      "connectedCount_other": "{{count}} connected",
+      "someoneSharing": "someone is sharing their screen",
+      "youAreConnected": "you are connected",
+      "empty": "empty"
+    },
+    "ownerOnlyPosting": "Only the Hub owner can post",
+    "privateRoom": "Private room",
+    "forum": {
+      "new": "New",
+      "replies_one": "{{count}} reply",
+      "replies_other": "{{count}} replies",
+      "noThreads": "No threads yet",
+      "openToSee": "Open to see threads"
+    },
+    "voice": {
+      "doubleClickToJoin": "{{name}} · double-click to join",
+      "youreHere": "You're here · ",
+      "inVoice_one": "{{people}} in voice",
+      "inVoice_other": "{{people}} in voice",
+      "sharing": " · sharing",
+      "peopleIn": "In {{name}}",
+      "deafened": " (deafened)",
+      "muted": " (muted)",
+      "sharingScreen": " · sharing screen",
+      "live": "LIVE"
+    },
+    "dismiss": "Dismiss",
+    "hubHome": "Hub Home",
+    "homeBadge_one": "{{count}} rooms with new messages",
+    "homeBadge_other": "{{count}} rooms with new messages",
+    "empty": {
+      "manager": "This Hub has no rooms yet.",
+      "member": "No rooms you can see yet."
+    },
+    "createRoom": "Create a room",
+    "createForum": "Create forum",
+    "createVoiceRoom": "Create voice room",
+    "createRoomIn": "Create room in {{box}}"
+  },
+  "voiceControls": {
+    "latencyTitle": "Measured round-trip voice latency",
+    "toggleSoundboard": "Toggle soundboard",
+    "cameraBackground": "Camera background",
+    "effectOff": "Off",
+    "effectBlur": "Blur",
+    "effectReplace": "Replace background",
+    "startCamera": "Start Camera",
+    "qualityAuto": "Auto",
+    "startSharing": "Start Sharing",
+    "settings": "Voice & audio settings",
+    "disconnectLabel": "Disconnect from voice",
+    "disconnect": "Disconnect",
+    "label": "Voice controls for {{hub}} · {{room}}",
+    "connected": "Voice Connected",
+    "room": "Voice Room",
+    "connectingEllipsis": "Connecting…",
+    "live": "Live",
+    "serverMutedDeafened": "Server muted · Server deafened",
+    "serverMuted": "Server muted",
+    "serverDeafened": "Server deafened",
+    "inputZero": "Microphone input volume is 0%",
+    "holdToTalk": "Hold {{key}} to talk",
+    "connectedCount_one": "{{count}} connected",
+    "connectedCount_other": "{{count}} connected",
+    "unmute": "Unmute",
+    "mute": "Mute",
+    "serverMutedTitle": "A hub moderator has server-muted you.",
+    "serverDeafenedTitle": "A hub moderator has server-deafened you.",
+    "noiseLabel": "Noise suppression: {{mode}}. Click to switch mode.",
+    "noiseTooltip": "Noise suppression: {{mode}} · Click to switch",
+    "soundboard": "Soundboard",
+    "cameraOff": "Turn camera off",
+    "cameraOn": "Turn camera on",
+    "cameraOffShort": "Camera Off",
+    "camera": "Camera",
+    "stopScreenShare": "Stop screen sharing",
+    "shareScreen": "Share screen",
+    "stopSharing": "Stop sharing",
+    "stopShareShort": "Stop Share",
+    "shareScreenShort": "Share Screen",
+    "resolution": "Resolution & frame rate",
+    "systemAudio": "System audio",
+    "systemAudioHint": "Share computer sound with viewers",
+    "settingsShort": "Voice settings",
+    "leave": "Leave voice",
+    "connecting": "Connecting...",
+    "switch": "Switch Voice",
+    "join": "Join Voice",
+    "quality": "{{resolution}} · {{fps}} FPS"
+  },
+  "voiceStage": {
+    "uploadSound": "Upload Sound",
+    "deleteSound": "Delete sound",
+    "soundboardEmpty": "Upload short MP3, WAV, OGG, M4A or WebM sounds for this Hub.",
+    "layoutLabel": "Screen share layout",
+    "layoutFocus": "Focus",
+    "layoutGrid": "Grid",
+    "fullscreen": "Fullscreen",
+    "previewDisabled": "Preview disabled",
+    "startWatching": "Start Watching",
+    "stopWatching": "Stop Watching",
+    "participantsHint": "Participants will appear here as they connect.",
+    "inVoice_one": "{{count}} in voice",
+    "inVoice_other": "{{count}} in voice",
+    "empty": "Empty",
+    "soundboardTitle_one": "Soundboard · {{count}} shared sound",
+    "soundboardTitle_other": "Soundboard · {{count}} shared sounds",
+    "soundboardScope": "Available to every member in every voice room of {{hub}}.",
+    "playSound": "Play {{name}}",
+    "joinToPlay": "Join this voice room to play sounds",
+    "deleteSoundNamed": "Delete {{name}}",
+    "peopleSharing_one": "{{count}} people sharing",
+    "peopleSharing_other": "{{count}} people sharing",
+    "youScreenShare": "You · screen share",
+    "youScreenShareTitle": "You · Screen Share",
+    "userScreenShare": "{{name}} · screen share",
+    "userScreenShareTitle": "{{name}} · Screen Share",
+    "isSharing": "{{name}} is sharing their screen",
+    "state": "{{state}}",
+    "stateSharing": "{{state}} · Sharing screen",
+    "deafened": "Deafened",
+    "muted": "Muted",
+    "speaking": "Speaking",
+    "micActive": "Microphone active",
+    "youCamera": "You · Camera",
+    "userCamera": "{{name}} · Camera",
+    "connectingTo": "Connecting to {{room}}…"
+  },
+  "import": {
+    "rollbackFailed": "The reviewed import could not be rolled back."
+  },
+  "actions": {
+    "calendar": {
+      "memberFallback": "Hub member"
+    },
+    "create": {
+      "nameMissing": "Enter a hub name."
+    },
+    "import": {
+      "templateUrlInvalid": "Enter a supported Discord Server Template URL.",
+      "previewOffline": "Could not connect to DeCave to preview this template."
+    },
+    "share": {
+      "opening": "Opening shared Hub...",
+      "opened": "Opened {{name}}.",
+      "offline": "Could not connect to this shared Hub.",
+      "inviteCopied": "One-time invite copied for {{name}}."
+    },
+    "leave": {
+      "confirm": "Leave server \"{{name}}\"?"
+    },
+    "room": {
+      "nameMissing": "Enter a room name.",
+      "unidentified": "Room could not be identified. Reopen Room Settings and try again.",
+      "confirmDelete": "Delete room \"{{name}}\"?\n\nSaved messages in this room will also be deleted."
+    },
+    "members": {
+      "loadFailed": "Could not load hub members.",
+      "confirmRemove": "Remove {{username}} from \"{{hub}}\"?"
+    },
+    "media": {
+      "iconTooLarge": "Icon is too large.",
+      "bannerTooLarge": "Banner is too large.",
+      "headerTooLarge": "Header image is too large.",
+      "chatBackgroundTooLarge": "Chat background is too large.",
+      "notImage": "Choose an image file.",
+      "confirmRemoveBanner": "Remove the sidebar banner? This deletes the image from this Hub.",
+      "confirmRemoveHeader": "Remove the header image? This deletes the image from this Hub.",
+      "confirmRemoveChatBackground": "Remove the chat background? This deletes the image from this Hub.",
+      "loadFeaturesFailed": "Could not load Hub apps and media."
+    },
+    "assets": {
+      "emoteNamePrompt": "Emote name",
+      "stickerNamePrompt": "Sticker name",
+      "confirmDeleteEmote": "Delete emote “{{name}}”?",
+      "confirmDeleteSticker": "Delete sticker “{{name}}”?"
+    },
+    "invite": {
+      "useFailed": "Could not use invite."
+    },
+    "moderation": {
+      "confirmKick": "KICK {{username}}?",
+      "confirmBan": "BAN {{username}}?",
+      "confirmTimeout": "TIMEOUT {{username}}?"
+    },
+    "settings": {
+      "nameMissing": "Enter a Hub name."
+    },
+    "delete": {
+      "ownerOnly": "Only the hub owner can delete this server.",
+      "confirm": "Delete server \"{{name}}\"?\n\nThis also deletes all of its rooms and saved messages."
+    },
+    "preview": {
+      "unreadable": "This Hub preview could not be read."
+    },
+    "browser": {
+      "invalidResponse": "Invalid hub browser response.",
+      "offline": "Could not connect to the hub browser."
+    },
+    "squad": {
+      "confirmLeave": "Leave {{name}}? The temporary room is deleted after the last member leaves.",
+      "readyTitle": "Squad ready",
+      "readyBody_one": "{{count}}/4 players are available for {{game}}.",
+      "readyBody_other": "{{count}}/4 players are available for {{game}}.",
+      "offline": "Could not connect to Squad Finder.",
+      "gameNameMissing": "Type the missing game name first.",
+      "gameSubmitted": "Submitted for review. It will appear after an owner approves it.",
+      "gameSubmitFailed": "Could not submit the game suggestion.",
+      "matchesFound": "Compatible squads found.",
+      "searching": "Searching for compatible players…",
+      "startFailed": "Could not start Squad Finder.",
+      "stopped": "Search stopped."
+    },
+    "realtime": {
+      "voiceRoomDeleted": "This voice room was deleted. Choose another room to continue.",
+      "accessRevoked": "Your access to this Hub was revoked."
+    }
+  },
+  "createHub": {
+    "iconWrongType": "Choose a PNG, JPG, WebP or GIF image.",
+    "iconTooLarge": "Icon must be 3 MB or smaller.",
+    "kicker": "New Hub",
+    "title": "Create a Hub",
+    "intro": "Name it, pick who can join, and choose a starting layout. You will be the owner, and everything can be changed later.",
+    "close": "Close",
+    "basics": "Basics",
+    "uploadIcon": "Upload Hub icon",
+    "iconPreview": "Hub icon preview",
+    "nameLabel": "Hub name",
+    "namePlaceholder": "e.g. Friday Night Squad",
+    "iconFile": "Icon: {{name}}",
+    "removeIcon": "Remove",
+    "iconHint": "Optional icon: square PNG, JPG, WebP or GIF up to 3 MB.",
+    "whoCanJoin": "Who can join",
+    "visibility": {
+      "private": {
+        "title": "Private",
+        "description": "Only people you invite or grant access can join."
+      },
+      "public": {
+        "title": "Public",
+        "description": "Listed in Discover so anyone can find and join."
+      }
+    },
+    "importDiscord": "Import structure from a Discord template",
+    "startingTemplate": "Starting template",
+    "templateAria_one": "{{name}} template: {{description}} {{count}} rooms.",
+    "templateAria_other": "{{name}} template: {{description}} {{count}} rooms.",
+    "roomCount_one": "{{count}} rooms",
+    "roomCount_other": "{{count}} rooms",
+    "whatYouGet": "What you get",
+    "previewStats": "{{text}} text, {{voice}} voice, {{forum}} forum rooms",
+    "privateRoom": "Private room",
+    "enterName": "Enter a name to continue.",
+    "cancel": "Cancel",
+    "creating": "Creating…",
+    "create": "Create Hub"
+  },
+  "manageHub": {
+    "nav": {
+      "overview": {
+        "label": "Overview",
+        "description": "Stats and quick actions for this Hub."
+      },
+      "profile": {
+        "label": "Profile & appearance",
+        "description": "Name, icon, banner, theme and discovery details."
+      },
+      "roles": {
+        "label": "Roles & permissions",
+        "description": "Create roles and choose exactly what each one can do."
+      },
+      "members": {
+        "label": "Members",
+        "description": "Find members, assign roles and take moderation actions."
+      },
+      "invites": {
+        "label": "Invites",
+        "description": "Share one-time invite links with new people."
+      },
+      "rooms": {
+        "label": "Rooms",
+        "description": "Order rooms and open their settings."
+      },
+      "events": {
+        "label": "Events",
+        "description": "The Hub calendar and who can schedule events."
+      },
+      "moderation": {
+        "label": "Moderation & safety",
+        "description": "Slow mode, custom emotes and stickers, and the audit log."
+      },
+      "bots": {
+        "label": "Bots",
+        "description": "Build bots that greet, answer commands and hand out roles."
+      },
+      "danger": {
+        "label": "Danger zone",
+        "description": "Irreversible actions for this Hub."
+      }
+    },
+    "groups": {
+      "hub": "Hub",
+      "people": "People",
+      "content": "Content",
+      "advanced": "Advanced"
+    },
+    "unsavedChanges": "Unsaved changes",
+    "saving": "Saving…",
+    "unsavedNotice": "You have unsaved changes",
+    "reset": "Reset",
+    "saveChanges": "Save changes",
+    "sectionsLabel": "Manage Hub sections",
+    "title": "Manage Hub",
+    "section": "Section",
+    "close": "Close Manage Hub",
+    "publicHub": "Public Hub",
+    "privateHub": "Private Hub",
+    "stats": {
+      "members": "Members",
+      "online": "Online",
+      "rooms": "Rooms",
+      "customRoles": "Custom roles"
+    },
+    "quickActions": "Quick actions",
+    "createRoom": "Create room",
+    "invitePeople": "Invite people",
+    "editRoles": "Edit roles",
+    "manageMembers": "Manage members",
+    "openCalendar": "Open calendar",
+    "editProfile": "Edit profile",
+    "importDiscord": {
+      "title": "Import from Discord",
+      "description": "Review a Discord template before adding its rooms and roles."
+    },
+    "uploading": "Uploading…",
+    "profile": {
+      "legend": "Profile and appearance",
+      "identity": "Identity",
+      "name": "Hub name",
+      "nameRequired": "A Hub name is required.",
+      "icon": "Hub icon",
+      "iconHint": "PNG, JPEG or WebP. Applies immediately after upload.",
+      "uploadIcon": "Upload icon",
+      "fallbackIcon": "Fallback emoji or letters",
+      "fallbackIconHint": "Shown when there’s no uploaded icon.",
+      "description": "Description",
+      "descriptionPlaceholder": "What is this Hub about?",
+      "category": "Category",
+      "categoryPlaceholder": "Racing, MMO, Community",
+      "tags": "Tags",
+      "tagsPlaceholder": "racing, EU, casual"
+    },
+    "visibility": {
+      "title": "Visibility",
+      "ownerOnly": "Only the Hub owner can change visibility.",
+      "label": "Hub visibility",
+      "public": "Public",
+      "publicHint": "Anyone can find this Hub in Discover and join.",
+      "private": "Private",
+      "privateHint": "Only invited people can join."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "theme": "Theme",
+      "themeHint": "Color preset used across this Hub.",
+      "themes": {
+        "midnight": "Midnight",
+        "ocean": "Ocean",
+        "forest": "Forest",
+        "ember": "Ember"
+      },
+      "accent": "Accent color",
+      "accentHint": "Used for highlights and the icon ring.",
+      "ring": "Highlight icon ring",
+      "ringHint": "Draw the accent color around the Hub icon."
+    },
+    "media": {
+      "change": "Change",
+      "remove": "Remove",
+      "show": "Show",
+      "banner": {
+        "current": "Current sidebar banner",
+        "none": "No banner",
+        "title": "Sidebar banner",
+        "hint": "Fills the Hub sidebar behind the room list. {{spec}}.",
+        "add": "Add banner",
+        "on": "Dimmed for readability.",
+        "off": "Add a banner to turn this on."
+      },
+      "header": {
+        "current": "Current header image",
+        "none": "No header",
+        "title": "Header image",
+        "hint": "Wide image at the top of Hub Home and the Streamer Overview, shown whole. Without one, the sidebar banner is used. {{spec}}.",
+        "add": "Add header"
+      },
+      "chat": {
+        "current": "Current chat background",
+        "none": "No photo",
+        "title": "Chat background",
+        "hint": "Behind the message list, dimmed automatically. {{spec}}.",
+        "add": "Add photo",
+        "on": "Shown in every room of this Hub.",
+        "off": "Add a photo to turn this on."
+      }
+    },
+    "invites": {
+      "title": "One-time invite link",
+      "description": "Each link works once and expires after 24 hours. Use it for people who aren’t your friends yet.",
+      "label": "Invite link",
+      "generating": "Generating secure invite…",
+      "placeholder": "Generate a link to share",
+      "copy": "Copy link",
+      "generate": "Generate",
+      "another": "Generate another link"
+    },
+    "rooms": {
+      "empty": "This Hub has no rooms yet.",
+      "groups": {
+        "text": "Text rooms",
+        "forum": "Forum rooms",
+        "voice": "Voice rooms"
+      },
+      "private": "Private",
+      "public": "Public",
+      "moveUp": "Move {{name}} up",
+      "moveDown": "Move {{name}} down",
+      "settings": "Settings"
+    },
+    "events": {
+      "calendar": "Hub calendar",
+      "calendarHint": "See upcoming events, RSVPs and schedule new ones.",
+      "create": "Create event",
+      "whoTitle": "Who can create events",
+      "whoDescription": "Events are posted into a text room, so anyone who can post in a text room can schedule events there. To limit who creates events, make rooms private on the Rooms page and grant access to specific members.",
+      "noPermission": "A dedicated “create events” permission isn’t available yet."
+    },
+    "moderation": {
+      "legend": "Moderation settings",
+      "slowMode": "Slow mode",
+      "slowModeHint": "Seconds members must wait between messages (0–120). Staff are exempt.",
+      "assets": "Emotes & stickers",
+      "assetsHint": "Custom images members can use in this Hub.",
+      "uploadEmote": "Upload emote",
+      "uploadSticker": "Upload sticker",
+      "emote": "Emote",
+      "sticker": "Sticker",
+      "deleteAsset": "Delete {{name}}",
+      "delete": "Delete",
+      "audit": "Audit log",
+      "auditHint": "Recent changes to settings, roles and members.",
+      "refresh": "Refresh",
+      "loadAudit": "Load audit log"
+    },
+    "botsUnavailable": "Bots are available to Hub owners and admins.",
+    "danger": {
+      "title": "Delete this Hub",
+      "description": "Permanently deletes the Hub, every room and all saved messages. This can’t be undone.",
+      "delete": "Delete Hub",
+      "confirmTitle": "Delete {{name}}?",
+      "confirmDescription": "This permanently deletes the Hub, all of its rooms and every saved message."
+    },
+    "members": {
+      "actions": "Actions",
+      "actionsFor": "Actions for {{name}}",
+      "timeout": "Time out for 10 minutes",
+      "remove": "Remove from Hub",
+      "ban": "Ban member",
+      "search": "Search members",
+      "filter": "Filter by role",
+      "filters": {
+        "all": "All roles",
+        "owner": "Owner",
+        "admin": "Admins",
+        "member": "Members"
+      },
+      "caption": "Hub members",
+      "columns": {
+        "member": "Member",
+        "roles": "Roles",
+        "access": "Access level",
+        "customRole": "Custom role"
+      },
+      "loading": "Loading members…",
+      "noMatch": "No members match your filters.",
+      "you": " (you)",
+      "joined": "Joined {{date}}",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Member"
+      },
+      "accessFor": "Access level for {{name}}",
+      "customRoleFor": "Custom role for {{name}}",
+      "noCustomRole": "No custom role",
+      "count_one": "{{shown}} of {{count}} member",
+      "count_other": "{{shown}} of {{count}} members",
+      "showMore_one": "Show {{count}} more",
+      "showMore_other": "Show {{count}} more",
+      "addFriends": "Add friends",
+      "addFriendsHint": "Friends who aren’t in this Hub yet can be added directly.",
+      "searchFriends": "Search friends",
+      "loadingFriends": "Loading friends…",
+      "noFriends": "No friends available to add.",
+      "friendNotInHub": "Friend · not in this Hub",
+      "addToHub": "Add to Hub"
+    },
+    "roles": {
+      "groups": {
+        "general": "General",
+        "moderation": "Moderation",
+        "voice": "Voice"
+      },
+      "permissions": {
+        "manageRooms": {
+          "label": "Manage rooms",
+          "description": "Create, edit, reorder and delete rooms, including private room access."
+        },
+        "manageEvents": {
+          "label": "Manage events",
+          "description": "Create, edit and cancel Hub calendar events."
+        },
+        "manageBots": {
+          "label": "Manage bots",
+          "description": "Build, publish and turn off Hub bots. Manage rooms includes this."
+        },
+        "createInvites": {
+          "label": "Create invites",
+          "description": "Generate invite links for people outside the Hub."
+        },
+        "viewAudit": {
+          "label": "View audit log",
+          "description": "See who changed Hub settings, roles and moderation actions."
+        },
+        "moderateMessages": {
+          "label": "Moderate messages",
+          "description": "Delete or pin other people’s messages and forum posts."
+        },
+        "moderateMembers": {
+          "label": "Moderate members",
+          "description": "Time out, remove and ban members below the admin level."
+        },
+        "voiceModerate": {
+          "label": "Moderate voice",
+          "description": "Mute or disconnect people in voice rooms."
+        }
+      },
+      "saveFailed": "The role could not be saved.",
+      "deleteFailed": "The role could not be deleted.",
+      "listLabel": "Roles",
+      "owner": "Owner",
+      "ownerHint": "All permissions",
+      "admin": "Admin",
+      "adminHint": "All except ownership",
+      "createNew": "+ Create role",
+      "ownerOnly": "Only the Hub owner can create or edit roles.",
+      "empty": "This Hub has no custom roles yet.",
+      "editRole": "Edit {{name}}",
+      "newRole": "New role",
+      "details": "Role details",
+      "memberCount_one": "{{count}} member have this role. Assign it from Members.",
+      "memberCount_other": "{{count}} members have this role. Assign it from Members.",
+      "name": "Name",
+      "namePlaceholder": "Moderator",
+      "color": "Color",
+      "icon": "Icon",
+      "suggestedIcons": "Suggested role icons",
+      "useIcon": "Use {{icon}} as role icon",
+      "delete": "Delete role",
+      "unsaved": "Unsaved role changes",
+      "create": "Create role",
+      "draft": "New role draft",
+      "save": "Save role",
+      "confirmTitle": "Delete {{name}}?",
+      "confirmDescription": "Members lose this role and its permissions immediately. Forum posting rules that use it will stop matching anyone."
+    }
+  },
+  "hubHome": {
+    "countdown": {
+      "now": "Happening now",
+      "minutes": "In {{minutes}}m",
+      "hours": "In {{hours}}h {{minutes}}m",
+      "tomorrow": "Tomorrow",
+      "days_one": "In {{count}} days",
+      "days_other": "In {{count}} days"
+    },
+    "saveFailed": "Could not save Hub Home.",
+    "welcomeLabel": "Welcome message",
+    "welcomePlaceholder": "Say hello, explain what this Hub is for, and where new people should start.",
+    "rulesLabel": "Rules, one per line",
+    "rulesPlaceholder": "Be decent. No harassment.\nClips go in the clips room.\nMic required for ranked squads.",
+    "rulesCount_one": "One rule per line · up to {{count}} rules",
+    "rulesCount_other": "One rule per line · up to {{count}} rules",
+    "liveVoice": "● Live voice",
+    "andMore_one": " and {{count}} more",
+    "andMore_other": " and {{count}} more",
+    "sharingScreen": " · sharing screen",
+    "open": "Open",
+    "join": "Join",
+    "nextEvent": "Next event · {{when}}",
+    "going_one": "{{count}} going",
+    "going_other": "{{count}} going",
+    "rsvp": {
+      "going": "You're going",
+      "maybe": "You said maybe",
+      "none": "No reply yet"
+    },
+    "details": "Details",
+    "quiet": {
+      "title": "It's quiet right now",
+      "detail": "Nobody is in voice and nothing is scheduled."
+    },
+    "scheduleEvent": "Schedule an event",
+    "catchUp": {
+      "mentions_one": "{{count}} mention",
+      "mentions_other": "{{count}} mentions",
+      "unread_one": "{{count}} new message",
+      "unread_other": "{{count}} new messages",
+      "activity": "New activity",
+      "empty": "You're all caught up. New messages in this Hub show up here.",
+      "titleWithCount": "Catch up · {{n}}"
+    },
+    "about": {
+      "manageHint": "Add a description in Manage Hub so new members know what this Hub is for.",
+      "empty": "This Hub has not added a description yet."
+    },
+    "events": {
+      "empty": "No upcoming events.",
+      "scheduleOne": "Schedule one"
+    },
+    "members": {
+      "hidden": "Hidden: this Hub keeps its member list private.",
+      "friendsHere_one": " · {{count}} friend here",
+      "friendsHere_other": " · {{count}} friends here"
+    },
+    "online": "{{online}} online",
+    "memberCount_one": "{{members}} members",
+    "memberCount_other": "{{members}} members",
+    "links": {
+      "markAllRead": "Mark all read",
+      "edit": "Edit",
+      "calendar": "Calendar",
+      "seeAll": "See all"
+    },
+    "sections": {
+      "welcome": {
+        "title": "Welcome message",
+        "hint": "A short note you write for everyone who opens the Hub."
+      },
+      "now": {
+        "title": "Happening now",
+        "hint": "Live voice rooms and the next event."
+      },
+      "catchUp": {
+        "title": "Catch up",
+        "hint": "Rooms with new messages, different for each member."
+      },
+      "about": {
+        "title": "About",
+        "hint": "The Hub description and tags."
+      },
+      "rules": {
+        "title": "Rules",
+        "hint": "One rule per line, numbered automatically."
+      },
+      "events": {
+        "title": "Upcoming events",
+        "hint": "The next events from the Hub calendar."
+      },
+      "members": {
+        "title": "Members",
+        "hint": "Who is here and how many are online."
+      }
+    },
+    "moveSectionUp": "Move {{section}} up",
+    "moveSectionDown": "Move {{section}} down",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "shown": "Shown",
+    "hidden": "Hidden",
+    "rootLabel": "{{name}} Hub Home",
+    "kicker": "Hub Home",
+    "membershipPrivate": "Membership private",
+    "private": "Private",
+    "public": "Public",
+    "muted": "Muted",
+    "notificationsOn": "Notifications on",
+    "invite": "Invite",
+    "insights": {
+      "loadFailed": "Could not load insights.",
+      "kicker": "Hub insights · only owners and admins",
+      "loading": "Loading…",
+      "members": "Members",
+      "joinedThisWeek_one": "+{{count}} this week",
+      "joinedThisWeek_other": "+{{count}} this week",
+      "noNewMembers": "No new members this week",
+      "messagesThisWeek": "Messages this week",
+      "vsLastWeek": "{{change}} vs last week",
+      "changeNew": "New",
+      "changeSame": "Same",
+      "peopleWhoTalked": "People who talked",
+      "busiestTime": "Busiest time",
+      "busiestHint": "Last 30 days, your time",
+      "perDay": "Messages per day, last 14 days",
+      "byHour": "Messages by hour of day, last 30 days (your time)",
+      "barLabel_one": "{{label}}: {{count}} messages",
+      "barLabel_other": "{{label}}: {{count}} messages",
+      "barTip_one": "messages · {{label}}",
+      "barTip_other": "messages · {{label}}",
+      "rooms": "Rooms, last 30 days",
+      "roomMessages_one": "{{count}} message",
+      "roomMessages_other": "{{count}} messages",
+      "quietRoom": "#{{name}} had no messages this month. Consider merging or renaming it.",
+      "quietRooms_one": "{{count}} rooms had no messages this month. Consider merging or renaming them.",
+      "quietRooms_other": "{{count}} rooms had no messages this month. Consider merging or renaming them.",
+      "mostActive": "Most active, last 30 days",
+      "nobody": "Nobody has written yet."
+    },
+    "customize": "Customize",
+    "insightsButton": "Insights",
+    "joinRoom": "Join {{name}}",
+    "customizeTitle": "Customize Hub Home",
+    "customizeHint": "Choose which sections everyone sees and in what order. Catch up is different for each member.",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "save": "Save",
+    "allHidden": "Every section is hidden. Use Customize to show some.",
+    "notSetUp": "This Hub has not set up its Home yet.",
+    "close": "Close",
+    "setup": {
+      "title": "Set up your Hub",
+      "progress": "{{done}} of {{total}} done. Only owners and admins see this.",
+      "progressLabel": "Setup progress",
+      "hide": "Hide",
+      "done": "Done",
+      "steps": {
+        "describe": {
+          "title": "Say what your Hub is for",
+          "detail": "A short description shows on Discover and Hub Home.",
+          "action": "Add description"
+        },
+        "artwork": {
+          "title": "Add an icon or banner",
+          "detail": "Helps people spot your Hub in the top bar and on Discover.",
+          "action": "Add artwork"
+        },
+        "welcome": {
+          "title": "Write a welcome message",
+          "detail": "The first thing new members read on Hub Home.",
+          "action": "Write welcome"
+        },
+        "rules": {
+          "title": "Set a few rules",
+          "detail": "Clear rules make moderation easier.",
+          "action": "Add rules"
+        },
+        "rooms": {
+          "title": "Create rooms for your topics",
+          "detail": "For example #lfg, #clips or #help next to #general.",
+          "action": "Create a room"
+        },
+        "event": {
+          "title": "Plan your first event",
+          "detail": "Game nights and tournaments bring people back.",
+          "action": "Create event"
+        },
+        "invite": {
+          "title": "Invite your first members",
+          "detail": "Share the invite link with friends.",
+          "action": "Copy invite link"
+        }
+      }
+    }
+  },
+  "switcher": {
+    "mentions_one": "{{count}} mentions",
+    "mentions_other": "{{count}} mentions",
+    "unread_one": "{{count}} unread",
+    "unread_other": "{{count}} unread",
+    "label": "Hubs",
+    "mutedSuffix": " · muted",
+    "unreadSuffix_one": " · {{count}} unread",
+    "unreadSuffix_other": " · {{count}} unread",
+    "open": "Open {{name}}",
+    "moreHubs_one": "{{count}} more Hubs",
+    "moreHubs_other": "{{count}} more Hubs",
+    "unreadMessages": "unread messages",
+    "create": "Create Hub",
+    "add": "Add",
+    "moreMenu": "More Hubs"
+  },
+  "voicePanel": {
+    "connecting": "Connecting…",
+    "connected": "Voice connected",
+    "connectedPing": "Voice connected · {{ms}} ms",
+    "serverMuted": "Server muted",
+    "unmute": "Unmute",
+    "mute": "Mute",
+    "serverDeafened": "Server deafened",
+    "undeafen": "Undeafen",
+    "deafen": "Deafen",
+    "region": "Voice connection",
+    "openRoom": "Open voice room",
+    "peopleInVoice_one": "{{count}} person in voice",
+    "peopleInVoice_other": "{{count}} people in voice",
+    "stopScreenSharing": "Stop screen sharing",
+    "shareScreen": "Share screen",
+    "stopSharing": "Stop sharing",
+    "disconnectFromVoice": "Disconnect from voice",
+    "disconnect": "Disconnect"
+  },
+  "composerPlus": {
+    "label": "Add to message"
+  },
+  "roomSettings": {
+    "tabs": {
+      "general": "General",
+      "permissions": "Permissions",
+      "forum": "Forum"
+    },
+    "createTitle": "Create room",
+    "title": "Room settings",
+    "newRoomIn": "New room in <strong>{{hub}}</strong>",
+    "untitled": "Untitled room",
+    "close": "Close room settings",
+    "sections": "Room settings sections",
+    "name": "Room name",
+    "namePlaceholder": "e.g. general-chat",
+    "icon": {
+      "label": "Icon or emoji",
+      "suggested": "Suggested icons",
+      "use": "Use {{icon}} as icon",
+      "fewer": "Fewer icons",
+      "more": "More icons",
+      "searchPlaceholder": "Search icons, e.g. rules, clips, cs, music",
+      "search": "Search icons",
+      "useNamed": "Use {{icon}} ({{name}}) as icon",
+      "noMatch": "No icons match. You can type or paste any emoji in the box."
+    },
+    "iconGroups": {
+      "chat": "Chat",
+      "info": "Info",
+      "gaming": "Gaming",
+      "esports": "Esports",
+      "voice": "Voice & media",
+      "creative": "Creative",
+      "community": "Community",
+      "food": "Food",
+      "nature": "Animals & nature",
+      "symbols": "Symbols"
+    },
+    "type": {
+      "label": "Room type",
+      "fixed": "The type can’t be changed after the room is created.",
+      "setAtCreation": "Set when the room was created.",
+      "text": {
+        "label": "Text",
+        "description": "Conversations, links and media."
+      },
+      "voice": {
+        "label": "Voice",
+        "description": "Talk, share your screen and stream."
+      },
+      "forum": {
+        "label": "Forum",
+        "description": "Organized posts with replies and tags."
+      }
+    },
+    "post": {
+      "label": "Who can post",
+      "hint": "Everyone in the room can still read and react.",
+      "everyone": {
+        "label": "Everyone",
+        "description": "Anyone who can see the room."
+      },
+      "staff": {
+        "label": "Staff only (read-only)",
+        "description": "The owner, admins and moderators."
+      },
+      "roles": {
+        "label": "Selected roles",
+        "description": "Staff plus members with a role you pick."
+      },
+      "noRoles": "This Hub has no custom roles yet."
+    },
+    "userLimit": {
+      "label": "Max players",
+      "hint": "0 means no limit. The owner and admins can still join a full room."
+    },
+    "delete": {
+      "title": "Delete room",
+      "description": "Permanently removes the room and all of its saved messages.",
+      "action": "Delete room",
+      "confirmTitle": "Delete room?",
+      "confirmDescription": "This permanently deletes the room and every saved message in it. This can’t be undone.",
+      "confirmWord": "delete"
+    },
+    "visibility": {
+      "label": "Room visibility",
+      "public": "Public",
+      "publicHint": "Every Hub member can see and join this room.",
+      "private": "Private",
+      "privateHint": "Only selected members, plus the Hub owner and admins."
+    },
+    "access": {
+      "title": "Member access",
+      "selected_one": "{{count}} member selected. Owners and admins always have access.",
+      "selected_other": "{{count}} members selected. Owners and admins always have access.",
+      "search": "Search members",
+      "searchPlaceholder": "Search Hub members",
+      "you": " (you)",
+      "ownerAlways": "Owner · always has access",
+      "adminAlways": "Admin · always has access",
+      "alwaysAria": "{{name}} always has access",
+      "has": "Has access",
+      "none": "No access",
+      "toggleAria": "Room access for {{name}}",
+      "noOthers": "No other members in this Hub yet.",
+      "noMatch": "No members match your search.",
+      "forumTabHint": "Posting permissions for this forum are on the <tab>Forum tab</tab>."
+    },
+    "forum": {
+      "warnings": {
+        "noRoles": "“Only selected roles” is chosen but no roles are selected — only the owner and admins will be able to post.",
+        "emptyRoles_one": "{{names}} has no members yet, so nobody gains posting access from it.",
+        "emptyRoles_other": "{{names}} have no members yet, so nobody gains posting access from them.",
+        "noMembers": "“Only selected members” is chosen but no members are selected — only the owner and admins will be able to post."
+      },
+      "guidelines": "Post guidelines",
+      "guidelinesHint": "Shown to people before they create a post.",
+      "guidelinesPlaceholder": "Share the topic, rules, and what a useful post should include.",
+      "policyLabel": "Who can post",
+      "policyHint": "Everyone can still read and reply where they have access.",
+      "policies": {
+        "everyone": "Everyone in the Hub",
+        "staff": "Owner, admins and moderators",
+        "roles": "Only selected roles",
+        "members": "Only selected members"
+      },
+      "rolesAllowed": "Roles allowed to post",
+      "roleMembers_one": "{{count}} member",
+      "roleMembers_other": "{{count}} members",
+      "noRoles": "This Hub has no custom roles yet. Create them in Manage Hub → Roles.",
+      "membersAllowed": "Members allowed to post",
+      "alwaysAllowed": "{{role}} · always allowed"
+    },
+    "roles": {
+      "owner": "owner",
+      "admin": "admin",
+      "member": "member"
+    },
+    "tags": {
+      "title": "Post tags",
+      "description": "Moderators define the tags people can pick when posting. Use the arrows to set their order.",
+      "new": "New tag",
+      "placeholder": "Add a tag, e.g. Question",
+      "add": "Add tag",
+      "count_one": "{{count}}/{{max}} tags",
+      "count_other": "{{count}}/{{max}} tags",
+      "list": "Forum tags",
+      "moveUp": "Move {{tag}} up",
+      "moveDown": "Move {{tag}} down",
+      "removeTag": "Remove {{tag}}",
+      "remove": "Remove",
+      "unsupported": "Moderator tag lists aren’t available on this server yet. Posts can still use free-form tags."
+    },
+    "cancel": "Cancel",
+    "creating": "Creating…",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "style": {
+      "tooLarge": "Room background is too large (8 MB max).",
+      "notImage": "Choose an image file.",
+      "title": "Style",
+      "hint": "Give this room its own colour and background. Empty uses the Hub’s.",
+      "previewRoom": "room",
+      "previewSend": "Send",
+      "accent": "Accent colour",
+      "accents": "Accent colours",
+      "hubAccent": "Hub accent",
+      "swatches": {
+        "violet": "Violet",
+        "blue": "Blue",
+        "cyan": "Cyan",
+        "teal": "Teal",
+        "green": "Green",
+        "lime": "Lime",
+        "yellow": "Yellow",
+        "amber": "Amber",
+        "orange": "Orange",
+        "red": "Red",
+        "pink": "Pink",
+        "steel": "Steel"
+      },
+      "custom": "Custom colour",
+      "background": "Background",
+      "backgroundHint": "{{spec}}. PNG, JPG, WebP or GIF up to 8 MB.",
+      "replace": "Replace",
+      "upload": "Upload",
+      "remove": "Remove"
+    }
+  },
+  "pins": {
+    "kinds": {
+      "forumPost": "Forum post",
+      "event": "Event",
+      "poll": "Poll",
+      "bot": "Bot message",
+      "gif": "GIF",
+      "sticker": "Sticker",
+      "image": "Image",
+      "file": "File",
+      "message": "Message"
+    },
+    "kindsWithDetail": {
+      "forumPost": "Forum post: {{detail}}",
+      "event": "Event: {{detail}}",
+      "poll": "Poll: {{detail}}",
+      "bot": "Bot message: {{detail}}",
+      "gif": "GIF: {{detail}}",
+      "sticker": "Sticker: {{detail}}",
+      "image": "Image · {{detail}}",
+      "file": "File · {{detail}}",
+      "message": "Message: {{detail}}"
+    },
+    "loadFailed": "Could not load pinned messages.",
+    "title": "Pinned messages",
+    "titleWithCount": "Pinned messages · {{n}}",
+    "close": "Close",
+    "loading": "Loading…",
+    "empty": "No pinned messages yet",
+    "emptyCanPin": "Pin an important message from its menu so everyone can find it here.",
+    "emptyMember": "Admins can pin important messages so everyone can find them here.",
+    "jumpTitle": "Show this message in the room",
+    "jump": "Jump",
+    "less": "Less",
+    "readAll": "Read all",
+    "unpinning": "Unpinning…",
+    "unpin": "Unpin"
+  },
+  "templates": {
+    "names": {
+      "blank": "Blank",
+      "friends": "Friends / Hangout",
+      "gaming": "Gaming",
+      "community": "Community",
+      "creator": "Creator",
+      "esports": "Esports / Clan",
+      "development": "Development",
+      "support": "Support",
+      "project": "Project / Team",
+      "streamer": "Streamer Mode · Overview layout"
+    },
+    "descriptions": {
+      "blank": "A clean starting point for your own Hub structure.",
+      "friends": "A lightweight space for friends, chat, and shared media.",
+      "gaming": "Rooms for finding teammates, sharing clips, and organizing squads.",
+      "community": "A structured public Hub with information, discussions, events, and voice.",
+      "creator": "Keep content, feedback, suggestions, and community chat together.",
+      "esports": "Coordinate rosters, scrims, strategy, clips, and private staff work.",
+      "development": "A focused project space for bugs, releases, ideas, and team voice.",
+      "support": "Help users find answers, report issues, and reach the support team.",
+      "project": "Organize updates, tasks, docs, deadlines, and team rooms.",
+      "streamer": "Creator Overview, community sessions, events, and a full-height Hub banner."
+    },
+    "rooms": {
+      "general": "general",
+      "generalVoice": "General Voice",
+      "offTopic": "off-topic",
+      "mediaMemes": "media-memes",
+      "lounge": "Lounge",
+      "lfg": "LFG",
+      "gameDiscussion": "game-discussion",
+      "clips": "clips",
+      "screenshots": "screenshots",
+      "gamingRoom": "Gaming Room",
+      "squad1": "Squad 1",
+      "squad2": "Squad 2",
+      "afk": "AFK",
+      "welcome": "welcome",
+      "announcements": "announcements",
+      "rules": "rules",
+      "media": "media",
+      "discussions": "discussions",
+      "events": "events",
+      "communityVoice": "Community Voice",
+      "uploads": "uploads",
+      "feedback": "feedback",
+      "suggestions": "suggestions",
+      "communityChat": "community-chat",
+      "creatorRoom": "Creator Room",
+      "roster": "roster",
+      "scrims": "scrims",
+      "strategy": "strategy",
+      "staff": "staff",
+      "development": "development",
+      "bugs": "bugs",
+      "featureRequests": "feature-requests",
+      "releases": "releases",
+      "showcase": "showcase",
+      "teamVoice": "Team Voice",
+      "faq": "FAQ",
+      "help": "help",
+      "knownIssues": "known-issues",
+      "generalDiscussion": "general-discussion",
+      "staffSupport": "staff-support",
+      "updates": "updates",
+      "tasks": "tasks",
+      "docsFiles": "docs-files",
+      "deadlines": "deadlines",
+      "teamRoom": "Team Room",
+      "streamerRoom": "Streamer Room"
+    },
+    "categories": {
+      "general": "GENERAL",
+      "voice": "VOICE",
+      "social": "SOCIAL",
+      "community": "COMMUNITY",
+      "media": "MEDIA",
+      "information": "INFORMATION",
+      "content": "CONTENT",
+      "competitive": "COMPETITIVE",
+      "staff": "STAFF",
+      "development": "DEVELOPMENT",
+      "support": "SUPPORT",
+      "project": "PROJECT",
+      "streamerHub": "STREAMER HUB",
+      "voiceRooms": "VOICE ROOMS"
+    }
+  },
+  "media": {
+    "banner": {
+      "hint": "Recommended: {{width}}×{{height}} px, portrait (minimum {{minWidth}}×{{minHeight}})"
+    },
+    "chatBackground": {
+      "hint": "Recommended: {{width}}×{{height}} px, landscape (minimum {{minWidth}}×{{minHeight}})"
+    },
+    "header": {
+      "hint": "Recommended: {{width}}×{{height}} px; any wide image from 4:3 to 4:1 works (at least {{minWidth}} px wide)"
+    }
+  },
+  "mobile": {
+    "hubs": {
+      "couldNotLoadHubs": "Could not load Hubs.",
+      "couldNotCreateHub": "Could not create Hub.",
+      "couldNotJoinHub": "Could not join Hub.",
+      "couldNotUseThatInvite": "Could not use that invite.",
+      "yourCommunities": "YOUR COMMUNITIES",
+      "roomsVoiceAndThePeople": "Rooms, voice and the people you play with.",
+      "createOrJoinAHub": "Create or join a Hub",
+      "searchYourHubs": "Search your Hubs",
+      "findAPublicHub": "Find a public Hub",
+      "memberships": "MEMBERSHIPS",
+      "publicHubs": "PUBLIC HUBS",
+      "noMatchingHubs": "No matching Hubs",
+      "noPublicHubsRightNow": "No public Hubs right now",
+      "tryAnotherNameCategoryOr": "Try another name, category or tag.",
+      "createYourOwnHubOr": "Create your own Hub or discover a public community.",
+      "publicCommunitiesWillAppearHere": "Public communities will appear here when they are available.",
+      "joinAHub": "Join a Hub",
+      "newCommunity": "NEW COMMUNITY",
+      "hubName": "HUB NAME",
+      "giveYourHubAName": "Give your Hub a name",
+      "privacy": "PRIVACY",
+      "inviteOnly": "Invite only",
+      "discoverable": "Discoverable",
+      "haveAnInvite": "HAVE AN INVITE?",
+      "inviteCodeOrLink": "Invite code or link",
+      "joinWithInvite": "Join with invite",
+      "joining": "Joining…",
+      "onlinecountOnline": "{{onlineCount}} online",
+      "categoryMembers": "{{category}} · {{count}} members"
+    },
+    "hub": {
+      "couldNotLoadThisHub": "Could not load this Hub.",
+      "couldNotLoadHubMembers": "Could not load Hub members.",
+      "couldNotUpdateTheHub": "Could not update the Hub.",
+      "couldNotLoadRoomAccess": "Could not load room access.",
+      "couldNotSaveTheRoom": "Could not save the room.",
+      "couldNotMoveTheRoom": "Could not move the room.",
+      "deleteName": "Delete {{name}}?",
+      "messagesSavedInThisRoom": "Messages saved in this room may also be removed. This cannot be undone.",
+      "couldNotDeleteTheRoom": "Could not delete the room.",
+      "tryAgain": "Try again",
+      "goBack": "Go back",
+      "manageThisHub": "Manage this Hub",
+      "editHubDetailsCreateRooms": "Edit Hub details, create rooms, and manage existing rooms.",
+      "textRooms": "TEXT ROOMS",
+      "noTextRoomsInThis": "No text rooms in this Hub.",
+      "forums": "FORUMS",
+      "noForumsInThisHub": "No forums in this Hub.",
+      "voiceRooms": "VOICE ROOMS",
+      "noVoiceRoomsInThis": "No voice rooms in this Hub.",
+      "pickARoomToStart": "Pick a room to start chatting",
+      "onlineMembers": "{{online}} online · {{count}} members",
+      "withRole": "{{summary}} · {{role}}"
+    },
+    "hubAdmin": {
+      "hubSettingsUpdated": "Hub settings updated.",
+      "memberAdded": "Member added.",
+      "makeUsernameAnAdmin": "Make {{username}} an admin?",
+      "removeAdminAccessFromUsername": "Remove admin access from {{username}}?",
+      "adminsCanManageRoomsAnd": "Admins can manage rooms and moderate Hub members.",
+      "theyWillBecomeARegular": "They will become a regular member and lose Hub management permissions.",
+      "makeAdmin": "Make Admin",
+      "removeAdmin": "Remove Admin",
+      "removeMember": "Remove member?",
+      "removeUsernameFromThisHub": "Remove {{username}} from this Hub?",
+      "thisRemovesTheMemberAnd": "This removes the member and blocks rejoining until unbanned.",
+      "thisActionIsRecordedIn": "This action is recorded in the Hub audit log.",
+      "inviteWasCreatedButThe": "Invite was created but the server returned no link/code.",
+      "oneTimeInviteCreated24": "One-time invite created (24 hours, one use). ",
+      "theImageIsDeletedAnd": "The image is deleted and hidden for everyone in this Hub.",
+      "sidebarBannerRemoved": "Sidebar banner removed.",
+      "chatBackgroundRemoved": "Chat background removed.",
+      "photoLibraryPermissionIsRequired": "Photo library permission is required.",
+      "couldNotUploadHubImage": "Could not upload Hub image.",
+      "deleteAsset": "Delete asset?",
+      "deleteName": "Delete {{name}}?",
+      "deleteBot": "Delete bot?",
+      "loadingHubManagement": "Loading Hub management…",
+      "hubControl": "HUB CONTROL",
+      "manageName": "Manage {{name}}",
+      "hubProfileDiscovery": "HUB PROFILE & DISCOVERY",
+      "changeHubImage": "Change Hub image",
+      "fillsTheHubSidebarBehind": "Fills the Hub sidebar behind the room list.",
+      "behindTheMessageListDimmed": "Behind the message list, dimmed automatically.",
+      "accentRrggbb": "Accent (#RRGGBB)",
+      "tagsCommaSeparatedMax6": "Tags (comma separated, max 6)",
+      "slowModeSeconds0120": "Slow mode seconds (0–120)",
+      "roomsPrivateAccess": "ROOMS & PRIVATE ACCESS",
+      "createEditReorderOrDelete": "Create, edit, reorder or delete text, voice and forum rooms, set room icons, and choose members for private rooms.",
+      "botBuilder": "BOT BUILDER",
+      "turnBotsOnOrOff": "Turn bots on or off, see their activity, or start from a template. Edit rules on desktop or web.",
+      "invites": "INVITES",
+      "createOneTimeInvite": "Create one-time invite",
+      "expiresAfter24HoursAnd": "Expires after 24 hours and can be consumed once.",
+      "membersCount": "MEMBERS · {{count}}",
+      "usernameOrDecaveId": "Username or DeCave ID",
+      "addMember": "Add member",
+      "changeUsernameSRoleCurrent": "Change {{username}}'s role. Current role: {{role}}",
+      "removeUsername": "Remove {{username}}",
+      "n10mTimeout": "10m timeout",
+      "kick": "Kick",
+      "ban": "Ban",
+      "customRoles": "CUSTOM ROLES",
+      "roleName": "Role name",
+      "noExtraPermissions": "No extra permissions",
+      "emotesStickers": "EMOTES & STICKERS",
+      "assetNameOptional": "Asset name (optional)",
+      "noCustomAssets": "No custom assets.",
+      "deleteAsset2": "Delete asset",
+      "hubBots": "HUB BOTS",
+      "botName": "Bot name",
+      "createBot": "Create bot",
+      "copyThisTokenNowIt": "COPY THIS TOKEN NOW — IT IS SHOWN ONCE",
+      "noHubBots": "No Hub bots.",
+      "enabled": "ENABLED",
+      "disabled": "DISABLED",
+      "pauseName": "Pause {{name}}",
+      "resumeName": "Resume {{name}}",
+      "deleteName2": "Delete {{name}}",
+      "auditLog": "AUDIT LOG",
+      "system": "System",
+      "saveHubSettings": "Save Hub settings",
+      "permissions": {
+        "voiceModerate": "Voice moderation",
+        "viewAudit": "View audit"
+      },
+      "loadFailed": "Could not load Hub management.",
+      "updateFailed": "Could not update Hub.",
+      "visibilityFailed": "Could not update Hub visibility.",
+      "addMemberFailed": "Could not add member.",
+      "roleFailed": "Could not update role.",
+      "removeMemberFailed": "Could not remove member.",
+      "moderation": {
+        "timeout": "Timeout 10 minutes",
+        "timeoutConfirm": "Timeout 10 minutes {{username}}?",
+        "kickConfirm": "Kick {{username}}?",
+        "banConfirm": "Ban {{username}}?",
+        "timeoutFailed": "Could not timeout member.",
+        "kickFailed": "Could not kick member.",
+        "banFailed": "Could not ban member."
+      },
+      "inviteTitle": "Join {{hub}} on DeCave",
+      "inviteTitleFallback": "Join my Hub on DeCave",
+      "inviteFailed": "Could not create invite.",
+      "artworkFailed": "Could not update Hub artwork.",
+      "removeBanner": "Remove sidebar banner?",
+      "removeChatBackground": "Remove chat background?",
+      "removeBannerFailed": "Could not remove sidebar banner.",
+      "removeChatBackgroundFailed": "Could not remove chat background.",
+      "iconUpdated": "Hub profile image updated.",
+      "bannerUpdated": "Sidebar banner updated.",
+      "chatBackgroundUpdated": "Chat background updated.",
+      "uploadImageFailed": "Could not upload Hub image.",
+      "createRoleFailed": "Could not create custom role.",
+      "assignRoleFailed": "Could not assign custom role.",
+      "emoteTooLarge": "Emote is too large.",
+      "stickerTooLarge": "Sticker is too large.",
+      "uploadEmoteFailed": "Could not upload emote.",
+      "uploadStickerFailed": "Could not upload sticker.",
+      "deleteAssetFailed": "Could not delete asset.",
+      "createBotFailed": "Could not create Hub bot.",
+      "updateBotFailed": "Could not update bot.",
+      "deleteBotFailed": "Could not delete bot.",
+      "bannerNote": "Dimmed for readability.",
+      "bannerNoteEmpty": "Add a banner to turn this on.",
+      "chatNote": "Shown in every room of this Hub.",
+      "chatNoteEmpty": "Add a photo to turn this on.",
+      "recentEvents_one": "{{count}} recent event",
+      "recentEvents_other": "{{count}} recent events",
+      "mediaCurrent": "Current {{item}}",
+      "mediaRemove": "Remove {{item}}",
+      "mediaShow": "Show {{item}}"
+    },
+    "join": {
+      "couldnTUseThisInvite": "Couldn't use this invite.",
+      "inviteDidnTWork": "Invite didn't work",
+      "goHome": "Go home",
+      "joiningHub": "Joining Hub…"
+    },
+    "rooms": {
+      "add": "Add room",
+      "draft": "Draft",
+      "connected": "Connected · tap for voice controls",
+      "voiceJoin": "Voice Room · tap to join",
+      "textRoom": "Text Room",
+      "edit": "Edit {{name}}"
+    },
+    "manage": {
+      "kicker": "HUB MANAGEMENT",
+      "title": "Manage {{name}}",
+      "visibilityOwner": "Only the Hub owner can change public/private visibility.",
+      "visibilityPublic": "This Hub is public. Visibility can only be changed by the owner.",
+      "visibilityPrivate": "This Hub is private. Visibility can only be changed by the owner.",
+      "rooms": "ROOMS",
+      "createRoom": "Create a new room",
+      "createRoomHint": "Add another Text Room or Voice Room to this Hub.",
+      "save": "Save Hub changes"
+    },
+    "roomEditor": {
+      "kickerEdit": "ROOM SETTINGS",
+      "kickerNew": "NEW ROOM",
+      "titleNew": "Create a room",
+      "placeholder": {
+        "text": "general",
+        "voice": "Gaming Voice",
+        "forum": "guides"
+      },
+      "icon": "Room icon",
+      "noIcon": "No icon",
+      "useIcon": "Use {{icon}} as room icon",
+      "emojiPlaceholder": "Or type any emoji",
+      "hubAccent": "Use the Hub accent",
+      "swatchAccent": "{{color}} accent",
+      "guidelines": "Forum guidelines",
+      "guidelinesPlaceholder": "What should people post here?",
+      "postPolicy": "Who can start posts",
+      "policyEveryone": "Everyone",
+      "policyStaff": "Owner & admins",
+      "policyLimitedRoles": "Posting is limited to selected roles. That list is kept as-is; pick an option above to replace it.",
+      "policyLimitedMembers": "Posting is limited to selected members. That list is kept as-is; pick an option above to replace it.",
+      "privateHint": "Owner and admins always have access. Choose which regular Hub members can enter below.",
+      "access": "ROOM ACCESS",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "noMembers": "No regular members to select",
+      "noMembersHint": "The room will still be accessible to the Hub owner and admins.",
+      "noMatch": "No matching members",
+      "noMatchHint": "Try a different username.",
+      "save": "Save room",
+      "create": "Create room"
+    }
+  },
+  "hubCategories": {
+    "gaming": "Gaming",
+    "community": "Community",
+    "racing": "Racing",
+    "creative": "Creative",
+    "music": "Music"
+  }
+}

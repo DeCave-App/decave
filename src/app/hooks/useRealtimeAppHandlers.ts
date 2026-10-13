@@ -25,6 +25,8 @@ import type {
   UiSoundEvent,
   VoiceJoinAttempt,
 } from "../types";
+import { i18next } from "../../i18n/index.ts";
+import { realtimeErrorMessage } from "../../i18n/apiError.ts";
 import type { RealtimeAppHandlers } from "../../realtime/events";
 import type { VoiceEventContext } from "../../realtime/events/voice";
 import type { VoiceCallState } from "../state/voice-call";
@@ -452,7 +454,7 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
       onAuthError: (data) => {
         realtimeReconnectEnabledRef.current = false;
         voiceReconnectChannelRef.current = null;
-        setAuthError(data.message || "Session expired.");
+        setAuthError(realtimeErrorMessage(data, i18next.t("chat.actions.session.expired")));
         storeToken("");
         setCurrentUser(null);
       },
@@ -465,7 +467,14 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
         setSelectedServer(serverId);
         setSelectedChannel(channelId);
         setConnectionStatus("Connected");
-        composer.setAttachmentError((current) => (current.startsWith("Realtime is reconnecting.") ? "" : current));
+        // Clears the "Realtime is reconnecting…" notices left from the outage.
+        const reconnectNotices = [
+          i18next.t("chat.actions.message.attachmentReconnecting"),
+          i18next.t("chat.actions.gif.reconnecting"),
+        ];
+        composer.setAttachmentError((current) =>
+          current.startsWith("Realtime is reconnecting.") || reconnectNotices.includes(current) ? "" : current,
+        );
         void friendActions.loadSocialState();
         if (channelId > 0) void loadMessages(channelId);
 

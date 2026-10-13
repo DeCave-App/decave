@@ -7,6 +7,7 @@ import { DEFAULT_STREAMER_CONFIG, twitchLoginFromUrl, type StreamerConfig } from
 import { FORUM_POST_PREFIX } from "../../shared/forum";
 import { createBuilderBot } from "../bots/store";
 import { BOT_MESSAGE_PREFIX, botMessageText, postBotMessage } from "../lib/hub-bots";
+import { noticeEnglish, noticeOf } from "../lib/notices";
 import type { Env } from "../lib/env";
 import { authBaseUrlForEnvironment } from "../lib/http";
 import { twitchClipThumbnail, twitchClips, twitchClipsById, twitchConfigured, type TwitchClip } from "./client";
@@ -71,31 +72,87 @@ async function clipsRoom(env: Env, hubId: number): Promise<{ id: number; kind: s
 
 /** Plain chat text for a clip (chat rooms); forum rooms get a forum post instead. */
 export function clipChatText(clip: { title: string; creatorName: string; url: string }): string {
-  const title = (clip.title || "New clip").replace(/\s+/g, " ").trim().slice(0, 100);
-  return [
-    `🎬 ${title}`,
-    `Clipped by ${clip.creatorName || "a viewer"}`,
-    clip.url,
-    "React to vote for Clip of the week.",
-  ].join("\n");
+  return clipChatMessage(clip).text;
 }
 
-/** Title and link of a posted clip, from either a chat bot message or a forum post. */
-function clipFromMessage(text: string): { title: string; link: string } {
+/** A clip title from Twitch, as posted (it is the clipper's text and is never translated). */
+function clipTitle(title: string): string {
+  return title.replace(/\s+/g, " ").trim().slice(0, 100);
+}
+
+/**
+ * The clip's chat text in English and as a notice clients translate. The title
+ * stays as written; a clip without one gets DeCave's "New clip" in each
+ * reader's language.
+ */
+function clipChatMessage(clip: { title: string; creatorName: string; url: string }) {
+  const title = clipTitle(clip.title);
+  const creator = clip.creatorName;
+  const notice = !clip.title
+    ? creator
+      ? noticeOf("streamer.server.clipPostedUntitled", { creator, url: clip.url })
+      : noticeOf("streamer.server.clipPostedUntitledAnonymous", { url: clip.url })
+    : creator
+      ? noticeOf("streamer.server.clipPosted", { title, creator, url: clip.url })
+      : noticeOf("streamer.server.clipPostedAnonymous", { title, url: clip.url });
+  return { text: noticeEnglish(notice.code, notice.params), notice };
+}
+
+/**
+ * A clip's forum post. Title and body stay English for clients without
+ * translations; `notice` (the body) and `titleNotice` (only for clips without
+ * a title) let current clients show DeCave's wording in the reader's language.
+ */
+export function clipForumPayload(clip: { title: string; creatorName: string; url: string }) {
+  const notice = clip.creatorName
+    ? noticeOf("streamer.server.clipForumBody", { creator: clip.creatorName, url: clip.url })
+    : noticeOf("streamer.server.clipForumBodyAnonymous", { url: clip.url });
+  const titleNotice = clip.title ? null : noticeOf("streamer.server.clipDefaultTitle");
+  return {
+    version: 1,
+    type: "discussion",
+    title: clip.title ? clipTitle(clip.title) : noticeEnglish("streamer.server.clipDefaultTitle"),
+    tags: [],
+    body: noticeEnglish(notice.code, notice.params),
+    notice,
+    ...(titleNotice ? { titleNotice } : {}),
+  };
+}
+
+const UNTITLED_CLIP_CODES: ReadonlySet<string> = new Set([
+  "streamer.server.clipPostedUntitled",
+  "streamer.server.clipPostedUntitledAnonymous",
+]);
+
+/**
+ * Title and link of a posted clip, from either a chat bot message or a forum
+ * post. `untitled`: the clip had no title, so DeCave's "New clip" stands in.
+ */
+function clipFromMessage(text: string): { title: string; link: string; untitled: boolean } {
   try {
     if (text.startsWith(FORUM_POST_PREFIX)) {
-      const payload = JSON.parse(text.slice(FORUM_POST_PREFIX.length)) as { title?: string; body?: string };
-      return { title: payload.title ?? "", link: /https:\/\/\S+/.exec(payload.body ?? "")?.[0] ?? "" };
+      const payload = JSON.parse(text.slice(FORUM_POST_PREFIX.length)) as {
+        title?: string;
+        body?: string;
+        titleNotice?: unknown;
+      };
+      return {
+        title: payload.title ?? "",
+        link: /https:\/\/\S+/.exec(payload.body ?? "")?.[0] ?? "",
+        untitled: Boolean(payload.titleNotice),
+      };
     }
-    const body = text.startsWith(BOT_MESSAGE_PREFIX)
-      ? String((JSON.parse(text.slice(BOT_MESSAGE_PREFIX.length)) as { text?: string }).text ?? "")
-      : text;
+    const wrapped = text.startsWith(BOT_MESSAGE_PREFIX)
+      ? (JSON.parse(text.slice(BOT_MESSAGE_PREFIX.length)) as { text?: string; notice?: { code?: unknown } })
+      : null;
+    const body = wrapped ? String(wrapped.text ?? "") : text;
     return {
       title: /^🎬 (.+)$/m.exec(body)?.[1] ?? "",
       link: /https:\/\/\S+/.exec(body)?.[0] ?? "",
+      untitled: typeof wrapped?.notice?.code === "string" && UNTITLED_CLIP_CODES.has(wrapped.notice.code),
     };
   } catch {
-    return { title: "", link: "" };
+    return { title: "", link: "", untitled: false };
   }
 }
 
@@ -190,14 +247,9 @@ export async function importTwitchClips(env: Env, now = Date.now()): Promise<voi
     const bot = await clipsBot(env, hub.hub_id, hub.owner_id);
     if (!bot) continue;
     for (const clip of fresh) {
-      const payload = {
-        version: 1,
-        type: "discussion",
-        title: (clip.title || "New clip").replace(/\s+/g, " ").trim().slice(0, 100),
-        tags: [],
-        body: `🎬 Clipped by ${clip.creatorName || "a viewer"}\n${clip.url}\n\nReact to vote for Clip of the week.`,
-      };
+      const payload = clipForumPayload(clip);
       const thumbnail = room.kind === "forum" ? null : await storeClipThumbnail(env, hub.hub_id, clip);
+      const chat = clipChatMessage(clip);
       const message = await postBotMessage(env, {
         hubId: hub.hub_id,
         roomId,
@@ -206,7 +258,7 @@ export async function importTwitchClips(env: Env, now = Date.now()): Promise<voi
         text:
           room.kind === "forum"
             ? `${FORUM_POST_PREFIX}${JSON.stringify(payload)}`
-            : botMessageText(bot, clipChatText(clip)),
+            : botMessageText(bot, chat.text, chat.notice),
         card: thumbnail?.card ?? null,
       });
       if (!message) {
@@ -253,7 +305,7 @@ export async function announceClipOfTheWeek(env: Env, now = Date.now()): Promise
       .bind(hub.hub_id, marker, top.message_id, new Date(now).toISOString())
       .run();
     if (!claimed.meta.changes) continue;
-    const { title, link } = clipFromMessage(top.text);
+    const { title, link, untitled } = clipFromMessage(top.text);
     const room = await env.DB.prepare(
       `SELECT id FROM decave_rooms WHERE hub_id=? AND type='text' AND kind='chat'
        ORDER BY lower(name)='announcements' DESC,position,id LIMIT 1`,
@@ -262,13 +314,15 @@ export async function announceClipOfTheWeek(env: Env, now = Date.now()): Promise
       .first<{ id: number }>();
     const bot = room ? await clipsBot(env, hub.hub_id, hub.owner_id) : null;
     if (!room || !bot) continue;
-    const votes = `${top.votes} ${top.votes === 1 ? "vote" : "votes"}`;
+    const notice = untitled
+      ? noticeOf("streamer.server.clipOfTheWeekUntitled", { count: top.votes, link })
+      : noticeOf("streamer.server.clipOfTheWeek", { count: top.votes, title, link });
     await postBotMessage(env, {
       hubId: hub.hub_id,
       roomId: room.id,
       botId: bot.id,
       authorUserId: hub.owner_id,
-      text: botMessageText(bot, `🏆 Clip of the week (${votes}): ${title}\n${link}`.trim()),
+      text: botMessageText(bot, noticeEnglish(notice.code, notice.params).trim(), notice),
     });
   }
 }

@@ -15,6 +15,13 @@ function loadAdminActions() {
     if (specifier === "../env") return { HTTP_URL: "https://api.example" };
     if (specifier === "../locale") return { localeForLanguage: () => "en", preferredTimeOptions: () => ({}) };
     if (specifier === "../desktop") return { hasDesktopActivityBridge: () => false };
+    // Translations are looked up by key; the server's error text still wins, as in apiErrorMessage.
+    if (specifier === "../../i18n/index.ts") return { i18next: { t: (key) => key } };
+    if (specifier === "../../i18n/apiError.ts")
+      return { apiErrorMessage: (data, fallbackKey) => data?.error || `errors.${fallbackKey}` };
+    if (specifier === "../../i18n/format.ts") return { formatDate: (value) => String(value) };
+    if (specifier === "../../i18n/notice.ts")
+      return { serverMessage: (data, fallback) => (data?.message ? data.message : fallback) };
     throw new Error(`Unexpected import in admin action test: ${specifier}`);
   };
   new Function("require", "module", "exports", "window", outputText)(requireStub, module, module.exports, windowStub);

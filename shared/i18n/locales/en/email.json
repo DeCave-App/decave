@@ -1,0 +1,41 @@
+{
+  "common": {
+    "greeting": "Hi {{username}},",
+    "settingsPath": "Settings > Account & security"
+  },
+  "verify": {
+    "subject": "Verify your DeCave email",
+    "text": "Hi {{username}}, verify your DeCave email: {{link}}",
+    "heading": "Verify your DeCave email",
+    "body": "Confirm this email address to activate your account.",
+    "button": "Verify email",
+    "expiry": "This link expires in 24 hours."
+  },
+  "reset": {
+    "subject": "Reset your DeCave password",
+    "text": "Hi {{username}}, reset your DeCave password: {{link}}",
+    "heading": "Reset your DeCave password",
+    "body": "If you requested a password reset, use the button below.",
+    "button": "Reset password",
+    "expiry": "This link expires in 30 minutes."
+  },
+  "signInAlert": {
+    "subject": "New sign-in to your DeCave account",
+    "heading": "New sign-in to DeCave",
+    "usedOnText": "Your DeCave account was just used to sign in on: {{device}}",
+    "time": "Time: {{when}}",
+    "usedOn": "Your account was just used to sign in on:",
+    "ifYou": "If this was you, you don't need to do anything.",
+    "notYouText": "If it wasn't you, secure your account now (signs out every device and sends a password reset link): {{link}}",
+    "turnOffText": "You can turn these emails off in {{settingsPath}}.",
+    "button": "This wasn't me",
+    "footer": "That signs out every device and emails you a password reset link. The link works for 7 days. Turn these emails off in {{settingsPath}}."
+  },
+  "emailChanged": {
+    "subject": "Your DeCave email address was changed",
+    "heading": "Your DeCave email address changed",
+    "changedText": "The email address on your DeCave account was changed to {{newEmail}}.",
+    "changed": "The email address on your account was changed to <strong>{{newEmail}}</strong>.",
+    "notYou": "If you did not make this change, sign in to DeCave, change your password and sign out other devices in {{settingsPath}}."
+  }
+}

@@ -1,5 +1,6 @@
 // Toast for a new direct message; opens the conversation.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { SocialUser, DmNotice } from "../types";
@@ -22,6 +23,7 @@ export function DmNoticeToast({
   setDmNotice,
   openDirectMessage,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <button
       type="button"
@@ -64,7 +66,7 @@ export function DmNoticeToast({
       />
       <span style={{ display: "grid", gap: "2px", minWidth: 0 }}>
         <small style={{ color: "var(--ds-accent)", fontSize: "10px", fontWeight: 800, letterSpacing: ".1em" }}>
-          NEW PRIVATE MESSAGE
+          {t("chat.dmNotice.kicker")}
         </small>
         <strong>{dmNotice.username}</strong>
         <em

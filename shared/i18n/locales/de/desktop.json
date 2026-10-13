@@ -1,0 +1,43 @@
+{
+  "tray": {
+    "open": "DeCave öffnen",
+    "toggleMute": "Mikro aus / an",
+    "toggleDeafen": "Ton aus / an",
+    "quit": "DeCave beenden"
+  },
+  "window": {
+    "streamTitle": "DeCave-Stream"
+  },
+  "update": {
+    "checkFailed": "DeCave konnte nicht nach Updates suchen. Prüf deine Verbindung und versuch es noch mal.",
+    "publisherUnverified": "Automatische Updates sind deaktiviert, weil der installierte Windows-Herausgeber nicht verifiziert werden konnte.",
+    "installFailed": "DeCave konnte das Update nicht abschließen. Versuch es später noch mal."
+  },
+  "keybinds": {
+    "mustDiffer": "Die Tastenkürzel für Stummschalten und Ton aus müssen unterschiedlich sein.",
+    "inUse": "Eines dieser Tastenkürzel wird bereits von Windows oder einer anderen App verwendet."
+  },
+  "picker": {
+    "windowTitle": "Wähle, was du teilen willst · DeCave",
+    "title": "Wähle, was du teilen willst",
+    "subtitle": "Wähle einen Bildschirm oder ein App-Fenster für die Bildschirmübertragung in DeCave.",
+    "cancel": "Abbrechen",
+    "entireScreen": "Ganzer Bildschirm",
+    "window": "Fenster",
+    "noPreview": "Keine Vorschau"
+  },
+  "turnstile": {
+    "windowTitle": "DeCave-Sicherheitsprüfung",
+    "invalidToken": "Die Sicherheitsprüfung hat ein ungültiges Token zurückgegeben.",
+    "unsupportedAction": "Nicht unterstützte Aktion der Sicherheitsprüfung.",
+    "replaced": "Die Sicherheitsprüfung wurde durch eine neue Anfrage ersetzt.",
+    "timedOut": "Zeitüberschreitung bei der Sicherheitsprüfung.",
+    "loadFailed": "Die Sicherheitsprüfung konnte nicht geladen werden."
+  },
+  "overlay": {
+    "voice": "Voice",
+    "unknown": "Unbekannt",
+    "muted": "Mikro aus",
+    "deafened": "Ton aus"
+  }
+}

@@ -22,6 +22,8 @@ import {
   loadPrivacySettings,
   NOTIFY_LEVELS_KEY,
   loadMutedHubIds,
+  NOTIFICATION_SETTINGS_KEY,
+  SOUND_SETTINGS_KEY,
 } from "../settings-storage";
 import {
   loadExtraSettings,
@@ -31,6 +33,19 @@ import {
   type NotifyLevels,
 } from "../../features/settings";
 import { loadLanguageTimePreferences } from "../locale";
+import { migrateSoundToggles } from "../../features/settings/soundMigration";
+
+/** Notification and sound settings from this device, with the old sound switches folded in once. */
+function loadAlertSettings(): { notifications: NotificationSettings; sounds: SoundSettings } {
+  const migrated = migrateSoundToggles(loadNotificationSettings(), loadSoundSettings());
+  if (migrated.changed) {
+    try {
+      localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(migrated.notifications));
+      localStorage.setItem(SOUND_SETTINGS_KEY, JSON.stringify(migrated.sounds));
+    } catch {}
+  }
+  return migrated;
+}
 
 export function usePreferencesState() {
   const [appSkin, setAppSkin] = useState<AppSkin>(loadAppSkin);
@@ -40,9 +55,6 @@ export function usePreferencesState() {
     return {
       usernameChangedAt: null,
       usernameChangeAvailableAt: null,
-      friendRequestPolicy: "everyone",
-      allowStreamPreviews: false,
-      streamerMode: false,
       language: local.language,
       timeFormat: local.timeFormat,
       voiceMiniPlayerPosition: null,
@@ -60,8 +72,9 @@ export function usePreferencesState() {
     toggleDeafen: "CommandOrControl+Shift+D",
   });
   const [activitySettings, setActivitySettings] = useState<ActivitySettings>(loadActivitySettings);
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(loadNotificationSettings);
-  const [soundSettings, setSoundSettings] = useState<SoundSettings>(loadSoundSettings);
+  const [initialAlerts] = useState(loadAlertSettings);
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(initialAlerts.notifications);
+  const [soundSettings, setSoundSettings] = useState<SoundSettings>(initialAlerts.sounds);
   const [privacySettings, setPrivacySettings] = useState<PrivacySettings>(loadPrivacySettings);
   const [notifyLevels, setNotifyLevels] = useState<NotifyLevels>(() => {
     try {

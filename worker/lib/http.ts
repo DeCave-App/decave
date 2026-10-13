@@ -3,6 +3,9 @@
 
 import type { Env } from "./env";
 import { tokenHash } from "../db";
+import { englishErrorText, type ErrorCode } from "../../shared/i18n/error-code.ts";
+
+export { englishErrorText, type ErrorCode };
 
 export const jsonHeaders = { "content-type": "application/json; charset=utf-8" };
 export const JSON_BODY_MAX_BYTES = 1024 * 1024;
@@ -25,6 +28,61 @@ export function json(data: unknown, status = 200, headers?: HeadersInit): Respon
     status,
     headers: { ...jsonHeaders, ...(headers ?? {}) },
   });
+}
+
+/**
+ * An error response clients can translate: { code, params?, error }. `code` is a
+ * key of the errors catalog; `error` keeps the English text for older clients.
+ * `fields` adds extra response data (e.g. a retry time or the invalid field name).
+ */
+export function apiError(
+  code: ErrorCode,
+  status: number,
+  params?: Record<string, string | number>,
+  headers?: HeadersInit,
+  fields?: Record<string, unknown>,
+): Response {
+  return json({ ...(fields ?? {}), ...errorFields(code, params) }, status, headers);
+}
+
+export type ErrorFields = { code: ErrorCode; params?: Record<string, string | number>; error: string };
+
+/** The { code, params?, error } fields of a translatable error, for results and realtime frames. */
+export function errorFields(code: ErrorCode, params?: Record<string, string | number>): ErrorFields {
+  return { code, ...(params ? { params } : {}), error: englishErrorText(code, params) };
+}
+
+/** The fields of an error that keeps a legacy machine `code` clients branch on. */
+export type LegacyErrorFields = {
+  code: string;
+  i18nKey: ErrorCode;
+  params?: Record<string, string | number>;
+  error: string;
+};
+
+/** { code, i18nKey, params?, error } for a legacy machine code, for results and realtime frames. */
+export function legacyErrorFields(
+  legacyCode: string,
+  i18nKey: ErrorCode,
+  params?: Record<string, string | number>,
+): LegacyErrorFields {
+  return { code: legacyCode, i18nKey, ...(params ? { params } : {}), error: englishErrorText(i18nKey, params) };
+}
+
+/**
+ * An error response that keeps a legacy machine `code` clients branch on (e.g.
+ * "DM_KEY_STALE"): that stays in `code`, and the errors-catalog key clients
+ * render goes in `i18nKey`. `error` keeps the English text for older clients.
+ */
+export function apiErrorLegacy(
+  legacyCode: string,
+  i18nKey: ErrorCode,
+  status: number,
+  params?: Record<string, string | number>,
+  fields?: Record<string, unknown>,
+  headers?: HeadersInit,
+): Response {
+  return json({ ...(fields ?? {}), ...legacyErrorFields(legacyCode, i18nKey, params) }, status, headers);
 }
 
 export async function bodyJson(request: Request): Promise<Record<string, unknown>> {

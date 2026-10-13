@@ -4,6 +4,8 @@ import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import { failNewestSending, type OutboxItem } from "../../features/outbox/outbox";
 import type { AttachmentMeta } from "../../app/types";
 import type { RealtimeFrame } from "../connection";
+import { i18next } from "../../i18n/index.ts";
+import { realtimeErrorMessage } from "../../i18n/apiError.ts";
 
 export type SessionEventContext = {
   setAuthError: Dispatch<SetStateAction<string>>;
@@ -36,8 +38,8 @@ export function handleSessionEvent(data: RealtimeFrame, context: SessionEventCon
     voiceReconnectChannelRef.current = null;
     const reason =
       data.reason === "signed_in_elsewhere"
-        ? "Your DeCave account was signed in on another browser or desktop app."
-        : "Your session was ended.";
+        ? i18next.t("chat.actions.session.signedInElsewhere")
+        : i18next.t("chat.actions.session.ended");
 
     void logout({ signedOutElsewhere: true }).then(() => {
       setAuthError(reason);
@@ -47,17 +49,12 @@ export function handleSessionEvent(data: RealtimeFrame, context: SessionEventCon
 
   if (data.type === "ERROR") {
     console.error("DeCave server error:", data.message);
-    if (
-      typeof data.message === "string" &&
-      data.message &&
-      outboxRef.current.some((item) => item.status === "sending")
-    ) {
-      const reason = data.message;
+    // The server's error in the UI language; empty when it sent none.
+    const reason = realtimeErrorMessage(data, "");
+    if (reason && outboxRef.current.some((item) => item.status === "sending")) {
       setOutbox((current) => failNewestSending(current, reason));
     }
-    pendingForumPublishRef.current?.settle(
-      new Error(typeof data.message === "string" && data.message ? data.message : "The server rejected the post."),
-    );
+    pendingForumPublishRef.current?.settle(new Error(reason || i18next.t("chat.actions.message.postRejected")));
   }
 
   return false;

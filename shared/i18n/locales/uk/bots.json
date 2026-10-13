@@ -1,0 +1,1197 @@
+{
+  "rule": {
+    "deleted": {
+      "room": "видалена кімната (вибери іншу)",
+      "voiceRoom": "видалена голосова кімната (вибери іншу)",
+      "role": "видалена роль (вибери іншу)",
+      "rule": "видалене правило (вибери інше)"
+    },
+    "pick": {
+      "room": "(вибери кімнату)",
+      "voiceRoom": "(вибери голосову кімнату)",
+      "role": "(вибери роль)",
+      "rule": "(вибери правило)"
+    },
+    "duration": {
+      "days_one": "{{count}} день",
+      "days_few": "{{count}} дні",
+      "days_many": "{{count}} днів",
+      "days_other": "{{count}} дня",
+      "hours_one": "{{count}} годину",
+      "hours_few": "{{count}} години",
+      "hours_many": "{{count}} годин",
+      "hours_other": "{{count}} години",
+      "minutes_one": "{{count}} хвилину",
+      "minutes_few": "{{count}} хвилини",
+      "minutes_many": "{{count}} хвилин",
+      "minutes_other": "{{count}} хвилини"
+    },
+    "schedule": {
+      "every": "раз на {{duration}}",
+      "daily": "щодня о {{time}}",
+      "weekly": "щотижня ({{day}}) о {{time}}",
+      "cron": "за cron «{{cron}}»",
+      "any": "за розкладом"
+    },
+    "anyVoiceRoom": "будь-яка голосова кімната",
+    "sameChannel": "та сама кімната",
+    "trigger": {
+      "command": "хтось використовує /{{name}}",
+      "message": {
+        "contains": "повідомлення містить «{{pattern}}»",
+        "startsWith": "повідомлення починається з «{{pattern}}»",
+        "exact": "повідомлення точно збігається з «{{pattern}}»",
+        "regex": "повідомлення відповідає шаблону «{{pattern}}»"
+      },
+      "memberJoin": "хтось приєднується до Hub",
+      "memberLeave": "хтось виходить з Hub",
+      "roleAdded": "хтось отримує {{role}}",
+      "roleRemoved": "хтось втрачає {{role}}",
+      "reactionAdded": "хтось реагує {{emoji}}",
+      "reactionRemoved": "хтось прибирає реакцію {{emoji}}",
+      "component": "хтось натискає кнопку «{{id}}»",
+      "formSubmit": "хтось надсилає форму «{{id}}»",
+      "voiceJoin": "хтось заходить у {{room}}",
+      "voiceLeave": "хтось виходить з {{room}}",
+      "hubEventStart": "починається подія Hub",
+      "streamLive": "стрим починається на Twitch",
+      "streamOffline": "стрим закінчується на Twitch"
+    },
+    "condition": {
+      "hasRole": "учасник має {{role}}",
+      "lacksRole": "учасник не має {{role}}",
+      "channelIs": "подія в {{room}}",
+      "channelIsNot": "подія не в {{room}}",
+      "accountAge_one": "акаунту учасника {{count}}+ день",
+      "accountAge_few": "акаунту учасника {{count}}+ дні",
+      "accountAge_many": "акаунту учасника {{count}}+ днів",
+      "accountAge_other": "акаунту учасника {{count}}+ дня",
+      "memberAge_one": "учасник у Hub {{count}}+ день",
+      "memberAge_few": "учасник у Hub {{count}}+ дні",
+      "memberAge_many": "учасник у Hub {{count}}+ днів",
+      "memberAge_other": "учасник у Hub {{count}}+ дня",
+      "chance": "шанс {{percent}}%",
+      "timeOfDay": "зараз між {{from}} і {{to}}",
+      "weekday": "сьогодні {{days}}",
+      "noDay": "жодного дня"
+    },
+    "action": {
+      "sendMessage": "надіслати {{text}} у {{room}}",
+      "reply": "відповісти {{text}}",
+      "editMessage": "змінити повідомлення на {{text}}",
+      "pin": "закріпити повідомлення",
+      "unpin": "відкріпити повідомлення",
+      "deleteTrigger": "видалити повідомлення",
+      "react": "відреагувати {{emoji}}",
+      "createThread": "створити гілку {{name}}",
+      "privateNotice": "приватно повідомити {{text}}",
+      "addRole": "видати {{role}}",
+      "addRoleFor": "видати {{role}} на {{duration}}",
+      "removeRole": "забрати {{role}}",
+      "removeRoleFor": "забрати {{role}} на {{duration}}",
+      "toggleRole": "перемкнути {{role}}",
+      "toggleRoleFor": "перемкнути {{role}} на {{duration}}",
+      "openForm": "відкрити форму {{title}}",
+      "startPoll": "почати опитування {{question}}",
+      "createEvent": "створити подію {{title}}",
+      "setVariable": "встановити {{name}} = {{value}}",
+      "addVariable": "додати {{value}} до {{name}}",
+      "resetVariable": "скинути {{name}}",
+      "wait": "зачекати {{duration}}",
+      "stop": "зупинитися",
+      "runRule": "запустити {{rule}}",
+      "webhook": "викликати {{method}} {{url}}"
+    },
+    "join": {
+      "and": "{{left}} і {{right}}",
+      "or": "{{left}} або {{right}}",
+      "then": "{{left}}, потім {{right}}"
+    },
+    "sentence": {
+      "when": "Коли {{trigger}}",
+      "if": "Якщо {{conditions}}",
+      "ifBoth": "Якщо {{all}} і ({{any}})",
+      "do": "Зробити: {{actions}}",
+      "doNothing": "Нічого не робити",
+      "otherwise": "Інакше: {{actions}}"
+    },
+    "label": "Правило {{number}}",
+    "defaultFormField": "Відповідь"
+  },
+  "variable": {
+    "user": "Учасник",
+    "channel": "Кімната",
+    "date": "Сьогоднішня дата",
+    "random": "Випадкове число",
+    "text": "Текст повідомлення",
+    "textSample": "привіт усім",
+    "match": "Збіг",
+    "matchSample": "привіт",
+    "emoji": "Емодзі",
+    "value": "Вибране значення",
+    "streamTitle": "Назва стриму",
+    "streamTitleSample": "Ранкед-гринд сьогодні ввечері",
+    "streamGame": "Гра",
+    "streamUrl": "Посилання на стрим",
+    "streamer": "Канал Twitch",
+    "insert": "Вставити змінну",
+    "previewLabel": "Перегляд",
+    "preview": "Перегляд: {{text}}"
+  },
+  "capability": {
+    "send_messages": {
+      "label": "Надсилати повідомлення",
+      "description": "Повідомлення, відповіді, реакції, гілки й приватні сповіщення.",
+      "phrase": "надсилати повідомлення"
+    },
+    "create_polls": {
+      "label": "Створювати опитування",
+      "description": "Дія «Почати опитування».",
+      "phrase": "створювати опитування"
+    },
+    "create_events": {
+      "label": "Створювати події",
+      "description": "Дія «Створити подію Hub».",
+      "phrase": "створювати події"
+    },
+    "manage_roles": {
+      "label": "Керувати ролями",
+      "description": "Видавати, забирати й перемикати ролі.",
+      "phrase": "керувати ролями"
+    },
+    "manage_messages": {
+      "label": "Керувати повідомленнями",
+      "description": "Закріплювати, відкріплювати й видаляти повідомлення.",
+      "phrase": "керувати повідомленнями"
+    },
+    "webhooks": {
+      "label": "Викликати вебхуки",
+      "description": "Надсилати запити на HTTPS-адреси.",
+      "phrase": "викликати вебхуки"
+    }
+  },
+  "catalogue": {
+    "triggers": {
+      "command": {
+        "label": "Слеш-команда",
+        "description": "Учасник запускає /name у кімнаті.",
+        "fields": {
+          "name": {
+            "label": "Назва команди",
+            "hint": "1–32 малі латинські літери, цифри або дефіси, без слеша."
+          },
+          "options": {
+            "label": "Параметри",
+            "hint": "Список {name, type (text|number|user|role|channel|choice), required, choices?}. Читається як {args.name}."
+          }
+        }
+      },
+      "message": {
+        "label": "Нове повідомлення",
+        "description": "Повідомлення в кімнаті відповідає шаблону.",
+        "fields": {
+          "mode": {
+            "label": "Збіг"
+          },
+          "pattern": {
+            "label": "Шаблон",
+            "hint": "Regex: до 200 символів, не більше одного * або +, повтори лише для окремих символів, групи лише для варіантів (a|b). Перевіряються перші 500 символів."
+          },
+          "caseSensitive": {
+            "label": "З урахуванням регістру"
+          }
+        }
+      },
+      "memberJoin": {
+        "label": "Учасник приєднується",
+        "description": "Хтось приєднується до Hub."
+      },
+      "memberLeave": {
+        "label": "Учасник виходить",
+        "description": "Хтось виходить з Hub."
+      },
+      "roleAdded": {
+        "label": "Роль додано",
+        "description": "Учасник отримує роль.",
+        "fields": {
+          "roleId": {
+            "label": "Роль"
+          }
+        }
+      },
+      "roleRemoved": {
+        "label": "Роль забрано",
+        "description": "Учасник втрачає роль.",
+        "fields": {
+          "roleId": {
+            "label": "Роль"
+          }
+        }
+      },
+      "reactionAdded": {
+        "label": "Реакцію додано",
+        "description": "Учасник реагує емодзі.",
+        "fields": {
+          "emoji": {
+            "label": "Емодзі"
+          },
+          "messageId": {
+            "label": "Лише для повідомлення",
+            "hint": "ID повідомлення; порожньо — будь-яке повідомлення."
+          }
+        }
+      },
+      "reactionRemoved": {
+        "label": "Реакцію прибрано",
+        "description": "Учасник прибирає реакцію.",
+        "fields": {
+          "emoji": {
+            "label": "Емодзі"
+          },
+          "messageId": {
+            "label": "Лише для повідомлення",
+            "hint": "ID повідомлення; порожньо — будь-яке повідомлення."
+          }
+        }
+      },
+      "component": {
+        "label": "Кнопка або список",
+        "description": "Учасник натискає кнопку картки або вибирає зі списку картки.",
+        "fields": {
+          "customId": {
+            "label": "ID кнопки або списку",
+            "hint": "customId, заданий на картці."
+          }
+        }
+      },
+      "formSubmit": {
+        "label": "Форму надіслано",
+        "description": "Учасник надсилає форму, відкриту цим ботом.",
+        "fields": {
+          "formId": {
+            "label": "ID форми",
+            "hint": "Поля читаються як {form.fieldId}."
+          }
+        }
+      },
+      "voiceJoin": {
+        "label": "Вхід у голосову кімнату",
+        "description": "Учасник заходить у голосову кімнату.",
+        "fields": {
+          "roomId": {
+            "label": "Голосова кімната",
+            "hint": "Порожньо — будь-яка голосова кімната."
+          }
+        }
+      },
+      "voiceLeave": {
+        "label": "Вихід з голосової кімнати",
+        "description": "Учасник виходить з голосової кімнати.",
+        "fields": {
+          "roomId": {
+            "label": "Голосова кімната",
+            "hint": "Порожньо — будь-яка голосова кімната."
+          }
+        }
+      },
+      "schedule": {
+        "label": "За розкладом",
+        "description": "Запускається за таймером, з інтервалом щонайменше 5 хвилин.",
+        "fields": {
+          "schedule": {
+            "label": "Розклад",
+            "hint": "Рівно одне з: every (хвилини, >=5), daily (\"HH:MM\"), weekly ({day 0-6, time \"HH:MM\"}) або cron, плюс timezone (назва IANA)."
+          }
+        }
+      },
+      "hubEventStart": {
+        "label": "Подія Hub починається",
+        "description": "Починається запланована подія Hub."
+      },
+      "streamLive": {
+        "label": "Стрим почався",
+        "description": "Канал Twitch цього Hub починає стрим (потрібен автоматичний статус трансляції в налаштуваннях стриму)."
+      },
+      "streamOffline": {
+        "label": "Стрим закінчився",
+        "description": "Канал Twitch цього Hub завершує стрим."
+      }
+    },
+    "conditions": {
+      "hasRole": {
+        "label": "Має роль",
+        "description": "Учасник має роль.",
+        "fields": {
+          "roleId": {
+            "label": "Роль"
+          }
+        }
+      },
+      "lacksRole": {
+        "label": "Не має ролі",
+        "description": "Учасник не має ролі.",
+        "fields": {
+          "roleId": {
+            "label": "Роль"
+          }
+        }
+      },
+      "channelIs": {
+        "label": "У кімнаті",
+        "description": "Подія сталася в кімнаті.",
+        "fields": {
+          "channelId": {
+            "label": "Кімната"
+          }
+        }
+      },
+      "channelIsNot": {
+        "label": "Не в кімнаті",
+        "description": "Подія сталася не в цій кімнаті.",
+        "fields": {
+          "channelId": {
+            "label": "Кімната"
+          }
+        }
+      },
+      "accountAge": {
+        "label": "Вік акаунта",
+        "description": "Акаунту щонайменше стільки днів.",
+        "fields": {
+          "minDays": {
+            "label": "Щонайменше (днів)"
+          }
+        }
+      },
+      "memberAge": {
+        "label": "Стаж у Hub",
+        "description": "Учасник приєднався до Hub щонайменше стільки днів тому.",
+        "fields": {
+          "minDays": {
+            "label": "Щонайменше (днів)"
+          }
+        }
+      },
+      "variable": {
+        "label": "Змінна",
+        "description": "Порівнює збережену змінну.",
+        "fields": {
+          "name": {
+            "label": "Змінна"
+          },
+          "scope": {
+            "label": "Область змінної",
+            "hint": "user: окреме значення для кожного учасника; hub: одне спільне значення."
+          },
+          "op": {
+            "label": "Порівняння"
+          },
+          "value": {
+            "label": "Значення"
+          }
+        }
+      },
+      "chance": {
+        "label": "Випадковий шанс",
+        "description": "Спрацьовує у вказаному відсотку випадків.",
+        "fields": {
+          "percent": {
+            "label": "Відсоток",
+            "hint": "0–100."
+          }
+        }
+      },
+      "timeOfDay": {
+        "label": "Час доби",
+        "description": "Поточний час у заданому проміжку.",
+        "fields": {
+          "from": {
+            "label": "З",
+            "hint": "\"HH:MM\"."
+          },
+          "to": {
+            "label": "До",
+            "hint": "\"HH:MM\"."
+          },
+          "timezone": {
+            "label": "Часовий пояс",
+            "hint": "Назва IANA, напр. Europe/Kyiv."
+          }
+        }
+      },
+      "weekday": {
+        "label": "День тижня",
+        "description": "Сьогодні один із цих днів.",
+        "fields": {
+          "days": {
+            "label": "Дні",
+            "hint": "0 = неділя."
+          }
+        }
+      }
+    },
+    "actions": {
+      "sendMessage": {
+        "label": "Надіслати повідомлення",
+        "description": "Публікує повідомлення в кімнаті.",
+        "fields": {
+          "channel": {
+            "label": "Кімната",
+            "hint": "ID кімнати або \"trigger\" для кімнати, звідки прийшла подія."
+          },
+          "text": {
+            "label": "Повідомлення"
+          },
+          "card": {
+            "label": "Картка",
+            "hint": "Необов'язкова картка: title, text, color, imageUrl, fields, до 5 кнопок, один список."
+          }
+        }
+      },
+      "reply": {
+        "label": "Відповісти",
+        "description": "Відповідає на повідомлення або команду, що запустили правило.",
+        "fields": {
+          "text": {
+            "label": "Повідомлення"
+          },
+          "card": {
+            "label": "Картка",
+            "hint": "Необов'язкова картка: title, text, color, imageUrl, fields, до 5 кнопок, один список."
+          }
+        }
+      },
+      "editMessage": {
+        "label": "Змінити повідомлення",
+        "description": "Змінює повідомлення, яке бот надіслав раніше в цьому запуску.",
+        "fields": {
+          "messageRef": {
+            "label": "Повідомлення",
+            "hint": "\"trigger\" або ID повідомлення."
+          },
+          "text": {
+            "label": "Новий текст"
+          }
+        }
+      },
+      "pin": {
+        "label": "Закріпити повідомлення",
+        "description": "Закріплює повідомлення.",
+        "fields": {
+          "messageRef": {
+            "label": "Повідомлення",
+            "hint": "\"trigger\" або ID повідомлення."
+          }
+        }
+      },
+      "unpin": {
+        "label": "Відкріпити повідомлення",
+        "description": "Відкріплює повідомлення.",
+        "fields": {
+          "messageRef": {
+            "label": "Повідомлення",
+            "hint": "\"trigger\" або ID повідомлення."
+          }
+        }
+      },
+      "deleteTrigger": {
+        "label": "Видалити повідомлення-тригер",
+        "description": "Видаляє повідомлення, яке запустило правило."
+      },
+      "react": {
+        "label": "Реакція",
+        "description": "Додає реакцію до повідомлення-тригера.",
+        "fields": {
+          "emoji": {
+            "label": "Емодзі"
+          }
+        }
+      },
+      "createThread": {
+        "label": "Створити гілку",
+        "description": "Створює гілку з повідомлення-тригера.",
+        "fields": {
+          "name": {
+            "label": "Назва гілки"
+          }
+        }
+      },
+      "privateNotice": {
+        "label": "Приватне сповіщення",
+        "description": "Повідомлення, яке бачить лише учасник.",
+        "fields": {
+          "text": {
+            "label": "Повідомлення"
+          }
+        }
+      },
+      "addRole": {
+        "label": "Видати роль",
+        "description": "Видає учаснику роль.",
+        "fields": {
+          "roleId": {
+            "label": "Роль"
+          },
+          "durationMinutes": {
+            "label": "Забрати через",
+            "hint": "Хвилини. Залиш порожнім, щоб роль лишилася назавжди."
+          }
+        }
+      },
+      "removeRole": {
+        "label": "Забрати роль",
+        "description": "Забирає в учасника роль.",
+        "fields": {
+          "roleId": {
+            "label": "Роль"
+          },
+          "durationMinutes": {
+            "label": "Повернути через",
+            "hint": "Хвилини. Залиш порожнім, щоб забрати назавжди."
+          }
+        }
+      },
+      "toggleRole": {
+        "label": "Перемкнути роль",
+        "description": "Видає роль, якщо її немає, інакше забирає.",
+        "fields": {
+          "roleId": {
+            "label": "Роль"
+          },
+          "durationMinutes": {
+            "label": "Скасувати через",
+            "hint": "Хвилини. Залиш порожнім, щоб не скасовувати."
+          }
+        }
+      },
+      "openForm": {
+        "label": "Відкрити форму",
+        "description": "Показує учаснику форму (лише з команди, кнопки або списку).",
+        "fields": {
+          "formId": {
+            "label": "ID форми"
+          },
+          "title": {
+            "label": "Заголовок"
+          },
+          "fields": {
+            "label": "Поля",
+            "hint": "До 5 з {id, label, style (short|long), required}."
+          }
+        }
+      },
+      "startPoll": {
+        "label": "Почати опитування",
+        "description": "Публікує опитування в кімнаті.",
+        "fields": {
+          "question": {
+            "label": "Питання"
+          },
+          "options": {
+            "label": "Варіанти",
+            "hint": "2–10 варіантів."
+          }
+        }
+      },
+      "createEvent": {
+        "label": "Створити подію Hub",
+        "description": "Планує подію Hub.",
+        "fields": {
+          "title": {
+            "label": "Назва"
+          },
+          "startsInMinutes": {
+            "label": "Почнеться через",
+            "hint": "Хвилини."
+          },
+          "durationMinutes": {
+            "label": "Триває",
+            "hint": "Хвилини."
+          }
+        }
+      },
+      "setVariable": {
+        "label": "Встановити змінну",
+        "description": "Зберігає значення.",
+        "fields": {
+          "name": {
+            "label": "Змінна"
+          },
+          "scope": {
+            "label": "Область змінної",
+            "hint": "user: окреме значення для кожного учасника; hub: одне спільне значення."
+          },
+          "value": {
+            "label": "Значення"
+          }
+        }
+      },
+      "addVariable": {
+        "label": "Додати до змінної",
+        "description": "Додає число до збереженого значення.",
+        "fields": {
+          "name": {
+            "label": "Змінна"
+          },
+          "scope": {
+            "label": "Область змінної",
+            "hint": "user: окреме значення для кожного учасника; hub: одне спільне значення."
+          },
+          "value": {
+            "label": "Кількість"
+          }
+        }
+      },
+      "resetVariable": {
+        "label": "Скинути змінну",
+        "description": "Видаляє збережене значення.",
+        "fields": {
+          "name": {
+            "label": "Змінна"
+          },
+          "scope": {
+            "label": "Область змінної",
+            "hint": "user: окреме значення для кожного учасника; hub: одне спільне значення."
+          }
+        }
+      },
+      "wait": {
+        "label": "Зачекати",
+        "description": "Робить паузу перед наступними діями (не більше 7 днів).",
+        "fields": {
+          "minutes": {
+            "label": "Зачекати",
+            "hint": "Хвилини, 1–10080."
+          }
+        }
+      },
+      "stop": {
+        "label": "Зупинити",
+        "description": "Припиняє виконання дій цього правила."
+      },
+      "runRule": {
+        "label": "Запустити інше правило",
+        "description": "Запускає інше правило цього бота.",
+        "fields": {
+          "ruleId": {
+            "label": "Правило"
+          }
+        }
+      },
+      "webhook": {
+        "label": "Викликати вебхук",
+        "description": "Викликає HTTPS-адресу.",
+        "fields": {
+          "url": {
+            "label": "URL",
+            "hint": "Лише HTTPS."
+          },
+          "method": {
+            "label": "Метод"
+          },
+          "body": {
+            "label": "Тіло"
+          }
+        }
+      }
+    }
+  },
+  "part": {
+    "triggers": "Тригер",
+    "conditions": "Умова",
+    "actions": "Дія",
+    "moveUp": "Вище",
+    "moveDown": "Нижче",
+    "remove": "Прибрати"
+  },
+  "field": {
+    "keep": "Тривалість",
+    "unit": "Одиниця",
+    "units": {
+      "minutes": "хвилини",
+      "hours": "години",
+      "days": "дні"
+    },
+    "pickRoom": "Вибери кімнату",
+    "sameRoom": "Та сама кімната",
+    "pickVoiceRoom": "Вибери голосову кімнату",
+    "anyVoiceRoom": "Будь-яка голосова кімната",
+    "pickRole": "Вибери роль",
+    "pickRule": "Вибери правило",
+    "removeChoice": "Прибрати варіант",
+    "addChoice": "Додати варіант",
+    "optional": " (необов'язково)"
+  },
+  "list": {
+    "noOptions": "Без параметрів: учасники просто вводять команду.",
+    "optionName": "Назва параметра",
+    "optionNamePlaceholder": "назва",
+    "optionType": "Тип параметра",
+    "optionTypes": {
+      "text": "текст",
+      "number": "число",
+      "user": "користувач",
+      "role": "роль",
+      "channel": "кімната",
+      "choice": "вибір"
+    },
+    "choices": "Варіанти через кому",
+    "choicesPlaceholder": "червоний, зелений, синій",
+    "required": "обов'язковий",
+    "removeOption": "Прибрати параметр",
+    "addOption": "Додати параметр",
+    "fieldLabel": "Підпис поля",
+    "fieldLabelPlaceholder": "Підпис",
+    "fieldId": "ID поля",
+    "fieldIdPlaceholder": "id",
+    "fieldSize": "Розмір поля",
+    "short": "коротке",
+    "long": "довге",
+    "removeField": "Прибрати поле",
+    "addField": "Додати поле",
+    "addCard": "Додати картку",
+    "cardTitle": "Заголовок картки",
+    "cardTitlePlaceholder": "Заголовок",
+    "cardColour": "Колір картки",
+    "removeCard": "Прибрати картку",
+    "cardText": "Текст картки",
+    "cardTextPlaceholder": "Текст",
+    "buttonLabel": "Підпис кнопки",
+    "buttonId": "ID кнопки",
+    "buttonIdPlaceholder": "id кнопки",
+    "removeButton": "Прибрати кнопку",
+    "addButton": "Додати кнопку",
+    "buttonHint": "Кнопка запускає правила з тригером «Кнопка або список» і її ID."
+  },
+  "activity": {
+    "loadFailed": "Не вдалося завантажити активність.",
+    "errorsOnly": "Лише помилки",
+    "refresh": "Оновити",
+    "noErrors": "Жодних помилок за останні 30 днів.",
+    "empty": "Ще нічого не запускалося.",
+    "runs": "Запуски",
+    "status": {
+      "ok": "Виконано",
+      "error": "Помилка",
+      "limited": "Ліміт запитів",
+      "skipped": "Пропущено"
+    },
+    "deletedRule": "Видалене правило",
+    "detail": "{{action}}: {{text}}"
+  },
+  "status": {
+    "off": "Вимкнено",
+    "unpublished": "Неопубліковані зміни",
+    "live": "Активний"
+  },
+  "page": {
+    "updateFailed": "Не вдалося оновити бота.",
+    "resumeFailed": "Не вдалося відновити бота.",
+    "needsFixing_one": "{{count}} правило треба виправити",
+    "needsFixing_few": "{{count}} правила треба виправити",
+    "needsFixing_many": "{{count}} правил треба виправити",
+    "needsFixing_other": "{{count}} правила треба виправити",
+    "saving": "Збереження…",
+    "unsaved": "Деякі правила ще не збережено",
+    "allPublished": "Усе опубліковано",
+    "published": "Опубліковано. Тепер бот виконує ці правила.",
+    "publishFailed": "Не вдалося опублікувати.",
+    "buildFailed": "Не вдалося це зібрати, спробуй сформулювати інакше",
+    "back": "← Боти",
+    "ruleCount_one": "{{count}} правило",
+    "ruleCount_few": "{{count}} правила",
+    "ruleCount_many": "{{count}} правил",
+    "ruleCount_other": "{{count}} правила",
+    "publishTitle": "Зробити чернетки активними",
+    "publishing": "Публікація…",
+    "publish": "Опублікувати",
+    "pausedNotice": "Призупинено після повторних помилок. Перевір «Активність», виправ правила й віднови роботу.",
+    "resume": "Відновити",
+    "missingCapabilities": "Для цих правил бот має отримати дозвіл <strong>{{list}}</strong>. Без нього ці дії не виконаються.",
+    "allow": "Дозволити",
+    "sections": "Розділи бота",
+    "tabs": {
+      "rules": "Правила",
+      "test": "Тест",
+      "activity": "Активність",
+      "settings": "Налаштування"
+    }
+  },
+  "section": {
+    "loadFailed": "Не вдалося завантажити ботів.",
+    "loading": "Завантаження ботів…",
+    "retry": "Повторити",
+    "title": "Боти",
+    "intro": "Боти відповідають на команди, вітають учасників, видають ролі й не тільки. Без коду.",
+    "newBot": "Новий бот",
+    "emptyTitle": "Ще немає ботів",
+    "emptyHint": "Почни з шаблону, наприклад «Привітання» або «Кубики». Це займе хвилину.",
+    "paused": "Призупинено після повторних помилок — перевір «Активність»",
+    "turnOff": "Вимкнути",
+    "turnOn": "Увімкнути",
+    "isOn": "{{name}} увімкнено",
+    "tokenBots": "Боти з токеном (для розробників)"
+  },
+  "describe": {
+    "label": "Опиши, що має робити бот",
+    "remaining": "Сьогодні залишилось {{remaining}} з {{total}}",
+    "building": "Збираємо…",
+    "submit": "Зібрати"
+  },
+  "newBot": {
+    "fileProblems_one": "У файлі {{count}} проблема: {{path}} {{message}}",
+    "fileProblems_few": "У файлі {{count}} проблеми: {{path}} {{message}}",
+    "fileProblems_many": "У файлі {{count}} проблем: {{path}} {{message}}",
+    "fileProblems_other": "У файлі {{count}} проблеми: {{path}} {{message}}",
+    "genericError": "Щось пішло не так.",
+    "fileTooLarge": "Цей файл завеликий для експорту бота.",
+    "fileInvalid": "Це не файл експорту бота DeCave.",
+    "importedUnresolved": "Імпортовано. Цього не знайдено в цьому Hub, тож вибери знову: {{names}}",
+    "imported": "Імпортовано. Переглянь правила, потім опублікуй.",
+    "close": "Закрити",
+    "templates": "Почати з шаблону",
+    "createdFromTemplate": "Створено з шаблону. Перевір кожне правило, потім опублікуй.",
+    "creating": "Створення…",
+    "describe": "Описати",
+    "describePlaceholder": "напр. Коли хтось приєднується, привітай його в #general і видай роль Member",
+    "scratch": "З нуля",
+    "name": "Назва бота",
+    "create": "Створити",
+    "import": "Імпорт",
+    "importing": "Імпорт…",
+    "chooseFile": "Вибери файл бота"
+  },
+  "ruleCard": {
+    "scope": "Де і як часто",
+    "rooms": "Кімнати",
+    "allRooms": "Усі кімнати",
+    "cooldownMember": "Кулдаун на учасника (секунди)",
+    "cooldownRoom": "Кулдаун на кімнату (секунди)",
+    "aiLabel": "Змінити це правило за допомогою ШІ",
+    "aiPlaceholder": "Зміни за допомогою ШІ, напр. «лише у вихідні»",
+    "thinking": "Думаю…",
+    "change": "Змінити",
+    "paused": "Призупинено",
+    "new": "Нове",
+    "changed": "Змінено",
+    "status": {
+      "saved": "Чернетку збережено",
+      "pending": "Збереження…",
+      "saving": "Збереження…",
+      "invalid": "Треба виправити",
+      "failed": "Не збережено"
+    },
+    "pauseTitle": "Призупинити це правило",
+    "resumeTitle": "Відновити це правило",
+    "pause": "Призупинити {{label}}",
+    "resume": "Відновити {{label}}",
+    "moveUp": "Перемістити {{label}} вище",
+    "moveDown": "Перемістити {{label}} нижче",
+    "duplicate": "Дублювати",
+    "delete": "Видалити",
+    "error": "{{message}} Відкрий правило, щоб виправити.",
+    "errorsMore_one": "{{message}} (+ще {{count}}) Відкрий правило, щоб виправити.",
+    "errorsMore_few": "{{message}} (+ще {{count}}) Відкрий правило, щоб виправити.",
+    "errorsMore_many": "{{message}} (+ще {{count}}) Відкрий правило, щоб виправити.",
+    "errorsMore_other": "{{message}} (+ще {{count}}) Відкрий правило, щоб виправити.",
+    "generated": "Згенеровано, перевір перед публікацією",
+    "when": "Коли",
+    "if": "Якщо",
+    "match": "Збіг",
+    "all": "усі з цих",
+    "any": "будь-яка з цих",
+    "always": "Завжди, якщо не додати умову.",
+    "addCondition": "Додати умову",
+    "addConditionTo": "Додати умову ({{key}})",
+    "do": "Зробити",
+    "addAction": "Додати дію",
+    "otherwise": "Інакше"
+  },
+  "rules": {
+    "unsupported": "ШІ не зміг зробити все:",
+    "emptyTitle": "Ще немає правил",
+    "emptyHint": "Правило визначає, що його запускає, коли воно діє і що робить бот.",
+    "limit_one": "Бот може мати не більше {{count}} правила.",
+    "limit_few": "Бот може мати не більше {{count}} правил.",
+    "limit_many": "Бот може мати не більше {{count}} правил.",
+    "limit_other": "Бот може мати не більше {{count}} правила.",
+    "add": "Додати правило",
+    "describePlaceholder": "Або опиши правило, напр. «видай @Member, коли хтось реагує ✅ у #rules»",
+    "deleteLabel": "Видалити правило",
+    "deletePublished": "Видалити {{label}}? Воно працюватиме, доки ти не опублікуєш зміни.",
+    "deleteDraft": "Видалити {{label}}? Його ніколи не публікували, тож воно зникне одразу.",
+    "cancel": "Скасувати"
+  },
+  "schedule": {
+    "label": "Розклад",
+    "every": "Кожні …",
+    "daily": "Щодня о",
+    "weekly": "Щотижня в",
+    "cron": "Cron",
+    "minutesLabel": "Хвилини",
+    "minutes": "хвилин",
+    "time": "Час",
+    "day": "День",
+    "cronExpression": "Вираз cron",
+    "timezone": "Часовий пояс",
+    "hint": "Інтервал щонайменше 5 хвилин. Часовий пояс — назва IANA, наприклад Europe/Kyiv."
+  },
+  "settings": {
+    "saveFailed": "Не вдалося зберегти.",
+    "on": "Бот увімкнений",
+    "onHint": "Коли бот вимкнений, жодне з його правил не працює. Чернетки зберігаються.",
+    "name": "Назва",
+    "avatar": "Емодзі-аватар",
+    "colour": "Колір",
+    "description": "Опис",
+    "save": "Зберегти",
+    "rooms": "Дозволені кімнати",
+    "roomsHint": "Бот діє лише в цих кімнатах. Якщо нічого не вибрано — в усіх кімнатах.",
+    "capabilities": "Можливості",
+    "capabilitiesHint": "Що може робити бот. Недозволені дії показують помилку в «Активності».",
+    "export": "Експорт",
+    "exportHint": "Файл з ботом і його правилами. Кімнати й ролі зберігаються за назвою.",
+    "exportFailed": "Не вдалося експортувати.",
+    "delete": "Видалити бота",
+    "deleteHint": "Видаляє бота, його правила й активність.",
+    "deleteTitle": "Видалити {{name}}?",
+    "deleteDescription": "Бот одразу зупиниться, а його правила й активність буде видалено.",
+    "deleteFailed": "Не вдалося видалити."
+  },
+  "test": {
+    "empty": "Спершу додай і збережи правило, потім протестуй його тут.",
+    "failed": "Не вдалося запустити тест.",
+    "intro": "Вибери правило, заповни приклад вхідних даних і подивись кожен крок. Нічого не надсилається й не змінюється.",
+    "rule": "Правило",
+    "room": "Де відбувається",
+    "firstRoom": "Перша кімната",
+    "message": "Повідомлення",
+    "unsaved": "У цьому правилі є незбережені зміни; тест використовує останню збережену чернетку.",
+    "running": "Виконання…",
+    "run": "Запустити тест",
+    "steps": "Кроки тесту",
+    "noMatch": "Правило не запустилося: тригер або умови не збіглися."
+  },
+  "api": {
+    "problems_one": "{{count}} проблему треба виправити",
+    "problems_few": "{{count}} проблеми треба виправити",
+    "problems_many": "{{count}} проблем треба виправити",
+    "problems_other": "{{count}} проблеми треба виправити"
+  },
+  "card": {
+    "badge": "БОТ",
+    "noAnswerStatus": "Бот не відповів ({{status}}).",
+    "noAnswer": "Бот не відповів.",
+    "privateNotice": "Це бачиш лише ти",
+    "openImage": "Відкрити зображення",
+    "chooseOption": "Вибери варіант",
+    "choose": "Вибрати…",
+    "commands": "Команди бота",
+    "form": {
+      "required": "Поле «{{field}}» обов'язкове.",
+      "sendFailedStatus": "Не вдалося надіслати форму ({{status}}).",
+      "sendFailed": "Не вдалося надіслати форму.",
+      "cancel": "Скасувати",
+      "sending": "Надсилання…",
+      "submit": "Надіслати",
+      "untitled": "Форма"
+    }
+  },
+  "server": {
+    "commandUsage": "Використання: {{usage}}"
+  },
+  "validation": {
+    "notObject": "Має бути об'єктом.",
+    "unknownField": "Невідоме поле.",
+    "nonEmptyString": "Має бути непорожнім рядком.",
+    "maxLength": "Не більше {{max}} символів.",
+    "boolean": "Має бути true або false.",
+    "numberRange": "Має бути числом від {{min}} до {{max}}.",
+    "oneOf": "Має бути одним із: {{values}}.",
+    "time": "Має бути часом, напр. 09:30.",
+    "idRequired": {
+      "role": "Має бути ID ролі.",
+      "voiceRoom": "Має бути ID голосової кімнати.",
+      "channel": "Має бути ID кімнати.",
+      "rule": "Має бути ID правила."
+    },
+    "unknownId": {
+      "role": "Невідома роль у цьому Hub.",
+      "voiceRoom": "Невідома голосова кімната в цьому Hub.",
+      "channel": "Невідома кімната в цьому Hub.",
+      "rule": "Невідоме правило в цьому Hub."
+    },
+    "numberOrText": "Має бути числом або коротким текстом.",
+    "commandName": "Використовуй 1–32 малі латинські літери, цифри або дефіси.",
+    "builtInCommand": "Цю назву вже використовує вбудована команда.",
+    "list": "Має бути списком.",
+    "choices": "Має бути до 25 коротких текстів.",
+    "invalidRegex": "Недійсний регулярний вираз.",
+    "scheduleOneMode": "Вкажи рівно одне з: every, daily, weekly або cron.",
+    "scheduleMinimum": "Розклад має запускатися не частіше ніж раз на {{minutes}} хв.",
+    "cronFields": "Cron має містити 5 полів: хвилина година день місяць день_тижня.",
+    "unknownTrigger": "Невідомий тип тригера.",
+    "weekdays": "Має бути списком днів від 0 до 6.",
+    "unknownCondition": "Невідомий тип умови.",
+    "color": "Має бути кольором на зразок #aabbcc.",
+    "httpsLink": "Має бути посиланням https.",
+    "cardFields": "Має бути списком не більше ніж з 25 полів.",
+    "buttonsOrSelect": "Картка може мати кнопки або список, але не обидва.",
+    "maxButtons": "Не більше {{max}} кнопок.",
+    "selectOptions": "Має бути списком від 1 до 25 варіантів.",
+    "formFields": "Форма має містити від 1 до {{max}} полів.",
+    "pollOptions": "Потрібно від 2 до 10 коротких варіантів.",
+    "waitRange": "Очікування має бути від 1 до {{max}} хвилин (7 днів).",
+    "webhookHttps": "URL вебхуків мають починатися з https://.",
+    "unknownAction": "Невідомий тип дії.",
+    "actionList": "Має бути списком дій.",
+    "actionRequired": "Потрібна щонайменше одна дія.",
+    "maxActions": "Не більше {{max}} дій на правило.",
+    "ruleVersion": "Непідтримувана версія правила.",
+    "conditionList": "Має бути списком не більше ніж з 20 умов.",
+    "regex": {
+      "trailingBackslash": "Шаблон не може закінчуватися на \\.",
+      "backreference": "Зворотні посилання заборонені.",
+      "escapeNotAllowed": "\\{{char}} заборонено.",
+      "emptyClass": "Порожні класи [ ] заборонені.",
+      "classEscape": "Усередині [ ] дозволено лише \\d \\w \\s \\D \\W \\S \\n \\t або екрановані символи.",
+      "classBracket": "Використовуй \\[ для літерала [ усередині [ ].",
+      "rangePlain": "Діапазон у [ ] потребує звичайного символу з обох боків.",
+      "rangeOrder": "Діапазон у [ ] має неправильний порядок.",
+      "unclosedClass": "Незакритий [ ].",
+      "literalBrace": "Використовуй \\{ для літерала {.",
+      "repeatCount": "Кількість повторів понад {{max}} заборонена.",
+      "repeatOrder": "У {n,m} m має бути не меншим за n.",
+      "repeatRepeat": "Повтор не можна повторювати чи робити лінивим.",
+      "charNotAllowed": "«{{char}}» тут заборонено.",
+      "nestedGroup": "Групи не можуть бути вкладеними.",
+      "groupSyntax": "Lookaround, іменовані групи та вбудовані прапорці заборонені.",
+      "unclosedGroup": "Незакрита ( ).",
+      "emptyGroup": "Порожні групи заборонені.",
+      "emptyChoice": "Варіанти всередині ( | ) не можуть бути порожніми.",
+      "choicePlain": "Варіанти всередині ( | ) мають бути простим текстом без повторів.",
+      "groupRepeat": "Групи ( ) не можна повторювати.",
+      "bareChoice": "Розмісти варіанти всередині ( | ).",
+      "unmatchedParen": "Зайва ).",
+      "unboundedRepeats": "Використовуй не більше 1 необмеженого повтору (*, + або {n,}).",
+      "boundedExtra": "Обмежені повтори (?, {n,m}) можуть додати не більше {{max}} символів загалом.",
+      "tooComplex": "Шаблон занадто складний."
+    }
+  },
+  "mobile": {
+    "hubBots": {
+      "nameCreated": "{{name}} створено.",
+      "couldNotCreateTheBot": "Не вдалося створити бота.",
+      "hubControl": "КЕРУВАННЯ HUB",
+      "noBotsYetStartFrom": "Ще немає ботів. Почни з шаблону нижче.",
+      "nameEnabled": "{{name}} увімкнено",
+      "hideActivity": "Сховати активність",
+      "showActivity": "Показати активність",
+      "noRunsYet": "Ще не було запусків.",
+      "startFromATemplate": "ПОЧНИ З ШАБЛОНУ",
+      "createBot": "Створити бота",
+      "createdPublishOnDesktop": "{{name}} створено. Опублікуй його на комп'ютері або у вебі, щоб активувати.",
+      "unpublishedEditOnDesktop": "Неопубліковані зміни · Редагуй правила на комп'ютері або у вебі",
+      "editOnDesktop": "Редагуй правила на комп'ютері або у вебі.",
+      "manageOnDesktop": "Керуй на комп'ютері або у вебі"
+    },
+    "publishOnDesktop": "Опублікуй його на комп'ютері або у вебі, щоб активувати",
+    "editOnDesktop": "Редагуй правила на комп'ютері або у вебі",
+    "tokenBot": "Керуй на комп'ютері або у вебі",
+    "pausedAfterErrors": "Призупинено через помилки",
+    "summary": "{{rules}} · {{last}}",
+    "lastRun": "останній запуск {{time}}",
+    "noRuns": "Ще не було запусків",
+    "time": {
+      "minutes_one": "{{count}} хв тому",
+      "minutes_few": "{{count}} хв тому",
+      "minutes_many": "{{count}} хв тому",
+      "minutes_other": "{{count}} хв тому",
+      "hours_one": "{{count}} год тому",
+      "hours_few": "{{count}} год тому",
+      "hours_many": "{{count}} год тому",
+      "hours_other": "{{count}} год тому",
+      "days_one": "{{count}} дн. тому",
+      "days_few": "{{count}} дн. тому",
+      "days_many": "{{count}} дн. тому",
+      "days_other": "{{count}} дн. тому"
+    }
+  },
+  "run": {
+    "server": {
+      "publisherLeft": "Автора правил більше немає в цьому Hub",
+      "noChannel": "У цього тригера немає кімнати",
+      "hubChannelsOnly": "Боти можуть діяти лише в кімнатах Hub",
+      "channelGone": "Кімнати більше не існує",
+      "channelOtherHub": "Кімната не в цьому Hub",
+      "textChannelsOnly": "Боти можуть публікувати лише в текстових кімнатах і форумах",
+      "channelNotAllowed": "Боту заборонено діяти в цій кімнаті",
+      "publisherNoAccess": "Автор правил не має доступу до цієї кімнати",
+      "publisherCantPost": "Автор правил не може публікувати в цьому Hub",
+      "roleGone": "Роль більше не існує",
+      "publisherCantManageRole": "Автор правил не може керувати цією роллю",
+      "noMember": "У цього тригера немає учасника",
+      "memberLeft": "Учасника більше немає в цьому Hub",
+      "noMessage": "У цього тригера немає повідомлення",
+      "messageGone": "Повідомлення більше не існує",
+      "variableLimit": "Досягнуто ліміту змінних",
+      "notANumber": "Значення не є числом",
+      "waitNeedsChannel": "Для очікування потрібна текстова кімната в цьому Hub",
+      "rulesUnavailable": "Тут не можна запускати правила",
+      "pollIncomplete": "Опитуванню потрібні питання й два варіанти",
+      "messageLimit": "Досягнуто ліміту повідомлень",
+      "publisherCantCreateEvents": "Автор правил не може створювати події",
+      "eventTitleEmpty": "Назва події порожня",
+      "eventTimesInvalid": "Час події недійсний",
+      "tooManyEvents": "У цьому Hub забагато майбутніх подій",
+      "formsNeedInteraction": "Формам потрібна команда або кнопка",
+      "postFailed": "Не вдалося опублікувати повідомлення",
+      "forumReplyTarget": "Відповіді на форумі мають стосуватися публікації",
+      "postLocked": "Цю публікацію закрито",
+      "memberNoAccess": "Учасник не бачить цю кімнату",
+      "editOwnOnly": "Боти можуть змінювати лише власні повідомлення",
+      "cantEdit": "Це повідомлення не можна змінити",
+      "publisherCantModerate": "Автор правил не може модерувати повідомлення",
+      "publisherCantDelete": "Автор правил не може видалити це повідомлення",
+      "cantDeleteKind": "Боти не можуть видаляти такі повідомлення",
+      "emojiRequired": "Потрібен емодзі",
+      "emojiReserved": "Цей емодзі зарезервовано",
+      "threadsNeedForum": "Для гілок потрібен форум",
+      "publisherCantPostForum": "Автор правил не може публікувати на цьому форумі",
+      "threadNameEmpty": "Назва гілки порожня",
+      "timedRoleNeedsChannel": "Тимчасовим ролям потрібна текстова кімната в цьому Hub",
+      "webhookLimit": "Досягнуто ліміту вебхуків",
+      "webhookUrlInvalid": "URL вебхука недійсний",
+      "webhookHttpsOnly": "URL вебхука має використовувати https",
+      "webhookNoLogin": "URL вебхука не може містити логін",
+      "webhookNoPort": "URL вебхука не може використовувати власний порт",
+      "webhookHostRefused": "Хост вебхука заборонено",
+      "webhookRedirect": "Переспрямування вебхуків не виконуються",
+      "webhookTooLarge": "Відповідь вебхука завелика",
+      "webhookTimedOut": "Час очікування вебхука минув",
+      "webhookFailed": "Запит вебхука не вдався",
+      "unknownAction": "Невідома дія {{action}}",
+      "capabilityMissing": "Боту не дозволено {{capability}}",
+      "actionFailed": "Дія не вдалася",
+      "ranActions": "Дії виконано",
+      "ranNothing": "Нічого не виконано",
+      "patternNotAllowed": "Шаблон заборонено",
+      "chainTooDeep": "Ланцюжок ботів занадто глибокий",
+      "coolingDown": "Кулдаун",
+      "runLimit": "Досягнуто ліміту запусків Hub на цю хвилину",
+      "conditionsNotMet": "Умови не виконано",
+      "ruleUnavailable": "Це правило не опубліковане або призупинене",
+      "ruleFailed": "Помилка правила",
+      "runFailed": "Помилка запуску",
+      "commandMissingOption": "Бракує параметра {{option}}. Використання: {{usage}}",
+      "commandInvalidOption": "Недійсне значення {{option}}. Використання: {{usage}}",
+      "timerDropped": "Таймер двічі не спрацював; {{kind}} скасовано",
+      "wouldCall": "Викличе {{method}} {{url}}",
+      "wouldWait_one": "Чекатиме {{count}} хвилину",
+      "wouldWait_few": "Чекатиме {{count}} хвилини",
+      "wouldWait_many": "Чекатиме {{count}} хвилин",
+      "wouldWait_other": "Чекатиме {{count}} хвилини",
+      "roleStep": "{{action}}: роль {{role}}"
+    }
+  }
+}

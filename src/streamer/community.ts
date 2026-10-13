@@ -3,6 +3,7 @@
 
 import { CS2_MAP_POOL, type Leaderboard, type Pug, type PugTeam } from "../../shared/streamer-pugs";
 import { el, field } from "./dom";
+import { dateLocale, t } from "./i18n";
 
 export type VoiceRoomRef = { id: number; name: string };
 
@@ -19,15 +20,21 @@ export type CommunityHelpers = {
   joinVoiceRoom?: (roomId: number) => void;
 };
 
-const TEAM_LABEL: Record<PugTeam, string> = { a: "Team A", b: "Team B" };
+const teamLabel = (team: PugTeam): string => (team === "a" ? t("streamer.pug.teamA") : t("streamer.pug.teamB"));
 
 export function pugStatusLine(pug: Pug | null | undefined): string {
-  if (!pug) return "No PUG running";
+  if (!pug) return t("streamer.pug.statusNone");
   const capacity = pug.teamSize * 2;
-  if (pug.status === "open") return `${pug.players.length}/${capacity} joined · ${pug.teamSize}v${pug.teamSize}`;
-  if (pug.status === "live") return `Live on ${pug.map ?? "a map"}`;
-  if (pug.status === "done") return `Finished ${pug.scoreA ?? 0}–${pug.scoreB ?? 0} on ${pug.map ?? "a map"}`;
-  return "Cancelled";
+  if (pug.status === "open")
+    return t("streamer.pug.statusOpen", { joined: pug.players.length, capacity, size: pug.teamSize });
+  if (pug.status === "live") return t("streamer.pug.statusLive", { map: pug.map ?? t("streamer.pug.aMap") });
+  if (pug.status === "done")
+    return t("streamer.pug.statusDone", {
+      scoreA: pug.scoreA ?? 0,
+      scoreB: pug.scoreB ?? 0,
+      map: pug.map ?? t("streamer.pug.aMap"),
+    });
+  return t("streamer.pug.statusCancelled");
 }
 
 export function teamRoom(pug: Pug): number | null {
@@ -37,30 +44,29 @@ export function teamRoom(pug: Pug): number | null {
 }
 
 function roomName(rooms: VoiceRoomRef[], id: number | null): string {
-  return rooms.find((room) => room.id === id)?.name ?? "team voice";
+  return rooms.find((room) => room.id === id)?.name ?? t("streamer.pug.teamVoice");
 }
 
 function playerList(pug: Pug, team: PugTeam | null): HTMLElement {
   const players = pug.players.filter((player) => (team ? player.team === team : true));
   const list = el("ul", "dc-streamer-pug-players");
-  for (const player of players) list.append(el("li", player.me ? "is-me" : "", player.name, player.me ? " (you)" : ""));
-  if (!players.length) list.append(el("li", "is-empty", "Nobody yet"));
+  for (const player of players)
+    list.append(el("li", player.me ? "is-me" : "", player.name, player.me ? t("streamer.pug.you") : ""));
+  if (!players.length) list.append(el("li", "is-empty", t("streamer.pug.nobody")));
   return list;
 }
 
 function renderCreate(container: HTMLElement, h: CommunityHelpers) {
   if (!h.owner) {
-    container.append(h.quiet("No PUG is open right now. The streamer opens one when it's time to play."));
+    container.append(h.quiet(t("streamer.pug.memberNone")));
     return;
   }
   if (h.voiceRooms.length < 2) {
-    container.append(h.quiet("Add two voice rooms to this Hub first, one for each team."));
+    container.append(h.quiet(t("streamer.pug.needRooms")));
     return;
   }
-  container.append(
-    h.quiet("Open a PUG: viewers join, vote for a map, and teams are drawn at random when you start it."),
-  );
-  const { form, submitButton } = h.panelForm("Open PUG", (values, current) => {
+  container.append(h.quiet(t("streamer.pug.createIntro")));
+  const { form, submitButton } = h.panelForm(t("streamer.pug.open"), (values, current) => {
     const maps = Array.from(current.querySelectorAll<HTMLInputElement>("input[name=map]:checked")).map((i) => i.value);
     h.perform("pug/create", {
       teamSize: Number(values.teamSize),
@@ -69,8 +75,8 @@ function renderCreate(container: HTMLElement, h: CommunityHelpers) {
       voiceB: Number(values.voiceB),
     });
   });
-  field(form, "teamSize", "Players per team (1–5)", "5", { type: "number", min: "1", max: "5", required: true });
-  const maps = el("fieldset", "dc-streamer-pug-maps", el("legend", "", "Map pool"));
+  field(form, "teamSize", t("streamer.pug.teamSizeField"), "5", { type: "number", min: "1", max: "5", required: true });
+  const maps = el("fieldset", "dc-streamer-pug-maps", el("legend", "", t("streamer.pug.mapPool")));
   for (const map of CS2_MAP_POOL) {
     const box = el("input", "");
     box.type = "checkbox";
@@ -81,8 +87,8 @@ function renderCreate(container: HTMLElement, h: CommunityHelpers) {
   }
   form.append(maps);
   for (const [name, label, index] of [
-    ["voiceA", "Team A voice room", 0],
-    ["voiceB", "Team B voice room", 1],
+    ["voiceA", t("streamer.pug.voiceAField"), 0],
+    ["voiceB", t("streamer.pug.voiceBField"), 1],
   ] as const) {
     const select = el("select", "dc-streamer-input");
     select.name = name;
@@ -108,26 +114,26 @@ export function renderPugPanel(container: HTMLElement, pug: Pug | null | undefin
 
   if (pug.status === "open") {
     container.append(
-      h.quiet(`Teams are random, ${pug.teamSize}v${pug.teamSize}. The most voted map is played.`),
-      el("h3", "", `Players (${pug.players.length}/${capacity})`),
+      h.quiet(t("streamer.pug.rules", { size: pug.teamSize })),
+      el("h3", "", t("streamer.pug.players", { joined: pug.players.length, capacity })),
       playerList(pug, null),
     );
     const actions = el("div", "dc-streamer-actions");
-    if (pug.joined) actions.append(h.button("Leave PUG", () => h.perform("pug/leave", {})));
+    if (pug.joined) actions.append(h.button(t("streamer.pug.leave"), () => h.perform("pug/leave", {})));
     else {
-      const join = h.button("Join PUG", () => h.perform("pug/join", {}), true);
+      const join = h.button(t("streamer.pug.join"), () => h.perform("pug/join", {}), true);
       join.disabled ||= pug.players.length >= capacity;
       actions.append(join);
     }
     if (h.owner) {
-      const start = h.button("Start: draw teams", () => h.perform("pug/start", {}), true);
+      const start = h.button(t("streamer.pug.start"), () => h.perform("pug/start", {}), true);
       start.disabled ||= pug.players.length < 2;
       actions.append(
         start,
-        h.button("Cancel PUG", () => h.perform("pug/cancel", {})),
+        h.button(t("streamer.pug.cancel"), () => h.perform("pug/cancel", {})),
       );
     }
-    container.append(actions, el("h3", "", "Map vote"));
+    container.append(actions, el("h3", "", t("streamer.pug.mapVote")));
     const votes = el("div", "dc-streamer-pug-votes");
     for (const map of pug.maps) {
       const count = pug.votes[map] ?? 0;
@@ -137,7 +143,7 @@ export function renderPugPanel(container: HTMLElement, pug: Pug | null | undefin
       votes.append(vote);
     }
     container.append(votes);
-    if (!pug.joined) container.append(h.quiet("Join the PUG to vote."));
+    if (!pug.joined) container.append(h.quiet(t("streamer.pug.voteHint")));
     return;
   }
 
@@ -147,14 +153,26 @@ export function renderPugPanel(container: HTMLElement, pug: Pug | null | undefin
     el(
       "section",
       pug.myTeam === "a" ? "is-mine" : "",
-      el("h3", "", `${TEAM_LABEL.a}${pug.status === "done" ? ` · ${pug.scoreA ?? 0}` : ""}`),
+      el(
+        "h3",
+        "",
+        pug.status === "done"
+          ? t("streamer.pug.teamScore", { team: teamLabel("a"), score: pug.scoreA ?? 0 })
+          : teamLabel("a"),
+      ),
       el("small", "", roomName(h.voiceRooms, pug.voiceA)),
       playerList(pug, "a"),
     ),
     el(
       "section",
       pug.myTeam === "b" ? "is-mine" : "",
-      el("h3", "", `${TEAM_LABEL.b}${pug.status === "done" ? ` · ${pug.scoreB ?? 0}` : ""}`),
+      el(
+        "h3",
+        "",
+        pug.status === "done"
+          ? t("streamer.pug.teamScore", { team: teamLabel("b"), score: pug.scoreB ?? 0 })
+          : teamLabel("b"),
+      ),
       el("small", "", roomName(h.voiceRooms, pug.voiceB)),
       playerList(pug, "b"),
     ),
@@ -168,28 +186,42 @@ export function renderPugPanel(container: HTMLElement, pug: Pug | null | undefin
         el(
           "div",
           "dc-streamer-actions",
-          h.button(`Join ${pug.myTeam ? TEAM_LABEL[pug.myTeam] : ""} voice`, () => h.joinVoiceRoom!(room), true),
+          h.button(
+            t("streamer.pug.joinTeamVoice", { team: pug.myTeam ? teamLabel(pug.myTeam) : "" }),
+            () => h.joinVoiceRoom!(room),
+            true,
+          ),
         ),
       );
     }
     if (h.owner) {
-      container.append(el("h3", "", "Report the score"));
-      const { form, submitButton } = h.panelForm("Save result", (values) =>
+      container.append(el("h3", "", t("streamer.pug.reportScore")));
+      const { form, submitButton } = h.panelForm(t("streamer.pug.saveResult"), (values) =>
         h.perform("pug/result", { scoreA: Number(values.scoreA), scoreB: Number(values.scoreB) }),
       );
-      field(form, "scoreA", "Team A rounds", "0", { type: "number", min: "0", max: "99", required: true });
-      field(form, "scoreB", "Team B rounds", "0", { type: "number", min: "0", max: "99", required: true });
+      field(form, "scoreA", t("streamer.pug.teamARounds"), "0", {
+        type: "number",
+        min: "0",
+        max: "99",
+        required: true,
+      });
+      field(form, "scoreB", t("streamer.pug.teamBRounds"), "0", {
+        type: "number",
+        min: "0",
+        max: "99",
+        required: true,
+      });
       form.append(submitButton);
       container.append(
         form,
-        h.button("Cancel PUG", () => h.perform("pug/cancel", {})),
+        h.button(t("streamer.pug.cancel"), () => h.perform("pug/cancel", {})),
       );
     }
     return;
   }
 
   // Done: offer the next one.
-  if (h.owner) container.append(el("h3", "", "Next PUG"));
+  if (h.owner) container.append(el("h3", "", t("streamer.pug.next")));
   renderCreate(container, h);
 }
 
@@ -205,10 +237,10 @@ export function renderLeaderboard(
     return;
   }
   if (!board) {
-    container.append(h.quiet("Loading the leaderboard…"));
+    container.append(h.quiet(t("streamer.leaderboard.loading")));
     return;
   }
-  const month = new Date(`${board.month}-01T00:00:00Z`).toLocaleDateString(undefined, {
+  const month = new Date(`${board.month}-01T00:00:00Z`).toLocaleDateString(dateLocale(), {
     month: "long",
     year: "numeric",
     timeZone: "UTC",
@@ -217,14 +249,25 @@ export function renderLeaderboard(
     el(
       "div",
       "dc-streamer-pug-champion",
-      el("strong", "", board.champion ? `🏆 ${board.champion.name}` : "🏆 Up for grabs"),
+      el(
+        "strong",
+        "",
+        board.champion
+          ? t("streamer.leaderboard.champion", { name: board.champion.name })
+          : t("streamer.leaderboard.upForGrabs"),
+      ),
       h.quiet(
         board.champion
-          ? `Rifler of the month, ${month}: ${board.champion.wins} PUG ${board.champion.wins === 1 ? "win" : "wins"} so far.`
-          : `Win a PUG to become Rifler of the month for ${month}.`,
+          ? t("streamer.leaderboard.championLine", { month, count: board.champion.wins })
+          : t("streamer.leaderboard.noChampion", { month }),
       ),
       board.previousChampion
-        ? h.quiet(`Last month: ${board.previousChampion.name} (${board.previousChampion.wins} wins).`)
+        ? h.quiet(
+            t("streamer.leaderboard.lastMonth", {
+              name: board.previousChampion.name,
+              count: board.previousChampion.wins,
+            }),
+          )
         : null,
     ),
   );
@@ -237,9 +280,9 @@ export function renderLeaderboard(
         "tr",
         "",
         el("th", "", "#"),
-        el("th", "", "Player"),
-        el("th", "", "Wins"),
-        el("th", "", "Played"),
+        el("th", "", t("streamer.leaderboard.player")),
+        el("th", "", t("streamer.leaderboard.wins")),
+        el("th", "", t("streamer.leaderboard.played")),
         el("th", "", "FACEIT"),
       ),
     ),
@@ -249,7 +292,9 @@ export function renderLeaderboard(
     const faceit =
       row.faceitNickname === null
         ? "—"
-        : `${row.faceitLevel ? `Lvl ${row.faceitLevel} · ` : ""}${row.faceitElo ?? "?"} ELO`;
+        : row.faceitLevel
+          ? t("streamer.leaderboard.eloWithLevel", { level: row.faceitLevel, elo: row.faceitElo ?? "?" })
+          : t("streamer.leaderboard.elo", { elo: row.faceitElo ?? "?" });
     body.append(
       el(
         "tr",
@@ -262,26 +307,26 @@ export function renderLeaderboard(
       ),
     );
   });
-  if (!board.rows.length) body.append(el("tr", "", el("td", "", ""), el("td", "", "No games yet this month.")));
+  if (!board.rows.length) body.append(el("tr", "", el("td", "", ""), el("td", "", t("streamer.leaderboard.empty"))));
   table.append(body);
   container.append(el("div", "dc-streamer-pug-board-wrap", table));
 
-  container.append(el("h3", "", "Your FACEIT account"));
+  container.append(el("h3", "", t("streamer.leaderboard.yourAccount")));
   if (board.myFaceit) {
     container.append(
       h.quiet(
-        `Linked as ${board.myFaceit.nickname}${board.myFaceit.elo ? ` · ${board.myFaceit.elo} ELO` : ""}. Your ELO is refreshed every few hours and shown to members of Hubs you're in.`,
+        board.myFaceit.elo
+          ? t("streamer.leaderboard.linkedWithElo", { nickname: board.myFaceit.nickname, elo: board.myFaceit.elo })
+          : t("streamer.leaderboard.linked", { nickname: board.myFaceit.nickname }),
       ),
-      h.button("Unlink FACEIT", () => h.unlinkFaceit()),
+      h.button(t("streamer.leaderboard.unlink"), () => h.unlinkFaceit()),
     );
   } else if (!board.faceitAvailable) {
-    container.append(h.quiet("FACEIT linking isn't available yet."));
+    container.append(h.quiet(t("streamer.leaderboard.unavailable")));
   } else {
     container.append(
-      h.quiet(
-        "Sign in with FACEIT to show your CS2 ELO here. Only you can link your own account. Members of Hubs you're in can see your nickname and ELO.",
-      ),
-      h.button("Sign in with FACEIT", () => h.signInFaceit(), true),
+      h.quiet(t("streamer.leaderboard.signInIntro")),
+      h.button(t("streamer.leaderboard.signIn"), () => h.signInFaceit(), true),
     );
   }
 }

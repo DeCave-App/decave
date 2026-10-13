@@ -5,7 +5,8 @@
 //
 // The page is static and loaded from a data: URL in an isolated, no-network
 // partition; names and avatars arrive through decaveRender() and are written
-// with textContent / img.src only.
+// with textContent / img.src only. Labels arrive translated in state.labels
+// (electron/i18n.cjs); the English defaults below cover an older caller.
 
 const OVERLAY_SCALE_MIN = 60;
 const OVERLAY_SCALE_MAX = 150;
@@ -69,19 +70,20 @@ window.decaveRender=function(state){
   document.documentElement.style.setProperty('--s',String(scale));
   const root=document.getElementById('root');root.textContent='';
   const rows=Array.isArray(state&&state.participants)?state.participants:[];
+  const L=Object.assign({voice:'Voice',unknown:'Unknown',muted:'Muted',deafened:'Deafened'},state&&state.labels);
   const head=document.createElement('div');head.className='head';
   const dot=document.createElement('span');dot.className='dot';
-  const label=document.createElement('span');label.textContent=(state&&state.roomName?state.roomName:'Voice')+' \\u00b7 '+rows.length;
+  const label=document.createElement('span');label.textContent=(state&&state.roomName?state.roomName:L.voice)+' \\u00b7 '+rows.length;
   head.append(dot,label);root.appendChild(head);
   for(const p of rows){
     const row=document.createElement('div');row.className='pill'+(p.speaking?' speaking':'')+(p.deafened?' deafened':'');
     const av=document.createElement('div');av.className='av';av.style.background=color(p.username);
     if(p.avatarUrl){const img=document.createElement('img');img.src=p.avatarUrl;img.alt='';av.appendChild(img)}
     else av.textContent=(p.username||'?').slice(0,1).toUpperCase();
-    const name=document.createElement('div');name.className='name';name.textContent=p.username||'Unknown';
+    const name=document.createElement('div');name.className='name';name.textContent=p.username||L.unknown;
     row.append(av,name);
-    if(p.deafened)row.appendChild(icon(DEAF,'Deafened'));
-    else if(p.muted)row.appendChild(icon(MUTED,'Muted'));
+    if(p.deafened)row.appendChild(icon(DEAF,L.deafened));
+    else if(p.muted)row.appendChild(icon(MUTED,L.muted));
     root.appendChild(row);
   }
 };

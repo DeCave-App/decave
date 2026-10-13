@@ -1,0 +1,41 @@
+{
+  "common": {
+    "greeting": "Salut {{username}},",
+    "settingsPath": "Paramètres > Compte et sécurité"
+  },
+  "verify": {
+    "subject": "Vérifie ton e-mail DeCave",
+    "text": "Salut {{username}}, vérifie ton e-mail DeCave : {{link}}",
+    "heading": "Vérifie ton e-mail DeCave",
+    "body": "Confirme cette adresse e-mail pour activer ton compte.",
+    "button": "Vérifier l'e-mail",
+    "expiry": "Ce lien expire dans 24 heures."
+  },
+  "reset": {
+    "subject": "Réinitialise ton mot de passe DeCave",
+    "text": "Salut {{username}}, réinitialise ton mot de passe DeCave : {{link}}",
+    "heading": "Réinitialise ton mot de passe DeCave",
+    "body": "Si tu as demandé une réinitialisation du mot de passe, utilise le bouton ci-dessous.",
+    "button": "Réinitialiser le mot de passe",
+    "expiry": "Ce lien expire dans 30 minutes."
+  },
+  "signInAlert": {
+    "subject": "Nouvelle connexion à ton compte DeCave",
+    "heading": "Nouvelle connexion à DeCave",
+    "usedOnText": "Ton compte DeCave vient d'être utilisé pour se connecter sur : {{device}}",
+    "time": "Heure : {{when}}",
+    "usedOn": "Ton compte vient d'être utilisé pour se connecter sur :",
+    "ifYou": "Si c'était toi, tu n'as rien à faire.",
+    "notYouText": "Si ce n'était pas toi, sécurise ton compte maintenant (cela déconnecte tous les appareils et envoie un lien de réinitialisation du mot de passe) : {{link}}",
+    "turnOffText": "Tu peux désactiver ces e-mails dans {{settingsPath}}.",
+    "button": "Ce n'était pas moi",
+    "footer": "Cela déconnecte tous les appareils et t'envoie par e-mail un lien de réinitialisation du mot de passe. Le lien reste valable 7 jours. Désactive ces e-mails dans {{settingsPath}}."
+  },
+  "emailChanged": {
+    "subject": "L'adresse e-mail de ton compte DeCave a été modifiée",
+    "heading": "Ton adresse e-mail DeCave a changé",
+    "changedText": "L'adresse e-mail de ton compte DeCave a été remplacée par {{newEmail}}.",
+    "changed": "L'adresse e-mail de ton compte a été remplacée par <strong>{{newEmail}}</strong>.",
+    "notYou": "Si tu n'es pas à l'origine de ce changement, connecte-toi à DeCave, change ton mot de passe et déconnecte les autres appareils dans {{settingsPath}}."
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useSettingsT } from "./useSettingsT";
 
 type SinkAudio = HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> };
 
@@ -41,6 +42,7 @@ type OutputProps = {
 
 /** Settings → Voice: master volume for everyone you hear, plus a speaker test. */
 export function OutputPanel({ outputDeviceId, volume, onVolume }: OutputProps) {
+  const { t } = useSettingsT();
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState("");
   const test = async () => {
@@ -49,21 +51,21 @@ export function OutputPanel({ outputDeviceId, volume, onVolume }: OutputProps) {
     try {
       await playSpeakerTest(outputDeviceId, volume);
     } catch {
-      setError("Could not play the test sound on this device.");
+      setError(t("settings.voice.output.testFailed"));
     }
     window.setTimeout(() => setTesting(false), 1200);
   };
   return (
     <div className="settings-audio-panel settings-audio-panel-wide">
       <div className="settings-audio-panel-title">
-        <span>Output</span>
-        <small>How loud other people are, and a quick check that sound reaches your speakers or headset</small>
+        <span>{t("settings.voice.output.title")}</span>
+        <small>{t("settings.voice.output.help")}</small>
       </div>
       <div className="settings-audio-slider-block">
         <div className="settings-audio-row">
           <div>
-            <strong>Output volume</strong>
-            <small>Applies to everyone in voice. Per-person volumes are set on top of this.</small>
+            <strong>{t("settings.voice.output.volume")}</strong>
+            <small>{t("settings.voice.output.volumeHelp")}</small>
           </div>
           <b>{volume}%</b>
         </div>
@@ -75,12 +77,12 @@ export function OutputPanel({ outputDeviceId, volume, onVolume }: OutputProps) {
           step="5"
           value={volume}
           onChange={(event) => onVolume(Number(event.target.value))}
-          aria-label="Output volume"
+          aria-label={t("settings.voice.output.volume")}
         />
       </div>
       <div className="dcs-card-actions">
         <button type="button" className="modal-secondary" disabled={testing} onClick={() => void test()}>
-          {testing ? "Playing…" : "Test speakers"}
+          {testing ? t("settings.voice.output.playing") : t("settings.voice.output.test")}
         </button>
         {error && <span className="dcs-error">{error}</span>}
       </div>
@@ -95,6 +97,7 @@ type CameraProps = {
 
 /** Settings → Voice: choose a camera and preview it before going live. */
 export function CameraPanel({ cameraDeviceId, onCameraDevice }: CameraProps) {
+  const { t } = useSettingsT();
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [previewing, setPreviewing] = useState(false);
   const [error, setError] = useState("");
@@ -133,9 +136,7 @@ export function CameraPanel({ cameraDeviceId, onCameraDevice }: CameraProps) {
       setPreviewing(true);
       void refresh(); // Labels appear once permission is granted.
     } catch {
-      setError(
-        "DeCave couldn't open that camera. Check that no other app is using it and that camera access is allowed.",
-      );
+      setError(t("settings.voice.camera.openFailed"));
     }
   };
 
@@ -151,17 +152,17 @@ export function CameraPanel({ cameraDeviceId, onCameraDevice }: CameraProps) {
   return (
     <div className="settings-audio-panel settings-audio-panel-wide">
       <div className="settings-audio-panel-title">
-        <span>Camera</span>
-        <small>Used when you turn your camera on in a voice room</small>
+        <span>{t("settings.voice.camera.title")}</span>
+        <small>{t("settings.voice.camera.help")}</small>
       </div>
       <div className="dcs-camera">
         <div className="dcs-camera-preview">
-          <video ref={videoRef} muted playsInline aria-label="Camera preview" />
-          {!previewing && <span>Preview is off</span>}
+          <video ref={videoRef} muted playsInline aria-label={t("settings.voice.camera.preview")} />
+          {!previewing && <span>{t("settings.voice.camera.previewOff")}</span>}
         </div>
         <div className="dcs-camera-controls">
           <label className="settings-field">
-            <span>Camera</span>
+            <span>{t("settings.voice.camera.title")}</span>
             <select
               value={cameraDeviceId}
               onChange={(event) => {
@@ -169,67 +170,20 @@ export function CameraPanel({ cameraDeviceId, onCameraDevice }: CameraProps) {
                 if (previewing) void start(event.target.value);
               }}
             >
-              <option value="">Default camera</option>
+              <option value="">{t("settings.voice.camera.default")}</option>
               {cameras.map((camera, index) => (
                 <option key={camera.deviceId || index} value={camera.deviceId}>
-                  {camera.label || `Camera ${index + 1}`}
+                  {camera.label || t("settings.voice.camera.numbered", { number: index + 1 })}
                 </option>
               ))}
             </select>
           </label>
           <button type="button" className="modal-secondary" onClick={() => (previewing ? stop() : void start())}>
-            {previewing ? "Stop preview" : "Preview camera"}
+            {previewing ? t("settings.voice.camera.stop") : t("settings.voice.camera.start")}
           </button>
           {error && <p className="dcs-error">{error}</p>}
         </div>
       </div>
-    </div>
-  );
-}
-
-export type UserVolumeRow = { userId: string; name: string; volume: number };
-
-type VolumesProps = {
-  rows: readonly UserVolumeRow[];
-  onReset: (userId: string) => void;
-  onResetAll: () => void;
-};
-
-/** Settings → Voice: people whose volume you changed from the voice menu. */
-export function UserVolumesPanel({ rows, onReset, onResetAll }: VolumesProps) {
-  return (
-    <div className="settings-audio-panel settings-audio-panel-wide">
-      <div className="settings-audio-panel-title">
-        <span>Per-person volume</span>
-        <small>Right-click someone in a voice room to make them louder or quieter</small>
-      </div>
-      {rows.length === 0 ? (
-        <p className="dcs-muted">Everyone is at the normal volume.</p>
-      ) : (
-        <>
-          <ul className="dcs-list">
-            {rows.map((row) => (
-              <li key={row.userId} className="dcs-list-row">
-                <span className="dcs-initial" aria-hidden="true">
-                  {row.name.charAt(0).toUpperCase()}
-                </span>
-                <span className="dcs-list-copy">
-                  <strong>{row.name}</strong>
-                  <small>{row.volume === 0 ? "Muted for you" : `${row.volume}%`}</small>
-                </span>
-                <button type="button" className="modal-secondary" onClick={() => onReset(row.userId)}>
-                  Reset
-                </button>
-              </li>
-            ))}
-          </ul>
-          <div className="dcs-card-actions">
-            <button type="button" className="modal-secondary" onClick={onResetAll}>
-              Reset everyone
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 }

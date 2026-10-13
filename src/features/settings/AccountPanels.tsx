@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { accountExportStatus } from "../../../shared/account-export";
 import { Icon } from "../../components/Icon";
-import { describeLastActive } from "./sessionFormat";
+import { deviceName } from "../../i18n/sessionDevice";
+import { apiErrorOr, type ApiErrorBody } from "../../i18n/apiError";
+import { describeLastActive, type LastActiveWords } from "./sessionFormat";
+import { useSettingsT } from "./useSettingsT";
 
 export type SessionInfo = {
   id: string;
   client: "mobile" | "web" | "desktop" | "legacy";
   deviceLabel: string;
+  /** Parts of the label for showing it in the UI language (shared/session-device.ts). */
+  device?: unknown;
   createdAt: string;
   expiresAt: string;
   /** Last request from this device, recorded at most every 5 minutes. */
@@ -25,7 +30,7 @@ type SessionsProps = {
   formatDate: (iso: string) => string;
 };
 
-/** Settings → Account: where you're signed in, current device first. */
+/** Settings → Account & devices: where you're signed in, current device first. */
 export function SessionsPanel({
   sessions,
   busyId,
@@ -36,6 +41,13 @@ export function SessionsPanel({
   formatDateTime,
   formatDate,
 }: SessionsProps) {
+  const { t, i18n } = useSettingsT();
+  const words: LastActiveWords = {
+    locale: i18n.language,
+    activeNow: t("settings.sessions.activeNow"),
+    active: (when) => t("settings.sessions.active", { when }),
+    notUsedSince: (date) => t("settings.sessions.notUsedSince", { date }),
+  };
   const ordered = [...sessions].sort(
     (a, b) => Number(b.current) - Number(a.current) || Date.parse(b.createdAt) - Date.parse(a.createdAt),
   );
@@ -43,7 +55,7 @@ export function SessionsPanel({
   return (
     <div className="dcs-card">
       {ordered.length === 0 ? (
-        <p className="dcs-muted">No active sessions were returned. Refresh to try again.</p>
+        <p className="dcs-muted">{t("settings.sessions.none")}</p>
       ) : (
         <ul className="dcs-list">
           {ordered.map((session) => (
@@ -56,16 +68,19 @@ export function SessionsPanel({
               </span>
               <span className="dcs-list-copy">
                 <strong>
-                  {session.deviceLabel || "Unknown device"}
-                  {session.current && <em className="dcs-pill">This device</em>}
+                  {deviceName(session.deviceLabel, session.device) || t("settings.sessions.unknownDevice")}
+                  {session.current && <em className="dcs-pill">{t("settings.sessions.thisDevice")}</em>}
                 </strong>
                 <small>
                   {session.current
-                    ? "Active now"
-                    : describeLastActive(session.lastActiveAt, Date.now(), formatDate) ||
-                      "Last activity not recorded yet"}
-                  {" · "}Signed in {formatDateTime(session.createdAt)} · Stays signed in until{" "}
-                  {formatDate(session.expiresAt)}
+                    ? t("settings.sessions.activeNow")
+                    : describeLastActive(session.lastActiveAt, Date.now(), formatDate, words) ||
+                      t("settings.sessions.notRecorded")}
+                  {" · "}
+                  {t("settings.sessions.signedIn", {
+                    signedIn: formatDateTime(session.createdAt),
+                    until: formatDate(session.expiresAt),
+                  })}
                 </small>
               </span>
               {!session.current && (
@@ -75,7 +90,7 @@ export function SessionsPanel({
                   disabled={busyId === session.id}
                   onClick={() => onRevoke(session)}
                 >
-                  {busyId === session.id ? "Signing out…" : "Sign out"}
+                  {busyId === session.id ? t("settings.sessions.signingOut") : t("settings.sessions.signOut")}
                 </button>
               )}
             </li>
@@ -84,7 +99,7 @@ export function SessionsPanel({
       )}
       <div className="dcs-card-actions dcs-card-actions-split">
         <button type="button" className="modal-secondary" onClick={onRefresh}>
-          Refresh
+          {t("settings.sessions.refresh")}
         </button>
         <button
           type="button"
@@ -92,19 +107,21 @@ export function SessionsPanel({
           disabled={busyAll || ordered.length === 0}
           onClick={onLogoutAll}
         >
-          {busyAll ? "Signing out…" : others > 0 ? `Sign out all ${ordered.length} devices` : "Sign out"}
+          {busyAll
+            ? t("settings.sessions.signingOut")
+            : others > 0
+              ? t("settings.sessions.signOutAll", { count: ordered.length })
+              : t("settings.sessions.signOut")}
         </button>
       </div>
-      <p className="dcs-muted">
-        Signing out all devices includes this one. Don't recognise a device? Sign it out, then change your password and
-        turn on two-factor sign-in.
-      </p>
+      <p className="dcs-muted">{t("settings.sessions.help")}</p>
     </div>
   );
 }
 
-/** Settings → Account: download a JSON copy of your account data. */
+/** Settings → Account & devices: download a JSON copy of your account data. */
 export function DataExportPanel({ apiBase }: { apiBase: string }) {
+  const { t } = useSettingsT();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const download = async () => {
@@ -113,22 +130,29 @@ export function DataExportPanel({ apiBase }: { apiBase: string }) {
     try {
       const response = await fetch(`${apiBase}/api/account/export`, { credentials: "include" });
       if (!response.ok) {
-        const data = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || "Could not prepare your data. Try again.");
+        const data = (await response.json().catch(() => ({}))) as ApiErrorBody;
+        throw new Error(apiErrorOr(data, t("settings.yourData.prepareRetry")));
       }
       const blob = await response.blob();
       // The server writes "complete":true last; anything else is a truncated export.
       const exportStatus = accountExportStatus(await blob.slice(-512).text());
-      if (!exportStatus.complete) throw new Error(exportStatus.error);
+      if (!exportStatus.complete)
+        throw new Error(
+          exportStatus.errorKey === "settings.accountExport.failed"
+            ? t("settings.accountExport.failed")
+            : exportStatus.errorKey === "settings.accountExport.unfinished"
+              ? t("settings.accountExport.unfinished")
+              : exportStatus.error,
+        );
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `decave-data-${new Date().toISOString().slice(0, 10)}.json`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-      setNotice("Your data was downloaded.");
+      setNotice(t("settings.yourData.downloaded"));
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not prepare your data.");
+      setNotice(error instanceof Error ? error.message : t("settings.yourData.prepareFailed"));
     } finally {
       setBusy(false);
     }
@@ -140,13 +164,11 @@ export function DataExportPanel({ apiBase }: { apiBase: string }) {
           <Icon name="download" size="sm" />
         </span>
         <div className="dcs-card-copy">
-          <strong>Download my data</strong>
-          <small>
-            Your profile, settings, friends, Hubs, blocks, sign-ins and the messages you wrote, as a JSON file.
-          </small>
+          <strong>{t("settings.yourData.title")}</strong>
+          <small>{t("settings.yourData.description")}</small>
         </div>
         <button type="button" className="modal-secondary" disabled={busy} onClick={() => void download()}>
-          {busy ? "Preparing…" : "Download"}
+          {busy ? t("settings.yourData.preparing") : t("settings.yourData.download")}
         </button>
       </div>
       {notice && (

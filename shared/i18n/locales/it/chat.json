@@ -1,0 +1,1122 @@
+{
+  "dmNotice": {
+    "kicker": "NUOVO MESSAGGIO DIRETTO"
+  },
+  "composer": {
+    "jumpToLatest": "Vai agli ultimi ↓",
+    "editing": "Stai modificando il messaggio",
+    "replyingTo": "Stai rispondendo a {{name}}",
+    "typing": "In scrittura: {{names}}…",
+    "sendGif": "Invia una GIF",
+    "gif": "GIF",
+    "emoji": "Emoji",
+    "uploading": "Caricamento allegato…",
+    "retryUpload": "Riprova il caricamento",
+    "addToMessage": "Aggiungi al messaggio",
+    "uploadHint": "Immagini, video o documenti",
+    "pollHint": "Fai votare la stanza",
+    "gifHint": "Cerca nella libreria GIF",
+    "eventHint": "Aggiungilo al calendario dell'Hub",
+    "send": "Invia messaggio",
+    "sizeMb": "{{size}} MB",
+    "placeholder": "Scrivi in #{{room}}",
+    "readOnly": "#{{room}} è di sola lettura",
+    "ownerOnly": "Solo il proprietario dell'Hub può pubblicare in questo Hub"
+  },
+  "groupMembers": {
+    "kicker": "Membri del gruppo",
+    "addTitle": "Aggiungi un amico",
+    "noneToAdd": "Non ci sono altri amici da aggiungere.",
+    "ownerNote": "Come proprietario, rimuovi gli altri membri prima di lasciare il gruppo.",
+    "deleteGroup": "Elimina gruppo",
+    "youSuffix": " · Tu",
+    "owner": "Proprietario del gruppo",
+    "member": "Membro"
+  },
+  "messageSearch": {
+    "kicker": "Ricerca messaggi",
+    "placeholder": "Cerca messaggi o nomi utente",
+    "title": "Cerca in #{{room}}"
+  },
+  "newConversation": {
+    "kicker": "Nuova conversazione",
+    "title": "Scrivi agli amici",
+    "lead": "Scrivi direttamente a un amico, oppure selezionane almeno due per creare una chat di gruppo.",
+    "empty": "Aggiungi prima degli amici per iniziare una conversazione.",
+    "selected": "Selezionato",
+    "message": "Scrivi",
+    "createTitle": "Crea chat di gruppo",
+    "groupName": "Nome del gruppo (facoltativo)",
+    "hint": "Seleziona da 2 a 19 amici. Diventerai il proprietario del gruppo.",
+    "creating": "Creazione…",
+    "create": "Crea gruppo ({{members}})",
+    "select": "Seleziona"
+  },
+  "poll": {
+    "kicker": "Nuovo sondaggio",
+    "title": "Crea un sondaggio",
+    "lead": "Fai una domanda e aggiungi da 2 a 8 opzioni.",
+    "question": "Domanda",
+    "questionPlaceholder": "A cosa giochiamo stasera?",
+    "addOption": "Aggiungi opzione",
+    "post": "Pubblica sondaggio",
+    "option": "Opzione {{number}}",
+    "removeOption": "Rimuovi opzione {{number}}"
+  },
+  "roomHero": {
+    "announcements": "Gli annunci del proprietario dell'Hub arrivano qui. Attiva le notifiche per non perderti nulla.",
+    "private": "Stanza privata",
+    "public": "Visibile a tutti i membri",
+    "ownerOnly": "Solo il proprietario può pubblicare",
+    "sendMessage": "Invia un messaggio",
+    "uploadFile": "Carica un file",
+    "createPoll": "Crea sondaggio",
+    "scheduleEvent": "Programma evento",
+    "roomSettings": "Impostazioni stanza",
+    "kickerCategory": "{{hub}} · {{category}}",
+    "title": "Ti diamo il benvenuto in #{{room}}",
+    "beginning": "Questo è l'inizio di #{{room}}. Saluta, condividi una clip o rompi il ghiaccio con un sondaggio."
+  },
+  "messages": {
+    "tapToDownload": "Tocca per scaricare",
+    "addReaction": "Aggiungi reazione",
+    "reply": "Rispondi",
+    "reportMessage": "Segnala messaggio",
+    "editMessage": "Modifica messaggio",
+    "deleteMessage": "Elimina messaggio",
+    "rightClickUser": "Clic destro su {{name}}",
+    "replyTo": "↳ Risposta a {{name}}: {{preview}}",
+    "replyToMessage": "↳ Risposta a un messaggio",
+    "imageAttachment": "Immagine · {{name}}",
+    "videoAttachment": "Video · {{name}}",
+    "attachmentMeta": "{{size}} MB · {{type}}",
+    "file": "File",
+    "download": "Scarica",
+    "pinned": "FISSATO",
+    "unpin": "Rimuovi dai fissati",
+    "pin": "Fissa",
+    "unpinMessage": "Rimuovi dai fissati",
+    "pinMessage": "Fissa messaggio",
+    "deleteOwn": "Elimina il tuo messaggio",
+    "deleteAsModerator": "Elimina messaggio come moderatore",
+    "you": "Tu",
+    "waitingForConnection": "In attesa di connessione…",
+    "couldNotSend": "Invio non riuscito"
+  },
+  "report": {
+    "forumPostEvidence": "Post nel forum di {{name}}",
+    "forumReplyEvidence": "Risposta nel forum di {{name}}",
+    "messageEvidence": "Messaggio di {{name}}",
+    "groupMessageEvidence": "Messaggio di gruppo di {{name}}",
+    "dmContext": "Conversazione privata con {{name}}",
+    "dmEvidence": "Messaggio diretto di {{name}}"
+  },
+  "social": {
+    "searchConversations": "Cerca conversazioni",
+    "filters": "Filtri conversazioni",
+    "incomingRequest": "Richiesta di amicizia in arrivo",
+    "noRequests": "Nessuna richiesta di amicizia in attesa.",
+    "dmLabel": "Messaggi diretti",
+    "friendsTitle": "Amici",
+    "dmTitle": "Messaggi",
+    "dmLead": "Le tue conversazioni private e di gruppo.",
+    "friendsLead": "Guarda chi è online, condividi il tuo ID e aggiungi amici.",
+    "conversations": "Conversazioni",
+    "filterAll": "Tutte",
+    "filterUnread": "Non lette",
+    "filterUnreadCount": "Non lette {{number}}",
+    "filterRequests": "Richieste",
+    "filterRequestsCount": "Richieste {{number}}",
+    "archived": "Archiviate",
+    "groupMembers_one": "{{count}} membro",
+    "groupMembers_many": "{{count}} membri",
+    "groupMembers_other": "{{count}} membri",
+    "noUnread": "Non hai conversazioni non lette.",
+    "noArchived": "Nessuna chat archiviata.",
+    "noConversations": "Ancora nessuna conversazione. Usa il pulsante di scrittura per scrivere a un amico.",
+    "backToChats": "Torna alle chat",
+    "archivedCount": "Archiviate ({{number}})",
+    "groupChatMeta_one": "{{count}} membro · Chat di gruppo",
+    "groupChatMeta_many": "{{count}} membri · Chat di gruppo",
+    "groupChatMeta_other": "{{count}} membri · Chat di gruppo",
+    "members": "Membri",
+    "loadOlder": "Carica messaggi precedenti",
+    "today": "Oggi",
+    "groupBeginning": "Questo è l'inizio di {{name}}.",
+    "cancelReply": "Annulla risposta",
+    "add": "Aggiungi",
+    "voiceCall": "Chiamata vocale",
+    "videoCall": "Videochiamata",
+    "options": "Opzioni conversazione",
+    "deleteConversation": "Elimina conversazione",
+    "dmBeginning": "Questo è l'inizio della tua conversazione privata.",
+    "deleteAsGroupOwner": "Elimina messaggio come proprietario del gruppo",
+    "replyingToPreview": "Stai rispondendo a {{name}}: {{preview}}",
+    "messagePlaceholder": "Scrivi a {{name}}",
+    "removeFavorite": "Rimuovi dai preferiti",
+    "addFavorite": "Aggiungi ai preferiti",
+    "unarchive": "Rimuovi dall'archivio",
+    "archive": "Archivia chat",
+    "saveEdit": "Salva modifica",
+    "cancelEdit": "Annulla modifica",
+    "pollHint": "Fai votare la chat",
+    "startTitle": "Inizia una conversazione",
+    "startBody": "Scegli qualcuno dalle tue conversazioni o invia un nuovo messaggio diretto.",
+    "newMessage": "Nuovo messaggio",
+    "findFriend": "Trova un amico",
+    "recent": "CONVERSAZIONI RECENTI",
+    "messageFallback": "messaggio",
+    "uploadingNamed": "Caricamento di {{name}}…",
+    "attachmentReady": "Allegato pronto: {{name}}",
+    "dmPlaceholder": "Scrivi a @{{name}}",
+    "deleteDmTitle": "Vuoi eliminare questo DM?",
+    "deleteDmBody": "Il messaggio verrà rimosso per entrambe le persone. L'operazione non può essere annullata.",
+    "deleteDmConfirm": "Elimina messaggio",
+    "deleteConversationBody": "La conversazione viene cancellata solo dal tuo account DeCave. La copia dell'altra persona non viene eliminata. Se uno di voi invia un nuovo DM in seguito, la conversazione riapparirà.",
+    "deleteConversationConfirm": "Elimina conversazione",
+    "openFailed": "Impossibile aprire i messaggi diretti.",
+    "loadFailed": "Impossibile caricare i messaggi diretti.",
+    "deleteConversationTitle": "Vuoi eliminare la conversazione con {{name}}?"
+  },
+  "actions": {
+    "account": {
+      "usernameAvailableOn": "Potrai cambiare di nuovo il nome utente il {{date}}.",
+      "usernameUpdated": "Nome utente aggiornato.",
+      "verificationEmailSent": "Email di verifica inviata.",
+      "updateUnconfirmed": "Impossibile confermare la modifica dell'account. Verifica il tuo account e riprova.",
+      "sessionNotReady": "La tua sessione non è ancora pronta.",
+      "passwordFieldsMissing": "Compila tutti i campi della password.",
+      "passwordsMismatch": "Le nuove password non corrispondono.",
+      "passwordUnchanged": "La nuova password deve essere diversa da quella attuale.",
+      "passwordLength": "Usa da 10 a 128 caratteri per la nuova password.",
+      "passwordChanged": "Password cambiata. Accedi di nuovo con la nuova password.",
+      "confirmLogoutSession": "Vuoi disconnettere {{device}}?",
+      "sessionLoggedOut": "Sessione disconnessa.",
+      "dangerUnconfirmed": "Impossibile confermare l'azione sull'account. Potrebbe essere già stata applicata: controlla lo stato dell'account prima di riprovare.",
+      "enterCurrentPassword": "Inserisci prima la password attuale.",
+      "disabled": "Account disattivato. Accedi di nuovo quando vuoi riattivarlo.",
+      "deletionScheduledOn": "Eliminazione dell'account programmata per il {{date}}. Accedi prima di quella data per annullarla.",
+      "deletionScheduled": "Eliminazione dell'account programmata tra 30 giorni. Accedi prima di allora per annullarla.",
+      "disableNotAuthenticated": "Impossibile disattivare l'account. L'autenticazione non è stata completata.",
+      "deleteNotAuthenticated": "Impossibile eliminare l'account. L'autenticazione non è stata completata."
+    },
+    "activity": {
+      "localDetectionUnavailable": "Il rilevamento locale dei giochi non è disponibile su {{platform}}.",
+      "desktopScanFailedWithReason": "Scansione delle attività desktop non riuscita: {{reason}}",
+      "desktopScanFailed": "Scansione delle attività desktop non riuscita.",
+      "steamCompleteSignIn": "Completa l'accesso a Steam in un browser connesso allo stesso account DeCave. Se serve, accedi lì e riavvia il collegamento a Steam da Impostazioni → Attività; DeCave rileverà il collegamento automaticamente.",
+      "steamConnectedAs": "Steam collegato come {{name}}.",
+      "steamConnected": "Steam collegato.",
+      "steamSignInFailed": "Impossibile aprire l'accesso a Steam.",
+      "steamDisconnected": "Steam scollegato."
+    },
+    "owner": {
+      "mfaAddSecret": "Aggiungi il segreto alla tua app di autenticazione, poi inserisci il codice a 6 cifre.",
+      "mfaSetupUnconfirmed": "Impossibile confermare la configurazione MFA. Potrebbe essere già cambiata: controlla lo stato di sicurezza del proprietario prima di ricominciare.",
+      "mfaSetupCancelled": "Configurazione MFA del proprietario annullata o autenticazione non completata.",
+      "mfaEnabled": "L'MFA del proprietario è attiva. Salva i codici di recupero offline.",
+      "reauthUnlocked": "Accesso privilegiato del proprietario sbloccato per 10 minuti.",
+      "reauthUnconfirmed": "Impossibile confermare l'autenticazione privilegiata. Potrebbe essere stato emesso un token; l'accesso non è stato mantenuto qui. Controlla lo stato di sicurezza del proprietario.",
+      "reauthCancelled": "Autenticazione del proprietario annullata o non completata.",
+      "actionUnconfirmed": "Impossibile confermare l'azione del proprietario. Potrebbe essere già stata applicata: controlla lo stato di sicurezza del proprietario prima di riprovare.",
+      "unlockFirst": "Sblocca prima l'accesso privilegiato del proprietario.",
+      "promoted": "Proprietario della piattaforma aggiornato.",
+      "demoted": "Proprietario della piattaforma rimosso.",
+      "recoveryCodesCreated": "Nuovi codici di recupero creati. Il set precedente non è più valido."
+    },
+    "admin": {
+      "ownerRequired": "È richiesto l'accesso come proprietario della piattaforma.",
+      "loadFailed": "Impossibile caricare la dashboard di amministrazione.",
+      "gameApproved": "Gioco approvato e aggiunto a Ricerca Squad.",
+      "gameRejected": "Proposta di gioco rifiutata.",
+      "unlockFirst": "Sblocca prima le azioni privilegiate del proprietario con password + MFA.",
+      "ownSessionsRevoked": "Le tue sessioni sono state revocate. Accedi di nuovo.",
+      "sessionsRevoked": "Tutte le sessioni attive di quell'account sono state revocate.",
+      "suspendReasonMissing": "Inserisci un motivo per la sospensione.",
+      "suspended": "Account sospeso e tutte le sessioni revocate.",
+      "unsuspended": "Sospensione dell'account rimossa.",
+      "birthDateMissing": "Inserisci la data di nascita corretta.",
+      "ageCorrected": "Età corretta e limitazione per età rimossa.",
+      "resetForced": "Reimpostazione password richiesta ed email di reimpostazione inviata.",
+      "deleteReasonMissing": "Inserisci un motivo prima di programmare l'eliminazione.",
+      "erasureAvailableAfter": "Account disattivato ora. La cancellazione definitiva sarà disponibile dopo il {{date}}.",
+      "deletionScheduled": "Eliminazione dell'account programmata.",
+      "restored": "Account ripristinato.",
+      "erased": "Dati personali dell'account cancellati definitivamente.",
+      "roleChanged": "Ruolo nella piattaforma aggiornato. Le sessioni esistenti sono state revocate.",
+      "transferTargetMissing": "Inserisci l'ID DeCave, il nome utente o l'email verificata del nuovo proprietario.",
+      "hubTransferred": "Proprietà dell'Hub trasferita."
+    },
+    "auth": {
+      "enterEmail": "Inserisci l'indirizzo email del tuo account.",
+      "acceptTerms": "Accetta i Termini e prendi atto dell'Informativa sulla privacy per creare un account.",
+      "invalidEmail": "Inserisci un indirizzo email valido.",
+      "passwordsMismatch": "Le password non corrispondono.",
+      "passwordTooShort": "Usa una password di almeno 10 caratteri.",
+      "birthDateRequired": "Inserisci la tua data di nascita per confermare che hai almeno {{age}} anni.",
+      "checkEmail": "Controlla la tua email per verificare l'account.",
+      "enterMfaCode": "Inserisci il codice dell'app di autenticazione o un codice di recupero monouso.",
+      "confirmLogoutAll": "Vuoi disconnettere tutte le sessioni DeCave attive, incluso questo dispositivo?",
+      "loggedOutAll": "Tutte le sessioni attive sono state disconnesse. Accedi di nuovo per continuare."
+    },
+    "feedback": {
+      "empty": "Prima descrivi il bug o l'idea."
+    },
+    "friends": {
+      "newRequestTitle": "Nuova richiesta di amicizia",
+      "newRequestBody": "{{username}} vuole fare amicizia con te.",
+      "enterId": "Inserisci un ID DeCave.",
+      "ownId": "Questo è il tuo ID DeCave.",
+      "alreadyFriends": "Siete già amici.",
+      "alreadySent": "Richiesta di amicizia già inviata.",
+      "requestSent": "Richiesta di amicizia inviata.",
+      "idCopied": "Il tuo ID DeCave è stato copiato.",
+      "idShown": "Il tuo ID DeCave: {{id}}"
+    },
+    "home": {
+      "calendarSyncFailed": "Impossibile sincronizzare gli eventi del calendario in questo momento.",
+      "quickLinkInvalid": "Ogni scorciatoia richiede un nome valido e un URL HTTPS pubblico senza porte, credenziali o indirizzi privati.",
+      "widgetLimit_one": "Puoi aggiungere fino a {{count}} widget esterno.",
+      "widgetLimit_many": "Puoi aggiungere fino a {{count}} widget esterni.",
+      "widgetLimit_other": "Puoi aggiungere fino a {{count}} widget esterni.",
+      "widgetTitleLength_one": "Inserisci un titolo di massimo {{count}} carattere.",
+      "widgetTitleLength_many": "Inserisci un titolo di massimo {{count}} caratteri.",
+      "widgetTitleLength_other": "Inserisci un titolo di massimo {{count}} caratteri.",
+      "widgetUrlInvalid": "Usa un URL HTTPS pubblico senza porta, credenziali o nome host locale/privato."
+    },
+    "profile": {
+      "imageType": "Scegli un'immagine PNG, JPEG o WebP.",
+      "bannerTooLarge": "Le immagini del banner devono essere di 3 MB o meno.",
+      "readImageFailed": "Impossibile leggere l'immagine.",
+      "uploadBannerFailed": "Impossibile caricare il banner.",
+      "avatarTooLarge": "Le immagini del profilo devono essere di 2 MB o meno.",
+      "uploadAvatarFailed": "Impossibile caricare la foto del profilo.",
+      "dateUnavailable": "Non disponibile"
+    },
+    "safety": {
+      "birthDateMissing": "Inserisci la tua data di nascita per continuare."
+    },
+    "settings": {
+      "desktopSaveFailed": "Impossibile salvare le impostazioni di sistema desktop.",
+      "saved": "Impostazioni salvate.",
+      "sectionReset": "Questa sezione è stata ripristinata. Salva le modifiche per mantenere i valori predefiniti."
+    },
+    "dm": {
+      "yesterday": "Ieri",
+      "daysAgo_one": "{{count}} g fa",
+      "daysAgo_many": "{{count}} g fa",
+      "daysAgo_other": "{{count}} g fa",
+      "encryptFailed": "Impossibile crittografare questo messaggio.",
+      "prepareFailed": "Impossibile preparare l'invio di questo messaggio. Riprova.",
+      "confirmDeleteMessage": "Vuoi eliminare questo messaggio? L'operazione non può essere annullata.",
+      "confirmDeleteGroup": "Vuoi eliminare “{{name}}” per tutti? L'operazione non può essere annullata.",
+      "sendFailed": "Invio del messaggio diretto non riuscito.",
+      "groupFallback": "Chat di gruppo",
+      "groupSendFailed": "Invio del messaggio di gruppo non riuscito."
+    },
+    "message": {
+      "attachmentReconnecting": "Riconnessione in corso. Riprova a inviare l'allegato tra un attimo.",
+      "uploadCanceledRetry": "Caricamento annullato. Puoi riprovare con lo stesso file.",
+      "attachmentTooLarge": "La dimensione massima degli allegati è 25 MB.",
+      "uploadCanceled": "Caricamento annullato.",
+      "ownerOnly": "Solo il proprietario dell'Hub può pubblicare in questo Hub.",
+      "previousPostPending": "Il tuo post precedente è ancora in fase di invio.",
+      "postUnconfirmed": "Il server non ha confermato il post. Controlla il forum prima di riprovare.",
+      "idPending": "L'Hub ha accettato il messaggio, ma il suo ID non è ancora arrivato. Riprova dopo la riconnessione.",
+      "searchUnavailable": "La ricerca non è disponibile al momento. Riprova tra un attimo.",
+      "confirmDelete": "Vuoi eliminare questo messaggio?",
+      "confirmDeleteAsOwner": "Vuoi eliminare il messaggio di {{username}} come proprietario?",
+      "confirmDeleteAsAdmin": "Vuoi eliminare il messaggio di {{username}} come admin?",
+      "confirmDeleteAsMember": "Vuoi eliminare il messaggio di {{username}} come membro?",
+      "confirmDeleteAsModerator": "Vuoi eliminare il messaggio di {{username}} come moderatore?",
+      "deleteOffline": "Impossibile connettersi al server per eliminare questo messaggio.",
+      "downloadFailed": "Impossibile scaricare l'allegato.",
+      "botBadge": "BOT",
+      "edited": "modificato",
+      "postRejected": "Il server ha rifiutato il post."
+    },
+    "gif": {
+      "unsafe": "Questa GIF non può essere usata in modo sicuro.",
+      "sendFailed": "Impossibile inviare la GIF.",
+      "reconnecting": "Riconnessione in corso. Riprova a inviare la GIF tra un attimo.",
+      "searchPlaceholder": "Cerca su GIPHY",
+      "search": "Cerca",
+      "loading": "Caricamento GIF…",
+      "empty": "Nessuna GIF trovata.",
+      "fallbackTitle": "GIF",
+      "attribution": "Powered by GIPHY"
+    },
+    "emoji": {
+      "hubAssets": "Emote e sticker dell'Hub",
+      "emoteTitle": "emote: {{name}}",
+      "stickerTitle": "sticker: {{name}}",
+      "groups": {
+        "smileys": "Faccine",
+        "hands": "Mani",
+        "gaming": "Gaming",
+        "hearts": "Cuori",
+        "objects": "Oggetti",
+        "nature": "Natura"
+      }
+    },
+    "poll": {
+      "kicker": "SONDAGGIO",
+      "votes_one": "{{count}} voto",
+      "votes_many": "{{count}} voti",
+      "votes_other": "{{count}} voti"
+    },
+    "event": {
+      "invitedAll": "Invitati: tutti i membri dell'Hub",
+      "invited": "Invitati: {{names}}",
+      "selectedMembers": "Membri selezionati",
+      "openHubFirst": "Apri un Hub prima di collegare un evento.",
+      "noTextRoom": "Questo Hub non ha una stanza testuale per l'evento collegato.",
+      "reconnecting": "L'Hub si sta riconnettendo; l'evento collegato non è stato pubblicato."
+    },
+    "attachment": {
+      "details": "{{type}} · {{size}} MB · {{security}}",
+      "fallbackType": "Allegato",
+      "encrypted": "Crittografato end-to-end",
+      "legacy": "Download legacy autenticato"
+    },
+    "session": {
+      "changed": "La sessione di questo account è cambiata.",
+      "expired": "Sessione scaduta.",
+      "signedInElsewhere": "È stato effettuato l'accesso al tuo account DeCave da un altro browser o dall'app desktop.",
+      "ended": "La tua sessione è stata chiusa.",
+      "expiredSignIn": "La tua sessione è scaduta. Accedi di nuovo."
+    },
+    "history": {
+      "loadFailedStatus": "Impossibile caricare i messaggi precedenti ({{status}})."
+    },
+    "notifications": {
+      "hiddenBody": "Hai una nuova notifica.",
+      "senderSentMessage": "{{sender}} ha inviato un messaggio.",
+      "senderSentYouMessage": "{{sender}} ti ha inviato un messaggio."
+    },
+    "voiceTest": {
+      "previewUnavailable": "L'anteprima del microfono non è disponibile. Apri Voce e audio e scegli prima un input.",
+      "noReading": "Il misuratore vocale locale non ha ancora rilevato nulla. Riprova il test.",
+      "restoreFailed": "Impossibile ripristinare la catena audio del microfono dopo il confronto locale."
+    },
+    "decision": {
+      "openRoomFirst": "Apri una stanza testuale prima di pubblicare una scheda decisione.",
+      "reconnecting": "L'Hub si sta riconnettendo; la scheda decisione non è stata pubblicata."
+    },
+    "soundboard": {
+      "tooLarge": "I file della soundboard devono essere di 1,5 MB o meno.",
+      "badType": "Carica un file audio MP3, WAV, OGG, M4A o WebM.",
+      "readFailed": "Impossibile leggere il file audio.",
+      "added": "{{name}} aggiunto.",
+      "someone": "Qualcuno",
+      "played": "{{username}} ha riprodotto {{sound}}.",
+      "playedUnnamed": "{{username}} ha riprodotto un suono."
+    },
+    "camera": {
+      "blurUnsupported": "La sfocatura dello sfondo non è supportata da questo browser o driver della videocamera; la videocamera è partita senza.",
+      "replaceUnsupported": "La sostituzione dello sfondo non è supportata da questo browser o driver della videocamera; la videocamera è partita senza.",
+      "noTrack": "Nessuna traccia video della videocamera disponibile.",
+      "startFailed": "Impossibile avviare la videocamera protetta."
+    },
+    "screen": {
+      "noTrack": "Non è stata selezionata nessuna traccia video dello schermo.",
+      "systemAudioDropped": "La condivisione schermo è partita senza l'audio di sistema: questo dispositivo non riesce a escludere le voci di DeCave dall'audio condiviso, quindi tutti sentirebbero l'eco di sé stessi.",
+      "startFailed": "Impossibile avviare la condivisione schermo protetta."
+    },
+    "desktopUpdate": {
+      "statusFailed": "Impossibile leggere lo stato dell'aggiornamento desktop.",
+      "checkFailed": "DeCave non è riuscito a cercare aggiornamenti. Riprova più tardi.",
+      "restartRefused": "DeCave non è riuscito a riavviarsi per applicare l'aggiornamento. Salva il tuo lavoro e riprova.",
+      "restartFailed": "DeCave non è riuscito a riavviarsi per applicare l'aggiornamento. Riprova più tardi.",
+      "versionLoading": "Caricamento…",
+      "webVersion": "Web (live)",
+      "webOnly": "Gli aggiornamenti desktop sono disponibili nell'app desktop DeCave per Windows.",
+      "loading": "La versione installata è in caricamento dal bridge desktop.",
+      "checking": "Versione installata {{installed}} · Ricerca aggiornamenti…",
+      "downloadingPercent": "Versione installata {{installed}} · Download aggiornamento {{available}} · {{percent}}%",
+      "downloading": "Versione installata {{installed}} · Download aggiornamento {{available}}",
+      "downloaded": "Versione installata {{installed}} · Aggiornamento {{available}} scaricato e pronto. Riavvia per applicarlo.",
+      "upToDate": "Versione installata {{installed}} · Hai l'ultima versione.",
+      "failed": "Versione installata {{installed}} · Controllo aggiornamenti non riuscito: {{reason}}",
+      "tryLater": "Riprova più tardi.",
+      "disabled": "Versione installata {{installed}} · Gli aggiornamenti desktop sono disattivati in questa build.",
+      "ready": "Versione installata {{installed}} · Puoi cercare aggiornamenti."
+    },
+    "desktopBridge": {
+      "unavailable": "Il bridge desktop di DeCave non è disponibile.",
+      "failed": "Richiesta al bridge desktop non riuscita.",
+      "timedOut": "Il bridge desktop di DeCave non ha risposto in tempo."
+    },
+    "device": {
+      "unknownDetails": "Dettagli del dispositivo non disponibili",
+      "unknownClient": "Client sconosciuto",
+      "unknownSystem": "Sistema operativo sconosciuto",
+      "browserOnSystem": "{{browser}} su {{system}}"
+    },
+    "presence": {
+      "offline": "Offline",
+      "idle": "Inattivo",
+      "dnd": "Non disturbare",
+      "online": "Online"
+    },
+    "noise": {
+      "standard": "Standard",
+      "off": "Disattivata",
+      "standardShort": "STD",
+      "offShort": "OFF"
+    },
+    "microphone": {
+      "blocked": "L'accesso al microfono è bloccato. Consenti l'uso del microfono a DeCave nelle impostazioni del browser e riprova.",
+      "notFound": "Nessun microfono trovato su questo dispositivo.",
+      "busy": "Il microfono è occupato o non disponibile. Chiudi le altre app che lo usano e riprova.",
+      "overconstrained": "Il microfono selezionato non supporta le impostazioni audio richieste.",
+      "failed": "Impossibile accedere al microfono."
+    },
+    "realtime": {
+      "unknownUser": "Sconosciuto",
+      "mention": "Menzione",
+      "someUser": "Utente DeCave",
+      "roomFallback": "stanza",
+      "mentionedHidden": "Hai ricevuto una menzione in un Hub.",
+      "mentionedIn": "Ti ha menzionato in #{{channel}}.",
+      "newMessageHidden": "Nuovo messaggio in un Hub.",
+      "encryptedMessage": "🔒 Messaggio crittografato"
+    },
+    "voice": {
+      "kicked": "Un moderatore ti ha disconnesso.",
+      "connectionError": "Errore di connessione vocale."
+    }
+  },
+  "session": {
+    "storage": {
+      "unavailable": "L'archiviazione locale non è disponibile su questo dispositivo.",
+      "readFailed": "Impossibile leggere i dati locali salvati; viene usato uno stato vuoto sicuro.",
+      "unavailableNotSaved": "L'archiviazione locale non è disponibile su questo dispositivo; la modifica non è stata salvata.",
+      "writeRejected": "L'archiviazione locale ha rifiutato questa modifica; la sessione attuale resta utilizzabile.",
+      "unavailableKept": "L'archiviazione locale non è disponibile su questo dispositivo; i dati salvati sono stati mantenuti.",
+      "clearRejected": "L'archiviazione locale ha rifiutato la cancellazione di questi dati; non è stato rimosso nulla."
+    },
+    "recap": {
+      "readFailed": "Impossibile leggere il riepilogo locale della sessione.",
+      "invalidAction": "Questa azione del riepilogo non è valida e non è stata registrata.",
+      "saveFailed": "Impossibile salvare il riepilogo locale della sessione.",
+      "clearFailed": "Impossibile cancellare il riepilogo locale della sessione.",
+      "yourSession": "la tua sessione",
+      "actionsRecorded_one": "{{count}} azione locale registrata in {{hub}}.",
+      "actionsRecorded_many": "{{count}} azioni locali registrate in {{hub}}.",
+      "actionsRecorded_other": "{{count}} azioni locali registrate in {{hub}}.",
+      "participantsVisible_one": "{{count}} partecipante visibile.",
+      "participantsVisible_many": "{{count}} partecipanti visibili.",
+      "participantsVisible_other": "{{count}} partecipanti visibili.",
+      "roomsVisited_one": "{{count}} stanza visitata.",
+      "roomsVisited_many": "{{count}} stanze visitate.",
+      "roomsVisited_other": "{{count}} stanze visitate.",
+      "sharedLinks_one": "{{count}} link condiviso.",
+      "sharedLinks_many": "{{count}} link condivisi.",
+      "sharedLinks_other": "{{count}} link condivisi.",
+      "planningItems_one": "{{count}} elemento di pianificazione.",
+      "planningItems_many": "{{count}} elementi di pianificazione.",
+      "planningItems_other": "{{count}} elementi di pianificazione."
+    },
+    "quiet": {
+      "readFailed": "Impossibile leggere la presenza discreta.",
+      "saveFailed": "Impossibile salvare la presenza discreta.",
+      "intentAvailable": "Disponibile",
+      "intentPlaying": "In gioco",
+      "intentWatching": "Sto guardando",
+      "intentPlanning": "Sto organizzando",
+      "intentQuiet": "In silenzio",
+      "saveFailedDevice": "Impossibile salvare la presenza discreta su questo dispositivo.",
+      "kicker": "PRESENZA DISCRETA",
+      "title": "Condividi le intenzioni, mantieni il controllo",
+      "mapping": "La presenza usa lo stato {{status}} esistente e il preset di notifiche {{preset}}.",
+      "intent": "Intenzione",
+      "intentLabel": "Intenzione di presenza",
+      "expires": "Scadenza",
+      "expiryLabel": "Scadenza della presenza",
+      "expiryNone": "Finché non lo cambio",
+      "expiryHour": "Per 1 ora",
+      "expiryFourHours": "Per 4 ore",
+      "expiryToday": "Fino a fine giornata",
+      "interrupts": "INTERRUZIONI",
+      "urgentMentions": "Menzioni urgenti",
+      "ordinaryJoins": "Ingressi normali",
+      "soundboardEvents": "Eventi della soundboard",
+      "recommendations": "Consigli",
+      "note": "Salvato in locale dall'integrazione. La disponibilità in Ricerca Squad segue questa intenzione; le menzioni urgenti restano controllate a parte."
+    },
+    "kits": {
+      "readFailed": "Impossibile leggere i Session Kit salvati.",
+      "saveFailed": "Impossibile salvare le modifiche al Session Kit.",
+      "invalid": "Questo Session Kit non è valido e non è stato salvato.",
+      "clearFailed": "Impossibile cancellare i Session Kit."
+    },
+    "squad": {
+      "playStyle": "Stile di gioco",
+      "playStyleDetail": "Salvato su questo dispositivo; l'abbinamento attuale non filtra per stile di gioco.",
+      "timeWindow": "Fascia oraria",
+      "timeWindowDetail": "Salvato su questo dispositivo; l'abbinamento attuale non filtra per fascia oraria.",
+      "partySize": "Dimensione del gruppo",
+      "partySizeDetail": "Salvato su questo dispositivo; l'abbinamento attuale non filtra per dimensione del gruppo.",
+      "defaultName": "Preset Squad",
+      "savedOnlyExtra": "{{label}}: solo salvato",
+      "readFailed": "Impossibile leggere i preset Squad.",
+      "saveFailed": "Impossibile salvare i preset Squad.",
+      "invalid": "Questo preset Squad non è valido e non è stato salvato.",
+      "clearFailed": "Impossibile cancellare i preset Squad."
+    },
+    "voice": {
+      "inputFallback": "Input {{number}}",
+      "outputFallback": "Uscita {{number}}",
+      "permissionGranted": "Microfono consentito",
+      "permissionDenied": "Microfono bloccato",
+      "permissionPrompt": "Serve il permesso per il microfono",
+      "permissionUnknown": "Permesso microfono sconosciuto",
+      "modeHighQuality": "Alta qualità",
+      "modeLowCpu": "CPU ridotta",
+      "modeStandard": "Standard",
+      "rawInput": "Input grezzo",
+      "processedInput": "Input elaborato",
+      "durationMs": "{{ms}} ms",
+      "durationUnavailable": "durata non disponibile",
+      "activityPercent": "{{percent}}% di attività",
+      "activityUnavailable": "attività non disponibile",
+      "testSummary": "{{variant}}: {{duration}} misurati · {{activity}}"
+    },
+    "decision": {
+      "noDeadline": "Nessuna scadenza",
+      "deadlineUnavailable": "Scadenza non disponibile",
+      "closes": "Si chiude il {{date}}",
+      "voteFailed": "Impossibile salvare il tuo voto.",
+      "pinFailed": "Impossibile salvare il fissaggio della scheda.",
+      "kickerAvailability": "SCHEDA DISPONIBILITÀ",
+      "kickerChooseGame": "SCHEDA SCELTA GIOCO",
+      "kickerPoll": "SCHEDA SONDAGGIO",
+      "closed": "Chiuso",
+      "open": "Aperto",
+      "votes_one": "{{count}} voto",
+      "votes_many": "{{count}} voti",
+      "votes_other": "{{count}} voti",
+      "openEvent": "Apri evento",
+      "unpin": "Rimuovi dai fissati",
+      "pin": "Fissa scheda"
+    },
+    "composer": {
+      "eventFailed": "Impossibile creare l'evento collegato.",
+      "pollFailed": "Impossibile creare il sondaggio decisionale.",
+      "createFailed": "Impossibile creare questa scheda decisione.",
+      "kicker": "DECISIONE CONDIVISA",
+      "title": "Chiedi alla stanza",
+      "cardType": "Tipo di scheda",
+      "kindPoll": "Sondaggio",
+      "kindAvailability": "Disponibilità",
+      "kindChooseGame": "Scegli un gioco",
+      "deadline": "Scadenza",
+      "optional": "facoltativa",
+      "question": "Domanda",
+      "questionPlaceholder": "A cosa giochiamo?",
+      "option": "Opzione {{number}}",
+      "addOption": "Aggiungi opzione",
+      "linkEvent": "Collega un evento alla scadenza",
+      "posting": "Pubblicazione…",
+      "post": "Pubblica decisione"
+    },
+    "cancel": "Annulla",
+    "recapCard": {
+      "clearFailed": "Impossibile cancellare il riepilogo locale su questo dispositivo.",
+      "kicker": "RIEPILOGO LOCALE DELLA SESSIONE",
+      "title": "Cosa hai scelto di tenere",
+      "clear": "Cancella riepilogo",
+      "totals": "Totali del riepilogo",
+      "participants": "Partecipanti visibili",
+      "rooms": "Stanze visitate",
+      "links": "Link condivisi",
+      "planning": "Elementi di pianificazione",
+      "followUps": "Da fare: {{items}}",
+      "privacyNote": "Sono incluse solo azioni locali o di sessione esplicite. Il contenuto vocale e dei messaggi diretti non viene registrato."
+    },
+    "kitPanel": {
+      "saveFailed": "Impossibile salvare il Session Kit su questo dispositivo.",
+      "removeFailed": "Impossibile rimuovere il Session Kit da questo dispositivo.",
+      "kicker": "SESSION KIT LOCALI",
+      "title": "Parti dal tuo contesto",
+      "savedCount_one": "{{count}} salvato su questo dispositivo",
+      "savedCount_many": "{{count}} salvati su questo dispositivo",
+      "savedCount_other": "{{count}} salvati su questo dispositivo",
+      "saveCurrent": "Salva attuale",
+      "kitName": "Nome del kit",
+      "kitNamePlaceholder": "Co-op del venerdì sera",
+      "intent": "Intenzione",
+      "intentPlay": "Gioca",
+      "intentWatch": "Guarda",
+      "intentChat": "Chatta",
+      "intentPlan": "Organizza",
+      "saveNote": "Salva su questo dispositivo questo Hub, la stanza, i dispositivi vocali scelti, il preset di notifiche e il contesto di gioco. Microfono e videocamera restano spenti finché non li scegli tu.",
+      "saveKit": "Salva kit",
+      "empty": "Ancora nessun kit salvato. Salva Hub, stanza e preferenze vocali attuali per crearne uno.",
+      "kickerPlay": "GIOCA",
+      "kickerWatch": "GUARDA",
+      "kickerChat": "CHATTA",
+      "kickerPlan": "ORGANIZZA",
+      "noGame": "Nessun gioco",
+      "reviewLaunch": "Controlla avvio",
+      "remove": "Rimuovi",
+      "reviewKicker": "CONTROLLA PRIMA DI INIZIARE",
+      "canLaunch": "Le parti disponibili verranno ripristinate per questa sessione.",
+      "cannotLaunch": "Questo Hub non è disponibile, quindi il kit non può aprire il suo contesto.",
+      "inviteNote": "I possibili invitati sono pronti da controllare. Avviare questa sessione non invierà inviti né messaggi.",
+      "skippedLabel": "Riferimenti del kit non disponibili saltati",
+      "start": "Avvia sessione"
+    },
+    "presets": {
+      "newName": "Nuovo preset Squad",
+      "saveFailed": "Impossibile salvare il preset Squad su questo dispositivo.",
+      "removeFailed": "Impossibile rimuovere il preset Squad da questo dispositivo.",
+      "kicker": "RICERCA SQUAD",
+      "title": "Preset salvati",
+      "new": "Nuovo preset",
+      "name": "Nome",
+      "game": "Gioco",
+      "platform": "Piattaforma",
+      "language": "Lingua",
+      "region": "Regione",
+      "requireMic": "Richiedi un microfono",
+      "savedOnly": "solo salvato",
+      "styleAny": "Qualsiasi",
+      "styleCasual": "Casual",
+      "styleCompetitive": "Competitivo",
+      "timeWindowPlaceholder": "es. la sera",
+      "partyMin": "Dimensione minima del gruppo",
+      "partyMax": "Dimensione massima del gruppo",
+      "matcherNote": "Gioco, piattaforma, lingua, regione e microfono vengono inviati all'abbinamento attuale. Le preferenze extra restano su questo dispositivo finché l'abbinamento non le supporterà.",
+      "save": "Salva preset",
+      "empty": "Ancora nessun preset salvato.",
+      "anyGame": "Qualsiasi gioco",
+      "micRequired": "Microfono obbligatorio",
+      "micOptional": "Microfono facoltativo",
+      "savedOnlyList": "Solo salvati: {{items}}",
+      "use": "Usa preset",
+      "edit": "Modifica"
+    },
+    "readiness": {
+      "testFailed": "Impossibile eseguire il test vocale locale.",
+      "compareFailed": "Impossibile eseguire il confronto locale.",
+      "kicker": "VERIFICA AUDIO",
+      "title": "Controlla prima di entrare",
+      "noiseNotMeasured": "Rumore non misurato",
+      "environment": "Ambiente {{environment}}",
+      "refresh": "Aggiorna dispositivi",
+      "input": "Input",
+      "systemInput": "Input di sistema",
+      "unavailable": "Non disponibile",
+      "output": "Uscita",
+      "systemOutput": "Uscita di sistema",
+      "systemOutputSelectable": "Uscita di sistema · selezionabile",
+      "processing": "Elaborazione",
+      "latency": "Latenza prevista",
+      "notMeasured": "Non misurata",
+      "processingMode": "Modalità di elaborazione",
+      "measuringRaw": "Misurazione input grezzo…",
+      "testRaw": "Testa input grezzo",
+      "measuringProcessed": "Misurazione input elaborato…",
+      "testProcessed": "Testa input pulito",
+      "comparing": "Confronto…",
+      "runAb": "Esegui test A/B locale",
+      "note": "I test vengono eseguiti in locale dopo che scegli un pulsante e questo componente non li salva."
+    },
+    "kitLaunch": {
+      "issues": {
+        "hubUnavailable": "Questo Hub non è più disponibile; il kit si aprirà nella home in modo sicuro.",
+        "channelUnavailable": "Questa stanza non è più disponibile ed è stata saltata.",
+        "eventUnavailable": "Questo evento non è disponibile ed è stato saltato.",
+        "inviteMemberUnavailable": "Un invito non disponibile è stato saltato.",
+        "inputDeviceUnavailable": "L'input salvato non è disponibile; verrà mantenuto l'input di sistema.",
+        "outputDeviceUnavailable": "L'uscita salvata non è disponibile; verrà mantenuta l'uscita di sistema."
+      },
+      "summary": {
+        "hub": "Hub: {{hub}}",
+        "hubUnavailable": "Hub: non disponibile (home sicura)",
+        "room": "Stanza: {{room}}",
+        "roomUnavailable": "Stanza: non disponibile (saltata)",
+        "roomUnchanged": "Stanza: invariata",
+        "game": "Gioco: {{game}}",
+        "gameWithPlatform": "Gioco: {{game}} · {{platform}}",
+        "gameNotSet": "Gioco: non impostato",
+        "event": "Evento: {{event}}",
+        "eventUnavailable": "Evento: non disponibile (saltato)",
+        "eventNone": "Evento: nessuno",
+        "invites_one": "Inviti: {{count}} disponibile; invariato finché non scegli Invita",
+        "invites_many": "Inviti: {{count}} disponibili; invariati finché non scegli Invita",
+        "invites_other": "Inviti: {{count}} disponibili; invariati finché non scegli Invita",
+        "invitesNone": "Inviti: nessuno",
+        "microphone": "Microfono: invariato finché non scegli Entra e lo attivi",
+        "camera": "Videocamera: invariata finché non scegli Videocamera"
+      }
+    }
+  },
+  "shared": {
+    "typeToConfirm": {
+      "prompt": "Scrivi <strong>{{text}}</strong> per confermare",
+      "cancel": "Annulla",
+      "working": "In corso…"
+    }
+  },
+  "media": {
+    "download": {
+      "originInvalid": "L'origine dell'allegato non è valida.",
+      "originProtocol": "L'origine dell'allegato deve usare HTTP(S).",
+      "originState": "L'origine dell'allegato non deve contenere credenziali o stato dell'URL.",
+      "urlEmpty": "L'URL dell'allegato è vuoto.",
+      "urlSeparator": "L'URL dell'allegato contiene un separatore di percorso codificato o letterale.",
+      "urlTraversal": "L'URL dell'allegato contiene un attraversamento di percorso.",
+      "urlInvalid": "L'URL dell'allegato non è valido.",
+      "urlCrossOrigin": "L'URL dell'allegato non ha la stessa origine.",
+      "urlState": "L'URL dell'allegato non deve contenere credenziali, una query o un frammento.",
+      "urlEncodedTraversal": "L'URL dell'allegato contiene un attraversamento di percorso codificato.",
+      "urlOutsideRoute": "L'URL dell'allegato è fuori dal percorso legacy degli allegati.",
+      "urlUnsafeSegment": "L'URL dell'allegato contiene un segmento di percorso non sicuro.",
+      "limitInvalid": "Il limite di dimensione dell'allegato non è valido.",
+      "sizeInvalid": "La dimensione dell'allegato non è valida.",
+      "tooLarge": "L'allegato supera il limite di 25 MiB.",
+      "noBoundedBody": "La risposta dell'allegato non ha un corpo di dimensione definita.",
+      "incomplete": "La dimensione della risposta dell'allegato è incompleta.",
+      "downloadFailed": "Download dell'allegato non riuscito.",
+      "redirected": "La risposta dell'allegato è stata reindirizzata.",
+      "noVerifiedUrl": "La risposta dell'allegato non ha un URL verificato.",
+      "urlNotApproved": "L'URL della risposta dell'allegato non è approvato.",
+      "requestFailed": "Richiesta dell'allegato non riuscita.",
+      "exportUnavailable": "L'esportazione di file desktop non è disponibile in questo ambiente.",
+      "requestFailedStatus": "Richiesta dell'allegato non riuscita ({{status}})."
+    },
+    "image": {
+      "failedName": "Immagine · {{name}}",
+      "failedHint": "Impossibile mostrare l'anteprima. Scaricala invece.",
+      "open": "Apri immagine {{name}}",
+      "loading": "Caricamento immagine…",
+      "download": "Scarica",
+      "close": "Chiudi"
+    }
+  },
+  "outbox": {
+    "noReply": "Nessuna risposta da DeCave. Controlla la connessione e riprova."
+  },
+  "home": {
+    "hero": {
+      "greeting": {
+        "lateNight": "Grind notturno, <em>{{name}}</em>",
+        "morning": "Buongiorno, <em>{{name}}</em>",
+        "afternoon": "Buon pomeriggio, <em>{{name}}</em>",
+        "evening": "Buonasera, <em>{{name}}</em>"
+      },
+      "inVoice": "Sei in vocale in {{room}}. La tua crew ti aspetta.",
+      "friendsOnline_one": "{{count}} amico è online in questo momento.",
+      "friendsOnline_many": "{{count}} amici sono online in questo momento.",
+      "friendsOnline_other": "{{count}} amici sono online in questo momento.",
+      "ready": "Quando vuoi, si parte. Riprendi da dove avevi lasciato.",
+      "kicker": "La mia Cave · Dashboard personale"
+    },
+    "jumpBack": {
+      "connectedToVoice": "In vocale",
+      "inRoom_one": "{{count}} nella stanza",
+      "inRoom_many": "{{count}} nella stanza",
+      "inRoom_other": "{{count}} nella stanza",
+      "jumpBackIn": "Rientra",
+      "getStarted": "Inizia",
+      "discoverHubs": "Scopri gli Hub",
+      "discoverHint": "Trova una community per i tuoi giochi",
+      "friends": "Amici",
+      "discover": "Scopri",
+      "findSquad": "Trova uno Squad",
+      "createHub": "＋ Crea Hub",
+      "settings": "Impostazioni"
+    },
+    "stats": {
+      "friendsOnline": "Amici online",
+      "inVoice": "Persone in vocale",
+      "hubs": "I tuoi Hub",
+      "unreadDms": "DM non letti"
+    },
+    "friends": {
+      "emptyTitle": "Ancora nessuno online",
+      "emptyHint": "I tuoi amici compaiono qui appena si connettono.",
+      "add": "Aggiungi amici",
+      "message": "Scrivi a {{name}}",
+      "online": "Online"
+    },
+    "voice": {
+      "emptyTitle": "Nessuna stanza vocale",
+      "emptyHint": "Entra in un Hub o creane uno per stare in vocale.",
+      "connected": "Connesso · {{hub}}",
+      "open": "Apri",
+      "join": "Entra"
+    },
+    "events": {
+      "liveNow": "In corso",
+      "syncingTitle": "Sincronizzazione eventi",
+      "syncingHint": "Controllo delle sessioni programmate nei tuoi Hub.",
+      "emptyTitle": "Niente in programma",
+      "emptyHint": "Serate raid, tornei e ritrovi dei tuoi Hub appaiono qui."
+    },
+    "hubs": {
+      "emptyTitle": "Ancora nessun Hub",
+      "emptyHint": "Creane uno tuo o trova una community in cui entrare.",
+      "membershipPrivate": "Membri nascosti",
+      "online_one": "{{count}} online",
+      "online_many": "{{count}} online",
+      "online_other": "{{count}} online"
+    },
+    "messages": {
+      "emptyTitle": "Nessun DM recente",
+      "emptyHint": "Le tue ultime conversazioni restano a portata di mano qui.",
+      "open": "Apri messaggi"
+    },
+    "nowPlaying": {
+      "emptyTitle": "Nessun gioco rilevato",
+      "emptyHint": "Avvia un gioco supportato e DeCave aggiornerà questo riquadro automaticamente.",
+      "kicker": "In gioco ora"
+    },
+    "profile": {
+      "edit": "Modifica"
+    },
+    "notes": {
+      "placeholder": "Scrivi qui una nota veloce…",
+      "label": "Note"
+    },
+    "board": {
+      "emptyTitle": "La tua Home è vuota",
+      "emptyHint": "Scegli i widget da mostrare qui.",
+      "addWidgets": "＋ Aggiungi widget",
+      "options": "Opzioni del widget {{title}}",
+      "size": "Dimensione di {{title}}",
+      "moveEarlierNamed": "Sposta {{title}} prima",
+      "moveEarlier": "Sposta prima",
+      "moveLaterNamed": "Sposta {{title}} dopo",
+      "moveLater": "Sposta dopo",
+      "hideNamed": "Nascondi {{title}}",
+      "hide": "Nascondi widget"
+    },
+    "library": {
+      "label": "Libreria widget",
+      "kicker": "Personalizza la Home",
+      "title": "Scegli i tuoi widget",
+      "hint": "Attiva o disattiva i widget, poi trascina le schede (o usa ↑ ↓) per riordinarle.",
+      "reset": "Ripristina predefiniti",
+      "done": "Fatto",
+      "presets": "Parti da un preset",
+      "show": "Mostra {{title}}"
+    },
+    "category": {
+      "Gaming": "Gaming",
+      "Social": "Social",
+      "Voice": "Vocale",
+      "Hubs": "Hub",
+      "Personal": "Personale"
+    },
+    "size": {
+      "small": "Piccolo",
+      "medium": "Medio",
+      "wide": "Largo"
+    },
+    "widget": {
+      "jumpBack": {
+        "title": "Rientra",
+        "description": "Riprendi l'ultima stanza, la chiamata vocale e le azioni rapide"
+      },
+      "stats": {
+        "title": "In breve",
+        "description": "Amici online, persone in vocale, Hub e DM non letti"
+      },
+      "friendsOnline": {
+        "title": "Amici online",
+        "description": "Chi è online e a cosa sta giocando"
+      },
+      "voiceRooms": {
+        "title": "Stanze vocali",
+        "description": "Entra nelle stanze vocali dei tuoi Hub"
+      },
+      "events": {
+        "title": "Prossimi eventi",
+        "description": "Sessioni programmate dei tuoi Hub"
+      },
+      "hubs": {
+        "title": "I tuoi Hub",
+        "description": "Accesso rapido alle tue community"
+      },
+      "messages": {
+        "title": "Messaggi",
+        "description": "Torna nelle chat private"
+      },
+      "nowPlaying": {
+        "title": "In gioco ora",
+        "description": "Il gioco rilevato e la durata della sessione"
+      },
+      "quickLinks": {
+        "title": "Link rapidi",
+        "description": "Scorciatoie ai tuoi siti preferiti"
+      },
+      "profile": {
+        "title": "Profilo",
+        "description": "La tua presenza a colpo d'occhio"
+      },
+      "clock": {
+        "title": "Orologio",
+        "description": "Ora e data locali"
+      },
+      "notes": {
+        "title": "Note",
+        "description": "Un blocco note privato su questo dispositivo"
+      }
+    },
+    "preset": {
+      "gaming": {
+        "label": "Gaming",
+        "description": "Gioco in corso, vocale ed eventi in primo piano"
+      },
+      "social": {
+        "label": "Social",
+        "description": "Prima amici, messaggi e i tuoi Hub"
+      },
+      "minimal": {
+        "label": "Minimal",
+        "description": "Solo l'essenziale"
+      }
+    }
+  },
+  "server": {
+    "authTimedOut": "Tempo di autenticazione scaduto. Riconnettiti.",
+    "rateLimited": "Troppe richieste in tempo reale. Rallenta.",
+    "payloadTooLarge": "I dati in tempo reale sono troppo grandi.",
+    "invalidJson": "Payload JSON non valido",
+    "unknownType": "Tipo di messaggio in tempo reale sconosciuto.",
+    "authTooManyAttempts": "Troppi tentativi di autenticazione. Riprova più tardi.",
+    "authUnavailable": "L'autenticazione non è temporaneamente disponibile. Riprova.",
+    "sessionExpired": "Sessione scaduta. Accedi di nuovo.",
+    "authenticateFirst": "Devi prima autenticarti",
+    "noHubAccess": "Non hai accesso a questo Hub",
+    "roomNotFound": "Stanza non trovata o non accessibile",
+    "officialPolicyUnavailable": "Le regole di pubblicazione dell'Hub ufficiale non sono temporaneamente disponibili.",
+    "ownerOnlyPosting": "Solo il proprietario dell'Hub può pubblicare in questo Hub.",
+    "roomReadOnly": "#{{room}} è di sola lettura.",
+    "timedOut": "Al momento sei in timeout in questo Hub.",
+    "slowMode": "La modalità lenta è attiva. Aspetta {{seconds}} secondi tra un messaggio e l'altro.",
+    "attachmentNotOwned": "Quell'allegato non è tuo o non è disponibile in questa stanza.",
+    "replyTargetMissingInRoom": "Il messaggio a cui stai rispondendo non è stato trovato in questa stanza.",
+    "forumReplyTarget": "Le risposte nel forum devono riferirsi a un post del forum.",
+    "forumReplyNotPost": "Le risposte nel forum non possono essere post.",
+    "forumPostLocked": "Questo post è bloccato.",
+    "forumPostsOnlyInForums": "I post del forum possono essere creati solo nelle stanze forum.",
+    "forumTopLevelPosts": "I messaggi principali del forum devono essere creati come post.",
+    "forumTooManyTags": "I post possono avere al massimo {{max}} tag.",
+    "forumTagInvalid": "Scegli i tag dall'elenco dei tag di questo forum.",
+    "forumRoleCannotPost": "Il tuo ruolo non può creare post in questo forum.",
+    "forumLockForbidden": "Solo i moderatori del forum possono creare post con le risposte disattivate.",
+    "attachmentUnavailable": "Quell'allegato non è disponibile.",
+    "dmFriendsOnly": "I messaggi diretti sono disponibili solo tra amici.",
+    "dmBlocked": "Questo utente è bloccato. Sbloccalo prima di inviargli messaggi diretti.",
+    "replyTargetMissing": "Il messaggio a cui stai rispondendo non è stato trovato.",
+    "alreadySent": "Quel messaggio è già stato inviato.",
+    "groupNotMember": "Non sei membro di questa chat di gruppo.",
+    "voiceRoomNotFound": "Stanza vocale non trovata",
+    "voiceRoomFull": "Questa stanza è piena ({{cap}}/{{cap}}).",
+    "soundUnavailable": "Quel suono della soundboard non è disponibile.",
+    "soundboardUnavailable": "La soundboard non è disponibile al momento.",
+    "voiceRoomDeleted": "Questa stanza vocale è stata eliminata.",
+    "voiceAccessRevoked": "Non hai più accesso a questa stanza vocale.",
+    "roomAccessRevoked": "Non hai più accesso a questa stanza.",
+    "roomDeleted": "Questa stanza è stata eliminata.",
+    "leftHub": "Hai lasciato questo Hub.",
+    "removedFromHub": "Non fai più parte di questo Hub.",
+    "kickedFromHub": "Ti hanno espulso da questo Hub.",
+    "bannedFromHub": "Ti hanno bannato da questo Hub.",
+    "leftSquadRoom": "Hai lasciato la stanza dello Squad."
+  },
+  "mobile": {
+    "channel": {
+      "couldNotDownloadAttachment": "Impossibile scaricare l'allegato",
+      "theAuthenticatedAttachmentDownloadFailed": "Download autenticato dell'allegato non riuscito.",
+      "couldNotLoadMessages": "Impossibile caricare i messaggi.",
+      "realtimeIsReconnectingTryAgain": "Riconnessione in corso. Riprova tra un attimo.",
+      "couldNotSendAttachment": "Impossibile inviare l'allegato",
+      "pleaseTryAgain": "Riprova.",
+      "couldNotSendGif": "Impossibile inviare la GIF",
+      "couldNotUnpinMessage": "Impossibile rimuovere il messaggio dai fissati",
+      "couldNotPinMessage": "Impossibile fissare il messaggio",
+      "olderMessage": "Messaggio meno recente",
+      "thisMessageIsFurtherBack": "Questo messaggio è più indietro della cronologia caricata.",
+      "couldNotAddReaction": "Impossibile aggiungere la reazione",
+      "deleteMessage": "Vuoi eliminare il messaggio?",
+      "thisRemovesTheMessageFor": "Il messaggio verrà rimosso per tutti in questa stanza.",
+      "couldNotDeleteMessage": "Impossibile eliminare il messaggio",
+      "couldNotEditMessage": "Impossibile modificare il messaggio",
+      "theMessageWasNotChanged": "Il messaggio non è stato modificato.",
+      "live": "Live",
+      "connecting": "Connessione…",
+      "searchMessages": "Cerca messaggi",
+      "pinnedMessages": "Messaggi fissati",
+      "returnToVoiceControls": "Torna ai controlli vocali",
+      "voiceAndMessagesLiveTogether": "Chat vocale e messaggi convivono in questa stanza.",
+      "noPostsInThisForum": "Ancora nessun post in questo forum.",
+      "thisIsTheBeginningOf": "Questo è l'inizio di questa stanza testuale.",
+      "longPressForMessageActions": "Tieni premuto per le azioni sul messaggio",
+      "pinned": "Fissato",
+      "newsincescrollNewMessagesJumpTo": "{{newSinceScroll}} nuovi messaggi. Vai agli ultimi",
+      "jumpToLatestMessages": "Vai agli ultimi messaggi",
+      "latest": "Ultimi",
+      "severalPeopleAreTyping": "Diverse persone stanno scrivendo…",
+      "editingMessage": "Stai modificando il messaggio",
+      "replyingToNameValue": "Stai rispondendo a {{name}}: {{value}}",
+      "longPressAPostTo": "Tieni premuto un post per rispondere. I nuovi post del forum si possono creare da desktop o web.",
+      "addPhotoVideoOrGif": "Aggiungi foto, video o GIF",
+      "writeAReply": "Scrivi una risposta",
+      "messageName": "Scrivi in #{{name}}",
+      "couldNotUpdateMute": "Impossibile aggiornare il silenziamento",
+      "unmuteUsername": "Riattiva {{username}}",
+      "muteNotificationsFromUsername": "Silenzia le notifiche di {{username}}",
+      "roomFallback": "Stanza",
+      "welcomeVoice": "Ti diamo il benvenuto in {{name}}",
+      "welcomeText": "Ti diamo il benvenuto in #{{name}}",
+      "reactedByYou": "{{emoji}} {{count}}, hai reagito",
+      "newCount": "{{number}} nuovi",
+      "isTyping": "{{name}} sta scrivendo…",
+      "twoTyping": "{{first}} e {{second}} stanno scrivendo…"
+    },
+    "finder": {
+      "searchFailed": "Ricerca non riuscita.",
+      "pinsEmpty": "Ancora nessun messaggio fissato. I moderatori possono fissarli dal menu che si apre tenendo premuto un messaggio.",
+      "noMatches": "Nessun messaggio corrispondente.",
+      "searchHint": "Cerca per testo del messaggio o nome utente.",
+      "searchTitle": "Cerca messaggi",
+      "placeholder": "Cerca in questa stanza"
+    },
+    "media": {
+      "gifLoadFailed": "Impossibile caricare le GIF.",
+      "photos": "Foto",
+      "camera": "Fotocamera",
+      "searchGiphy": "Cerca su GIPHY",
+      "poweredByGiphy": "Powered by GIPHY",
+      "saveOrShare": "Salva o condividi",
+      "cameraOff": "L'accesso alla fotocamera è disattivato per DeCave. Attivalo in Impostazioni.",
+      "photosOff": "L'accesso alle foto è disattivato per DeCave. Attivalo in Impostazioni.",
+      "tooLarge": "Gli allegati possono essere fino a 25 MB.",
+      "uploadFailed": "Impossibile caricare l'allegato."
+    },
+    "preview": {
+      "mine": "Il tuo messaggio: {{body}}",
+      "from": "Messaggio da {{author}}: {{body}}"
+    },
+    "sendFailed": {
+      "text": "Non inviato: sei offline o in riconnessione.",
+      "retryLabel": "Riprova l'invio"
+    },
+    "size": {
+      "bytes": "{{size}} B"
+    },
+    "download": {
+      "imageRequestFailed": "Richiesta dell'immagine allegata non riuscita.",
+      "unsupportedImage": "La risposta dell'allegato non è un'immagine supportata.",
+      "unsupportedPlatform": "Il salvataggio degli allegati è supportato su Android e iOS.",
+      "cannotSave": "Questo dispositivo non può salvare allegati.",
+      "chooseFolder": "Scegli una cartella in cui salvare l'allegato."
+    }
+  }
+}

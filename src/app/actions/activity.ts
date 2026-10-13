@@ -12,6 +12,8 @@ import type {
 } from "../types";
 import { HTTP_URL } from "../env";
 import { hasDesktopActivityBridge, scanDesktopActivityBridge, openDesktopExternalUrl } from "../desktop";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import type { GameActivityState } from "../state/game-activity";
 
 export type ActivityActionsDeps = {
@@ -100,9 +102,11 @@ export function createActivityActions(deps: ActivityActionsDeps) {
         user?: AccountUser;
         activity?: Omit<ActivityState, "steam">;
         error?: string;
+        code?: string;
+        params?: Record<string, string | number>;
       };
       if (!response.ok || !data.user || !data.activity) {
-        if (data.error) setActivityNotice(data.error);
+        if (data.error || data.code) setActivityNotice(apiErrorMessage(data, "common.unknown"));
         return;
       }
       lastPublishedActivityRef.current = signature;
@@ -149,13 +153,15 @@ export function createActivityActions(deps: ActivityActionsDeps) {
         desktopScanSupported = scan.supported;
         setDetectedDesktopGame(localGame);
         if (!scan.supported) {
-          setActivityNotice(`Local game detection is unavailable on ${scan.platform}.`);
+          setActivityNotice(i18next.t("chat.actions.activity.localDetectionUnavailable", { platform: scan.platform }));
         }
       } catch (error) {
         console.warn("Local activity scan failed:", error);
         setDetectedDesktopGame(null);
         setActivityNotice(
-          error instanceof Error ? `Desktop activity scan failed: ${error.message}` : "Desktop activity scan failed.",
+          error instanceof Error
+            ? i18next.t("chat.actions.activity.desktopScanFailedWithReason", { reason: error.message })
+            : i18next.t("chat.actions.activity.desktopScanFailed"),
         );
       }
     } else {
@@ -204,7 +210,7 @@ export function createActivityActions(deps: ActivityActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
       if (!response.ok || !data.url) {
-        setActivityNotice(data.error || "Could not start Steam connection.");
+        setActivityNotice(apiErrorMessage(data, "client.activity.steamConnect"));
         return;
       }
 
@@ -214,9 +220,7 @@ export function createActivityActions(deps: ActivityActionsDeps) {
       } else {
         window.open(data.url, "_blank", "noopener,noreferrer");
       }
-      setActivityNotice(
-        "Complete Steam sign-in in a browser signed in to the same DeCave account. If needed, sign in there and start Steam linking again from Settings → Activity; DeCave will detect the link automatically.",
-      );
+      setActivityNotice(i18next.t("chat.actions.activity.steamCompleteSignIn"));
 
       if (steamLinkPollTimerRef.current !== null) {
         window.clearInterval(steamLinkPollTimerRef.current);
@@ -232,14 +236,18 @@ export function createActivityActions(deps: ActivityActionsDeps) {
           if (!status?.linked) return;
           if (steamLinkPollTimerRef.current !== null) window.clearInterval(steamLinkPollTimerRef.current);
           steamLinkPollTimerRef.current = null;
-          setActivityNotice(`Steam connected${status.personaName ? ` as ${status.personaName}` : ""}.`);
+          setActivityNotice(
+            status.personaName
+              ? i18next.t("chat.actions.activity.steamConnectedAs", { name: status.personaName })
+              : i18next.t("chat.actions.activity.steamConnected"),
+          );
           void refreshActivityState();
           void runAutomaticActivityScan(true);
         });
       }, 2_000);
     } catch (error) {
       console.error("Steam connection failed:", error);
-      setActivityNotice("Could not open Steam sign-in.");
+      setActivityNotice(i18next.t("chat.actions.activity.steamSignInFailed"));
     } finally {
       setActivityBusy(false);
     }
@@ -255,13 +263,13 @@ export function createActivityActions(deps: ActivityActionsDeps) {
       });
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string };
-        setActivityNotice(data.error || "Could not disconnect Steam.");
+        setActivityNotice(apiErrorMessage(data, "client.activity.steamDisconnect"));
         return;
       }
       const nextSteam = { linked: false, apiConfigured: steamIntegrationRef.current.apiConfigured };
       steamIntegrationRef.current = nextSteam;
       setSteamIntegration(nextSteam);
-      setActivityNotice("Steam disconnected.");
+      setActivityNotice(i18next.t("chat.actions.activity.steamDisconnected"));
       void runAutomaticActivityScan(true);
     } finally {
       setActivityBusy(false);

@@ -1,0 +1,52 @@
+{
+  "hidden": {
+    "hubMessage": "Νέο μήνυμα σε Hub",
+    "directMessage": "Έχεις νέο μήνυμα"
+  },
+  "sender": {
+    "hubMessage": "Νέο μήνυμα από {{sender}}",
+    "directMessage": "Έχεις νέο μήνυμα από {{sender}}",
+    "inRoom": "{{sender}} στο {{where}}",
+    "someone": "Κάποιος",
+    "unknownDirect": "Νέο μήνυμα"
+  },
+  "preview": {
+    "gif": "Έστειλε ένα GIF",
+    "attachment": "Έστειλε ένα συνημμένο",
+    "encrypted": "Σου έστειλε κρυπτογραφημένο μήνυμα"
+  },
+  "mobile": {
+    "hiddenMention": "Σε ανέφεραν στο DeCave.",
+    "hiddenMessage": "Έλαβες νέο μήνυμα.",
+    "groupChat": "Ομαδική συνομιλία",
+    "hubMessage": "Μήνυμα Hub",
+    "sentMessage": "Νέο μήνυμα από {{sender}}.",
+    "mentionedIn": "Σε ανέφερε στο {{place}}.",
+    "mentioned": "Σε ανέφερε.",
+    "sentPrivate": "Σου έστειλε άμεσο μήνυμα.",
+    "withSender": "{{sender}}: {{text}}",
+    "unknownUser": "Χρήστης DeCave",
+    "hubRoom": "Δωμάτιο Hub",
+    "encryptedMessage": "🔒 Κρυπτογραφημένο μήνυμα",
+    "channels": {
+      "messages": {
+        "name": "Μηνύματα",
+        "description": "Άμεσα μηνύματα, ομαδικές συνομιλίες και ειδοποιήσεις μηνυμάτων Hub"
+      },
+      "silent": {
+        "name": "Μηνύματα (αθόρυβα)",
+        "description": "Αθόρυβες ειδοποιήσεις μηνυμάτων DeCave"
+      }
+    },
+    "primer": {
+      "title": "Μη χάνεις τίποτα",
+      "message": "Λάβε ειδοποιήσεις για άμεσα μηνύματα, αναφορές, αιτήματα φιλίας και όταν ένα Squad είναι έτοιμο για σένα. Μπορείς να τις προσαρμόσεις από τις Ρυθμίσεις.",
+      "allow": "Ενεργοποίηση"
+    },
+    "squad": {
+      "title": "Διαθέσιμο Squad",
+      "body_one": "{{count}}/4 παίκτης είναι έτοιμος για {{game}}.",
+      "body_other": "{{count}}/4 παίκτες είναι έτοιμοι για {{game}}."
+    }
+  }
+}

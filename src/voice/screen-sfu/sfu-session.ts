@@ -4,7 +4,11 @@
 // pull PeerConnection (decrypt transform per pulled sharer).
 import { SCREEN_PREVIEW_BITRATE, SCREEN_PREVIEW_DOWNSCALE, SCREEN_PREVIEW_FPS } from "../../app/voice.ts";
 import { hasUsableRelayIceServers } from "../../../shared/rtc-relay.ts";
+import { i18next } from "../../i18n/index.ts";
 import { isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "../relay-policy.ts";
+
+/** Catalog key of RELAY_UNAVAILABLE_MESSAGE (relay-policy.ts mirrors the mobile copy, so the key lives here). */
+const RELAY_UNAVAILABLE_KEY = "voice.engine.screenRelayUnavailable" as const;
 import { attachScreenTransform, type ScreenTransformHandle } from "./attach-transform.ts";
 import type { ScreenCodec } from "./frame-crypto.ts";
 
@@ -74,11 +78,17 @@ export function createSfuSignaller(sendSocket: (p: unknown) => boolean): SfuSign
 
 type Sdp = { type: "offer" | "answer"; sdp: string };
 
+/** The relay error in the UI language (English when the catalogs are not loaded). */
+function relayUnavailableText(): string {
+  const text: string = i18next.t(RELAY_UNAVAILABLE_KEY);
+  return text && text !== RELAY_UNAVAILABLE_KEY ? text : RELAY_UNAVAILABLE_MESSAGE;
+}
+
 // Same relay-only policy as every other peer connection in the app (see relay-policy.ts):
 // media to Cloudflare Realtime goes through TURN so the SFU path never exposes the user's IP,
 // and without TURN servers we refuse rather than fall back to direct ICE.
 function createRelayPc(iceServers: RTCIceServer[]): RTCPeerConnection {
-  if (!hasUsableRelayIceServers(iceServers)) throw new Error(RELAY_UNAVAILABLE_MESSAGE);
+  if (!hasUsableRelayIceServers(iceServers)) throw new Error(relayUnavailableText());
   return new RTCPeerConnection({ iceServers, iceTransportPolicy: "relay", bundlePolicy: "max-bundle" });
 }
 

@@ -1,7 +1,9 @@
 // Modal for a bot form opened by a card button or select (POST bot-forms/:formId).
 
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { formPayload, missingRequired, type BotForm } from "../../../shared/bots/card-view";
+import { apiErrorText } from "../shared/apiErrorText";
 
 type Props = {
   form: BotForm;
@@ -14,6 +16,7 @@ type Props = {
 };
 
 export function BotFormModal({ form, roomId, baseUrl, authorizedFetch, onClose, returnFocus }: Props) {
+  const { t } = useTranslation(["bots"]);
   const [values, setValues] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -55,7 +58,7 @@ export function BotFormModal({ form, roomId, baseUrl, authorizedFetch, onClose, 
   const submit = async () => {
     const missing = missingRequired(form.fields, values);
     if (missing.length) {
-      setError(`${missing[0]} is required.`);
+      setError(t("bots.card.form.required", { field: missing[0] }));
       return;
     }
     setBusy(true);
@@ -70,13 +73,13 @@ export function BotFormModal({ form, roomId, baseUrl, authorizedFetch, onClose, 
         },
       );
       if (!response.ok) {
-        const data = (await response.json().catch(() => ({}))) as { error?: unknown };
-        setError(typeof data.error === "string" ? data.error : `Could not send the form (${response.status}).`);
+        const data: unknown = await response.json().catch(() => ({}));
+        setError(apiErrorText(data, t("bots.card.form.sendFailedStatus", { status: response.status })));
         return;
       }
       onClose();
     } catch {
-      setError("Could not send the form.");
+      setError(t("bots.card.form.sendFailed"));
     } finally {
       setBusy(false);
     }
@@ -128,10 +131,10 @@ export function BotFormModal({ form, roomId, baseUrl, authorizedFetch, onClose, 
         ) : null}
         <div className="bot-form-actions">
           <button type="button" className="bot-card-button secondary" onClick={onClose}>
-            Cancel
+            {t("bots.card.form.cancel")}
           </button>
           <button type="submit" className="bot-card-button primary" disabled={busy}>
-            {busy ? "Sending…" : "Submit"}
+            {busy ? t("bots.card.form.sending") : t("bots.card.form.submit")}
           </button>
         </div>
       </form>

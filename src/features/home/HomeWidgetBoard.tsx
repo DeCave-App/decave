@@ -1,4 +1,5 @@
 import { useState, type DragEvent, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   HOME_PRESETS,
   HOME_WIDGET_SIZE_LABELS,
@@ -31,6 +32,7 @@ export function HomeWidgetBoard(props: {
   onRemove: (id: string) => void;
   onAddFirst: () => void;
 }) {
+  const { t } = useTranslation(["chat"]);
   const { items, customizing } = props;
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -57,10 +59,10 @@ export function HomeWidgetBoard(props: {
   if (!items.length) {
     return (
       <div className="hdx-board-empty">
-        <strong>Your Home is empty</strong>
-        <small>Pick widgets to show here.</small>
+        <strong>{t("chat.home.board.emptyTitle")}</strong>
+        <small>{t("chat.home.board.emptyHint")}</small>
         <button type="button" className="dcx-btn dcx-btn-primary" onClick={props.onAddFirst}>
-          ＋ Add widgets
+          {t("chat.home.board.addWidgets")}
         </button>
       </div>
     );
@@ -113,12 +115,16 @@ export function HomeWidgetBoard(props: {
               <span className="hdx-widget-title">{item.title}</span>
             </h2>
             {customizing ? (
-              <div className="hdx-widget-tools" role="group" aria-label={`${item.title} widget options`}>
+              <div
+                className="hdx-widget-tools"
+                role="group"
+                aria-label={t("chat.home.board.options", { title: item.title })}
+              >
                 {item.sizes.length > 1 && (
                   <select
                     className="hdx-size-select"
                     value={item.size}
-                    aria-label={`${item.title} size`}
+                    aria-label={t("chat.home.board.size", { title: item.title })}
                     onChange={(event) => props.onResize(item.id, event.target.value as HomeWidgetSize)}
                   >
                     {item.sizes.map((size) => (
@@ -132,8 +138,8 @@ export function HomeWidgetBoard(props: {
                   type="button"
                   className="hdx-tool"
                   disabled={index === 0}
-                  aria-label={`Move ${item.title} earlier`}
-                  title="Move earlier"
+                  aria-label={t("chat.home.board.moveEarlierNamed", { title: item.title })}
+                  title={t("chat.home.board.moveEarlier")}
                   onClick={() => props.onMove(item.id, index - 1)}
                 >
                   ↑
@@ -142,8 +148,8 @@ export function HomeWidgetBoard(props: {
                   type="button"
                   className="hdx-tool"
                   disabled={index === items.length - 1}
-                  aria-label={`Move ${item.title} later`}
-                  title="Move later"
+                  aria-label={t("chat.home.board.moveLaterNamed", { title: item.title })}
+                  title={t("chat.home.board.moveLater")}
                   onClick={() => props.onMove(item.id, index + 1)}
                 >
                   ↓
@@ -151,8 +157,8 @@ export function HomeWidgetBoard(props: {
                 <button
                   type="button"
                   className="hdx-tool danger"
-                  aria-label={`Hide ${item.title}`}
-                  title="Hide widget"
+                  aria-label={t("chat.home.board.hideNamed", { title: item.title })}
+                  title={t("chat.home.board.hide")}
                   onClick={() => props.onRemove(item.id)}
                 >
                   <Icon name="close" size="sm" />
@@ -181,26 +187,27 @@ export function HomeWidgetLibrary(props: {
   /** External web-widget form, owned by the app (security-sensitive). */
   external: ReactNode;
 }) {
+  const { t } = useTranslation(["chat"]);
   return (
-    <aside className="hdx-library" aria-label="Widget library">
+    <aside className="hdx-library" aria-label={t("chat.home.library.label")}>
       <header className="hdx-library-head">
         <div>
-          <span className="hdx-kicker">Customize Home</span>
-          <strong>Choose your widgets</strong>
-          <small>Toggle widgets on or off, then drag cards (or use ↑ ↓) to reorder them.</small>
+          <span className="hdx-kicker">{t("chat.home.library.kicker")}</span>
+          <strong>{t("chat.home.library.title")}</strong>
+          <small>{t("chat.home.library.hint")}</small>
         </div>
         <div className="hdx-library-actions">
           <button type="button" className="dcx-btn" onClick={props.onReset}>
-            Reset to default
+            {t("chat.home.library.reset")}
           </button>
           <button type="button" className="dcx-btn dcx-btn-primary" onClick={props.onClose}>
-            Done
+            {t("chat.home.library.done")}
           </button>
         </div>
       </header>
 
-      <div className="hdx-presets" role="group" aria-label="Start from a preset">
-        <span className="hdx-library-label">Start from a preset</span>
+      <div className="hdx-presets" role="group" aria-label={t("chat.home.library.presets")}>
+        <span className="hdx-library-label">{t("chat.home.library.presets")}</span>
         {(Object.keys(HOME_PRESETS) as HomePreset[]).map((preset) => (
           <button key={preset} type="button" className="hdx-preset" onClick={() => props.onApplyPreset(preset)}>
             <strong>{HOME_PRESETS[preset].label}</strong>
@@ -224,7 +231,7 @@ export function HomeWidgetLibrary(props: {
                   <i />
                 </span>
                 <span className="hdx-row-copy">
-                  <small className="hdx-library-cat">{definition.category}</small>
+                  <small className="hdx-library-cat">{t(`chat.home.category.${definition.category}`)}</small>
                   <strong>{definition.title}</strong>
                   <small>{definition.description}</small>
                 </span>
@@ -233,7 +240,7 @@ export function HomeWidgetLibrary(props: {
                   className="hdx-switch"
                   checked={on}
                   onChange={() => props.onToggle(definition.id)}
-                  aria-label={`Show ${definition.title}`}
+                  aria-label={t("chat.home.library.show", { title: definition.title })}
                 />
               </label>
             </li>

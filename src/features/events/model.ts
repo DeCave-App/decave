@@ -3,7 +3,9 @@
 // GET /api/servers/:hubId/events; legacy `__DECAVE_EVENT__` chat messages are
 // still shown (merged + de-duplicated) for backwards compatibility.
 import type { HubEvent } from "../../../shared/hub-events";
-import { localeForLanguage, preferredTimeOptions } from "../../app/locale";
+import { preferredTimeOptions } from "../../app/locale";
+import { i18next } from "../../i18n/index.ts";
+import { dateLocale, formatDateParts } from "../shared/dateParts";
 
 export type { HubEvent };
 
@@ -135,13 +137,18 @@ export function isLive(item: CalendarItem, now: number): boolean {
 
 export function formatCountdown(target: number, now: number): string {
   const diff = target - now;
-  if (diff <= 0) return "now";
+  if (diff <= 0) return i18next.t("events.countdown.now");
   const minutes = Math.ceil(diff / 60_000);
-  if (minutes < 60) return `in ${minutes} min`;
+  if (minutes < 60) return i18next.t("events.countdown.minutes", { minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `in ${hours} h ${minutes % 60 ? `${minutes % 60} min` : ""}`.trim();
+  if (hours < 24)
+    return minutes % 60
+      ? i18next.t("events.countdown.hoursMinutes", { hours, minutes: minutes % 60 })
+      : i18next.t("events.countdown.hours", { hours });
   const days = Math.floor(hours / 24);
-  return `in ${days} day${days === 1 ? "" : "s"}${hours % 24 ? ` ${hours % 24} h` : ""}`;
+  return hours % 24
+    ? i18next.t("events.countdown.daysHours", { count: days, hours: hours % 24 })
+    : i18next.t("events.countdown.days", { count: days });
 }
 
 export function formatTimeRange(start: number, end: number | null, timeZone?: string): string {
@@ -154,25 +161,25 @@ export function formatTimeRange(start: number, end: number | null, timeZone?: st
     timeZone,
     ...preferredTimeOptions(),
   };
-  const startLabel = new Date(start).toLocaleString(localeForLanguage(), options);
+  const startLabel = formatDateParts(start, options);
   if (end === null) return startLabel;
   const sameDay =
     new Date(start).toLocaleDateString(undefined, { timeZone }) ===
     new Date(end).toLocaleDateString(undefined, { timeZone });
   const endLabel = sameDay
-    ? new Date(end).toLocaleTimeString(localeForLanguage(), {
+    ? formatDateParts(end, {
         hour: "numeric",
         minute: "2-digit",
         timeZone,
         ...preferredTimeOptions(),
       })
-    : new Date(end).toLocaleString(localeForLanguage(), options);
+    : formatDateParts(end, options);
   return `${startLabel} – ${endLabel}`;
 }
 
 export function timeZoneLabel(timeZone: string, at: number): string {
   try {
-    const part = new Intl.DateTimeFormat(localeForLanguage(), { timeZone, timeZoneName: "short" })
+    const part = new Intl.DateTimeFormat(dateLocale(), { timeZone, timeZoneName: "short" })
       .formatToParts(new Date(at))
       .find((p) => p.type === "timeZoneName");
     return part ? `${timeZone.replace(/_/g, " ")} (${part.value})` : timeZone;
@@ -192,11 +199,11 @@ export function itemColor(item: CalendarItem): string {
 }
 
 export function itemKindLabel(item: CalendarItem): string {
-  if (item.cancelled) return "Cancelled";
-  if (item.source === "legacy") return "Chat event";
-  if (item.voiceChannelId) return "Voice";
+  if (item.cancelled) return i18next.t("events.kind.cancelled");
+  if (item.source === "legacy") return i18next.t("events.kind.chat");
+  if (item.voiceChannelId) return i18next.t("events.kind.voice");
   if (item.gameTag) return item.gameTag;
-  return "Event";
+  return i18next.t("events.kind.event");
 }
 
 export function startOfDay(date: Date): Date {

@@ -304,6 +304,7 @@ export async function eraseAccountData(
     ),
     env.DB.prepare("DELETE FROM decave_dm_key_settings WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_dm_link_requests WHERE user_id=?").bind(target.id),
+    env.DB.prepare("DELETE FROM decave_dm_key_holders WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_dm_key_backups WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_dm_keys WHERE user_id=?").bind(target.id),
     env.DB.prepare("DELETE FROM decave_dm_conversation_clears WHERE user_id=? OR partner_id=?").bind(

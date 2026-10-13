@@ -5,6 +5,7 @@ import { colors } from "@/src/theme";
 import { View, Pressable, Text, Switch, StyleSheet } from "react-native";
 import { styles } from "./voiceRoom.styles";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import type { ScreenShareQuality } from "@/src/providers/VoiceSettingsProvider";
 
 export function StatusIcon({
@@ -190,17 +191,18 @@ export const VOLUME_STEPS = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 /** Per-user volume on this device: tap the bar or step with − / +. */
 export function VolumeStepper({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const { t } = useTranslation(["voice"]);
   const index = VOLUME_STEPS.reduce((best, step, i) => (Math.abs(step - value) < Math.abs(VOLUME_STEPS[best] - value) ? i : best), 0);
   const step = (delta: number) => onChange(VOLUME_STEPS[Math.max(0, Math.min(VOLUME_STEPS.length - 1, index + delta))]);
   return (
     <View style={volumeStyles.wrap}>
       <View style={volumeStyles.head}>
         <Ionicons name="volume-medium-outline" size={18} color={colors.cyan} />
-        <Text style={volumeStyles.label}>User volume</Text>
+        <Text style={volumeStyles.label}>{t("voice.mobile.volume.label")}</Text>
         <Text style={volumeStyles.value}>{Math.round(value * 100)}%</Text>
       </View>
       <View style={volumeStyles.row}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Lower volume" disabled={index === 0} onPress={() => step(-1)} style={[volumeStyles.button, index === 0 && { opacity: 0.4 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("voice.mobile.volume.lower")} disabled={index === 0} onPress={() => step(-1)} style={[volumeStyles.button, index === 0 && { opacity: 0.4 }]}>
           <Ionicons name="remove" size={18} color={colors.text} />
         </Pressable>
         <View style={volumeStyles.track} accessibilityRole="adjustable" accessibilityValue={{ min: 0, max: 200, now: Math.round(value * 100) }}>
@@ -210,7 +212,7 @@ export function VolumeStepper({ value, onChange }: { value: number; onChange: (v
             </Pressable>
           ))}
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Raise volume" disabled={index === VOLUME_STEPS.length - 1} onPress={() => step(1)} style={[volumeStyles.button, index === VOLUME_STEPS.length - 1 && { opacity: 0.4 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("voice.mobile.volume.raise")} disabled={index === VOLUME_STEPS.length - 1} onPress={() => step(1)} style={[volumeStyles.button, index === VOLUME_STEPS.length - 1 && { opacity: 0.4 }]}>
           <Ionicons name="add" size={18} color={colors.text} />
         </Pressable>
       </View>

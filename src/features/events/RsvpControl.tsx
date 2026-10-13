@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import type { HubEvent, HubEventRsvpStatus } from "../../../shared/hub-events";
 import { rsvpHubEvent, type EventsApiContext } from "./api";
 
-const OPTIONS: Array<{ id: HubEventRsvpStatus; label: string; countKey: keyof HubEvent["rsvpCounts"] }> = [
-  { id: "going", label: "Going", countKey: "going" },
-  { id: "maybe", label: "Maybe", countKey: "maybe" },
-  { id: "declined", label: "Can't go", countKey: "declined" },
+const OPTIONS: Array<{ id: HubEventRsvpStatus; countKey: keyof HubEvent["rsvpCounts"] }> = [
+  { id: "going", countKey: "going" },
+  { id: "maybe", countKey: "maybe" },
+  { id: "declined", countKey: "declined" },
 ];
 
 export function RsvpControl({
@@ -21,6 +22,7 @@ export function RsvpControl({
   compact?: boolean;
   disabledReason?: string;
 }) {
+  const { t } = useTranslation(["events"]);
   const [busy, setBusy] = useState<HubEventRsvpStatus | "clear" | null>(null);
   const [error, setError] = useState("");
   const full = event.capacity !== null && event.rsvpCounts.going >= event.capacity && event.myRsvp !== "going";
@@ -36,10 +38,10 @@ export function RsvpControl({
       const code = (err as { code?: string }).code;
       setError(
         code === "EVENT_FULL"
-          ? "This event is full."
+          ? t("events.rsvp.fullError")
           : err instanceof Error
             ? err.message
-            : "Could not save your RSVP.",
+            : t("events.rsvp.saveFailed"),
       );
     } finally {
       setBusy(null);
@@ -48,7 +50,7 @@ export function RsvpControl({
 
   return (
     <div className={`evx-rsvp${compact ? " compact" : ""}`}>
-      <div className="evx-rsvp-row" role="group" aria-label="RSVP">
+      <div className="evx-rsvp-row" role="group" aria-label={t("events.rsvp.label")}>
         {OPTIONS.map((option) => {
           const active = event.myRsvp === option.id;
           const disabled = Boolean(disabledReason) || busy !== null || (option.id === "going" && full);
@@ -59,10 +61,10 @@ export function RsvpControl({
               className={`evx-rsvp-btn ${option.id}${active ? " active" : ""}`}
               aria-pressed={active}
               disabled={disabled}
-              title={disabledReason || (option.id === "going" && full ? "This event is full" : undefined)}
+              title={disabledReason || (option.id === "going" && full ? t("events.rsvp.full") : undefined)}
               onClick={() => void choose(option.id)}
             >
-              <span>{option.label}</span>
+              <span>{t(`events.rsvp.${option.id}`)}</span>
               <b>{event.rsvpCounts[option.countKey]}</b>
             </button>
           );
@@ -88,11 +90,12 @@ export function AttendeeStack({
   memberName: (userId: string) => string;
   max?: number;
 }) {
+  const { t } = useTranslation(["events"]);
   if (!event.goingUserIds.length) return null;
   const shown = event.goingUserIds.slice(0, max);
   const extra = event.rsvpCounts.going - shown.length;
   return (
-    <div className="evx-attendees" aria-label={`${event.rsvpCounts.going} going`}>
+    <div className="evx-attendees" aria-label={t("events.rsvp.goingCount", { count: event.rsvpCounts.going })}>
       <div className="evx-avatar-stack">
         {shown.map((id) => (
           <span key={id} className="evx-avatar" title={memberName(id)}>
@@ -102,10 +105,13 @@ export function AttendeeStack({
         {extra > 0 && <span className="evx-avatar more">+{extra}</span>}
       </div>
       <small>
-        {event.rsvpCounts.going} going
         {event.capacity !== null
-          ? ` · ${Math.max(0, event.capacity - event.rsvpCounts.going)} of ${event.capacity} spots left`
-          : ""}
+          ? t("events.rsvp.goingSpots", {
+              count: event.rsvpCounts.going,
+              left: Math.max(0, event.capacity - event.rsvpCounts.going),
+              capacity: event.capacity,
+            })
+          : t("events.rsvp.goingCount", { count: event.rsvpCounts.going })}
       </small>
     </div>
   );

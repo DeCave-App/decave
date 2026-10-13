@@ -2,6 +2,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+// Rule sentences come from the English catalogs.
+await import("../test-support/i18n-english.mjs");
 const model = await import("../../src/features/bots/model.ts");
 const { TEMPLATES } = await import("../../shared/bots/templates.ts");
 

@@ -3,6 +3,7 @@
 
 const { desktopCapturer, BrowserWindow, ipcMain } = require("electron");
 const { resolveAppIconPath } = require("./app-icon.cjs");
+const { currentLocale, tMain } = require("./i18n.cjs");
 const path = require("node:path");
 
 const PICKER_CHANNEL = "decave:desktop-picker-result";
@@ -46,7 +47,7 @@ async function chooseDesktopSource(parentWindow) {
       show: false,
       autoHideMenuBar: true,
       backgroundColor: "#070b14",
-      title: "Choose what to share · DeCave",
+      title: tMain("desktop.picker.windowTitle"),
       icon: resolveAppIconPath(),
       webPreferences: {
         preload: path.join(__dirname, "picker-preload.cjs"),
@@ -65,7 +66,7 @@ async function chooseDesktopSource(parentWindow) {
         return `
         <button class="source" data-kind="${kind}" data-id="${escapeHtml(source.id)}" type="button"${kind === "screen" ? "" : " hidden"}>
           <div class="thumb">
-            ${thumbnail ? `<img src="${thumbnail}" alt="">` : `<div class="empty">No preview</div>`}
+            ${thumbnail ? `<img src="${thumbnail}" alt="">` : `<div class="empty">${escapeHtml(tMain("desktop.picker.noPreview"))}</div>`}
           </div>
           <div class="name" title="${escapeHtml(source.name)}">${escapeHtml(source.name)}</div>
         </button>
@@ -74,11 +75,11 @@ async function chooseDesktopSource(parentWindow) {
       .join("");
 
     const html = `<!doctype html>
-<html>
+<html lang="${escapeHtml(currentLocale())}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Choose what to share</title>
+<title>${escapeHtml(tMain("desktop.picker.title"))}</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100%; background: #070b14; color: #eef4ff; font-family: Inter, Segoe UI, sans-serif; }
@@ -103,12 +104,12 @@ async function chooseDesktopSource(parentWindow) {
 <body>
   <div class="top">
     <div>
-      <h1>Choose what to share</h1>
-      <p>Select a screen or application window for DeCave screen sharing.</p>
+      <h1>${escapeHtml(tMain("desktop.picker.title"))}</h1>
+      <p>${escapeHtml(tMain("desktop.picker.subtitle"))}</p>
     </div>
-    <button id="cancel" class="cancel" type="button">Cancel</button>
+    <button id="cancel" class="cancel" type="button">${escapeHtml(tMain("desktop.picker.cancel"))}</button>
   </div>
-  <div class="tabs" role="tablist"><button class="tab active" data-filter="screen" type="button">Entire Screen</button><button class="tab" data-filter="window" type="button">Window</button></div>
+  <div class="tabs" role="tablist"><button class="tab active" data-filter="screen" type="button">${escapeHtml(tMain("desktop.picker.entireScreen"))}</button><button class="tab" data-filter="window" type="button">${escapeHtml(tMain("desktop.picker.window"))}</button></div>
   <div class="grid">${cards}</div>
 <script>
   document.querySelectorAll(".source").forEach((button) => {

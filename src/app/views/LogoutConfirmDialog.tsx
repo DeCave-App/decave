@@ -1,5 +1,6 @@
 // Confirmation dialog shown before logging out.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function LogoutConfirmDialog({ setShowLogoutConfirm, logout }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div
       role="presentation"
@@ -61,7 +63,7 @@ export function LogoutConfirmDialog({ setShowLogoutConfirm, logout }: Props) {
               textTransform: "uppercase",
             }}
           >
-            Session
+            {t("common.logout.kicker")}
           </div>
 
           <h2
@@ -73,7 +75,7 @@ export function LogoutConfirmDialog({ setShowLogoutConfirm, logout }: Props) {
               lineHeight: 1.2,
             }}
           >
-            Log out of DeCave?
+            {t("common.logout.title")}
           </h2>
 
           <p
@@ -84,7 +86,7 @@ export function LogoutConfirmDialog({ setShowLogoutConfirm, logout }: Props) {
               lineHeight: 1.55,
             }}
           >
-            You will be signed out on this device. Your account, Hubs, Rooms, messages, and settings will stay intact.
+            {t("common.logout.body")}
           </p>
         </div>
 
@@ -103,7 +105,7 @@ export function LogoutConfirmDialog({ setShowLogoutConfirm, logout }: Props) {
             onClick={() => setShowLogoutConfirm(false)}
             style={{ minWidth: "96px" }}
           >
-            Cancel
+            {t("common.actions.cancel")}
           </button>
 
           <button
@@ -122,7 +124,7 @@ export function LogoutConfirmDialog({ setShowLogoutConfirm, logout }: Props) {
               boxShadow: "0 8px 24px rgba(199, 46, 91, .22)",
             }}
           >
-            Log out
+            {t("common.logout.confirm")}
           </button>
         </div>
       </section>

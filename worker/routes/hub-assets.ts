@@ -1,6 +1,6 @@
 // Hub emotes and stickers.
 
-import { boundedBodyBytes, idFromPath, json } from "../lib/http";
+import { boundedBodyBytes, idFromPath, json, apiError } from "../lib/http";
 import { sniffedImageMime } from "../lib/upload-content-type";
 import { requireUser } from "../lib/sessions";
 import { getRole, hasPermission, nowIso, audit } from "../db";
@@ -12,7 +12,7 @@ export async function handleHubAssetRoutes({ request, env, p, method }: ApiConte
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const hubId = Number(listHubAssets[1]);
-    if (!(await getRole(env.DB, hubId, user.id))) return json({ error: "No access" }, 403);
+    if (!(await getRole(env.DB, hubId, user.id))) return apiError("common.noAccess", 403);
     const rows = await env.DB.prepare(
       "SELECT id,kind,name,r2_key,mime_type,created_at FROM decave_hub_assets WHERE hub_id=? ORDER BY created_at ASC LIMIT 500",
     )
@@ -37,13 +37,13 @@ export async function handleHubAssetRoutes({ request, env, p, method }: ApiConte
     const hubId = Number(uploadHubAsset[1]);
     const kind = uploadHubAsset[2] as "emote" | "sticker";
     if (!(await hasPermission(env.DB, hubId, user.id, "manageRooms")))
-      return json({ error: "Manage Rooms permission required" }, 403);
+      return apiError("common.manageRoomsRequired", 403);
     const limit = kind === "emote" ? 1024 * 1024 : 5 * 1024 * 1024;
     const bytes = await boundedBodyBytes(request, limit);
     if (!bytes || !bytes.byteLength)
-      return json({ error: `${kind === "emote" ? "Emote" : "Sticker"} exceeds the size limit` }, 413);
+      return apiError(kind === "emote" ? "hubAssets.emoteTooLarge" : "hubAssets.stickerTooLarge", 413);
     const mime = sniffedImageMime(bytes, ["image/png", "image/jpeg", "image/webp", "image/gif"]);
-    if (!mime) return json({ error: "Use PNG, JPG, WebP or GIF" }, 400);
+    if (!mime) return apiError("hubAssets.typeInvalid", 400);
     let name = "custom";
     try {
       name =
@@ -68,13 +68,13 @@ export async function handleHubAssetRoutes({ request, env, p, method }: ApiConte
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const hubId = Number(hubAssetFile[1]);
-    if (!(await getRole(env.DB, hubId, user.id))) return json({ error: "No access" }, 403);
+    if (!(await getRole(env.DB, hubId, user.id))) return apiError("common.noAccess", 403);
     const asset = await env.DB.prepare("SELECT r2_key,mime_type FROM decave_hub_assets WHERE id=? AND hub_id=?")
       .bind(decodeURIComponent(hubAssetFile[2]), hubId)
       .first<{ r2_key: string; mime_type: string }>();
-    if (!asset) return json({ error: "Asset not found" }, 404);
+    if (!asset) return apiError("hubAssets.notFound", 404);
     const object = await env.MEDIA.get(asset.r2_key);
-    if (!object) return json({ error: "Asset file missing" }, 404);
+    if (!object) return apiError("hubAssets.fileMissing", 404);
     return new Response(object.body, {
       headers: {
         "content-type": asset.mime_type,
@@ -90,12 +90,12 @@ export async function handleHubAssetRoutes({ request, env, p, method }: ApiConte
     if (user instanceof Response) return user;
     const hubId = Number(hubAssetItem[1]);
     if (!(await hasPermission(env.DB, hubId, user.id, "manageRooms")))
-      return json({ error: "Manage Rooms permission required" }, 403);
+      return apiError("common.manageRoomsRequired", 403);
     const id = decodeURIComponent(hubAssetItem[2]);
     const asset = await env.DB.prepare("SELECT r2_key FROM decave_hub_assets WHERE id=? AND hub_id=?")
       .bind(id, hubId)
       .first<{ r2_key: string }>();
-    if (!asset) return json({ error: "Asset not found" }, 404);
+    if (!asset) return apiError("hubAssets.notFound", 404);
     await env.MEDIA.delete(asset.r2_key);
     await env.DB.prepare("DELETE FROM decave_hub_assets WHERE id=? AND hub_id=?").bind(id, hubId).run();
     return json({ success: true });

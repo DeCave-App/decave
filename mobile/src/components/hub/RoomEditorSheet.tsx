@@ -6,8 +6,10 @@ import { useState, useMemo } from "react";
 import { Modal, View, Pressable, Text, ScrollView, TextInput, Switch, ActivityIndicator } from "react-native";
 import { styles } from "./hubScreen.styles";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { colors } from "@/src/theme";
 import { Avatar } from "@/src/components/Avatar";
+import { ROOM_ACCENT_SWATCHES } from "../../../../shared/room-style";
 
 export function RoomEditorSheet({
   visible,
@@ -17,6 +19,7 @@ export function RoomEditorSheet({
   icon,
   guidelines,
   postPolicy,
+  accent,
   canMoveUp,
   canMoveDown,
   isPrivate,
@@ -30,6 +33,7 @@ export function RoomEditorSheet({
   onIcon,
   onGuidelines,
   onPostPolicy,
+  onAccent,
   onMove,
   onPrivate,
   onToggleMember,
@@ -44,6 +48,7 @@ export function RoomEditorSheet({
   icon: string;
   guidelines: string;
   postPolicy: ForumPostPolicy;
+  accent: string | null;
   canMoveUp: boolean;
   canMoveDown: boolean;
   isPrivate: boolean;
@@ -57,6 +62,7 @@ export function RoomEditorSheet({
   onIcon: (value: string) => void;
   onGuidelines: (value: string) => void;
   onPostPolicy: (value: ForumPostPolicy) => void;
+  onAccent: (value: string | null) => void;
   onMove: (direction: -1 | 1) => void;
   onPrivate: (value: boolean) => void;
   onToggleMember: (userId: string) => void;
@@ -64,6 +70,7 @@ export function RoomEditorSheet({
   onSave: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation(["common", "hub"]);
   const [memberQuery, setMemberQuery] = useState("");
   const visibleMembers = useMemo(() => {
     const query = memberQuery.trim().toLowerCase();
@@ -85,13 +92,13 @@ export function RoomEditorSheet({
           <View style={styles.sheetHeader}>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.3} style={styles.sheetKicker}>
-                {editing ? "ROOM SETTINGS" : "NEW ROOM"}
+                {editing ? t("hub.mobile.roomEditor.kickerEdit") : t("hub.mobile.roomEditor.kickerNew")}
               </Text>
               <Text style={styles.sheetTitle}>
-                {editing ? `Edit ${editing.name}` : "Create a room"}
+                {editing ? t("hub.mobile.rooms.edit", { name: editing.name }) : t("hub.mobile.roomEditor.titleNew")}
               </Text>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" style={styles.sheetClose} onPress={onClose}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")} style={styles.sheetClose} onPress={onClose}>
               <Ionicons name="close" size={20} color={colors.text} />
             </Pressable>
           </View>
@@ -103,7 +110,7 @@ export function RoomEditorSheet({
           >
             {!editing && (
               <>
-                <Text style={styles.fieldLabel}>Room type</Text>
+                <Text style={styles.fieldLabel}>{t("hub.roomSettings.type.label")}</Text>
                 <View style={styles.segment}>
                   {(["text", "voice", "forum"] as const).map((value) => {
                     const active = type === value;
@@ -133,7 +140,7 @@ export function RoomEditorSheet({
                             active && styles.segmentTextActive,
                           ]}
                         >
-                          {value === "text" ? "Text" : value === "voice" ? "Voice" : "Forum"}
+                          {t(`hub.roomSettings.type.${value}.label`)}
                         </Text>
                       </Pressable>
                     );
@@ -142,23 +149,23 @@ export function RoomEditorSheet({
               </>
             )}
 
-            <Text style={styles.fieldLabel}>Room name</Text>
+            <Text style={styles.fieldLabel}>{t("hub.roomSettings.name")}</Text>
             <TextInput
               value={name}
               onChangeText={onName}
               maxLength={48}
-              placeholder={type === "voice" ? "Gaming Voice" : type === "forum" ? "guides" : "general"}
+              placeholder={t(`hub.mobile.roomEditor.placeholder.${type}`)}
               placeholderTextColor={colors.faint}
               style={styles.input}
             />
 
-            <Text style={styles.fieldLabel}>Room icon</Text>
+            <Text style={styles.fieldLabel}>{t("hub.mobile.roomEditor.icon")}</Text>
             <View style={styles.iconGrid}>
               <Pressable
                 style={[styles.iconChoice, !icon && styles.iconChoiceActive]}
                 onPress={() => onIcon("")}
                 accessibilityRole="button"
-                accessibilityLabel="No icon"
+                accessibilityLabel={t("hub.mobile.roomEditor.noIcon")}
                 accessibilityState={{ selected: !icon }}
               >
                 <Ionicons name="remove-outline" size={18} color={colors.muted} />
@@ -169,7 +176,7 @@ export function RoomEditorSheet({
                   style={[styles.iconChoice, icon === choice && styles.iconChoiceActive]}
                   onPress={() => onIcon(choice)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Use ${choice} as room icon`}
+                  accessibilityLabel={t("hub.mobile.roomEditor.useIcon", { icon: choice })}
                   accessibilityState={{ selected: icon === choice }}
                 >
                   <Text style={styles.iconChoiceText}>{choice}</Text>
@@ -179,26 +186,57 @@ export function RoomEditorSheet({
             <TextInput
               value={icon}
               onChangeText={(value) => onIcon(Array.from(value.replace(/\s/g, "")).slice(0, 4).join(""))}
-              placeholder="Or type any emoji"
+              placeholder={t("hub.mobile.roomEditor.emojiPlaceholder")}
               placeholderTextColor={colors.faint}
               style={[styles.input, styles.iconInput]}
               autoCorrect={false}
             />
 
+            {editing && (
+              <>
+                <Text style={styles.fieldLabel}>{t("hub.roomSettings.style.accent")}</Text>
+                <View style={styles.iconGrid}>
+                  <Pressable
+                    style={[styles.iconChoice, !accent && styles.iconChoiceActive]}
+                    onPress={() => onAccent(null)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("hub.mobile.roomEditor.hubAccent")}
+                    accessibilityState={{ selected: !accent }}
+                  >
+                    <Ionicons name="color-palette-outline" size={18} color={colors.muted} />
+                  </Pressable>
+                  {ROOM_ACCENT_SWATCHES.map((swatch) => (
+                    <Pressable
+                      key={swatch.color}
+                      style={[
+                        styles.iconChoice,
+                        { backgroundColor: swatch.color, borderColor: swatch.color },
+                        accent === swatch.color && { borderColor: colors.text, borderWidth: 2 },
+                      ]}
+                      onPress={() => onAccent(swatch.color)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("hub.mobile.roomEditor.swatchAccent", { color: t(`hub.roomSettings.style.swatches.${swatch.label.toLowerCase()}`, { defaultValue: swatch.label }) })}
+                      accessibilityState={{ selected: accent === swatch.color }}
+                    />
+                  ))}
+                </View>
+              </>
+            )}
+
             {type === "forum" && (
               <>
-                <Text style={styles.fieldLabel}>Forum guidelines</Text>
+                <Text style={styles.fieldLabel}>{t("hub.mobile.roomEditor.guidelines")}</Text>
                 <TextInput
                   value={guidelines}
                   onChangeText={onGuidelines}
                   maxLength={500}
                   multiline
-                  placeholder="What should people post here?"
+                  placeholder={t("hub.mobile.roomEditor.guidelinesPlaceholder")}
                   placeholderTextColor={colors.faint}
                   style={[styles.input, styles.multilineInput]}
                 />
 
-                <Text style={styles.fieldLabel}>Who can start posts</Text>
+                <Text style={styles.fieldLabel}>{t("hub.mobile.roomEditor.postPolicy")}</Text>
                 <View style={styles.segment}>
                   {(["everyone", "staff"] as const).map((value) => {
                     const active = postPolicy === value;
@@ -209,7 +247,7 @@ export function RoomEditorSheet({
                         onPress={() => onPostPolicy(value)}
                       >
                         <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                          {value === "everyone" ? "Everyone" : "Owner & admins"}
+                          {value === "everyone" ? t("hub.mobile.roomEditor.policyEveryone") : t("hub.mobile.roomEditor.policyStaff")}
                         </Text>
                       </Pressable>
                     );
@@ -217,7 +255,7 @@ export function RoomEditorSheet({
                 </View>
                 {(postPolicy === "roles" || postPolicy === "members") && (
                   <Text style={styles.toggleText}>
-                    Posting is limited to selected {postPolicy === "roles" ? "roles" : "members"}. That list is kept as-is; pick an option above to replace it.
+                    {postPolicy === "roles" ? t("hub.mobile.roomEditor.policyLimitedRoles") : t("hub.mobile.roomEditor.policyLimitedMembers")}
                   </Text>
                 )}
               </>
@@ -225,10 +263,9 @@ export function RoomEditorSheet({
 
             <View style={styles.toggleCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.toggleTitle}>Private room</Text>
+                <Text style={styles.toggleTitle}>{t("hub.sidebar.privateRoom")}</Text>
                 <Text style={styles.toggleText}>
-                  Owner and admins always have access. Choose which regular Hub
-                  members can enter below.
+                  {t("hub.mobile.roomEditor.privateHint")}
                 </Text>
               </View>
               <Switch
@@ -242,9 +279,9 @@ export function RoomEditorSheet({
             {isPrivate && (
               <>
                 <View style={styles.memberHeader}>
-                  <Text style={styles.sheetSectionTitle}>ROOM ACCESS</Text>
+                  <Text style={styles.sheetSectionTitle}>{t("hub.mobile.roomEditor.access")}</Text>
                   <Text maxFontSizeMultiplier={1.3} style={styles.memberCount}>
-                    {memberIds.length} selected
+                    {t("hub.mobile.roomEditor.selected", { count: memberIds.length })}
                   </Text>
                 </View>
 
@@ -253,13 +290,13 @@ export function RoomEditorSheet({
                   <TextInput
                     value={memberQuery}
                     onChangeText={setMemberQuery}
-                    placeholder="Search members"
+                    placeholder={t("hub.roomSettings.access.search")}
                     placeholderTextColor={colors.faint}
                     style={styles.memberSearchInput}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
-                  {!!memberQuery && <Pressable accessibilityRole="button" accessibilityLabel="Clear" onPress={() => setMemberQuery("")}><Ionicons name="close-circle" size={17} color={colors.faint} /></Pressable>}
+                  {!!memberQuery && <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.clear")} onPress={() => setMemberQuery("")}><Ionicons name="close-circle" size={17} color={colors.faint} /></Pressable>}
                 </View>
 
                 {membersLoading ? (
@@ -269,14 +306,14 @@ export function RoomEditorSheet({
                 ) : members.length === 0 ? (
                   <View style={styles.emptyMembers}>
                     <Text style={styles.emptyMembersTitle}>
-                      No regular members to select
+                      {t("hub.mobile.roomEditor.noMembers")}
                     </Text>
                     <Text style={styles.emptyMembersText}>
-                      The room will still be accessible to the Hub owner and admins.
+                      {t("hub.mobile.roomEditor.noMembersHint")}
                     </Text>
                   </View>
                 ) : visibleMembers.length === 0 ? (
-                  <View style={styles.emptyMembers}><Text style={styles.emptyMembersTitle}>No matching members</Text><Text style={styles.emptyMembersText}>Try a different username.</Text></View>
+                  <View style={styles.emptyMembers}><Text style={styles.emptyMembersTitle}>{t("hub.mobile.roomEditor.noMatch")}</Text><Text style={styles.emptyMembersText}>{t("hub.mobile.roomEditor.noMatchHint")}</Text></View>
                 ) : (
                   <View style={styles.memberList}>
                     {visibleMembers.map((member) => {
@@ -327,7 +364,7 @@ export function RoomEditorSheet({
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.primaryButtonText}>
-                  {editing ? "Save room" : "Create room"}
+                  {editing ? t("hub.mobile.roomEditor.save") : t("hub.mobile.roomEditor.create")}
                 </Text>
               )}
             </Pressable>
@@ -340,7 +377,7 @@ export function RoomEditorSheet({
                   onPress={() => onMove(-1)}
                 >
                   <Ionicons name="arrow-up" size={16} color={colors.muted} />
-                  <Text style={styles.segmentText}>Move up</Text>
+                  <Text style={styles.segmentText}>{t("hub.hubHome.moveUp")}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button"
                   style={[styles.segmentButton, (!canMoveDown || busy) && styles.buttonDisabled]}
@@ -348,7 +385,7 @@ export function RoomEditorSheet({
                   onPress={() => onMove(1)}
                 >
                   <Ionicons name="arrow-down" size={16} color={colors.muted} />
-                  <Text style={styles.segmentText}>Move down</Text>
+                  <Text style={styles.segmentText}>{t("hub.hubHome.moveDown")}</Text>
                 </Pressable>
               </View>
             )}
@@ -360,7 +397,7 @@ export function RoomEditorSheet({
                 onPress={onDelete}
               >
                 <Ionicons name="trash-outline" size={17} color={colors.red} />
-                <Text style={styles.dangerButtonText}>Delete room</Text>
+                <Text style={styles.dangerButtonText}>{t("hub.roomSettings.delete.action")}</Text>
               </Pressable>
             )}
           </ScrollView>

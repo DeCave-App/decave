@@ -1,6 +1,8 @@
 // Menu for a person (right-click, or your own profile button): profile details,
 // status, message and friend actions, volume, mute/block/report, voice moderation.
 
+import { hubRoleTitle } from "./roleLabels";
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import { Icon } from "../../components/Icon";
 import type { SafetyReportTarget } from "../../safety/types";
@@ -16,7 +18,7 @@ import type {
   UserContextMenuState,
   PeerSession,
 } from "../types";
-import { formatProfileDate } from "../locale";
+import { formatProfileDate } from "../../i18n/format";
 import { resolveAvatarUrl, presenceLabel, presenceColor, presenceGlow } from "../user-display";
 import { UserAvatar } from "../components/UserAvatar";
 import { ProfileMenuSelfSection } from "./ProfileMenuSelfSection";
@@ -117,6 +119,7 @@ export function UserContextMenu({
   friendActions,
   settingsActions,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { saveCustomStatus, toggleMutedUser } = settingsActions;
   const { friendStatusFor, socialAction, copyMyDecaveId } = friendActions;
   const { toggleMute, toggleDeafen } = voiceControls;
@@ -170,7 +173,7 @@ export function UserContextMenu({
         onClick={(event) => event.stopPropagation()}
         onContextMenu={(event) => event.preventDefault()}
         role="dialog"
-        aria-label="Your profile"
+        aria-label={t("common.topBar.profile")}
       >
         <div
           className="dcp-banner"
@@ -189,7 +192,7 @@ export function UserContextMenu({
           </span>
           <div className="dcp-identity">
             <strong>{target.username}</strong>
-            <small>Member since {formatProfileDate(joinedDeCaveAt)}</small>
+            <small>{t("common.userMenu.memberSinceDate", { date: formatProfileDate(joinedDeCaveAt) })}</small>
           </div>
           {customStatusEditing ? (
             <div className="dcp-custom-status is-editing">
@@ -207,16 +210,16 @@ export function UserContextMenu({
                     setCustomStatusError("");
                   }
                 }}
-                placeholder="What are you up to?"
+                placeholder={t("common.userMenu.statusPlaceholder")}
                 maxLength={80}
                 autoFocus
-                aria-label="Custom status"
+                aria-label={t("common.userMenu.customStatus")}
               />
               <button
                 type="button"
                 onClick={() => void saveCustomStatus()}
                 disabled={customStatusSaving}
-                aria-label="Save custom status"
+                aria-label={t("common.userMenu.saveStatus")}
               >
                 {customStatusSaving ? "…" : <Icon name="check" size="sm" />}
               </button>
@@ -227,7 +230,7 @@ export function UserContextMenu({
               className={`dcp-custom-status${currentUser.statusText ? " has-value" : ""}`}
               onClick={beginCustomStatusEdit}
             >
-              {currentUser.statusText || "Set a custom status…"}
+              {currentUser.statusText || t("common.userMenu.setStatus")}
             </button>
           )}
           {customStatusError && <small className="dcp-error">{customStatusError}</small>}
@@ -237,8 +240,8 @@ export function UserContextMenu({
             <button
               type="button"
               onClick={() => void copyMyDecaveId()}
-              title="Copy DeCave ID"
-              aria-label="Copy DeCave ID"
+              title={t("common.friends.copyId")}
+              aria-label={t("common.friends.copyId")}
             >
               <Icon name="copy" size="sm" />
             </button>
@@ -255,7 +258,7 @@ export function UserContextMenu({
             <Icon name={profileStatusMenuOpen ? "chevron-down" : "chevron-right"} size="sm" />
           </button>
           {profileStatusMenuOpen && (
-            <div className="dcp-status-list" role="group" aria-label="Set your status">
+            <div className="dcp-status-list" role="group" aria-label={t("common.profileMenu.setStatus")}>
               {(["online", "idle", "dnd", "invisible"] as PresenceStatus[]).map((option) => (
                 <button
                   key={option}
@@ -269,7 +272,13 @@ export function UserContextMenu({
                 >
                   <span className="dcp-dot" style={{ background: presenceColor(option, true) }} />
                   <span className="dcp-grow">
-                    {option === "dnd" ? "Do Not Disturb" : option[0].toUpperCase() + option.slice(1)}
+                    {option === "dnd"
+                      ? t("common.presence.dnd")
+                      : option === "idle"
+                        ? t("common.presence.idle")
+                        : option === "invisible"
+                          ? t("common.presence.invisible")
+                          : t("common.presence.online")}
                   </span>
                   {option === ownStatus && <Icon name="check" size="sm" />}
                 </button>
@@ -285,7 +294,7 @@ export function UserContextMenu({
             }}
           >
             <Icon name="settings" size="sm" />
-            <span className="dcp-grow">Settings</span>
+            <span className="dcp-grow">{t("common.rail.settings")}</span>
           </button>
           <button
             type="button"
@@ -298,7 +307,7 @@ export function UserContextMenu({
             }}
           >
             <Icon name="log-out" size="sm" />
-            <span className="dcp-grow">Log out</span>
+            <span className="dcp-grow">{t("common.logout.confirm")}</span>
           </button>
         </div>
       </div>
@@ -347,7 +356,7 @@ export function UserContextMenu({
                       }
                     }}
                     onClick={(event) => event.stopPropagation()}
-                    placeholder="Write a custom status"
+                    placeholder={t("common.userMenu.writeStatus")}
                     maxLength={80}
                     autoFocus
                   />
@@ -355,8 +364,8 @@ export function UserContextMenu({
                     type="button"
                     onClick={() => void saveCustomStatus()}
                     disabled={customStatusSaving}
-                    aria-label="Save custom status"
-                    title="Save custom status"
+                    aria-label={t("common.userMenu.saveStatus")}
+                    title={t("common.userMenu.saveStatus")}
                   >
                     {customStatusSaving ? "…" : <Icon name="check" size="sm" />}
                   </button>
@@ -366,47 +375,47 @@ export function UserContextMenu({
                   type="button"
                   className="user-context-custom-status-value"
                   onDoubleClick={beginCustomStatusEdit}
-                  title="Double-click to edit your custom status"
+                  title={t("common.userMenu.doubleClickEdit")}
                 >
-                  {currentUser.statusText || "Double-click to set a custom status"}
+                  {currentUser.statusText || t("common.userMenu.doubleClickSet")}
                 </button>
               )}
               {customStatusError && <small className="user-context-custom-status-error">{customStatusError}</small>}
             </div>
           ) : (
-            <small>{target.role ? target.role.toUpperCase() : "USER"}</small>
+            <small>{target.role ? hubRoleTitle(target.role).toUpperCase() : t("common.userMenu.user")}</small>
           )}
         </div>
       </div>
 
       <div className="user-context-details">
         <div>
-          <span>Member since</span>
+          <span>{t("common.userMenu.memberSince")}</span>
           <strong>{formatProfileDate(joinedDeCaveAt)}</strong>
         </div>
         <div>
-          <span>Last active</span>
-          <strong>{isOnline ? "Online now" : formatProfileDate(lastOnlineAt)}</strong>
+          <span>{t("common.userMenu.lastActive")}</span>
+          <strong>{isOnline ? t("common.userMenu.onlineNow") : formatProfileDate(lastOnlineAt)}</strong>
         </div>
         <div>
-          <span>Status</span>
+          <span>{t("common.userMenu.status")}</span>
           <strong>{presenceLabel(resolvedStatus, isOnline)}</strong>
         </div>
         {resolvedActivity && (
           <div className="wide">
-            <span>Activity</span>
+            <span>{t("common.userMenu.activity")}</span>
             <strong>{resolvedActivity}</strong>
           </div>
         )}
         {isSelf && (
           <div className="wide dc-profile-id-fact">
-            <span>DeCave ID</span>
+            <span>{t("common.userMenu.decaveId")}</span>
             <strong title={target.userId}>{target.userId}</strong>
             <button
               type="button"
               onClick={() => void copyMyDecaveId()}
-              title="Copy DeCave ID"
-              aria-label="Copy DeCave ID"
+              title={t("common.friends.copyId")}
+              aria-label={t("common.friends.copyId")}
             >
               ⧉
             </button>
@@ -429,21 +438,21 @@ export function UserContextMenu({
               })
             }
           >
-            Report User
+            {t("common.userMenu.report")}
           </button>
           <button
             type="button"
             className={userBlocked ? "active-state" : ""}
             onClick={() => void toggleBlockedUser(target)}
           >
-            {userBlocked ? "Unblock User" : "Block User"}
+            {userBlocked ? t("common.userMenu.unblock") : t("common.userMenu.block")}
           </button>
           <button
             type="button"
             className={userNotificationsMuted ? "active-state" : ""}
             onClick={() => toggleMutedUser(target.userId)}
           >
-            {userNotificationsMuted ? "Unmute User Notifications" : "Mute User Notifications"}
+            {userNotificationsMuted ? t("common.userMenu.unmuteNotifications") : t("common.userMenu.muteNotifications")}
           </button>
         </>
       )}
@@ -451,7 +460,7 @@ export function UserContextMenu({
       {participant && participant.connectionId !== selfConnectionIdRef.current && (
         <div className="user-context-volume">
           <div>
-            <span>User Volume</span>
+            <span>{t("common.userMenu.volume")}</span>
             <strong>{Math.round(voiceUserVolumes[target.userId] ?? 100)}%</strong>
           </div>
           <input
@@ -461,24 +470,26 @@ export function UserContextMenu({
             step="1"
             value={voiceUserVolumes[target.userId] ?? 100}
             onChange={(event) => changeVoiceUserVolume(participant, Number(event.target.value))}
-            aria-label={`${target.username} volume`}
+            aria-label={t("common.userMenu.volumeLabel", { name: target.username })}
           />
         </div>
       )}
       {participant && participant.connectionId !== selfConnectionIdRef.current && (
         <button type="button" onClick={() => toggleLocalMuteUser(participant)}>
-          {locallyMutedUsersRef.current.has(participant.userId) ? "Unmute User Locally" : "Mute User Locally"}
+          {locallyMutedUsersRef.current.has(participant.userId)
+            ? t("common.userMenu.unmuteLocally")
+            : t("common.userMenu.muteLocally")}
         </button>
       )}
       {target.userId === currentUser.id && voiceChannelId !== null && (
         <div className="user-context-self-latency">
-          <span>Voice RTT</span>
+          <span>{t("common.userMenu.voiceRtt")}</span>
           <strong>
             {ownVoiceRttMs !== null
-              ? `${ownVoiceRttMs} ms`
+              ? t("common.userMenu.rttMs", { ms: ownVoiceRttMs })
               : peerSessionsRef.current.size === 0
-                ? "Waiting for peer"
-                : "Measuring..."}
+                ? t("common.userMenu.waitingForPeer")
+                : t("common.userMenu.measuring")}
           </strong>
         </div>
       )}
@@ -510,10 +521,10 @@ export function UserContextMenu({
                   void openDirectMessage(friendUser);
                 }}
               >
-                Message
+                {t("chat.newConversation.message")}
               </button>
               <button type="button" onClick={() => askToRemoveFriend(friendUser)}>
-                Remove Friend
+                {t("common.friends.remove.confirm")}
               </button>
             </>
           ) : friendStatus === "incoming" ? (
@@ -525,7 +536,7 @@ export function UserContextMenu({
                   void socialAction(target.userId, "accept");
                 }}
               >
-                Accept Friend Request
+                {t("common.userMenu.acceptRequest")}
               </button>
               <button
                 type="button"
@@ -534,7 +545,7 @@ export function UserContextMenu({
                   void socialAction(target.userId, "reject");
                 }}
               >
-                Decline Request
+                {t("common.userMenu.declineRequest")}
               </button>
             </>
           ) : friendStatus === "outgoing" ? (
@@ -545,7 +556,7 @@ export function UserContextMenu({
                 void socialAction(target.userId, "remove");
               }}
             >
-              Cancel Friend Request
+              {t("common.userMenu.cancelRequest")}
             </button>
           ) : (
             <button
@@ -555,7 +566,7 @@ export function UserContextMenu({
                 void socialAction(target.userId, "request");
               }}
             >
-              Add Friend
+              {t("common.userMenu.addFriend")}
             </button>
           )}
         </>
@@ -564,21 +575,21 @@ export function UserContextMenu({
       {canModerate && participant && target.userId !== currentUser.id && (
         <>
           <div className="user-context-divider" />
-          <div className="user-context-section-title">VOICE MODERATION</div>
+          <div className="user-context-section-title">{t("common.userMenu.voiceModeration")}</div>
           <button
             type="button"
             onClick={() => moderateVoiceUser(participant, participant.serverMuted ? "unmute" : "mute")}
           >
-            {participant.serverMuted ? "Remove Server Mute" : "Server Mute"}
+            {participant.serverMuted ? t("common.userMenu.removeServerMute") : t("common.userMenu.serverMute")}
           </button>
           <button
             type="button"
             onClick={() => moderateVoiceUser(participant, participant.serverDeafened ? "undeafen" : "deafen")}
           >
-            {participant.serverDeafened ? "Remove Server Deafen" : "Server Deafen"}
+            {participant.serverDeafened ? t("common.userMenu.removeServerDeafen") : t("common.userMenu.serverDeafen")}
           </button>
           <button type="button" className="danger" onClick={() => moderateVoiceUser(participant, "kick")}>
-            Disconnect from Voice
+            {t("common.userMenu.disconnect")}
           </button>
         </>
       )}

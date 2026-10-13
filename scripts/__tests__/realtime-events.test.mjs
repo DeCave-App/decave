@@ -3,6 +3,8 @@ import test from "node:test";
 import { register } from "node:module";
 
 register("../test-support/mobile-extensionless-loader.mjs", import.meta.url);
+// Handlers word their notices through the English catalogs.
+await import("../test-support/i18n-english.mjs");
 
 const { handleChatEvent } = await import("../../src/realtime/events/chat.ts");
 const { handleHubEvent } = await import("../../src/realtime/events/hubs.ts");

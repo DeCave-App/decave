@@ -19,6 +19,8 @@ import type { SoundboardState } from "../state/soundboard";
 import type { ScreenSfuSharer } from "../../voice/screen-sfu/sharer";
 import type { CameraShareOptionsState } from "../state/camera-share-options";
 import type { VoiceCallState } from "../state/voice-call";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import type { CallMediaState } from "../state/call-media";
 
 export type VoiceControlActionsDeps = {
@@ -93,23 +95,23 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
         error?: string;
       };
       if (!response.ok) {
-        setSoundboardNotice(data.error || "Could not load this Hub's soundboard.");
+        setSoundboardNotice(apiErrorMessage(data, "client.soundboard.load"));
         return;
       }
       setSoundboardSounds(Array.isArray(data.sounds) ? data.sounds : []);
     } catch {
-      setSoundboardNotice("Could not load this Hub's soundboard.");
+      setSoundboardNotice(i18next.t("errors.client.soundboard.load"));
     }
   };
 
   const uploadSoundboardSound = async (file: File) => {
     if (soundboardBusy) return;
     if (file.size <= 0 || file.size > 1536 * 1024) {
-      setSoundboardNotice("Soundboard files must be 1.5 MB or smaller.");
+      setSoundboardNotice(i18next.t("chat.actions.soundboard.tooLarge"));
       return;
     }
     if (!["audio/mpeg", "audio/wav", "audio/x-wav", "audio/ogg", "audio/mp4", "audio/webm"].includes(file.type)) {
-      setSoundboardNotice("Upload an MP3, WAV, OGG, M4A or WebM audio file.");
+      setSoundboardNotice(i18next.t("chat.actions.soundboard.badType"));
       return;
     }
     const name =
@@ -123,8 +125,10 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () =>
-          typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Could not read audio file."));
-        reader.onerror = () => reject(reader.error ?? new Error("Could not read audio file."));
+          typeof reader.result === "string"
+            ? resolve(reader.result)
+            : reject(new Error(i18next.t("chat.actions.soundboard.readFailed")));
+        reader.onerror = () => reject(reader.error ?? new Error(i18next.t("chat.actions.soundboard.readFailed")));
         reader.readAsDataURL(file);
       });
       const response = await authorizedFetch(`${HTTP_URL}/api/soundboard`, {
@@ -137,13 +141,13 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
         error?: string;
       };
       if (!response.ok || !data.sound) {
-        setSoundboardNotice(data.error || "Could not upload that sound.");
+        setSoundboardNotice(apiErrorMessage(data, "client.soundboard.upload"));
         return;
       }
       setSoundboardSounds((current) => [data.sound!, ...current.filter((item) => item.id !== data.sound!.id)]);
-      setSoundboardNotice(`${data.sound.name} added.`);
+      setSoundboardNotice(i18next.t("chat.actions.soundboard.added", { name: data.sound.name }));
     } catch {
-      setSoundboardNotice("Could not upload that sound.");
+      setSoundboardNotice(i18next.t("errors.client.soundboard.upload"));
     } finally {
       setSoundboardBusy(false);
     }
@@ -159,12 +163,12 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as ApiError;
       if (!response.ok) {
-        setSoundboardNotice(data.error || "Could not delete that sound.");
+        setSoundboardNotice(apiErrorMessage(data, "client.soundboard.delete"));
         return;
       }
       setSoundboardSounds((current) => current.filter((item) => item.id !== sound.id));
     } catch {
-      setSoundboardNotice("Could not delete that sound.");
+      setSoundboardNotice(i18next.t("errors.client.soundboard.delete"));
     } finally {
       setSoundboardBusy(false);
     }
@@ -222,17 +226,11 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
         videoConstraints.deviceId = { ideal: extraSettingsRef.current.cameraDeviceId };
       if (cameraEffect === "blur") {
         if (supported.backgroundBlur) videoConstraints.backgroundBlur = true;
-        else
-          setCameraEffectNotice(
-            "Background blur is not supported by this browser or camera driver; camera started without it.",
-          );
+        else setCameraEffectNotice(i18next.t("chat.actions.camera.blurUnsupported"));
       }
       if (cameraEffect === "replace") {
         if (supported.backgroundReplacement) videoConstraints.backgroundReplacement = true;
-        else
-          setCameraEffectNotice(
-            "Background replacement is not supported by this browser or camera driver; camera started without it.",
-          );
+        else setCameraEffectNotice(i18next.t("chat.actions.camera.replaceUnsupported"));
       }
       camera = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
       // F7/F8-style guard: the user may have left voice while the prompt was open.
@@ -241,7 +239,7 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
         return;
       }
       const track = camera.getVideoTracks()[0];
-      if (!track) throw new Error("No camera video track available.");
+      if (!track) throw new Error(i18next.t("chat.actions.camera.noTrack"));
       track.contentHint = "detail";
       // Keep the current capture alive until the replacement has been acquired
       // and validated. Permission cancellation or device failure must not end
@@ -263,7 +261,7 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
       if (camera && localCameraStreamRef.current === camera) stopCamera();
       else if (camera) for (const track of camera.getTracks()) track.stop();
       if (error instanceof DOMException && error.name === "NotAllowedError") return;
-      setVoiceError(error instanceof Error ? error.message : "Could not start protected camera.");
+      setVoiceError(error instanceof Error ? error.message : i18next.t("chat.actions.camera.startFailed"));
     } finally {
       cameraStartInFlightRef.current = false;
     }
@@ -340,7 +338,7 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
       discardUnapprovedDisplayAudio(screen, captureSystemAudio);
       const videoTrack = screen.getVideoTracks()[0];
       if (!videoTrack) {
-        throw new Error("No screen video track was selected.");
+        throw new Error(i18next.t("chat.actions.screen.noTrack"));
       }
       videoTrack.contentHint = "motion";
       let unsafeSystemAudioDropped = false;
@@ -356,9 +354,7 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
         audioTrack.contentHint = "music";
       }
       if (unsafeSystemAudioDropped) {
-        setVoiceError(
-          "Screen sharing started without system audio: this device cannot keep DeCave voices out of the shared sound, so everyone would hear themselves echo.",
-        );
+        setVoiceError(i18next.t("chat.actions.screen.systemAudioDropped"));
       }
       try {
         await videoTrack.applyConstraints({
@@ -399,7 +395,7 @@ export function createVoiceControlActions(deps: VoiceControlActionsDeps) {
       else if (screen) for (const track of screen.getTracks()) track.stop();
       if (error instanceof DOMException && error.name === "NotAllowedError") return;
       console.error("Could not start protected screen sharing:", error);
-      setVoiceError(error instanceof Error ? error.message : "Could not start protected screen sharing.");
+      setVoiceError(error instanceof Error ? error.message : i18next.t("chat.actions.screen.startFailed"));
     } finally {
       screenShareInFlightRef.current = false;
     }

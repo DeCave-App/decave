@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   REPORT_CATEGORIES,
   REPORT_URGENCIES,
@@ -7,22 +8,8 @@ import {
   type SafetyReportTarget,
 } from "../safety/types";
 import { uploadReportEvidence } from "../safety/report-evidence";
+import { serverErrorOr } from "../safety/server-error";
 import { Icon } from "./Icon";
-
-const CATEGORY_LABELS: Record<ReportCategory, string> = {
-  HARASSMENT_BULLYING: "Harassment or bullying",
-  HATE_SPEECH: "Hate speech",
-  SEXUAL_INAPPROPRIATE: "Sexual or inappropriate content",
-  SUSPECTED_GROOMING: "Suspected grooming",
-  CHILD_SAFETY: "Child safety concern",
-  THREATS_VIOLENCE: "Threats or violence",
-  SPAM_SCAM: "Spam or scam",
-  IMPERSONATION: "Impersonation",
-  UNDERAGE_USER: "Underage user",
-  INAPPROPRIATE_MEDIA: "Inappropriate media",
-  SELF_HARM: "Self-harm concern",
-  OTHER: "Other",
-};
 
 type ReportDialogProps = {
   target: SafetyReportTarget | null;
@@ -32,6 +19,7 @@ type ReportDialogProps = {
 };
 
 export function ReportDialog({ target, request, onClose, onSubmitted }: ReportDialogProps) {
+  const { t } = useTranslation(["safety"]);
   const [category, setCategory] = useState<ReportCategory>("HARASSMENT_BULLYING");
   const [urgency, setUrgency] = useState<ReportUrgency>("medium");
   const [description, setDescription] = useState("");
@@ -39,13 +27,17 @@ export function ReportDialog({ target, request, onClose, onSubmitted }: ReportDi
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
 
-  const targetLabel = useMemo(() => {
-    if (!target) return "content";
+  const title = useMemo(() => {
+    if (!target) return t("safety.report.title.content");
     if (target.targetType === "user" || target.targetType === "profile" || target.targetType === "voice_participant") {
-      return target.subjectUsername || "this user";
+      return target.subjectUsername
+        ? t("safety.report.title.user", { name: target.subjectUsername })
+        : t("safety.report.title.thisUser");
     }
-    return target.evidenceLabel || "this content";
-  }, [target]);
+    return target.evidenceLabel
+      ? t("safety.report.title.item", { label: target.evidenceLabel })
+      : t("safety.report.title.thisContent");
+  }, [target, t]);
 
   if (!target) return null;
 
@@ -74,9 +66,10 @@ export function ReportDialog({ target, request, onClose, onSubmitted }: ReportDi
       const data = (await response.json().catch(() => ({}))) as {
         report?: { id?: string };
         error?: string;
+        code?: string;
       };
       if (!response.ok || !data.report?.id) {
-        setNotice(data.error || "The report could not be submitted.");
+        setNotice(serverErrorOr(data, t("safety.report.failed")));
         return;
       }
 
@@ -97,16 +90,14 @@ export function ReportDialog({ target, request, onClose, onSubmitted }: ReportDi
         await request(`/api/safety/blocks/${encodeURIComponent(subjectId)}`, { method: "PUT" });
       }
       if (evidenceAttached) {
-        setNotice("Report submitted. Thank you for helping keep DeCave safe.");
+        setNotice(t("safety.report.submitted"));
         onSubmitted?.();
       } else {
         // Leave the dialog open: closing it would hide this before anyone reads it.
-        setNotice(
-          "Report submitted, but the reported message could not be attached, so the safety team can't read it. You can close this.",
-        );
+        setNotice(t("safety.report.submittedNoEvidence"));
       }
     } catch {
-      setNotice("Could not connect to DeCave.");
+      setNotice(t("safety.report.connectFailed"));
     } finally {
       setBusy(false);
     }
@@ -121,40 +112,42 @@ export function ReportDialog({ target, request, onClose, onSubmitted }: ReportDi
         aria-modal="true"
         aria-labelledby="dc-report-title"
       >
-        <div className="dc-safety-kicker">Trust &amp; safety</div>
-        <h2 id="dc-report-title">Report {targetLabel}</h2>
-        <p className="dc-report-copy">
-          Your report is private. The person being reported will not be shown your identity.
-        </p>
+        <div className="dc-safety-kicker">{t("safety.report.kicker")}</div>
+        <h2 id="dc-report-title">{title}</h2>
+        <p className="dc-report-copy">{t("safety.report.private")}</p>
 
         <label>
-          What happened?
+          {t("safety.report.category")}
           <select value={category} onChange={(event) => setCategory(event.target.value as ReportCategory)}>
             {REPORT_CATEGORIES.map((item) => (
               <option key={item} value={item}>
-                {CATEGORY_LABELS[item]}
+                {t(`safety.category.${item}`)}
               </option>
             ))}
           </select>
         </label>
 
         <label>
-          Urgency
+          {t("safety.report.urgency")}
           <select value={urgency} onChange={(event) => setUrgency(event.target.value as ReportUrgency)}>
             {REPORT_URGENCIES.map((item) => (
               <option key={item} value={item}>
-                {item === "spam_invalid" ? "Spam or invalid" : item.charAt(0).toUpperCase() + item.slice(1)}
+                {t(`safety.urgency.${item}`)}
               </option>
             ))}
           </select>
         </label>
 
         <label>
-          Details <span className="dc-report-optional">(optional)</span>
+          <Trans
+            t={t}
+            i18nKey="safety.report.details"
+            components={{ optional: <span className="dc-report-optional" /> }}
+          />
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value.slice(0, 4000))}
-            placeholder="Tell us what we should know"
+            placeholder={t("safety.report.detailsPlaceholder")}
             rows={5}
             maxLength={4000}
           />
@@ -162,16 +155,16 @@ export function ReportDialog({ target, request, onClose, onSubmitted }: ReportDi
 
         {target.evidenceText?.trim() && (
           <div className="dc-report-evidence-preview">
-            <strong>Selected evidence</strong>
+            <strong>{t("safety.report.evidence")}</strong>
             <p>{target.evidenceText}</p>
-            <small>It will be encrypted on this device before upload.</small>
+            <small>{t("safety.report.evidenceEncrypted")}</small>
           </div>
         )}
 
         {target.subjectUserId && (
           <label className="dc-report-check">
             <input type="checkbox" checked={blockAfter} onChange={(event) => setBlockAfter(event.target.checked)} />
-            <span>Block this user after submitting</span>
+            <span>{t("safety.report.blockAfter")}</span>
           </label>
         )}
 
@@ -182,11 +175,11 @@ export function ReportDialog({ target, request, onClose, onSubmitted }: ReportDi
         )}
         <div className="dc-report-actions ds-modal-actions">
           <button type="button" className="ds-btn" onClick={onClose} disabled={busy}>
-            Cancel
+            {t("safety.report.cancel")}
           </button>
           <button type="button" className="ds-btn ds-btn-primary" onClick={() => void submit()} disabled={busy}>
             <Icon name="flag" />
-            {busy ? "Submitting…" : "Submit report"}
+            {busy ? t("safety.report.submitting") : t("safety.report.submit")}
           </button>
         </div>
       </div>

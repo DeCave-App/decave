@@ -8,7 +8,7 @@ import {
   clearSessionCookie,
   currentPasswordThrottle,
 } from "../lib/sessions";
-import { json, bodyJson } from "../lib/http";
+import { json, bodyJson, apiError, apiErrorLegacy } from "../lib/http";
 import {
   userRecoveryCodesRemaining,
   userMfaEnabled,
@@ -22,6 +22,7 @@ import {
 } from "../lib/mfa";
 import { verifyPassword, nowIso, privateUser, activityVisibilityOf, ensureGroupChatSchema, type UserRow } from "../db";
 import { ensurePushSchema } from "../push";
+import { isDateStyleLanguage } from "../../shared/date-style";
 import { accountExportChunks, accountExportResponse, accountExportSections } from "../lib/account-export";
 import { serveR2 } from "../lib/media";
 import {
@@ -29,12 +30,16 @@ import {
   accountPreferencesForClient,
   parseClientSettings,
   CLIENT_SETTINGS_MAX_BYTES,
+  accountConnections,
+  isConnectionProvider,
+  setConnectionVisibility,
 } from "../lib/account-preferences";
 import { safetyProfileForClient, getSafetyProfile } from "../trust-safety";
 import { allMessageSubscriptions, pushSettingsFromJson } from "../push-policy";
 import { broadcastProfileUpdate, realtimeBroadcast } from "../lib/realtime";
 import { validateUsername } from "../lib/validation";
 import { ownedHubCount } from "../lib/hubs";
+import { storedLocale } from "../lib/i18n";
 import type { ApiContext } from "./context";
 
 export async function handleAccountSecurityRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
@@ -58,20 +63,20 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
       );
     }
 
-    if (method !== "POST") return json({ error: "Not found" }, 404);
+    if (method !== "POST") return apiError("common.notFound", 404);
     const limited = await env.AUTH_RATE_LIMITER.limit({ key: `account-mfa:${user.id}` });
-    if (!limited.success) return json({ error: "Too many attempts. Try again shortly." }, 429);
+    if (!limited.success) return apiError("common.tooManyAttempts", 429);
     const body = await bodyJson(request);
     const password = typeof body.currentPassword === "string" ? body.currentPassword : "";
     const enabled = await userMfaEnabled(env.DB, user.id);
 
     if (p === "/api/account/mfa/setup") {
-      if (enabled) return json({ error: "Two-factor sign-in is already on." }, 409);
+      if (enabled) return apiError("account.mfaAlreadyOn", 409);
       const passwordThrottle = await currentPasswordThrottle(env, user.id);
       if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(password, user.password_salt, user.password_hash))) {
         await securityEvent(env, user.id, "account.mfa_setup_reauth_failed", request);
-        return json({ error: "Current password is incorrect." }, 403);
+        return apiError("common.currentPasswordIncorrect", 403);
       }
       const secret = ownerRandomMfaSecret();
       const now = nowIso();
@@ -88,17 +93,17 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
     }
 
     if (p === "/api/account/mfa/enable") {
-      if (enabled) return json({ error: "Two-factor sign-in is already on." }, 409);
+      if (enabled) return apiError("account.mfaAlreadyOn", 409);
       const code = typeof body.code === "string" ? body.code.replace(/\s+/g, "") : "";
       const row = await env.DB.prepare(
         "SELECT secret_ciphertext FROM decave_user_mfa WHERE user_id=? AND enabled_at IS NULL LIMIT 1",
       )
         .bind(user.id)
         .first<{ secret_ciphertext: string }>();
-      if (!row) return json({ error: "Start setup first." }, 409);
+      if (!row) return apiError("account.mfaSetupNotStarted", 409);
       const matchedStep = await ownerMatchingTotpStep(await ownerDecryptMfa(env, row.secret_ciphertext), code);
       if (matchedStep === null) {
-        return json({ error: "That code is not valid. Check the time on your phone and try again." }, 403);
+        return apiError("account.codeInvalidCheckTime", 403);
       }
       const codes = Array.from({ length: 10 }, () => ownerRecoveryCode());
       const now = nowIso();
@@ -108,8 +113,7 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
         ).bind(now, matchedStep, now, user.id, row.secret_ciphertext),
         ...userRecoveryCodeStatements(env, user.id, codes, now),
       ]);
-      if (Number(results[0]?.meta.changes) !== 1)
-        return json({ error: "Setup changed in another window. Start again." }, 409);
+      if (Number(results[0]?.meta.changes) !== 1) return apiError("account.mfaSetupChanged", 409);
       await securityEvent(env, user.id, "account.mfa_enabled", request);
       return json({ enabled: true, recoveryCodes: codes }, 200, noStore);
     }
@@ -117,15 +121,15 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
     // Turning 2FA off or replacing recovery codes needs the password and a
     // current code, so a stolen session alone cannot weaken the account.
     if (p === "/api/account/mfa/disable" || p === "/api/account/mfa/recovery-codes") {
-      if (!enabled) return json({ error: "Two-factor sign-in is off." }, 409);
+      if (!enabled) return apiError("account.mfaOff", 409);
       const passwordThrottle = await currentPasswordThrottle(env, user.id);
       if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(password, user.password_salt, user.password_hash))) {
         await securityEvent(env, user.id, "account.mfa_reauth_failed", request);
-        return json({ error: "Current password is incorrect." }, 403);
+        return apiError("common.currentPasswordIncorrect", 403);
       }
       if (!(await userVerifyMfaOrRecovery(env, user.id, body.code))) {
-        return json({ error: "That code is not valid." }, 403);
+        return apiError("account.codeInvalid", 403);
       }
       if (p === "/api/account/mfa/disable") {
         await env.DB.batch([
@@ -141,7 +145,7 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
       await securityEvent(env, user.id, "account.mfa_recovery_codes_regenerated", request);
       return json({ enabled: true, recoveryCodes: codes }, 200, noStore);
     }
-    return json({ error: "Not found" }, 404);
+    return apiError("common.notFound", 404);
   }
 
   // Export attachment downloads must still point to a live object referenced by
@@ -153,7 +157,7 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
     if (user instanceof Response) return user;
     const key = new URL(request.url).searchParams.get("key") ?? "";
     if (!key || key.length > 1024 || key.includes("..") || key.includes("\\") || key.startsWith("/")) {
-      return json({ error: "Attachment not found." }, 404);
+      return apiError("account.attachmentNotFound", 404);
     }
     const ownedReference = await env.DB.prepare(
       `SELECT 1 AS present FROM decave_attachment_access a
@@ -174,7 +178,7 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
     )
       .bind(key, user.id, user.id, user.id, key, user.id)
       .first<{ present: number }>();
-    if (!ownedReference) return json({ error: "Attachment not found." }, 404);
+    if (!ownedReference) return apiError("account.attachmentNotFound", 404);
 
     const mediaRequestUrl = new URL(request.url);
     mediaRequestUrl.pathname = `/uploads/${key.split("/").map(encodeURIComponent).join("/")}`;
@@ -193,7 +197,7 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const limited = await env.AUTH_RATE_LIMITER.limit({ key: `account-export:${user.id}` });
-    if (!limited.success) return json({ error: "You just exported your data. Try again in a minute." }, 429);
+    if (!limited.success) return apiError("account.exportCooldown", 429);
     // Lazily created tables and columns the export reads.
     await ensureGroupChatSchema(env.DB);
     await ensurePushSchema(env.DB);
@@ -222,6 +226,36 @@ export async function handleAccountSecurityRoutes({ request, env, p, method }: A
 }
 
 export async function handleAccountSettingsRoutes({ request, env, p, method }: ApiContext): Promise<Response | null> {
+  if (method === "PUT" && p === "/api/account/locale") {
+    const user = await requireUser(request, env);
+    if (user instanceof Response) return user;
+    const body = await bodyJson(request);
+    const locale = body.locale === null ? null : storedLocale(body.locale);
+    if (locale === null && body.locale !== null) {
+      return apiError("account.localeInvalid", 400);
+    }
+    await env.DB.prepare("UPDATE decave_users SET locale=? WHERE id=?").bind(locale, user.id).run();
+    return json({ locale });
+  }
+
+  if (method === "GET" && p === "/api/account/connections") {
+    const user = await requireUser(request, env);
+    if (user instanceof Response) return user;
+    return json({ connections: await accountConnections(env, user.id) }, 200, { "Cache-Control": "no-store, private" });
+  }
+
+  const visibilityRoute = p.match(/^\/api\/account\/connections\/([a-z0-9_-]{1,32})\/visibility$/);
+  if (method === "PUT" && visibilityRoute) {
+    const user = await requireUser(request, env);
+    if (user instanceof Response) return user;
+    const provider = visibilityRoute[1];
+    if (!isConnectionProvider(provider)) return apiError("connections.unknownProvider", 404);
+    const body = await bodyJson(request);
+    if (typeof body.showOnProfile !== "boolean") return apiError("connections.visibilityInvalid", 400);
+    await setConnectionVisibility(env, user.id, provider, body.showOnProfile);
+    return json({ provider, showOnProfile: body.showOnProfile });
+  }
+
   if (method === "GET" && p === "/api/account/preferences") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
@@ -255,17 +289,7 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
     const allowStreamPreviews =
       typeof body.allowStreamPreviews === "boolean" ? body.allowStreamPreviews : current.allow_stream_previews !== 0;
     const streamerMode = typeof body.streamerMode === "boolean" ? body.streamerMode : current.streamer_mode === 1;
-    const language =
-      body.language === "pl" ||
-      body.language === "el" ||
-      body.language === "de" ||
-      body.language === "fr" ||
-      body.language === "es" ||
-      body.language === "it" ||
-      body.language === "pt" ||
-      body.language === "en"
-        ? body.language
-        : current.language;
+    const language = isDateStyleLanguage(body.language) ? body.language : current.language;
     const timeFormat =
       body.timeFormat === "12h" || body.timeFormat === "24h" || body.timeFormat === "system"
         ? body.timeFormat
@@ -344,7 +368,7 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
     if (nextClientSettings && typeof nextClientSettings === "object" && !Array.isArray(nextClientSettings)) {
       const serialized = JSON.stringify(nextClientSettings);
       if (new TextEncoder().encode(serialized).byteLength > CLIENT_SETTINGS_MAX_BYTES) {
-        return json({ error: "Your synced settings are too large." }, 413);
+        return apiError("account.settingsTooLarge", 413);
       }
       await env.DB.prepare(
         "UPDATE decave_account_preferences SET client_settings_json=?, client_settings_updated_at=? WHERE user_id=?",
@@ -401,11 +425,11 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
     if (user instanceof Response) return user;
     const body = await bodyJson(request);
     if (!body) {
-      return json({ error: "Invalid account mutation request.", code: "INVALID_INPUT" }, 400);
+      return apiErrorLegacy("INVALID_INPUT", "account.invalidMutation", 400);
     }
     const username = validateUsername(body.username);
     if (!username) {
-      return json({ error: "Username must be 3-24 characters using letters, numbers, _, . or -" }, 400);
+      return apiError("common.usernameFormat", 400);
     }
     {
       const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
@@ -413,24 +437,20 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
       if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(currentPassword, user.password_salt, user.password_hash))) {
         await securityEvent(env, user.id, "username.change_failed_password", request);
-        return json({ error: "Current password is incorrect." }, 403);
+        return apiError("common.currentPasswordIncorrect", 403);
       }
     }
     if (username.toLocaleLowerCase("en-US") === user.username.toLocaleLowerCase("en-US")) {
-      return json({ error: "Choose a different username." }, 400);
+      return apiError("account.usernameUnchanged", 400);
     }
 
     const preferences = await accountPreferencesRow(env, user.id);
     if (preferences.username_changed_at) {
       const availableAt = Date.parse(preferences.username_changed_at) + 30 * 24 * 60 * 60 * 1000;
       if (Number.isFinite(availableAt) && availableAt > Date.now()) {
-        return json(
-          {
-            error: "You can change your username once every 30 days.",
-            usernameChangeAvailableAt: new Date(availableAt).toISOString(),
-          },
-          409,
-        );
+        return apiError("account.usernameChangeCooldown", 409, undefined, undefined, {
+          usernameChangeAvailableAt: new Date(availableAt).toISOString(),
+        });
       }
     }
 
@@ -451,7 +471,7 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
       usernameApplied = Number(usernameUpdate.meta.changes ?? 0) === 1;
     }
     if (!usernameApplied) {
-      return json({ error: "That username is already in use." }, 409);
+      return apiError("account.usernameTaken", 409);
     }
     {
       await env.DB.prepare("UPDATE decave_account_preferences SET username_changed_at=?, updated_at=? WHERE user_id=?")
@@ -460,7 +480,7 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
     }
 
     const updated = await env.DB.prepare("SELECT * FROM decave_users WHERE id=?").bind(user.id).first<UserRow>();
-    if (!updated) return json({ error: "Account not found." }, 404);
+    if (!updated) return apiError("account.notFound", 404);
     await securityEvent(env, user.id, "username.changed", request, `old=${user.username};new=${username}`);
     await broadcastProfileUpdate(env, updated);
     await realtimeBroadcast(env, { type: "SOCIAL_REFRESH" });
@@ -473,7 +493,7 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
 
   if (method === "PUT" && p === "/api/account/phone") {
     // DeCave no longer collects phone numbers (nothing used them).
-    return json({ error: "Phone numbers are no longer collected.", code: "FEATURE_REMOVED" }, 410);
+    return apiErrorLegacy("FEATURE_REMOVED", "account.phoneRemoved", 410);
   }
 
   if (method === "POST" && (p === "/api/account/disable" || p === "/api/account/delete")) {
@@ -481,26 +501,12 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
     if (user instanceof Response) return user;
     const deleting = p === "/api/account/delete";
     if (user.platform_role === "owner")
-      return json(
-        {
-          error: deleting
-            ? "Platform owner accounts cannot schedule self-deletion."
-            : "Platform owner accounts cannot disable themselves.",
-        },
-        409,
-      );
+      return apiError(deleting ? "account.ownerCannotDelete" : "account.ownerCannotDisable", 409);
     if ((await ownedHubCount(env.DB, user.id)) > 0)
-      return json(
-        {
-          error: deleting
-            ? "Transfer ownership of all Hubs you own before deleting your account."
-            : "Transfer or delete every Hub you own before disabling your account.",
-        },
-        409,
-      );
+      return apiError(deleting ? "account.hubsOwnedBeforeDelete" : "account.hubsOwnedBeforeDisable", 409);
     const body = await bodyJson(request);
     if (!body) {
-      return json({ error: "Invalid account mutation request.", code: "INVALID_INPUT" }, 400);
+      return apiErrorLegacy("INVALID_INPUT", "account.invalidMutation", 400);
     }
     const confirm = typeof body.confirmUsername === "string" ? body.confirmUsername.trim() : "";
     {
@@ -508,10 +514,9 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
       const passwordThrottle = await currentPasswordThrottle(env, user.id);
       if (passwordThrottle) return passwordThrottle;
       if (!(await verifyPassword(password, user.password_salt, user.password_hash))) {
-        return json({ error: "Current password is incorrect" }, 403);
+        return apiError("common.currentPasswordIncorrectShort", 403);
       }
-      if (deleting && confirm !== user.username)
-        return json({ error: "Type your username exactly to confirm deletion." }, 400);
+      if (deleting && confirm !== user.username) return apiError("account.deleteConfirmMismatch", 400);
     }
     const at = nowIso();
     const deleteAfter = new Date(Date.parse(at) + 30 * 86400000).toISOString();
@@ -527,8 +532,7 @@ export async function handleAccountSettingsRoutes({ request, env, p, method }: A
       const result = await env.DB.prepare(`UPDATE decave_users SET ${update} WHERE ${predicate}`)
         .bind(...bindings)
         .run();
-      if (Number(result.meta.changes ?? 0) !== 1)
-        return json({ error: "Account state changed. Fresh scoped authentication may be required." }, 409);
+      if (Number(result.meta.changes ?? 0) !== 1) return apiError("account.stateChanged", 409);
       await revokeAccountSessions(env, user.id, reason);
       await securityEvent(env, user.id, event, request);
     }

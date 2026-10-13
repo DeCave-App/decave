@@ -32,7 +32,7 @@ import {
 } from "../bots/store";
 import { audit, getRole, getRoom, hasPermission } from "../db";
 import { canAccessRoom } from "../lib/hubs";
-import { boundedBodyJson, idFromPath, json } from "../lib/http";
+import { boundedBodyJson, idFromPath, json, apiError, apiErrorLegacy } from "../lib/http";
 import { requireUser } from "../lib/sessions";
 import {
   normalizeHubBotCapabilities,
@@ -49,7 +49,7 @@ const IMPORT_LIMIT = 256 * 1024;
 const BLANK = "\u0001blank";
 
 const reply = (data: unknown, status = 200) => json(data, status, NO_STORE);
-const tooLarge = () => reply({ error: "Request body is too large" }, 413);
+const tooLarge = () => apiError("botBuilder.bodyTooLarge", 413, undefined, NO_STORE);
 
 type Hub = {
   channels: { id: string; name: string }[];
@@ -159,7 +159,7 @@ async function builderBot(db: D1Database, hubId: number, botId: string): Promise
   return bot && bot.kind === "builder" ? bot : null;
 }
 
-const notFound = () => reply({ error: "Bot not found in this Hub" }, 404);
+const notFound = () => apiError("common.botNotFound", 404, undefined, NO_STORE);
 
 // Interactions: card buttons/selects, form submits, the composer's command list.
 
@@ -212,14 +212,14 @@ async function handleBotInteractionRoutes({ request, env, p, method }: ApiContex
   const formMatch = method === "POST" ? idFromPath(p, /^\/api\/rooms\/(\d+)\/bot-forms\/([^/]+)$/) : null;
   const commandsMatch = method === "GET" ? idFromPath(p, /^\/api\/servers\/(\d+)\/bot-commands$/) : null;
   if (!interactionMatch && !formMatch && !commandsMatch) return null;
-  if (!botsEnabled(env)) return reply({ error: "Not found" }, 404);
+  if (!botsEnabled(env)) return apiError("common.notFound", 404, undefined, NO_STORE);
   const user = await requireUser(request, env);
   if (user instanceof Response) return user;
   const db = env.DB;
 
   if (commandsMatch) {
     const hubId = Number(commandsMatch[1]);
-    if (!(await getRole(db, hubId, user.id))) return reply({ error: "You are not a member of this Hub" }, 403);
+    if (!(await getRole(db, hubId, user.id))) return apiError("common.notHubMember", 403, undefined, NO_STORE);
     const rows = await db
       .prepare(
         `SELECT c.name,c.bot_id,b.name AS bot_name,r.published_json FROM decave_bot_commands c
@@ -245,7 +245,7 @@ async function handleBotInteractionRoutes({ request, env, p, method }: ApiContex
   const room = await getRoom(db, roomId);
   // Hub rooms only: DMs and group chats have no hub room id.
   if (!room || !room.hub_id || !(await getRole(db, room.hub_id, user.id)) || !(await canAccessRoom(db, room, user.id)))
-    return reply({ error: "Room not found or inaccessible" }, 404);
+    return apiError("botBuilder.roomNotFound", 404, undefined, NO_STORE);
   const hubId = Number(room.hub_id);
   const body = await boundedBodyJson(request, BODY_LIMIT);
   if (!body) return tooLarge();
@@ -255,8 +255,8 @@ async function handleBotInteractionRoutes({ request, env, p, method }: ApiContex
     const customId = typeof body.customId === "string" ? body.customId.slice(0, 100) : "";
     const value = typeof body.value === "string" ? body.value : undefined;
     // Option values are at most 100 characters (checked when the rule is saved).
-    if (value !== undefined && value.length > 100) return reply({ error: "value is too long" }, 400);
-    if (!messageId || !customId) return reply({ error: "messageId and customId are required" }, 400);
+    if (value !== undefined && value.length > 100) return apiError("botBuilder.valueTooLong", 400, undefined, NO_STORE);
+    if (!messageId || !customId) return apiError("botBuilder.controlIdsRequired", 400, undefined, NO_STORE);
     const message = await db
       .prepare(
         `SELECT m.card_json FROM decave_messages m JOIN decave_hub_bots b ON b.id=m.bot_id AND b.kind='builder'
@@ -264,11 +264,11 @@ async function handleBotInteractionRoutes({ request, env, p, method }: ApiContex
       )
       .bind(messageId, roomId, hubId, user.id)
       .first<{ card_json: string | null }>();
-    if (!message) return reply({ error: "Message not found" }, 404);
+    if (!message) return apiError("botBuilder.messageNotFound", 404, undefined, NO_STORE);
     const controls = cardControls(message.card_json);
     const options = controls.select.get(customId);
     const valid = options ? value !== undefined && options.has(value) : controls.buttons.has(customId);
-    if (!valid) return reply({ error: "That control isn't on this message" }, 400);
+    if (!valid) return apiError("botBuilder.controlNotOnMessage", 400, undefined, NO_STORE);
     const event: BotEvent = {
       hubId,
       roomId,
@@ -284,17 +284,18 @@ async function handleBotInteractionRoutes({ request, env, p, method }: ApiContex
   const formId = decodeURIComponent(formMatch![2]).slice(0, 100);
   const fields = body.fields;
   if (!fields || typeof fields !== "object" || Array.isArray(fields))
-    return reply({ error: "fields must be an object" }, 400);
+    return apiError("botBuilder.fieldsInvalid", 400, undefined, NO_STORE);
   const entries = Object.entries(fields as Record<string, unknown>);
   if (entries.length > BOT_LIMITS.formMaxFields)
-    return reply({ error: `A form has at most ${BOT_LIMITS.formMaxFields} fields` }, 400);
+    return apiError("botBuilder.formTooManyFields", 400, { max: BOT_LIMITS.formMaxFields }, NO_STORE);
   const open = await db
     .prepare(
       "SELECT fields_json,expires_at FROM decave_bot_pending_forms WHERE hub_id=? AND room_id=? AND user_id=? AND form_id=?",
     )
     .bind(hubId, roomId, user.id, formId)
     .first<{ fields_json: string; expires_at: number }>();
-  if (!open || Number(open.expires_at) < Date.now()) return reply({ error: "This form isn't open" }, 404);
+  if (!open || Number(open.expires_at) < Date.now())
+    return apiError("botBuilder.formNotOpen", 404, undefined, NO_STORE);
   let declared: BotFormField[] = [];
   try {
     declared = JSON.parse(open.fields_json) as BotFormField[];
@@ -304,13 +305,14 @@ async function handleBotInteractionRoutes({ request, env, p, method }: ApiContex
   const known = new Set(declared.map((field) => field.id));
   const values: Record<string, string> = {};
   for (const [id, raw] of entries) {
-    if (!known.has(id)) return reply({ error: `Unknown field ${id}` }, 400);
+    if (!known.has(id)) return apiError("botBuilder.unknownField", 400, { id }, NO_STORE);
     if (typeof raw !== "string" || raw.length > FIELD_MAX_CHARS)
-      return reply({ error: `${id} must be text of at most ${FIELD_MAX_CHARS} characters` }, 400);
+      return apiError("botBuilder.fieldTooLong", 400, { id, max: FIELD_MAX_CHARS }, NO_STORE);
     values[id] = raw;
   }
   for (const field of declared)
-    if (field.required && !values[field.id]?.trim()) return reply({ error: `${field.label} is required` }, 400);
+    if (field.required && !values[field.id]?.trim())
+      return apiError("botBuilder.fieldRequired", 400, { label: field.label }, NO_STORE);
   // Claim the form atomically. The earlier SELECT is for field validation;
   // this conditional DELETE decides which concurrent submitter owns it.
   const claimed = await db
@@ -319,7 +321,7 @@ async function handleBotInteractionRoutes({ request, env, p, method }: ApiContex
     )
     .bind(hubId, roomId, user.id, formId, Date.now())
     .run();
-  if (claimed.meta.changes !== 1) return reply({ error: "This form isn't open" }, 404);
+  if (claimed.meta.changes !== 1) return apiError("botBuilder.formNotOpen", 404, undefined, NO_STORE);
   const event: BotEvent = {
     hubId,
     roomId,
@@ -354,13 +356,13 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
     /^\/api\/servers\/(\d+)\/bot-builder(?:\/(import|generate)|\/([^/]+)(?:\/(publish|runs|export|test)|\/rules\/([^/]+))?)?$/,
   );
   if (!match) return null;
-  if (!botsEnabled(env)) return reply({ error: "Not found" }, 404);
+  if (!botsEnabled(env)) return apiError("common.notFound", 404, undefined, NO_STORE);
 
   const hubId = Number(match[1]);
   const isImport = match[2] === "import";
   const isGenerate = match[2] === "generate";
   // Without a provider key the AI helper does not exist.
-  if (isGenerate && !env.ANTHROPIC_API_KEY) return reply({ error: "Not found" }, 404);
+  if (isGenerate && !env.ANTHROPIC_API_KEY) return apiError("common.notFound", 404, undefined, NO_STORE);
   const botId = isImport || isGenerate ? undefined : match[3] ? decodeURIComponent(match[3]) : undefined;
   const sub = match[4];
   const ruleRef = match[5] ? decodeURIComponent(match[5]) : undefined;
@@ -368,7 +370,7 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
   const user = await requireUser(request, env);
   if (user instanceof Response) return user;
   if (!(await hasPermission(env.DB, hubId, user.id, "manageBots")))
-    return reply({ error: "Manage Bots permission required" }, 403);
+    return apiError("botBuilder.manageBotsRequired", 403, undefined, NO_STORE);
   const db = env.DB;
 
   // /bot-builder/generate
@@ -402,13 +404,13 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
       const body = await boundedBodyJson(request, BODY_LIMIT);
       if (!body) return tooLarge();
       const name = cleanText(body.name, 32);
-      if (!name) return reply({ error: "Bot name is required" }, 400);
+      if (!name) return apiError("common.botNameRequired", 400, undefined, NO_STORE);
       const found = body.templateId === undefined ? null : TEMPLATES.find((t) => t.id === body.templateId);
       const template =
         found?.id === "liveAlerts" && !(await hubHasTwitch(db, hubId))
           ? undefined
           : (found ?? (found === null ? null : undefined));
-      if (template === undefined) return reply({ error: "Unknown template" }, 400);
+      if (template === undefined) return apiError("botBuilder.unknownTemplate", 400, undefined, NO_STORE);
       try {
         const bot = await createBuilderBot(db, {
           hubId,
@@ -438,7 +440,14 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
         return reply(await clientBot(db, (await getBot(db, hubId, bot.id)) ?? bot), 201);
       } catch (error) {
         if (error instanceof BotStoreError && error.code === "BOT_LIMIT")
-          return reply({ error: `A Hub can have at most ${BOT_LIMITS.botsPerHub} bots`, code: error.code }, 409);
+          return apiErrorLegacy(
+            error.code,
+            "botBuilder.botLimit",
+            409,
+            { max: BOT_LIMITS.botsPerHub },
+            undefined,
+            NO_STORE,
+          );
         throw error;
       }
     }
@@ -471,31 +480,31 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
       const patch: Parameters<typeof updateBotSettings>[3] = {};
       if (body.name !== undefined) {
         patch.name = cleanText(body.name, 32);
-        if (!patch.name) return reply({ error: "Bot name is required" }, 400);
+        if (!patch.name) return apiError("common.botNameRequired", 400, undefined, NO_STORE);
       }
       if (body.description !== undefined) patch.description = cleanText(body.description, 180);
       if (body.color !== undefined) {
         if (typeof body.color !== "string" || !/^#[0-9a-fA-F]{6}$/.test(body.color))
-          return reply({ error: "color must look like #aabbcc" }, 400);
+          return apiError("botBuilder.colorInvalid", 400, undefined, NO_STORE);
         patch.color = body.color;
       }
       if (body.avatarEmoji !== undefined) {
         if (typeof body.avatarEmoji !== "string" || body.avatarEmoji.length > 16)
-          return reply({ error: "avatarEmoji must be a short emoji" }, 400);
+          return apiError("botBuilder.avatarEmojiInvalid", 400, undefined, NO_STORE);
         patch.avatarEmoji = body.avatarEmoji;
       }
       if (body.enabled !== undefined) {
-        if (typeof body.enabled !== "boolean") return reply({ error: "enabled must be a boolean" }, 400);
+        if (typeof body.enabled !== "boolean") return apiError("common.enabledNotBoolean", 400, undefined, NO_STORE);
         patch.enabled = body.enabled;
       }
       if (body.capabilities !== undefined) {
         patch.capabilities = normalizeHubBotCapabilities(body.capabilities, []);
         if (!Array.isArray(body.capabilities) || !patch.capabilities.length)
-          return reply({ error: "Select at least one bot action" }, 400);
+          return apiError("common.botActionRequired", 400, undefined, NO_STORE);
       }
       if (body.allowedRoomIds !== undefined) {
         const rooms = await validateHubBotRoomIds(db, hubId, user.id, body.allowedRoomIds);
-        if (!rooms) return reply({ error: "allowedRoomIds must be Text Rooms in this Hub" }, 400);
+        if (!rooms) return apiError("botBuilder.allowedRoomsInvalid", 400, undefined, NO_STORE);
         patch.allowedRoomIds = rooms;
       }
       const updated = await updateBotSettings(db, hubId, botId, patch);
@@ -523,15 +532,16 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
     } catch (error) {
       if (error instanceof BotStoreError) {
         if (error.code === "COMMAND_LIMIT")
-          return reply(
-            { error: `A Hub can have at most ${BOT_LIMITS.commandsPerHub} slash commands`, code: error.code },
+          return apiErrorLegacy(
+            error.code,
+            "botBuilder.commandLimit",
             400,
+            { max: BOT_LIMITS.commandsPerHub },
+            undefined,
+            NO_STORE,
           );
         if (error.code === "BOT_COMMAND_TAKEN")
-          return reply(
-            { error: "Another bot, or another rule, already uses one of these slash commands", code: error.code },
-            409,
-          );
+          return apiErrorLegacy(error.code, "botBuilder.commandTaken", 409, undefined, undefined, NO_STORE);
       }
       throw error;
     }
@@ -587,7 +597,7 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
         new Set(ids).size !== ids.length ||
         !ids.every((id) => known.has(id))
       )
-        return reply({ error: "ruleIds must list every rule of this bot once" }, 400);
+        return apiError("botBuilder.ruleOrderInvalid", 400, undefined, NO_STORE);
       await reorderRules(db, botId, ids as string[]);
       await audit(db, hubId, user.id, "bot.rules.order", botId, bot.name);
       return reply({ success: true });
@@ -595,8 +605,9 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
     if (method === "PATCH") {
       const body = await boundedBodyJson(request, BODY_LIMIT);
       if (!body) return tooLarge();
-      if (typeof body.enabled !== "boolean") return reply({ error: "enabled must be a boolean" }, 400);
-      if (!(await setRuleEnabled(db, botId, ruleRef, body.enabled))) return reply({ error: "Rule not found" }, 404);
+      if (typeof body.enabled !== "boolean") return apiError("common.enabledNotBoolean", 400, undefined, NO_STORE);
+      if (!(await setRuleEnabled(db, botId, ruleRef, body.enabled)))
+        return apiError("botBuilder.ruleNotFound", 404, undefined, NO_STORE);
       invalidateHubRules(hubId);
       await audit(db, hubId, user.id, body.enabled ? "bot.rule.resume" : "bot.rule.pause", botId, bot.name);
       return reply({ success: true, enabled: body.enabled });
@@ -607,7 +618,7 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
       const hub = await loadHub(db, hubId);
       const existing = (await listDraftRules(db, botId)).map((r) => r.ruleId);
       const isNew = ruleRef === "new";
-      if (!isNew && !existing.includes(ruleRef)) return reply({ error: "Rule not found" }, 404);
+      if (!isNew && !existing.includes(ruleRef)) return apiError("botBuilder.ruleNotFound", 404, undefined, NO_STORE);
       const checked = checkRule(body, hub, existing);
       if (!checked.ok) return reply({ errors: checked.errors }, 400);
       try {
@@ -616,14 +627,21 @@ export async function handleBotBuilderRoutes(context: ApiContext): Promise<Respo
         return reply({ ruleId });
       } catch (error) {
         if (error instanceof BotStoreError && error.code === "RULE_LIMIT")
-          return reply({ error: `A bot can have at most ${BOT_LIMITS.rulesPerBot} rules`, code: error.code }, 409);
+          return apiErrorLegacy(
+            error.code,
+            "botBuilder.ruleLimit",
+            409,
+            { max: BOT_LIMITS.rulesPerBot },
+            undefined,
+            NO_STORE,
+          );
         if (error instanceof BotStoreError && error.code === "NOT_FOUND")
-          return reply({ error: "Rule not found" }, 404);
+          return apiError("botBuilder.ruleNotFound", 404, undefined, NO_STORE);
         throw error;
       }
     }
     if (method === "DELETE") {
-      if (!(await deleteRule(db, botId, ruleRef))) return reply({ error: "Rule not found" }, 404);
+      if (!(await deleteRule(db, botId, ruleRef))) return apiError("botBuilder.ruleNotFound", 404, undefined, NO_STORE);
       await audit(db, hubId, user.id, "bot.rule.delete", botId, bot.name);
       return reply({ success: true });
     }
@@ -646,9 +664,9 @@ async function grantRuleCapabilities(db: D1Database, hubId: number, botId: strin
 async function importBot(env: ApiContext["env"], hubId: number, userId: string, body: Record<string, unknown>) {
   const db = env.DB;
   const name = cleanText(body.name, 32);
-  if (!name) return reply({ error: "Bot name is required" }, 400);
+  if (!name) return apiError("common.botNameRequired", 400, undefined, NO_STORE);
   if (!Array.isArray(body.rules) || body.rules.length > BOT_LIMITS.rulesPerBot)
-    return reply({ error: `rules must be a list of at most ${BOT_LIMITS.rulesPerBot}` }, 400);
+    return apiError("botBuilder.tooManyRules", 400, { max: BOT_LIMITS.rulesPerBot }, NO_STORE);
 
   const hub = await loadHub(db, hubId);
   const channelByName = new Map<string, string>();
@@ -670,7 +688,7 @@ async function importBot(env: ApiContext["env"], hubId: number, userId: string, 
   const errors: (BotRuleError & { ruleIndex: number })[] = [];
   body.rules.forEach((raw, index) => {
     if (!raw || typeof raw !== "object") {
-      errors.push({ ruleIndex: index, path: "", message: "Must be an object." });
+      errors.push({ ruleIndex: index, path: "", message: "Must be an object.", code: "bots.validation.notObject" });
       return;
     }
     const mapped = mapRuleIds(raw as BotRule, {
@@ -690,7 +708,14 @@ async function importBot(env: ApiContext["env"], hubId: number, userId: string, 
     bot = await createBuilderBot(db, { hubId, name, description: cleanText(body.description, 180), createdBy: userId });
   } catch (error) {
     if (error instanceof BotStoreError && error.code === "BOT_LIMIT")
-      return reply({ error: `A Hub can have at most ${BOT_LIMITS.botsPerHub} bots`, code: error.code }, 409);
+      return apiErrorLegacy(
+        error.code,
+        "botBuilder.botLimit",
+        409,
+        { max: BOT_LIMITS.botsPerHub },
+        undefined,
+        NO_STORE,
+      );
     throw error;
   }
   const look: { color?: string; avatarEmoji?: string } = {};
@@ -733,19 +758,20 @@ async function testRun(
   const db = env.DB;
   const ruleId = typeof body.ruleId === "string" ? body.ruleId : "";
   const draft = (await listDraftRules(db, bot.id)).find((r) => r.ruleId === ruleId);
-  if (!draft) return reply({ error: "Rule not found" }, 404);
+  if (!draft) return apiError("botBuilder.ruleNotFound", 404, undefined, NO_STORE);
   const input = body.event;
-  if (!input || typeof input !== "object" || Array.isArray(input)) return reply({ error: "event is required" }, 400);
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    return apiError("botBuilder.eventRequired", 400, undefined, NO_STORE);
   const sample = input as Record<string, unknown>;
   const kind = sample.kind;
   if (typeof kind !== "string" || !(TRIGGER_TYPES as string[]).includes(kind))
-    return reply({ error: "event.kind must be a trigger type" }, 400);
+    return apiError("botBuilder.eventKindInvalid", 400, undefined, NO_STORE);
   const data = sample.data ?? {};
   if (typeof data !== "object" || data === null || Array.isArray(data))
-    return reply({ error: "event.data must be an object" }, 400);
+    return apiError("botBuilder.eventDataInvalid", 400, undefined, NO_STORE);
   const actorId = sample.actorId === undefined ? userId : sample.actorId;
   if (actorId !== null && (typeof actorId !== "string" || actorId.length > 64))
-    return reply({ error: "event.actorId must be a user id" }, 400);
+    return apiError("botBuilder.eventActorInvalid", 400, undefined, NO_STORE);
   // The sample happens in a room of this Hub: the one asked for, else the first text room.
   const asked = sample.roomId === undefined || sample.roomId === null ? null : Number(sample.roomId);
   const room = await db
@@ -756,7 +782,7 @@ async function testRun(
     )
     .bind(...(asked === null ? [hubId] : [hubId, asked]))
     .first<{ id: number }>();
-  if (asked !== null && !room) return reply({ error: "event.roomId must be a room in this Hub" }, 400);
+  if (asked !== null && !room) return apiError("botBuilder.eventRoomInvalid", 400, undefined, NO_STORE);
   const event: BotEvent = {
     hubId,
     roomId: room ? Number(room.id) : null,
@@ -780,11 +806,11 @@ async function generateForHub(env: ApiContext["env"], hubId: number, body: Recor
   const db = env.DB;
   const description = typeof body.description === "string" ? body.description.trim() : "";
   if (!description || description.length > DESCRIPTION_MAX)
-    return reply({ error: `Describe the bot in 1 to ${DESCRIPTION_MAX} characters` }, 400);
+    return apiError("botBuilder.descriptionLength", 400, { max: DESCRIPTION_MAX }, NO_STORE);
   let existing: BotRule | undefined;
   let ruleIds: string[] = [];
   if (body.ruleId !== undefined) {
-    if (typeof body.ruleId !== "string") return reply({ error: "ruleId must be a string" }, 400);
+    if (typeof body.ruleId !== "string") return apiError("botBuilder.ruleIdInvalid", 400, undefined, NO_STORE);
     const row = await db
       .prepare(
         `SELECT r.bot_id,r.draft_json FROM decave_bot_rules r JOIN decave_hub_bots b ON b.id=r.bot_id
@@ -792,7 +818,7 @@ async function generateForHub(env: ApiContext["env"], hubId: number, body: Recor
       )
       .bind(body.ruleId, hubId)
       .first<{ bot_id: string; draft_json: string }>();
-    if (!row) return reply({ error: "Rule not found" }, 404);
+    if (!row) return apiError("botBuilder.ruleNotFound", 404, undefined, NO_STORE);
     existing = JSON.parse(row.draft_json) as BotRule;
     ruleIds = (await listDraftRules(db, row.bot_id)).map((r) => r.ruleId);
   }
@@ -806,6 +832,6 @@ async function generateForHub(env: ApiContext["env"], hubId: number, body: Recor
     existing,
     ruleIds,
   });
-  if (!result.ok) return reply({ error: result.error }, result.status);
+  if (!result.ok) return apiError(result.code, result.status, result.params, NO_STORE);
   return reply({ rules: result.rules, unsupported: result.unsupported, remainingToday: result.remainingToday });
 }

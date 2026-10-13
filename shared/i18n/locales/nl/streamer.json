@@ -1,0 +1,501 @@
+{
+  "overview": {
+    "aria": "Overzicht van de streamer-Hub",
+    "title": "Streameroverzicht",
+    "loading": "Je community laden…",
+    "retry": "Opnieuw",
+    "eyebrowOfficial": "OFFICIËLE HUB",
+    "eyebrowStreamer": "STREAMERMODUS",
+    "headingOfficialOwner": "Verwelkom elk nieuw DeCave-lid",
+    "headingOfficialMember": "Begin hier",
+    "headingOwner": "Je community op één plek",
+    "headingMember": "Overzicht van {{hub}}",
+    "previewMember": "Bekijk als lid",
+    "backToCreator": "Terug naar makerweergave",
+    "badgeOfficial": "✓ OFFICIEEL",
+    "badgeLive": "LIVE · Status van de maker",
+    "badgeOffline": "OFFLINE",
+    "heroLive": "{{name}} is live",
+    "heroWelcome": "Welkom bij {{hub}}",
+    "watchStream": "Stream bekijken ↗",
+    "visitChannel": "Naar kanaal ↗",
+    "manageSession": "Livesessie beheren",
+    "startSession": "Communitysessie starten",
+    "previewNote": "Ledenweergave: meedoen is uitgeschakeld. Je machtigingen zijn niet veranderd."
+  },
+  "errors": {
+    "generic": "Deze actie kon niet worden voltooid.",
+    "unavailable": "De Streamermodus van deze Hub is niet beschikbaar.",
+    "twitchUnavailable": "Inloggen met Twitch is nu niet beschikbaar.",
+    "faceitUnavailable": "Inloggen met FACEIT is nu niet beschikbaar.",
+    "roomUnavailable": "#{{room}} is niet beschikbaar in deze Hub.",
+    "closingTimeRequired": "Kies een sluitingstijd."
+  },
+  "notices": {
+    "saved": "Opgeslagen.",
+    "savedWithNotice": "Opgeslagen. {{notice}}",
+    "twitchFinish": "Rond het inloggen met Twitch af in je browser. Deze pagina werkt zichzelf bij.",
+    "twitchLinked": "Twitch gekoppeld als {{login}}.",
+    "faceitFinish": "Rond het inloggen met FACEIT af in je browser. Dit paneel werkt zichzelf bij.",
+    "faceitLinked": "FACEIT gekoppeld als {{nickname}}.",
+    "teamsMoving": "Teams staan vast: je gaat naar het spraakkanaal van {{team}}.",
+    "teamsJoin": "Teams staan vast: je zit in {{team}}. Open de PUG om naar het spraakkanaal van je team te gaan.",
+    "subscriptionChecked": "Abonnement gecontroleerd.",
+    "twitchUnlinked": "Twitch ontkoppeld.",
+    "faceitUnlinked": "FACEIT ontkoppeld."
+  },
+  "panels": {
+    "settings": "Streaminstellingen",
+    "queue": "Communitysessie",
+    "highlights": "Highlights kiezen",
+    "analytics": "Communityactiviteit",
+    "giveaway": "Community-giveaway",
+    "welcome": "Welkom in deze Hub",
+    "pug": "Community-PUG",
+    "leaderboard": "Ranglijst",
+    "officialSettings": "Welkomstgids",
+    "officialAnalytics": "Nieuwe leden",
+    "officialWelcome": "Welkom bij DeCave",
+    "close": "Sluiten ×"
+  },
+  "tools": {
+    "heading": "Makertools",
+    "streamSettings": "Streaminstellingen",
+    "manageQueue": "Wachtrij beheren",
+    "createEvent": "Evenement maken",
+    "sendAnnouncement": "Aankondiging sturen",
+    "curateHighlights": "Highlights kiezen",
+    "runGiveaway": "Giveaway houden",
+    "moderation": "Moderatie"
+  },
+  "cards": {
+    "queue": {
+      "title": "Communitywachtrij",
+      "ownerDescription": "Ready checks, eerlijke beurten en een gecontroleerde wissel per sessie.",
+      "manage": "Wachtrij beheren",
+      "open": "Wachtrij openen",
+      "waiting_one": "{{number}} wacht",
+      "waiting_other": "{{number}} wachten"
+    },
+    "events": {
+      "title": "Komende evenementen",
+      "ownerDescription": "Plan de volgende communityavond in de agenda van je Hub.",
+      "memberDescription": "Doe mee aan de volgende communityavond.",
+      "create": "Evenement maken",
+      "view": "Evenementen bekijken",
+      "scheduled_one": "{{count}} gepland",
+      "scheduled_other": "{{count}} gepland"
+    },
+    "activity": {
+      "title": "Communityactiviteit",
+      "description": "Bekijk hoe de community meedoet aan recente sessies.",
+      "view": "Statistieken bekijken"
+    },
+    "manageHub": {
+      "title": "Hub beheren",
+      "description": "Wijzig de instellingen, rollen en banner van je Hub.",
+      "open": "Instellingen openen"
+    },
+    "squad": {
+      "title": "Find a Squad",
+      "description": "Vind teamgenoten en speel samen op DeCave.",
+      "open": "Squad zoeken"
+    },
+    "newHere": {
+      "title": "Nieuw hier?",
+      "description": "Lees de welkomstgids en leer deze community kennen.",
+      "open": "Aan de slag"
+    },
+    "pug": {
+      "title": "Community-PUG",
+      "description": "Willekeurige teams, mapstemming en spraakkanalen per team. Gewoon voor de lol.",
+      "join": "Meedoen met PUG",
+      "open": "PUG openen"
+    },
+    "twitch": {
+      "title": "Twitch-abonnee",
+      "linkedDescription": "Abonnees krijgen de rol Subs en extra's bij giveaways. Dagelijks gecontroleerd. Je kunt hier altijd ontkoppelen.",
+      "unlinkedDescription": "Koppel je Twitch-account: abonnees krijgen de rol Subs en extra's bij giveaways.",
+      "link": "Twitch koppelen",
+      "checkAgain": "Opnieuw controleren",
+      "notLinked": "Niet gekoppeld",
+      "subscribed": "{{login}} · Abonnee ✓",
+      "notSubscribed": "{{login}} · Geen abonnee",
+      "unlink": "Twitch ontkoppelen"
+    },
+    "leaderboard": {
+      "title": "Ranglijst",
+      "description": "Maandelijkse PUG-overwinningen en gekoppelde FACEIT-ELO. De nummer één is Rifler van de maand.",
+      "view": "Ranglijst bekijken"
+    }
+  },
+  "events": {
+    "createButton": "+ Evenement maken",
+    "viewAll": "Alles bekijken",
+    "manage": "Evenement beheren",
+    "view": "Evenement bekijken",
+    "emptyOwner": "Geen komende evenementen. Maak je eerste communityavond.",
+    "emptyMember": "Nog geen evenementen gepland. Kom snel terug."
+  },
+  "highlights": {
+    "heading": "Nieuw uit de community",
+    "curate": "Highlights kiezen",
+    "watch": "Kijken ↗",
+    "emptyOwner": "Voeg goedgekeurde clips uit de community toe. Alleen directe Twitch- of YouTube-links worden geopend.",
+    "emptyMember": "Highlights uit de community verschijnen hier.",
+    "intro": "Publiceer alleen clips die de community goedkeurt. Thumbnails moeten al DeCave-media zijn die in de hele Hub zichtbaar zijn; privébijlagen mogen niet.",
+    "publish": "Highlight publiceren",
+    "titleField": "Titel",
+    "urlField": "Directe Twitch- of YouTube-link",
+    "thumbnailField": "Optioneel pad van een bestaande Hub-afbeelding (/api/media/…)",
+    "remove": "Verwijderen"
+  },
+  "join": {
+    "communityQueue": "In de communitywachtrij",
+    "queue": "In de wachtrij",
+    "ready": "Ik ben klaar",
+    "leave": "Wachtrij verlaten",
+    "inGame": "In game",
+    "completed": "Beurt in deze sessie voltooid"
+  },
+  "queue": {
+    "none": "Er is nog geen communitysessie geopend.",
+    "paused": "De wachtrij is gepauzeerd. Wie er al in staat, houdt zijn plek.",
+    "join": "Sluit aan in de wachtrij om met de maker te spelen.",
+    "waiting": "Je positie: {{position}}. Eén beurt per sessie.",
+    "called": "Jouw beurt! Accepteer vóór {{time}}.",
+    "ready": "Klaar bevestigd. Wacht tot de maker je groep start. Of je naar het spraakkanaal gaat, bepaal je zelf.",
+    "playing": "Je zit in de huidige groep. Veel plezier.",
+    "ended": "Je deelname aan deze sessie is voorbij. Kom terug voor de volgende."
+  },
+  "session": {
+    "intro": "Maak een communitysessie. Kijkersplekken tellen de maker niet mee. Spelers bevestigen hun eigen ready check; niemand wordt een spraakkanaal in gedwongen.",
+    "open": "Communitysessie openen",
+    "titleField": "Titel van de sessie",
+    "defaultTitle": "Communitygames",
+    "gameField": "Game",
+    "partySizeField": "Kijkersplekken per groep (niet het totaal aan Hub-leden)",
+    "readySecondsField": "Seconden voor de ready check",
+    "summary_one": "{{game}} · {{count}} kijkersplek · {{status}}",
+    "summary_other": "{{game}} · {{count}} kijkersplekken · {{status}}",
+    "status": {
+      "open": "OPEN",
+      "paused": "GEPAUZEERD",
+      "ended": "AFGELOPEN"
+    },
+    "resume": "Wachtrij hervatten",
+    "pause": "Wachtrij pauzeren",
+    "callNext": "Volgende groep oproepen",
+    "startReady": "Klaarstaande spelers starten",
+    "finishGroup": "Huidige groep afronden",
+    "end": "Sessie beëindigen",
+    "endConfirmText": "Deze sessie beëindigen? De huidige groep wordt afgerond en de overige plekken in de wachtrij worden gesloten.",
+    "endConfirm": "Beëindigen bevestigen",
+    "keep": "Sessie behouden",
+    "counts": "{{waiting}} wachtend · {{called}} opgeroepen · {{ready}} klaar · {{playing}} spelend",
+    "entryStatus": {
+      "waiting": "wacht",
+      "called": "opgeroepen",
+      "ready": "klaar",
+      "playing": "speelt",
+      "done": "afgerond",
+      "skipped": "overgeslagen",
+      "left": "vertrokken"
+    },
+    "until": "Tot {{time}}",
+    "skip": "Overslaan",
+    "empty": "Geen actieve plekken in de wachtrij op deze pagina.",
+    "firstPage": "Eerste pagina",
+    "nextPage": "Volgende pagina",
+    "voiceNote": "Niemand wordt automatisch naar een spraakkanaal verplaatst. Gebruik de bestaande spraakkanalen van DeCave, met hun machtigingen, als de deelnemers klaar zijn."
+  },
+  "analytics": {
+    "intro": "Echte totaalcijfers. Activiteit over zeven dagen gaat alleen over deze functie, niet over al het gebruik van DeCave.",
+    "hubMembers": "Hub-leden",
+    "joined": "Lid geworden in 7 dagen",
+    "sessions": "Sessies in 7 dagen",
+    "players": "Deelnemers die accepteerden of speelden in 7 dagen",
+    "seats": "Voltooide kijkersplekken in 7 dagen"
+  },
+  "welcome": {
+    "sessionRules": "Regels voor communitysessies"
+  },
+  "settings": {
+    "officialIntro": "Elk nieuw lid ziet dit onder Aan de slag. Regeleinden blijven behouden.",
+    "saveWelcomeGuide": "Welkomstgids opslaan",
+    "bannerTagline": "Slogan op de banner",
+    "bannerSubtitle": "Ondertitel van de banner",
+    "welcomeGuide": "Welkomstgids",
+    "intro": "Deze instellingen wijzigen alleen je DeCave-overzicht. Ze starten geen uitzending en controleren de identiteit van de maker niet. De livestatus verloopt vanzelf.",
+    "save": "Streaminstellingen opslaan",
+    "creatorName": "Weergavenaam van de maker",
+    "communityTagline": "Slogan van de community",
+    "streamUrl": "URL van Twitch- of YouTube-kanaal of -video",
+    "streamTitle": "Titel van de stream",
+    "game": "Game",
+    "language": "Taal",
+    "liveHours": "Handmatige livestatus (uren; 0 = offline)",
+    "off": "Uit",
+    "autoLiveOn": "Aan: mijn Twitch-kanaal volgen",
+    "autoLiveLabel": "Automatisch live gaan als mijn Twitch-stream begint",
+    "autoLiveHint": "Hiervoor is hierboven een Twitch-kanaallink nodig. Hub-bots kunnen het aankondigen met de trigger \"Stream goes live\".",
+    "clipsOn": "Aan: nieuwe clips in het clipsforum plaatsen",
+    "clipsLabel": "Mijn nieuwe Twitch-clips plaatsen",
+    "clipsHint": "Elk uur gecontroleerd. Clips gaan naar het forumkanaal met \"clip\" in de naam; leden reageren om de Clip van de week te kiezen (op maandag).",
+    "sessionRules": "Sessieregels"
+  },
+  "giveaways": {
+    "heading": "Community-giveaways",
+    "entered": "Je doet mee",
+    "closed": "Inschrijving gesloten",
+    "enter": "Gratis meedoen",
+    "closes": "Sluit {{date}}",
+    "winner": "Winnaar: {{name}}",
+    "subsOnly": "Alleen Twitch-abonnees",
+    "minDays_one": "{{count}}+ dag in de Hub",
+    "minDays_other": "{{count}}+ dagen in de Hub",
+    "subBonus": "Abonnees doen 2 keer mee",
+    "disabled": "Giveaways zijn uitgeschakeld op deze installatie.",
+    "intro": "Alleen gratis deelname. Publiceer de voorwaarden voor deelname en het leveren van de prijs voordat je opent. Het platform int geen betalingen en levert geen prijzen. Trekken kan pas na de sluitingstijd; een winnaar kan niet opnieuw worden getrokken.",
+    "create": "Gratis giveaway maken",
+    "titleField": "Titel van de giveaway",
+    "rulesField": "Voorwaarden, prijs en levering",
+    "closesAtField": "Sluit om (je lokale tijd)",
+    "whoCanEnter": "Wie mag meedoen",
+    "no": "Nee",
+    "subscriberBonus": "Abonneebonus",
+    "minDaysField": "Minimaal aantal dagen in de Hub (0 = geen)",
+    "summary_one": "{{count}} deelname · {{status}}",
+    "summary_other": "{{count}} deelnames · {{status}}",
+    "status": {
+      "open": "open",
+      "drawn": "getrokken",
+      "cancelled": "geannuleerd"
+    },
+    "draw": "Winnaar trekken",
+    "cancel": "Giveaway annuleren"
+  },
+  "official": {
+    "postAnnouncement": "Aankondiging plaatsen",
+    "editWelcomeGuide": "Welkomstgids bewerken",
+    "readRules": "Lees de regels",
+    "toolsHeading": "Tools van de officiële Hub",
+    "tools": {
+      "postAnnouncement": "Aankondiging plaatsen",
+      "publishPatchNotes": "Patchnotes publiceren",
+      "updateFaq": "FAQ bijwerken",
+      "editRules": "Regels bewerken",
+      "editWelcomeGuide": "Welkomstgids bewerken"
+    },
+    "growth_one": "{{members}} leden · +{{joined}} deze week",
+    "growth_other": "{{members}} leden · +{{joined}} deze week",
+    "cards": {
+      "newMembers": {
+        "title": "Nieuwe leden",
+        "description": "Iedereen wordt bij registratie lid van deze Hub. Leden kunnen elkaar niet zien.",
+        "open": "Groei bekijken"
+      },
+      "announcements": {
+        "title": "Aankondigingen",
+        "description": "Nieuws en belangrijke updates voor elke DeCave-gebruiker.",
+        "open": "#announcements openen"
+      },
+      "patchNotes": {
+        "title": "Patchnotes",
+        "description": "Begrijpelijke notes bij elke release voor web, Windows en Mac.",
+        "open": "#patch-notes openen"
+      },
+      "manageHub": {
+        "description": "Banner, icoon, kanalen en rollen van DeCave Official."
+      },
+      "newHere": {
+        "description": "Een gids van twee minuten over profielen, vrienden, Squads en Hubs."
+      },
+      "faq": {
+        "title": "Veelgestelde vragen",
+        "description": "Snelle antwoorden over accounts, privacy, spraak en de desktop-app.",
+        "open": "FAQ openen"
+      },
+      "roadmap": {
+        "title": "Roadmap",
+        "description": "Wat er al is, waar we nu aan bouwen en wat er daarna komt.",
+        "open": "Bekijk de roadmap"
+      },
+      "whatsNew": {
+        "title": "Wat is er nieuw",
+        "description": "Aankondigingen en patchnotes van het DeCave-team.",
+        "open": "Updates bekijken"
+      },
+      "desktop": {
+        "title": "Download de desktop-app",
+        "description": "Gamedetectie, meldingen en Push to Talk op Windows en Mac.",
+        "open": "Downloaden ↗"
+      }
+    },
+    "privacy": {
+      "heading": "Je privacy hier",
+      "body": "Deze Hub is voor iedereen privé. Leden kunnen niet zien wie er nog meer is en alleen het DeCave-team kan posten. Rapporteer alles wat tegen de regels ingaat door met rechts op een bericht of profiel te klikken."
+    },
+    "resourcesHeading": "Handige links",
+    "alphaLabel": "Alfa. ",
+    "about": {
+      "title": "Over DeCave",
+      "body": "DeCave is een thuis voor de mensen met wie je speelt: Hubs met tekst-, spraak- en forumkanalen, vrienden en DM's, Find a Squad, evenementen en scherm delen op web, Windows en Mac. Het wordt gebouwd door een klein onafhankelijk team en gevormd door de mensen die het gebruiken.",
+      "alphaNote": "DeCave is een alfa, geen afgeronde release. Verwacht ruwe randjes, vaak updates en af en toe een reset van experimentele functies. Jouw feedback bepaalt wat we hierna oplossen.",
+      "facts": {
+        "stageLabel": "Fase",
+        "stageValue": "Alfa",
+        "agesLabel": "Leeftijd",
+        "agesValue": "Alleen 18+",
+        "platformsLabel": "Platforms",
+        "platformsValue": "Web · Windows · Mac",
+        "priceLabel": "Prijs",
+        "priceValue": "Gratis"
+      }
+    },
+    "announcements": {
+      "adults": {
+        "date": "5 okt 2026",
+        "tag": "Beleid",
+        "title": "DeCave is nu voor volwassenen (18+)",
+        "body": "Accounts zijn nu voor mensen van 18 jaar en ouder. Heb je eerder een leeftijd onder de 18 bevestigd, dan vragen we je je geboortedatum opnieuw te bevestigen."
+      },
+      "release128": {
+        "date": "5 okt 2026",
+        "tag": "Release",
+        "title": "Release 0.1.128: één spraakdock en duidelijkere streams",
+        "body": "De spraakbediening zit nu op één plek: het dock in de Hub-zijbalk. Als je iemands stream dempt, wordt zijn stem niet meer gedempt, en iOS heeft een speakerknop en schermuitzending gekregen."
+      },
+      "welcome": {
+        "date": "Vastgepind",
+        "tag": "Alfa",
+        "title": "Welkom bij de DeCave-alfa",
+        "body": "Bedankt dat je er zo vroeg bij bent. Lees #rules, bekijk #faq en gebruik Feedback in de linkerbalk om te laten weten wat er stuk is of ontbreekt."
+      }
+    },
+    "roadmap": {
+      "shipped": {
+        "state": "Uitgebracht",
+        "title": "Een thuis voor de hele sessie",
+        "body": "Hubs, spraak en scherm delen, vrienden en DM's, Find a Squad, Ontdekken, evenementen en de desktop-apps."
+      },
+      "inProgress": {
+        "state": "Bezig",
+        "title": "Desktop afwerken en betrouwbaar maken",
+        "body": "Codesigning op Windows, stabielere spraak en schermdeling, fixes voor betrouwbaarheid en veiligheid."
+      },
+      "next": {
+        "state": "Hierna",
+        "title": "Mobiel bijgewerkt",
+        "body": "Nieuwe Android- en iOS-builds in hetzelfde tempo als desktop."
+      },
+      "later": {
+        "state": "Later",
+        "title": "Grotere kanalen",
+        "body": "Een mediaserver voor grotere spraakkanalen en schermdelingen."
+      }
+    },
+    "resources": {
+      "website": {
+        "label": "DeCave-website",
+        "detail": "de-cave.com"
+      },
+      "help": {
+        "label": "Helpcentrum",
+        "detail": "Antwoorden op veelgestelde vragen"
+      },
+      "roadmap": {
+        "label": "Roadmap",
+        "detail": "Wat er live is en wat er komt"
+      },
+      "guidelines": {
+        "label": "Communityrichtlijnen",
+        "detail": "Hoe we Hubs vriendelijk houden"
+      },
+      "privacy": {
+        "label": "Privacybeleid",
+        "detail": "Wat we verzamelen en waarom"
+      },
+      "terms": {
+        "label": "Servicevoorwaarden",
+        "detail": "De regels voor het gebruik van DeCave"
+      }
+    }
+  },
+  "pug": {
+    "teamA": "Team A",
+    "teamB": "Team B",
+    "statusNone": "Geen PUG bezig",
+    "statusOpen": "{{joined}}/{{capacity}} doen mee · {{size}}v{{size}}",
+    "statusLive": "Bezig op {{map}}",
+    "statusDone": "Afgelopen {{scoreA}}–{{scoreB}} op {{map}}",
+    "statusCancelled": "Geannuleerd",
+    "aMap": "een map",
+    "teamVoice": "teamkanaal",
+    "you": " (jij)",
+    "nobody": "Nog niemand",
+    "memberNone": "Er is nu geen PUG open. De streamer opent er een als het tijd is om te spelen.",
+    "needRooms": "Voeg eerst twee spraakkanalen toe aan deze Hub, één voor elk team.",
+    "createIntro": "Open een PUG: kijkers doen mee, stemmen op een map en de teams worden willekeurig getrokken zodra je start.",
+    "open": "PUG openen",
+    "teamSizeField": "Spelers per team (1–5)",
+    "mapPool": "Mappool",
+    "voiceAField": "Spraakkanaal team A",
+    "voiceBField": "Spraakkanaal team B",
+    "rules": "Willekeurige teams, {{size}}v{{size}}. De map met de meeste stemmen wordt gespeeld.",
+    "players": "Spelers ({{joined}}/{{capacity}})",
+    "leave": "PUG verlaten",
+    "join": "Meedoen met PUG",
+    "start": "Start: teams trekken",
+    "cancel": "PUG annuleren",
+    "mapVote": "Mapstemming",
+    "voteHint": "Doe mee met de PUG om te stemmen.",
+    "teamScore": "{{team}} · {{score}}",
+    "joinTeamVoice": "Naar spraakkanaal van {{team}}",
+    "reportScore": "Score doorgeven",
+    "saveResult": "Uitslag opslaan",
+    "teamARounds": "Rondes team A",
+    "teamBRounds": "Rondes team B",
+    "next": "Volgende PUG"
+  },
+  "leaderboard": {
+    "loading": "Ranglijst laden…",
+    "champion": "🏆 {{name}}",
+    "upForGrabs": "🏆 Titel nog te winnen",
+    "championLine_one": "Rifler van de maand, {{month}}: tot nu toe {{count}} PUG-overwinning.",
+    "championLine_other": "Rifler van de maand, {{month}}: tot nu toe {{count}} PUG-overwinningen.",
+    "noChampion": "Win een PUG om Rifler van de maand te worden voor {{month}}.",
+    "lastMonth_one": "Vorige maand: {{name}} ({{count}} overwinning).",
+    "lastMonth_other": "Vorige maand: {{name}} ({{count}} overwinningen).",
+    "player": "Speler",
+    "wins": "Gewonnen",
+    "played": "Gespeeld",
+    "eloWithLevel": "Niv. {{level}} · {{elo}} ELO",
+    "elo": "{{elo}} ELO",
+    "empty": "Nog geen games deze maand.",
+    "yourAccount": "Je FACEIT-account",
+    "linkedWithElo": "Gekoppeld als {{nickname}} · {{elo}} ELO. Je ELO wordt om de paar uur ververst en is zichtbaar voor leden van Hubs waar je in zit.",
+    "linked": "Gekoppeld als {{nickname}}. Je ELO wordt om de paar uur ververst en is zichtbaar voor leden van Hubs waar je in zit.",
+    "unlink": "FACEIT ontkoppelen",
+    "unavailable": "FACEIT koppelen is nog niet beschikbaar.",
+    "signInIntro": "Log in met FACEIT om hier je CS2-ELO te tonen. Alleen jij kunt je eigen account koppelen. Leden van Hubs waar je in zit, zien je nickname en ELO.",
+    "signIn": "Inloggen met FACEIT"
+  },
+  "server": {
+    "autoLiveNeedsLink": "Automatische livestatus heeft een Twitch-kanaallink nodig, zoals https://www.twitch.tv/jouwnaam.",
+    "autoLiveUnavailable": "Automatische livestatus via Twitch is nog niet beschikbaar op deze server.",
+    "autoLiveNoChannel": "Twitch heeft geen kanaal met de naam \"{{login}}\". Controleer de stream-URL.",
+    "autoLiveUnreachable": "Kon Twitch niet bereiken om automatische livestatus aan te zetten. Sla over een minuutje opnieuw op.",
+    "clipPosted": "🎬 {{title}}\nGeclipt door {{creator}}\n{{url}}\nReageer om te stemmen op de Clip van de week.",
+    "clipPostedAnonymous": "🎬 {{title}}\nGeclipt door een kijker\n{{url}}\nReageer om te stemmen op de Clip van de week.",
+    "clipOfTheWeek_one": "🏆 Clip van de week ({{count}} stem): {{title}}\n{{link}}",
+    "clipOfTheWeek_other": "🏆 Clip van de week ({{count}} stemmen): {{title}}\n{{link}}",
+    "clipPostedUntitled": "🎬 Nieuwe clip\nGeclipt door {{creator}}\n{{url}}\nReageer om te stemmen op de Clip van de week.",
+    "clipPostedUntitledAnonymous": "🎬 Nieuwe clip\nGeclipt door een kijker\n{{url}}\nReageer om te stemmen op de Clip van de week.",
+    "clipOfTheWeekUntitled_one": "🏆 Clip van de week ({{count}} stem): Nieuwe clip\n{{link}}",
+    "clipOfTheWeekUntitled_other": "🏆 Clip van de week ({{count}} stemmen): Nieuwe clip\n{{link}}",
+    "clipDefaultTitle": "Nieuwe clip",
+    "clipForumBody": "🎬 Geclipt door {{creator}}\n{{url}}\n\nReageer om te stemmen op de Clip van de week.",
+    "clipForumBodyAnonymous": "🎬 Geclipt door een kijker\n{{url}}\n\nReageer om te stemmen op de Clip van de week."
+  }
+}

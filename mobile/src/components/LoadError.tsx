@@ -1,17 +1,19 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { colors } from "@/src/theme";
 
 /** Replaces an empty list when loading failed, so "nothing here" and "couldn't load" look different. */
 export function LoadError({ message, onRetry }: { message?: string; onRetry: () => void }) {
+  const { t } = useTranslation(["common"]);
   return (
     <View style={styles.box} accessibilityRole="alert">
       <Ionicons name="cloud-offline-outline" size={28} color={colors.muted} />
-      <Text style={styles.title}>Couldn't load</Text>
-      <Text style={styles.detail}>{message || "Check your connection and try again."}</Text>
+      <Text style={styles.title}>{t("common.mobile.loadError.title")}</Text>
+      <Text style={styles.detail}>{message || t("common.mobile.loadError.detail")}</Text>
       <Pressable accessibilityRole="button" onPress={onRetry} style={({ pressed }) => [styles.retry, pressed && { opacity: 0.75 }]}>
         <Ionicons name="refresh" size={16} color="#FFFFFF" />
-        <Text style={styles.retryText}>Try again</Text>
+        <Text style={styles.retryText}>{t("common.mobile.tryAgain")}</Text>
       </Pressable>
     </View>
   );

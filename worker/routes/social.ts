@@ -2,7 +2,7 @@
 
 import { requireUser } from "../lib/sessions";
 import { ensureCollaborationSchema } from "../lib/hub-schema";
-import { json, idFromPath, bodyJson } from "../lib/http";
+import { apiError, json, idFromPath, bodyJson } from "../lib/http";
 import { userByReference, usersAreFriends, nowIso, publicIdOf, publicUser } from "../db";
 import { socialState, usersHaveMutualFriend } from "../lib/social";
 import { isBlockedEitherDirection } from "../trust-safety";
@@ -41,7 +41,7 @@ export async function handleDmPreferenceRoutes({ request, env, p, method }: ApiC
     if (user instanceof Response) return user;
     await ensureCollaborationSchema(env);
     const peer = await userByReference(env.DB, decodeURIComponent(dmPreferenceRoute[1]));
-    if (!peer || peer.id === user.id) return json({ error: "User not found" }, 404);
+    if (!peer || peer.id === user.id) return apiError("social.userNotFound", 404);
 
     const areFriends = await usersAreFriends(env.DB, user.id, peer.id);
     const hasConversation = await env.DB.prepare(
@@ -52,7 +52,7 @@ export async function handleDmPreferenceRoutes({ request, env, p, method }: ApiC
       .bind(user.id, peer.id, peer.id, user.id)
       .first();
     if (!areFriends && !hasConversation) {
-      return json({ error: "You do not have a conversation with this user" }, 403);
+      return apiError("social.noConversation", 403);
     }
 
     const body = await bodyJson(request);
@@ -91,14 +91,14 @@ export async function handleFriendRoutes({ request, env, p, method }: ApiContext
     if (user instanceof Response) return user;
     const targetReference = decodeURIComponent(friendRoute[1]).trim();
     const action = friendRoute[2] ?? (method === "DELETE" ? "remove" : "");
-    if (!/^DC-[A-F0-9]{16}$/i.test(targetReference)) return json({ error: "Enter a valid public DeCave ID." }, 400);
+    if (!/^DC-[A-F0-9]{16}$/i.test(targetReference)) return apiError("social.publicIdInvalid", 400);
     const target = await userByReference(env.DB, targetReference);
-    if (!target || target.id === user.id || target.deleted_at) return json({ error: "User not found" }, 404);
+    if (!target || target.id === user.id || target.deleted_at) return apiError("social.userNotFound", 404);
     const targetId = target.id;
 
     const pair = [user.id, targetId].sort();
     if ((action === "request" || action === "accept") && (await isBlockedEitherDirection(env.DB, user.id, targetId))) {
-      return json({ error: "This user is blocked. Unblock them before connecting." }, 403);
+      return apiError("social.blocked", 403);
     }
     if (action === "request") {
       const incoming = await env.DB.prepare("SELECT 1 FROM decave_friend_requests WHERE sender_id=? AND recipient_id=?")
@@ -124,10 +124,10 @@ export async function handleFriendRoutes({ request, env, p, method }: ApiContext
             ? targetPreferences.friend_request_policy
             : "everyone";
         if (policy === "none") {
-          return json({ error: "This user is not accepting friend requests." }, 403);
+          return apiError("social.requestsClosed", 403);
         }
         if (policy === "friends_of_friends" && !(await usersHaveMutualFriend(env.DB, user.id, targetId))) {
-          return json({ error: "This user only accepts friend requests from friends of friends." }, 403);
+          return apiError("social.friendsOfFriendsOnly", 403);
         }
         await env.DB.prepare(
           "INSERT OR IGNORE INTO decave_friend_requests(sender_id,recipient_id,created_at) VALUES(?,?,?)",
@@ -139,7 +139,7 @@ export async function handleFriendRoutes({ request, env, p, method }: ApiContext
       const incoming = await env.DB.prepare("SELECT 1 FROM decave_friend_requests WHERE sender_id=? AND recipient_id=?")
         .bind(targetId, user.id)
         .first();
-      if (!incoming) return json({ error: "Friend request not found" }, 404);
+      if (!incoming) return apiError("social.requestNotFound", 404);
       await env.DB.batch([
         env.DB.prepare("DELETE FROM decave_friend_requests WHERE sender_id=? AND recipient_id=?").bind(
           targetId,

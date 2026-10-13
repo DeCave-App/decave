@@ -13,7 +13,9 @@ import { createPushRevocationRetryLifecycle, type PushRevocationRetryLifecycle }
 import { setDraftAccount } from "@/src/lib/drafts";
 import { setLastVoiceRoomAccount } from "@/src/lib/last-voice-room";
 import { claimAccountLocalData, forgetSignedOutAccount } from "@/src/lib/account-local-data";
-import { apiFetch } from "@/src/lib/api";
+import { t } from "i18next";
+import { apiErrorText, apiFetch } from "@/src/lib/api";
+import { serverMessageText } from "@/src/lib/server-text";
 import { currentLegalConsent } from "@/src/lib/legal-consent";
 import { AgeGate } from "@/src/components/AgeGate";
 import {
@@ -193,9 +195,9 @@ export function SessionProvider({ children }: PropsWithChildren) {
     if (previousToken) {
       const queued = await queuePushSessionRevocation(previousToken).catch(() => false);
       if (queued) pushRetryLifecycleRef.current?.retryNow();
-      if (!queued) return { ok: false, error: "Could not securely save this device's sign-out for retry. Please try again." };
+      if (!queued) return { ok: false, error: t("auth.mobile.session.saveSignOutFailed") };
     }
-    if (!ownsAuthOperation(operation)) return { ok: false, error: "Sign in was superseded." };
+    if (!ownsAuthOperation(operation)) return { ok: false, error: t("auth.mobile.session.superseded") };
     clearPushMemory();
     setDraftAccount(null);
     setLastVoiceRoomAccount(null);
@@ -205,39 +207,39 @@ export function SessionProvider({ children }: PropsWithChildren) {
     setPendingChallenge(null);
     setSessionNotice("");
     try {
-      if (!ownsAuthOperation(operation)) return { ok: false, error: "Sign in was superseded." };
+      if (!ownsAuthOperation(operation)) return { ok: false, error: t("auth.mobile.session.superseded") };
       await clearSessionToken(tokenVersion);
-      if (!ownsAuthOperation(operation)) return { ok: false, error: "Sign in was superseded." };
+      if (!ownsAuthOperation(operation)) return { ok: false, error: t("auth.mobile.session.superseded") };
       const response = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier, password, staySignedIn, client: "mobile", turnstileToken }),
         signal: operation.controller.signal,
       });
-      if (!ownsAuthOperation(operation)) return { ok: false, error: "Sign in was superseded." };
+      if (!ownsAuthOperation(operation)) return { ok: false, error: t("auth.mobile.session.superseded") };
       const data = (await response.json().catch(() => ({}))) as AuthResponse;
-      if (!response.ok) return { ok: false, error: data.error || "Invalid email or password." };
+      if (!response.ok) return { ok: false, error: apiErrorText(data, t("auth.mobile.session.invalidCredentials")) };
       if (data.mfaRequired && data.challengeToken) {
         setPendingChallenge({ token: data.challengeToken, kind: data.mfaKind === "user" ? "user" : "owner" });
         return { ok: true, mfaRequired: true };
       }
       if (!(await persistAuth(data, operation))) {
-        return { ok: false, error: "DeCave did not return a mobile session." };
+        return { ok: false, error: t("auth.mobile.session.noMobileSession") };
       }
       return { ok: true, mfaRequired: false };
     } catch {
-      return { ok: false, error: "Could not connect to DeCave." };
+      return { ok: false, error: t("errors.client.connect") };
     }
   };
 
   const completeMfa: SessionContextValue["completeMfa"] = async (code) => {
     if (!pendingChallenge) {
-      return { ok: false, error: "The sign-in check expired. Sign in again." };
+      return { ok: false, error: t("auth.mobile.session.checkExpired") };
     }
-    if (mfaFlightRef.current) return { ok: false, error: "MFA verification is already in progress." };
+    if (mfaFlightRef.current) return { ok: false, error: t("auth.mobile.session.mfaInProgress") };
     const operation = authOperationsRef.current.current;
     if (!operation || !ownsAuthOperation(operation)) {
-      return { ok: false, error: "The MFA challenge expired. Sign in again." };
+      return { ok: false, error: t("auth.mobile.session.mfaExpired") };
     }
     mfaFlightRef.current = operation;
     try {
@@ -252,22 +254,22 @@ export function SessionProvider({ children }: PropsWithChildren) {
         }),
         signal: operation.controller.signal,
       });
-      if (!ownsAuthOperation(operation)) return { ok: false, error: "MFA verification was superseded." };
+      if (!ownsAuthOperation(operation)) return { ok: false, error: t("auth.mobile.session.mfaSuperseded") };
       const data = (await response.json().catch(() => ({}))) as AuthResponse;
       if (!response.ok) {
         return {
           ok: false,
-          error: data.error || "Authenticator verification failed.",
+          error: apiErrorText(data, t("auth.mobile.session.mfaFailed")),
         };
       }
 
       if (!(await persistAuth(data, operation))) {
-        return { ok: false, error: "DeCave did not return a mobile session." };
+        return { ok: false, error: t("auth.mobile.session.noMobileSession") };
       }
 
       return { ok: true, mfaRequired: false };
     } catch {
-      return { ok: false, error: "Could not connect to DeCave." };
+      return { ok: false, error: t("errors.client.connect") };
     } finally {
       if (mfaFlightRef.current === operation) mfaFlightRef.current = null;
     }
@@ -297,12 +299,14 @@ export function SessionProvider({ children }: PropsWithChildren) {
       return {
         ok: response.ok,
         message:
-          data.message ||
-          data.error ||
-          (response.ok ? "Account created." : "Could not create account."),
+          serverMessageText(data) ||
+          apiErrorText(
+            data,
+            response.ok ? t("auth.mobile.session.accountCreated") : t("auth.mobile.session.createFailed"),
+          ),
       };
     } catch {
-      return { ok: false, message: "Could not connect to DeCave." };
+      return { ok: false, message: t("errors.client.connect") };
     }
   };
 
@@ -319,17 +323,17 @@ export function SessionProvider({ children }: PropsWithChildren) {
       const data = (await response.json().catch(() => ({}))) as {
         success?: boolean;
         message?: string;
+        notice?: unknown;
+        code?: string;
+        params?: Record<string, string | number>;
         error?: string;
       };
       return {
         ok: response.ok,
-        message:
-          data.message ||
-          data.error ||
-          "If that verified email exists, a reset link has been sent.",
+        message: serverMessageText(data) || apiErrorText(data, t("errors.client.auth.resetLinkSent")),
       };
     } catch {
-      return { ok: false, message: "Could not connect to DeCave." };
+      return { ok: false, message: t("errors.client.connect") };
     }
   };
 
@@ -350,7 +354,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       setUser({ ...data.user, safety: data.safety ?? data.user.safety });
     } else if (response.status === 401 || response.status === 403) {
       if (!ownsRefresh()) return;
-      await invalidate("Your DeCave session ended. Sign in again.");
+      await invalidate(t("auth.mobile.session.ended"));
     }
   };
 

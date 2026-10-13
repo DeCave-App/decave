@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { hasDesktopActivityBridge, verifyDesktopHuman } from "../desktop";
 
 type TurnstileApi = {
@@ -28,6 +29,7 @@ export function TurnstileWidget({
   nonce: number;
   onToken: (token: string) => void;
 }) {
+  const { t } = useTranslation(["common"]);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const desktopRuntime = hasDesktopActivityBridge();
   const [recoveryVisible, setRecoveryVisible] = useState(false);
@@ -174,12 +176,10 @@ export function TurnstileWidget({
     return (
       <div className="decave-turnstile-shell recovery" role="alert">
         <div className="decave-turnstile-meta">
-          <span>SECURITY CHECK</span>
-          <strong>Needs your attention</strong>
+          <span>{t("common.auth.turnstile.kicker")}</span>
+          <strong>{t("common.auth.turnstile.needsAttention")}</strong>
         </div>
-        <p className="decave-turnstile-recovery-copy">
-          Cloudflare could not finish in the background. Retry the security check to continue.
-        </p>
+        <p className="decave-turnstile-recovery-copy">{t("common.auth.turnstile.desktopBody")}</p>
         <button
           type="button"
           className="decave-turnstile-retry"
@@ -190,7 +190,7 @@ export function TurnstileWidget({
             setRetryCount((value) => value + 1);
           }}
         >
-          Retry security check
+          {t("common.auth.turnstile.retry")}
         </button>
       </div>
     );
@@ -205,16 +205,18 @@ export function TurnstileWidget({
       {recoveryVisible && (
         <>
           <div className="decave-turnstile-meta">
-            <span>SECURITY CHECK</span>
-            <strong>{verificationState === "verified" ? "Verified" : "Needs your attention"}</strong>
+            <span>{t("common.auth.turnstile.kicker")}</span>
+            <strong>
+              {verificationState === "verified"
+                ? t("common.auth.turnstile.verified")
+                : t("common.auth.turnstile.needsAttention")}
+            </strong>
           </div>
           {verificationState === "verified" ? (
-            <p className="decave-turnstile-recovery-copy verified">Security check complete. You can continue.</p>
+            <p className="decave-turnstile-recovery-copy verified">{t("common.auth.turnstile.complete")}</p>
           ) : (
             <>
-              <p className="decave-turnstile-recovery-copy">
-                Cloudflare could not finish in the background. Complete the check here, then continue.
-              </p>
+              <p className="decave-turnstile-recovery-copy">{t("common.auth.turnstile.webBody")}</p>
               <button
                 type="button"
                 className="decave-turnstile-retry"
@@ -225,7 +227,7 @@ export function TurnstileWidget({
                   setRetryCount((value) => value + 1);
                 }}
               >
-                Retry security check
+                {t("common.auth.turnstile.retry")}
               </button>
             </>
           )}

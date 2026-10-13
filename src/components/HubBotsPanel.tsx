@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import { apiErrorMessage } from "../i18n/apiError";
 import { Icon } from "./Icon";
 
 type Channel = {
@@ -27,26 +29,11 @@ type Props = {
   authorizedFetch: (url: string, init?: RequestInit) => Promise<Response>;
 };
 
-const CAPABILITY_DEFINITIONS: Array<{
-  id: BotCapability;
-  label: string;
-  description: string;
-}> = [
-  {
-    id: "send_messages",
-    label: "Send messages",
-    description: "Post normal bot messages to the rooms you enable.",
-  },
-  {
-    id: "create_polls",
-    label: "Create polls",
-    description: "Publish structured polls when your integration asks for one.",
-  },
-  {
-    id: "create_events",
-    label: "Create events",
-    description: "Publish Hub events that appear in the Hub Calendar.",
-  },
+// Labels and descriptions are admin.hubBots.capability.<id> in the catalog.
+const CAPABILITY_DEFINITIONS: Array<{ id: BotCapability }> = [
+  { id: "send_messages" },
+  { id: "create_polls" },
+  { id: "create_events" },
 ];
 
 const DEFAULT_CAPABILITIES: BotCapability[] = ["send_messages"];
@@ -81,14 +68,16 @@ function normalizeBot(value: unknown): BotView | null {
   };
 }
 
+/** The server's error (translated from its code when the catalog knows it), else the fallback. */
 function responseError(value: unknown, fallback: string): string {
   if (value && typeof value === "object" && typeof (value as Record<string, unknown>).error === "string") {
-    return String((value as Record<string, unknown>).error);
+    return apiErrorMessage(value as { code?: string; error?: string }, "common.unknown");
   }
   return fallback;
 }
 
 export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch }: Props) {
+  const { t } = useTranslation(["admin"]);
   const [bots, setBots] = useState<BotView[]>([]);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -111,11 +100,11 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
       const response = await api(`/api/servers/${hubId}/bots`);
       const data: unknown = await response.json().catch(() => ({}));
       if (!response.ok || !Array.isArray(data)) {
-        throw new Error(responseError(data, "Could not load Hub bots."));
+        throw new Error(responseError(data, t("admin.hubBots.loadFailed")));
       }
       setBots(data.map(normalizeBot).filter((bot): bot is BotView => Boolean(bot)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load Hub bots.");
+      setError(err instanceof Error ? err.message : t("admin.hubBots.loadFailed"));
     }
   };
 
@@ -150,7 +139,7 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
         body: JSON.stringify({ name, description, capabilities: newCapabilities }),
       });
       const data: unknown = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(responseError(data, "Could not create Hub bot."));
+      if (!response.ok) throw new Error(responseError(data, t("admin.hubBots.createFailed")));
       const created = normalizeBot(data);
       const token =
         data && typeof data === "object" && typeof (data as Record<string, unknown>).token === "string"
@@ -165,7 +154,7 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
       if (created) setExpandedBotId(created.id);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create Hub bot.");
+      setError(err instanceof Error ? err.message : t("admin.hubBots.createFailed"));
     } finally {
       setBusy("");
     }
@@ -186,10 +175,10 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
         body: JSON.stringify(patch),
       });
       const data: unknown = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(responseError(data, "Could not update this bot."));
+      if (!response.ok) throw new Error(responseError(data, t("admin.hubBots.updateFailed")));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update this bot.");
+      setError(err instanceof Error ? err.message : t("admin.hubBots.updateFailed"));
     } finally {
       setBusy("");
     }
@@ -219,51 +208,51 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
         body: JSON.stringify({ enabled }),
       });
       const data: unknown = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(responseError(data, "Could not update the bot room."));
+      if (!response.ok) throw new Error(responseError(data, t("admin.hubBots.roomFailed")));
     } catch (err) {
       await load();
-      setError(err instanceof Error ? err.message : "Could not update the bot room.");
+      setError(err instanceof Error ? err.message : t("admin.hubBots.roomFailed"));
     } finally {
       setBusy("");
     }
   };
 
   const rotateToken = async (bot: BotView) => {
-    if (!window.confirm(`Rotate the token for “${bot.name}”? The current token will stop working immediately.`)) return;
+    if (!window.confirm(t("admin.hubBots.rotateConfirm", { name: bot.name }))) return;
     setBusy(`${bot.id}:rotate`);
     setError("");
     setNotice("");
     try {
       const response = await api(`/api/servers/${hubId}/bots/${encodeURIComponent(bot.id)}/token`, { method: "POST" });
       const data: unknown = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(responseError(data, "Could not rotate this bot token."));
+      if (!response.ok) throw new Error(responseError(data, t("admin.hubBots.rotateFailed")));
       const token =
         data && typeof data === "object" && typeof (data as Record<string, unknown>).token === "string"
           ? String((data as Record<string, unknown>).token)
           : "";
-      if (!token) throw new Error("The new token was not returned.");
+      if (!token) throw new Error(t("admin.hubBots.tokenMissing"));
       setRevealedToken(token);
       setRevealedTokenBotName(bot.name);
-      setNotice("The old token is no longer valid.");
+      setNotice(t("admin.hubBots.oldTokenInvalid"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not rotate this bot token.");
+      setError(err instanceof Error ? err.message : t("admin.hubBots.rotateFailed"));
     } finally {
       setBusy("");
     }
   };
 
   const deleteBot = async (bot: BotView) => {
-    if (!window.confirm(`Delete bot “${bot.name}”? Its token will stop working immediately.`)) return;
+    if (!window.confirm(t("admin.hubBots.deleteConfirm", { name: bot.name }))) return;
     setBusy(`${bot.id}:delete`);
     setError("");
     try {
       const response = await api(`/api/servers/${hubId}/bots/${encodeURIComponent(bot.id)}`, { method: "DELETE" });
       const data: unknown = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(responseError(data, "Could not delete this bot."));
+      if (!response.ok) throw new Error(responseError(data, t("admin.hubBots.deleteFailed")));
       if (expandedBotId === bot.id) setExpandedBotId(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete this bot.");
+      setError(err instanceof Error ? err.message : t("admin.hubBots.deleteFailed"));
     } finally {
       setBusy("");
     }
@@ -274,7 +263,7 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
       await navigator.clipboard.writeText(value);
       setNotice(successMessage);
     } catch {
-      setError("Copy was blocked by the browser. Select the text and copy it manually.");
+      setError(t("admin.hubBots.copyBlocked"));
     }
   };
 
@@ -284,8 +273,8 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
     <section className="decave-bots-section">
       <div className="decave-bots-heading">
         <div>
-          <strong>Hub Bots</strong>
-          <small>Give each bot only the actions and text rooms it needs.</small>
+          <strong>{t("admin.hubBots.title")}</strong>
+          <small>{t("admin.hubBots.intro")}</small>
         </div>
         <button
           type="button"
@@ -298,12 +287,12 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
           {createOpen ? (
             <>
               <Icon name="close" />
-              Close form
+              {t("admin.hubBots.closeForm")}
             </>
           ) : (
             <>
               <Icon name="plus" />
-              Create bot
+              {t("admin.hubBots.create")}
             </>
           )}
         </button>
@@ -314,11 +303,8 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
           <Icon name="shield" />
         </span>
         <div>
-          <strong>Server-side tokens</strong>
-          <small>
-            Keep a bot token in your server environment. Never put it in browser code, a public repository, or a Hub
-            message.
-          </small>
+          <strong>{t("admin.hubBots.securityTitle")}</strong>
+          <small>{t("admin.hubBots.securityBody")}</small>
         </div>
       </div>
 
@@ -326,34 +312,34 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
         <div className="decave-bot-create-card">
           <div className="decave-bot-create-head">
             <div>
-              <strong>Create a Hub bot</strong>
-              <small>New bots start with no room access until you enable one.</small>
+              <strong>{t("admin.hubBots.createTitle")}</strong>
+              <small>{t("admin.hubBots.createIntro")}</small>
             </div>
             <span>1 / 2</span>
           </div>
           <label className="ds-field">
-            Bot name
+            {t("admin.hubBots.name")}
             <input
               className="ds-input"
               value={newName}
               onChange={(event) => setNewName(event.target.value)}
               maxLength={32}
-              placeholder="Raid notifier"
+              placeholder={t("admin.hubBots.namePlaceholder")}
               autoFocus
             />
           </label>
           <label className="ds-field">
-            Description <span>(optional)</span>
+            <Trans t={t} i18nKey="admin.hubBots.description" components={{ optional: <span /> }} />
             <textarea
               className="ds-input"
               value={newDescription}
               onChange={(event) => setNewDescription(event.target.value)}
               maxLength={180}
               rows={2}
-              placeholder="Posts raid reminders in selected rooms."
+              placeholder={t("admin.hubBots.descriptionPlaceholder")}
             />
           </label>
-          <div className="decave-bot-capability-title">Allowed actions</div>
+          <div className="decave-bot-capability-title">{t("admin.hubBots.allowedActions")}</div>
           <div className="decave-bot-capability-list">
             {CAPABILITY_DEFINITIONS.map((capability) => {
               const checked = newCapabilities.includes(capability.id);
@@ -361,8 +347,8 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
                 <label key={capability.id} className={checked ? "selected" : ""}>
                   <input type="checkbox" checked={checked} onChange={() => toggleCapability(capability.id)} />
                   <span>
-                    <strong>{capability.label}</strong>
-                    <small>{capability.description}</small>
+                    <strong>{t(`admin.hubBots.capability.${capability.id}.label`)}</strong>
+                    <small>{t(`admin.hubBots.capability.${capability.id}.description`)}</small>
                   </span>
                 </label>
               );
@@ -370,7 +356,7 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
           </div>
           <div className="decave-bot-create-actions">
             <small>
-              {newCapabilities.length ? "You can choose rooms after creation." : "Select at least one action."}
+              {newCapabilities.length ? t("admin.hubBots.chooseRoomsLater") : t("admin.hubBots.selectAction")}
             </small>
             <button
               type="button"
@@ -378,7 +364,7 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
               disabled={busy === "create" || !newName.trim() || newCapabilities.length === 0}
               onClick={() => void createBot()}
             >
-              {busy === "create" ? "Creating…" : "Create and show token"}
+              {busy === "create" ? t("admin.hubBots.creating") : t("admin.hubBots.createAndShow")}
             </button>
           </div>
         </div>
@@ -387,23 +373,21 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
       {revealedToken && (
         <div className="decave-bot-token-card">
           <div>
-            <strong>Save {revealedTokenBotName}’s token now</strong>
-            <small>
-              It is shown only after creation or rotation. Anyone with this token can use the enabled bot actions.
-            </small>
+            <strong>{t("admin.hubBots.saveToken", { name: revealedTokenBotName })}</strong>
+            <small>{t("admin.hubBots.tokenOnce")}</small>
           </div>
           <code>{revealedToken}</code>
           <div>
             <button
               type="button"
               className="ds-btn ds-btn-sm ds-btn-primary"
-              onClick={() => void copyText(revealedToken, "Token copied.")}
+              onClick={() => void copyText(revealedToken, t("admin.hubBots.tokenCopied"))}
             >
               <Icon name="copy" />
-              Copy token
+              {t("admin.hubBots.copyToken")}
             </button>
             <button type="button" className="ds-btn ds-btn-sm ds-btn-ghost" onClick={() => setRevealedToken("")}>
-              Hide token
+              {t("admin.hubBots.hideToken")}
             </button>
           </div>
         </div>
@@ -422,8 +406,8 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
 
       {bots.length === 0 ? (
         <div className="decave-bots-empty">
-          <strong>No bots in this Hub yet.</strong>
-          <span>Create one when you need notifications, polls, or scheduled events.</span>
+          <strong>{t("admin.hubBots.emptyTitle")}</strong>
+          <span>{t("admin.hubBots.emptyBody")}</span>
         </div>
       ) : (
         <div className="decave-bots-list">
@@ -444,12 +428,12 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
                   <span className="decave-bot-title-copy">
                     <strong>
                       {bot.name}
-                      <em>BOT</em>
+                      <em>{t("admin.hubBots.badge")}</em>
                     </strong>
-                    <small>{bot.description || "Hub integration bot"}</small>
+                    <small>{bot.description || t("admin.hubBots.defaultDescription")}</small>
                   </span>
                   <span className={`decave-bot-status ${bot.enabled ? "enabled" : "disabled"}`}>
-                    {bot.enabled ? "Enabled" : "Disabled"}
+                    {bot.enabled ? t("admin.hubBots.enabled") : t("admin.hubBots.disabled")}
                   </span>
                   <b>
                     <Icon name={expanded ? "chevron-up" : "chevron-down"} size="sm" />
@@ -459,18 +443,14 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
                 {expanded && (
                   <div className="decave-bot-card-body">
                     <div className="decave-bot-summary">
-                      <span>
-                        {bot.capabilities.length} action{bot.capabilities.length === 1 ? "" : "s"}
-                      </span>
-                      <span>
-                        {enabledRooms} room{enabledRooms === 1 ? "" : "s"} enabled
-                      </span>
-                      <span>Token never shown in lists</span>
+                      <span>{t("admin.hubBots.actionCount", { count: bot.capabilities.length })}</span>
+                      <span>{t("admin.hubBots.roomCount", { count: enabledRooms })}</span>
+                      <span>{t("admin.hubBots.tokenHidden")}</span>
                     </div>
 
                     <div className="decave-bot-subhead">
-                      <strong>Allowed actions</strong>
-                      <small>Requests using an unchecked action are rejected.</small>
+                      <strong>{t("admin.hubBots.allowedActions")}</strong>
+                      <small>{t("admin.hubBots.uncheckedRejected")}</small>
                     </div>
                     <div className="decave-bot-capability-list">
                       {CAPABILITY_DEFINITIONS.map((capability) => {
@@ -482,11 +462,7 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
                               type="checkbox"
                               checked={checked}
                               disabled={busy === key || (checked && bot.capabilities.length === 1)}
-                              title={
-                                checked && bot.capabilities.length === 1
-                                  ? "Keep at least one action enabled"
-                                  : undefined
-                              }
+                              title={checked && bot.capabilities.length === 1 ? t("admin.hubBots.keepOne") : undefined}
                               onChange={() =>
                                 void updateBot(
                                   bot,
@@ -500,8 +476,8 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
                               }
                             />
                             <span>
-                              <strong>{capability.label}</strong>
-                              <small>{capability.description}</small>
+                              <strong>{t(`admin.hubBots.capability.${capability.id}.label`)}</strong>
+                              <small>{t(`admin.hubBots.capability.${capability.id}.description`)}</small>
                             </span>
                           </label>
                         );
@@ -509,12 +485,12 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
                     </div>
 
                     <div className="decave-bot-subhead">
-                      <strong>Enabled text rooms</strong>
-                      <small>Calls for every other room are blocked, including private rooms.</small>
+                      <strong>{t("admin.hubBots.roomsTitle")}</strong>
+                      <small>{t("admin.hubBots.roomsIntro")}</small>
                     </div>
                     <div className="decave-bot-room-list">
                       {textRooms.length === 0 ? (
-                        <div className="decave-bot-no-rooms">There are no text rooms available for this bot.</div>
+                        <div className="decave-bot-no-rooms">{t("admin.hubBots.noRooms")}</div>
                       ) : (
                         textRooms.map((room) => {
                           const checked = bot.allowedRoomIds.includes(room.id);
@@ -538,20 +514,17 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
 
                     <div className="decave-bot-api-card">
                       <div>
-                        <strong>How to call this bot</strong>
-                        <small>
-                          Use the token only from a trusted server. Replace the room ID and choose an action you enabled
-                          above.
-                        </small>
+                        <strong>{t("admin.hubBots.howToCall")}</strong>
+                        <small>{t("admin.hubBots.howToCallBody")}</small>
                       </div>
                       <code>{apiExample}</code>
                       <button
                         type="button"
                         className="ds-btn ds-btn-sm"
-                        onClick={() => void copyText(apiExample, "API example copied.")}
+                        onClick={() => void copyText(apiExample, t("admin.hubBots.exampleCopied"))}
                       >
                         <Icon name="copy" />
-                        Copy API example
+                        {t("admin.hubBots.copyExample")}
                       </button>
                     </div>
 
@@ -562,7 +535,7 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
                         disabled={busy === `${bot.id}:enabled`}
                         onClick={() => void updateBot(bot, { enabled: !bot.enabled }, `${bot.id}:enabled`)}
                       >
-                        {bot.enabled ? "Disable bot" : "Enable bot"}
+                        {bot.enabled ? t("admin.hubBots.disable") : t("admin.hubBots.enable")}
                       </button>
                       <button
                         type="button"
@@ -570,7 +543,7 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
                         disabled={busy === `${bot.id}:rotate`}
                         onClick={() => void rotateToken(bot)}
                       >
-                        Rotate token
+                        {t("admin.hubBots.rotate")}
                       </button>
                       <button
                         type="button"
@@ -578,7 +551,7 @@ export default function HubBotsPanel({ hubId, rooms, apiBaseUrl, authorizedFetch
                         disabled={busy === `${bot.id}:delete`}
                         onClick={() => void deleteBot(bot)}
                       >
-                        Delete bot
+                        {t("admin.hubBots.delete")}
                       </button>
                     </div>
                   </div>

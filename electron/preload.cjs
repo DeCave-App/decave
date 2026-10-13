@@ -13,6 +13,8 @@ const bridge = {
   setSystemSettings: (settings) => ipcRenderer.invoke("decave:desktop:set-settings", settings),
   setKeybinds: (settings) => ipcRenderer.invoke("decave:desktop:set-keybinds", settings),
   setStreamerMode: (enabled) => ipcRenderer.invoke("decave:desktop:set-streamer-mode", enabled),
+  // The language the page shows, for the tray, native windows and the overlay.
+  setLocale: (locale) => ipcRenderer.invoke("decave:desktop:set-locale", locale),
   getCaptureApps: () => ipcRenderer.invoke("decave:desktop:capture-apps"),
   setVoiceOverlayState: (state) => ipcRenderer.invoke("decave:desktop:set-voice-overlay-state", state),
   getUpdateStatus: () => ipcRenderer.invoke("decave:update:get-status"),
@@ -108,6 +110,7 @@ async function handleRequest(event) {
       "setSystemSettings",
       "setKeybinds",
       "setStreamerMode",
+      "setLocale",
       "getCaptureApps",
       "setVoiceOverlayState",
       "getUpdateStatus",
@@ -138,6 +141,8 @@ async function handleRequest(event) {
       result = await ipcRenderer.invoke("decave:desktop:set-keybinds", request?.payload?.settings);
     } else if (action === "setStreamerMode") {
       result = await ipcRenderer.invoke("decave:desktop:set-streamer-mode", request?.payload?.enabled);
+    } else if (action === "setLocale") {
+      result = await ipcRenderer.invoke("decave:desktop:set-locale", request?.payload?.locale);
     } else if (action === "getCaptureApps") {
       result = await ipcRenderer.invoke("decave:desktop:capture-apps");
     } else if (action === "setVoiceOverlayState") {

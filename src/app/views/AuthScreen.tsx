@@ -1,5 +1,6 @@
 // Sign-in, registration, password recovery and second-factor screen shown before login.
 
+import { Trans, useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import type { SafetyProfile } from "../../safety/types";
 import { QrLogin } from "../../components/QrLogin";
@@ -67,6 +68,7 @@ export function AuthScreen({
   submitAuth,
   authForm,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const {
     usernameInput,
     setUsernameInput,
@@ -91,44 +93,48 @@ export function AuthScreen({
         <section className="vadrion-auth-hero">
           <div className="vadrion-auth-brand-wrap">
             <DeCaveBrand />
-            <div className="vadrion-auth-tagline">Find your crew. Join the flow.</div>
-            <p>Fast voice, focused communities, and rooms built around the way you play.</p>
+            <div className="vadrion-auth-tagline">{t("common.auth.tagline")}</div>
+            <p>{t("common.auth.heroBody")}</p>
           </div>
           <div className="vadrion-feature-row">
-            <span>〽 Voice</span>
-            <span>⬡ Hubs</span>
-            <span>▱ Rooms</span>
-            <span>◎ Community</span>
+            <span>{t("common.auth.featureVoice")}</span>
+            <span>{t("common.auth.featureHubs")}</span>
+            <span>{t("common.auth.featureRooms")}</span>
+            <span>{t("common.auth.featureCommunity")}</span>
           </div>
         </section>
 
         <section className="username-card vadrion-auth-card">
           <div className="vadrion-auth-card-kicker">
-            {authMode === "login" ? "WELCOME BACK" : authMode === "register" ? "JOIN DECAVE" : "ACCOUNT RECOVERY"}
+            {authMode === "login"
+              ? t("common.auth.kickerLogin")
+              : authMode === "register"
+                ? t("common.auth.kickerRegister")
+                : t("common.auth.kickerRecovery")}
           </div>
           <div className="dc-auth-card-head">
             <div className="dc-auth-card-title">
               <h1>
                 {ownerLoginChallengeToken
                   ? loginMfaKind === "user"
-                    ? "Two-factor check"
-                    : "Verify owner access"
+                    ? t("common.auth.titleTwoFactor")
+                    : t("common.auth.titleOwner")
                   : authMode === "login"
-                    ? "Enter your space"
+                    ? t("common.auth.titleLogin")
                     : authMode === "register"
-                      ? "Create your account"
-                      : "Reset your password"}
+                      ? t("common.auth.titleRegister")
+                      : t("common.auth.titleForgot")}
               </h1>
               <p>
                 {ownerLoginChallengeToken
                   ? loginMfaKind === "user"
-                    ? "Enter the 6-digit code from your authenticator app, or one of your recovery codes."
-                    : "This platform-owner account requires a second factor."
+                    ? t("common.auth.leadTwoFactor")
+                    : t("common.auth.leadOwner")
                   : authMode === "login"
-                    ? "Log in with your email address."
+                    ? t("common.auth.leadLogin")
                     : authMode === "register"
-                      ? "Create an account with a verified email and public username."
-                      : "Enter your verified email and we'll send you a short-lived reset link."}
+                      ? t("common.auth.leadRegister")
+                      : t("common.auth.leadForgot")}
               </p>
             </div>
             {!ownerLoginChallengeToken && authMode === "login" && (
@@ -165,7 +171,7 @@ export function AuthScreen({
                 onKeyDown={(event) => {
                   if (event.key === "Enter") void submitOwnerMfaLogin();
                 }}
-                placeholder="Authenticator or recovery code"
+                placeholder={t("common.account.mfaCodeLabel")}
                 autoComplete="one-time-code"
                 autoFocus
               />
@@ -174,7 +180,7 @@ export function AuthScreen({
                 onClick={() => void submitOwnerMfaLogin()}
                 disabled={ownerLoginMfaBusy || !ownerLoginMfaCode.trim()}
               >
-                {ownerLoginMfaBusy ? "Verifying..." : "Verify & Enter DeCave"}
+                {ownerLoginMfaBusy ? t("common.auth.verifying") : t("common.auth.verifyEnter")}
               </button>
               <button
                 type="button"
@@ -188,7 +194,7 @@ export function AuthScreen({
                 }}
                 disabled={ownerLoginMfaBusy}
               >
-                {"Cancel and sign in again"}
+                {t("common.auth.cancelSignIn")}
               </button>
             </div>
           )}
@@ -198,7 +204,7 @@ export function AuthScreen({
               {authMode === "register" && (
                 <input
                   type="email"
-                  placeholder="Email"
+                  placeholder={t("common.auth.email")}
                   value={emailInput}
                   onChange={(event) => setEmailInput(event.target.value)}
                   autoComplete="email"
@@ -209,7 +215,7 @@ export function AuthScreen({
               {authMode === "forgot" ? (
                 <input
                   type="email"
-                  placeholder="Verified email"
+                  placeholder={t("common.auth.verifiedEmail")}
                   value={emailInput}
                   onChange={(event) => setEmailInput(event.target.value)}
                   autoComplete="email"
@@ -219,7 +225,7 @@ export function AuthScreen({
               ) : (
                 <input
                   type={authMode === "login" ? "email" : "text"}
-                  placeholder={authMode === "login" ? "Email" : "Username"}
+                  placeholder={authMode === "login" ? t("common.auth.email") : t("common.auth.username")}
                   value={usernameInput}
                   onChange={(event) => setUsernameInput(event.target.value)}
                   autoComplete={authMode === "login" ? "email" : "nickname"}
@@ -231,7 +237,7 @@ export function AuthScreen({
 
               {authMode === "register" && (
                 <label className="dc-auth-age-field">
-                  <span>Birth date</span>
+                  <span>{t("common.ageGate.birthDate")}</span>
                   <input
                     type="date"
                     value={birthDateInput}
@@ -239,17 +245,14 @@ export function AuthScreen({
                     autoComplete="bday"
                     max={new Date().toISOString().slice(0, 10)}
                   />
-                  <small>
-                    Used only to confirm that DeCave is available to people aged {MINIMUM_SIGNUP_AGE} or older. We do
-                    not store the exact date.
-                  </small>
+                  <small>{t("common.auth.birthDateHint", { age: MINIMUM_SIGNUP_AGE })}</small>
                 </label>
               )}
 
               {authMode !== "forgot" && (
                 <input
                   type="password"
-                  placeholder="Password"
+                  placeholder={t("common.auth.password")}
                   value={passwordInput}
                   onChange={(event) => setPasswordInput(event.target.value)}
                   onKeyDown={(event) => {
@@ -265,7 +268,7 @@ export function AuthScreen({
               {authMode === "register" && (
                 <input
                   type="password"
-                  placeholder="Confirm password"
+                  placeholder={t("common.auth.confirmPassword")}
                   value={confirmPasswordInput}
                   onChange={(event) => setConfirmPasswordInput(event.target.value)}
                   onKeyDown={(event) => {
@@ -285,15 +288,15 @@ export function AuthScreen({
                     onChange={(event) => setTermsAccepted(event.target.checked)}
                   />
                   <span>
-                    I am {MINIMUM_SIGNUP_AGE} or older and agree to the{" "}
-                    <a href={TERMS_URL} target="_blank" rel="noreferrer">
-                      Terms of Service
-                    </a>{" "}
-                    and{" "}
-                    <a href={PRIVACY_URL} target="_blank" rel="noreferrer">
-                      Privacy Policy
-                    </a>
-                    .
+                    <Trans
+                      t={t}
+                      i18nKey="common.auth.consent"
+                      values={{ age: MINIMUM_SIGNUP_AGE }}
+                      components={[
+                        <a key="terms" href={TERMS_URL} target="_blank" rel="noreferrer" />,
+                        <a key="privacy" href={PRIVACY_URL} target="_blank" rel="noreferrer" />,
+                      ]}
+                    />
                   </span>
                 </label>
               )}
@@ -322,17 +325,17 @@ export function AuthScreen({
                       accentColor: "#6d63ff",
                     }}
                   />
-                  <span>Stay signed in on this device</span>
+                  <span>{t("common.auth.staySignedIn")}</span>
                 </label>
               )}
 
               {turnstileTestMode ? (
                 <div className="decave-turnstile-shell recovery" role="status">
                   <div className="decave-turnstile-meta">
-                    <span>LOCAL SECURITY CHECK</span>
-                    <strong>Ready</strong>
+                    <span>{t("common.auth.localCheck")}</span>
+                    <strong>{t("common.auth.ready")}</strong>
                   </div>
-                  <p className="decave-turnstile-recovery-copy verified">Local Worker test verification is enabled.</p>
+                  <p className="decave-turnstile-recovery-copy verified">{t("common.auth.localCheckBody")}</p>
                 </div>
               ) : turnstileSiteKey ? (
                 <TurnstileWidget
@@ -343,7 +346,7 @@ export function AuthScreen({
                   onToken={setTurnstileToken}
                 />
               ) : (
-                <p style={authErrorStyle}>Security verification is not configured yet.</p>
+                <p style={authErrorStyle}>{t("common.auth.turnstileMissing")}</p>
               )}
 
               {authError && <p style={authErrorStyle}>{authError}</p>}
@@ -368,12 +371,12 @@ export function AuthScreen({
                 }
               >
                 {authBusy
-                  ? "Please wait..."
+                  ? t("common.auth.pleaseWait")
                   : authMode === "login"
-                    ? "Enter DeCave"
+                    ? t("common.auth.submitLogin")
                     : authMode === "register"
-                      ? "Create Account"
-                      : "Send Reset Link"}
+                      ? t("common.auth.submitRegister")
+                      : t("common.auth.submitForgot")}
               </button>
 
               {authMode === "login" && (
@@ -388,7 +391,7 @@ export function AuthScreen({
                   disabled={authBusy}
                   style={authSwitchStyle}
                 >
-                  Forgot password?
+                  {t("common.auth.forgot")}
                 </button>
               )}
 
@@ -406,25 +409,24 @@ export function AuthScreen({
                 disabled={authBusy}
                 style={authSwitchStyle}
               >
-                {authMode === "login" ? "New to DeCave? Create an account" : "Back to login"}
+                {authMode === "login" ? t("common.auth.switchToRegister") : t("common.auth.backToLogin")}
               </button>
 
               <p className="dc-auth-legal">
-                DeCave is an alpha for adults 18+. Read the{" "}
-                <a href={TERMS_URL} target="_blank" rel="noreferrer">
-                  Terms of Service
-                </a>{" "}
-                and{" "}
-                <a href={PRIVACY_URL} target="_blank" rel="noreferrer">
-                  Privacy Policy
-                </a>
-                .
+                <Trans
+                  t={t}
+                  i18nKey="common.auth.legal"
+                  components={[
+                    <a key="terms" href={TERMS_URL} target="_blank" rel="noreferrer" />,
+                    <a key="privacy" href={PRIVACY_URL} target="_blank" rel="noreferrer" />,
+                  ]}
+                />
               </p>
             </>
           )}
 
           <div className="vadrion-auth-skins">
-            <div className="vadrion-mini-label">CHOOSE YOUR VIBE</div>
+            <div className="vadrion-mini-label">{t("common.auth.chooseVibe")}</div>
             <div className="vadrion-skin-row" style={{ flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -432,7 +434,7 @@ export function AuthScreen({
                 onClick={() => chooseAppSkin("nebula")}
               >
                 <span className="skin-swatch nebula" />
-                Nebula Pulse
+                {t("common.skins.nebula")}
               </button>
               <button
                 type="button"
@@ -440,7 +442,7 @@ export function AuthScreen({
                 onClick={() => chooseAppSkin("arctic")}
               >
                 <span className="skin-swatch arctic" />
-                Arctic Flux
+                {t("common.skins.arctic")}
               </button>
               <button
                 type="button"
@@ -448,7 +450,7 @@ export function AuthScreen({
                 onClick={() => chooseAppSkin("crimson")}
               >
                 <span className="skin-swatch crimson" />
-                Crimson Glass
+                {t("common.skins.crimson")}
               </button>
               <button
                 type="button"
@@ -456,7 +458,7 @@ export function AuthScreen({
                 onClick={() => chooseAppSkin("royal")}
               >
                 <span className="skin-swatch royal" />
-                Royal Violet
+                {t("common.skins.royal")}
               </button>
               <button
                 type="button"
@@ -464,7 +466,7 @@ export function AuthScreen({
                 onClick={() => chooseAppSkin("pearl")}
               >
                 <span className="skin-swatch pearl" />
-                Pearl Glass
+                {t("common.skins.pearl")}
               </button>
               <button
                 type="button"
@@ -472,7 +474,7 @@ export function AuthScreen({
                 onClick={() => chooseAppSkin("obsidian")}
               >
                 <span className="skin-swatch obsidian" />
-                Obsidian Glass
+                {t("common.skins.obsidian")}
               </button>
               <button
                 type="button"
@@ -480,7 +482,7 @@ export function AuthScreen({
                 onClick={() => chooseAppSkin("verdant")}
               >
                 <span className="skin-swatch verdant" />
-                Verdant Raid
+                {t("common.skins.verdant")}
               </button>
               <button
                 type="button"
@@ -488,7 +490,7 @@ export function AuthScreen({
                 onClick={() => chooseAppSkin("bright")}
               >
                 <span className="skin-swatch bright" />
-                Bright Grey
+                {t("common.skins.bright")}
               </button>
             </div>
           </div>

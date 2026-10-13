@@ -3,6 +3,8 @@
 
 import type { Dispatch, SetStateAction, MutableRefObject } from "react";
 import type { AccountUser, SocialUser, DirectMessage, ApiError, NotificationSettings, UiSoundEvent } from "../types";
+import { i18next } from "../../i18n/index.ts";
+import { apiErrorMessage } from "../../i18n/apiError.ts";
 import { HTTP_URL } from "../env";
 
 export type FriendActionsDeps = {
@@ -76,7 +78,11 @@ export function createFriendActions(deps: FriendActionsDeps) {
       const newRequest = nextIncoming.find((user) => !incomingFriendIdsRef.current.has(user.id));
       if (newRequest) {
         if (notificationSettingsRef.current.friendRequests)
-          desktopNotify("New friend request", `${newRequest.username} wants to be friends.`, "friend");
+          desktopNotify(
+            i18next.t("chat.actions.friends.newRequestTitle"),
+            i18next.t("chat.actions.friends.newRequestBody", { username: newRequest.username }),
+            "friend",
+          );
         setFriendRequestNotice(newRequest);
         if (friendRequestNoticeTimerRef.current !== null) {
           window.clearTimeout(friendRequestNoticeTimerRef.current);
@@ -93,7 +99,7 @@ export function createFriendActions(deps: FriendActionsDeps) {
     const sentTo = friendRequestSentToRef.current;
     if (sentTo && nextFriends.some((friend) => String(friend.id) === sentTo)) {
       friendRequestSentToRef.current = null;
-      setFriendIdNotice((current) => (current === "Friend request sent." ? "" : current));
+      setFriendIdNotice((current) => (current === i18next.t("chat.actions.friends.requestSent") ? "" : current));
     }
     setFriends(nextFriends);
     setIncomingFriendRequests(nextIncoming);
@@ -134,7 +140,7 @@ export function createFriendActions(deps: FriendActionsDeps) {
       );
       const data = (await response.json().catch(() => ({}))) as ApiError;
       if (!response.ok) {
-        setDmError(data.error || "Could not update friend status.");
+        setDmError(apiErrorMessage(data, "client.friends.update"));
         return;
       }
       if (action === "remove" && activeDmUserRef.current?.id === userId) {
@@ -145,14 +151,14 @@ export function createFriendActions(deps: FriendActionsDeps) {
       await loadSocialState();
     } catch (error) {
       console.error("Friend action failed:", error);
-      setDmError("Could not update friend status.");
+      setDmError(i18next.t("errors.client.friends.update"));
     }
   };
 
   const addFriendByDecaveId = async () => {
     const user = currentUser;
     if (!user) {
-      setFriendIdNotice("Your session is not ready yet.");
+      setFriendIdNotice(i18next.t("chat.actions.account.sessionNotReady"));
       return;
     }
 
@@ -160,19 +166,19 @@ export function createFriendActions(deps: FriendActionsDeps) {
     setFriendIdNotice("");
 
     if (!targetId) {
-      setFriendIdNotice("Enter a DeCave ID.");
+      setFriendIdNotice(i18next.t("chat.actions.friends.enterId"));
       return;
     }
     if (targetId === user.id) {
-      setFriendIdNotice("That is your own DeCave ID.");
+      setFriendIdNotice(i18next.t("chat.actions.friends.ownId"));
       return;
     }
     if (friends.some((friend) => friend.id === targetId)) {
-      setFriendIdNotice("You are already friends.");
+      setFriendIdNotice(i18next.t("chat.actions.friends.alreadyFriends"));
       return;
     }
     if (outgoingFriendRequests.some((user) => user.id === targetId)) {
-      setFriendIdNotice("Friend request already sent.");
+      setFriendIdNotice(i18next.t("chat.actions.friends.alreadySent"));
       return;
     }
 
@@ -183,17 +189,17 @@ export function createFriendActions(deps: FriendActionsDeps) {
       });
       const data = (await response.json().catch(() => ({}))) as ApiError;
       if (!response.ok) {
-        setFriendIdNotice(data.error || "Could not send friend request.");
+        setFriendIdNotice(apiErrorMessage(data, "client.friends.sendRequest"));
         return;
       }
 
       setFriendIdInput("");
       friendRequestSentToRef.current = String(targetId);
-      setFriendIdNotice("Friend request sent.");
+      setFriendIdNotice(i18next.t("chat.actions.friends.requestSent"));
       await loadSocialState();
     } catch (error) {
       console.error("Friend request by DeCave ID failed:", error);
-      setFriendIdNotice("Could not send friend request.");
+      setFriendIdNotice(i18next.t("errors.client.friends.sendRequest"));
     } finally {
       setFriendIdBusy(false);
     }
@@ -202,15 +208,15 @@ export function createFriendActions(deps: FriendActionsDeps) {
   const copyMyDecaveId = async () => {
     const user = currentUser;
     if (!user) {
-      setFriendIdNotice("Your session is not ready yet.");
+      setFriendIdNotice(i18next.t("chat.actions.account.sessionNotReady"));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(user.id);
-      setFriendIdNotice("Your DeCave ID was copied.");
+      setFriendIdNotice(i18next.t("chat.actions.friends.idCopied"));
     } catch {
-      setFriendIdNotice(`Your DeCave ID: ${user.id}`);
+      setFriendIdNotice(i18next.t("chat.actions.friends.idShown", { id: user.id }));
     }
   };
 

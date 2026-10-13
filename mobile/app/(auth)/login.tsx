@@ -15,8 +15,10 @@ import { router } from "expo-router";
 import { TurnstileModal } from "@/src/components/TurnstileModal";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
+import { Trans, useTranslation } from "react-i18next";
 
 export default function LoginScreen() {
+  const { t } = useTranslation(["auth", "common"]);
   const { login, user, pendingMfa, sessionNotice } = useSession();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -64,7 +66,7 @@ export default function LoginScreen() {
 
   const beginLogin = () => {
     if (!/^\S+@\S+\.\S+$/.test(identifier.trim()) || !password) {
-      setError("Enter your email and password.");
+      setError(t("auth.mobile.login.enterYourEmailAndPassword"));
       return;
     }
     setError("");
@@ -80,10 +82,10 @@ export default function LoginScreen() {
             <Text style={styles.brandText}>DeCave</Text>
           </View>
 
-          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>VOICE · HUBS · ROOMS</Text>
-          <Text style={styles.title}>Welcome</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("common.app.loadingKicker")}</Text>
+          <Text style={styles.title}>{t("auth.mobile.login.welcome")}</Text>
           <Text style={styles.subtitle}>
-            Sign in to your existing DeCave account.
+            {t("auth.mobile.login.signInToYourExisting")}
           </Text>
 
           {!!sessionNotice && <Text style={styles.message}>{sessionNotice}</Text>}
@@ -92,7 +94,7 @@ export default function LoginScreen() {
           <TextInput
             value={identifier}
             onChangeText={setIdentifier}
-            placeholder="Email"
+            placeholder={t("common.auth.email")}
             placeholderTextColor={colors.faint}
             keyboardType="email-address"
             autoComplete="email"
@@ -103,7 +105,7 @@ export default function LoginScreen() {
           <TextInput
             value={password}
             onChangeText={setPassword}
-            placeholder="Password"
+            placeholder={t("common.auth.password")}
             placeholderTextColor={colors.faint}
             secureTextEntry
             autoCapitalize="none"
@@ -111,7 +113,7 @@ export default function LoginScreen() {
           />
 
           <View style={styles.row}>
-            <Text style={styles.check}>Stay signed in</Text>
+            <Text style={styles.check}>{t("auth.mobile.login.staySignedIn")}</Text>
             <Switch
               value={staySignedIn}
               onValueChange={setStaySignedIn}
@@ -130,26 +132,25 @@ export default function LoginScreen() {
           >
             {working && <ActivityIndicator color="#fff" style={styles.buttonSpinner} />}
             <Text style={styles.buttonText}>
-              {busy ? "Signing in…" : turnstileOpen ? "Verifying…" : "Sign in"}
+              {busy ? t("auth.mobile.login.signingIn") : turnstileOpen ? t("common.status.verifying") : t("auth.mobile.login.signIn")}
             </Text>
           </Pressable>
 
           <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.push("/forgot")}>
-            <Text style={styles.secondaryText}>Forgot password?</Text>
+            <Text style={styles.secondaryText}>{t("common.auth.forgot")}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.push("/register")}>
-            <Text style={styles.secondaryText}>Create a DeCave account</Text>
+            <Text style={styles.secondaryText}>{t("auth.mobile.login.createADecaveAccount")}</Text>
           </Pressable>
           <Text style={styles.legal}>
-            DeCave is an alpha for adults 18+. Read the{" "}
-            <Text style={styles.legalLink} onPress={() => void Linking.openURL("https://de-cave.com/terms")}>
-              Terms of Service
-            </Text>{" "}
-            and{" "}
-            <Text style={styles.legalLink} onPress={() => void Linking.openURL("https://de-cave.com/privacy")}>
-              Privacy Policy
-            </Text>
-            .
+            <Trans
+              t={t}
+              i18nKey="common.auth.legal"
+              components={[
+                <Text key="terms" style={styles.legalLink} onPress={() => void Linking.openURL("https://de-cave.com/terms")} />,
+                <Text key="privacy" style={styles.legalLink} onPress={() => void Linking.openURL("https://de-cave.com/privacy")} />,
+              ]}
+            />
           </Text>
         </View>
       </ScrollView>

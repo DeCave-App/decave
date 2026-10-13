@@ -1,5 +1,6 @@
 // Friends page: friend list, requests and adding friends.
 
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "../../components/Icon";
 import type { AccountUser, SocialUser } from "../types";
@@ -51,16 +52,25 @@ export function FriendsView({
   openDirectMessage,
   visibleFriends,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   return (
     <div className="dcf-grid">
       <section className="dcf-main">
         <div className="dcf-main-head">
-          <div className="ds-tabs" role="tablist" aria-label="Friend filters">
+          <div className="ds-tabs" role="tablist" aria-label={t("common.friends.filters")}>
             {(
               [
-                ["online", `Online ${friends.filter((friend) => friend.online === true).length}`],
-                ["all", `All ${friends.length}`],
-                ["pending", `Pending ${incomingFriendRequests.length + outgoingFriendRequests.length}`],
+                [
+                  "online",
+                  t("common.friends.tabOnline", { number: friends.filter((friend) => friend.online === true).length }),
+                ],
+                ["all", t("common.friends.tabAll", { number: friends.length })],
+                [
+                  "pending",
+                  t("common.friends.tabPending", {
+                    number: incomingFriendRequests.length + outgoingFriendRequests.length,
+                  }),
+                ],
               ] as const
             ).map(([filter, label]) => (
               <button
@@ -82,8 +92,8 @@ export function FriendsView({
               type="search"
               value={friendListSearch}
               onChange={(event) => setFriendListSearch(event.target.value)}
-              placeholder="Search friends"
-              aria-label="Search friends"
+              placeholder={t("common.friendsSidebar.search")}
+              aria-label={t("common.friendsSidebar.search")}
             />
           </label>
         </div>
@@ -94,8 +104,8 @@ export function FriendsView({
               <div className="ds-empty-icon">
                 <Icon name="user-plus" />
               </div>
-              <h3>No pending requests</h3>
-              <p>Requests you send or receive show up here.</p>
+              <h3>{t("common.friends.noPending")}</h3>
+              <p>{t("common.friends.noPendingHint")}</p>
             </div>
           ) : (
             <div className="dcf-cards">
@@ -107,7 +117,7 @@ export function FriendsView({
                   <strong className="dcf-name" title={user.username}>
                     {user.username}
                   </strong>
-                  <small className="dcf-sub">Wants to be friends</small>
+                  <small className="dcf-sub">{t("common.friends.wantsToBeFriends")}</small>
                   <div className="dcf-actions">
                     <button
                       type="button"
@@ -115,14 +125,14 @@ export function FriendsView({
                       onClick={() => void socialAction(user.id, "accept")}
                     >
                       <Icon name="check" size="sm" />
-                      Accept
+                      {t("common.actions.accept")}
                     </button>
                     <button
                       type="button"
                       className="ds-btn ds-btn-ghost ds-btn-sm"
                       onClick={() => void socialAction(user.id, "reject")}
                     >
-                      Ignore
+                      {t("common.friends.ignore")}
                     </button>
                   </div>
                 </div>
@@ -135,7 +145,7 @@ export function FriendsView({
                   <strong className="dcf-name" title={user.username}>
                     {user.username}
                   </strong>
-                  <small className="dcf-sub">Request sent</small>
+                  <small className="dcf-sub">{t("common.friends.requestSent")}</small>
                 </div>
               ))}
             </div>
@@ -147,17 +157,17 @@ export function FriendsView({
             </div>
             <h3>
               {friends.length === 0
-                ? "No friends yet"
+                ? t("common.friends.emptyTitle")
                 : friendListFilter === "online" && !friendListSearch.trim()
-                  ? "Nobody is online right now"
-                  : "No friends match"}
+                  ? t("common.friends.noneOnlineTitle")
+                  : t("common.friends.noMatchTitle")}
             </h3>
             <p>
               {friends.length === 0
-                ? "Share your DeCave ID or add someone using theirs."
+                ? t("common.friends.emptyHint")
                 : friendListFilter === "online" && !friendListSearch.trim()
-                  ? "Switch to All to see everyone."
-                  : "Try a different name or filter."}
+                  ? t("common.friends.noneOnlineHint")
+                  : t("common.friends.noMatchHint")}
             </p>
           </div>
         ) : (
@@ -183,14 +193,14 @@ export function FriendsView({
                 <div className="dcf-actions">
                   <button type="button" className="ds-btn ds-btn-sm" onClick={() => void openDirectMessage(user)}>
                     <Icon name="message" size="sm" />
-                    Message
+                    {t("chat.newConversation.message")}
                   </button>
                   <span className="dc-friend-actions" data-friend-actions="true">
                     <button
                       type="button"
                       className="ds-btn ds-btn-ghost ds-icon-btn ds-btn-sm"
-                      title="More friend actions"
-                      aria-label={`More actions for ${user.username}`}
+                      title={t("common.friends.moreActions")}
+                      aria-label={t("common.friends.moreActionsFor", { name: user.username })}
                       aria-expanded={friendActionsUserId === user.id}
                       onClick={() => setFriendActionsUserId((current) => (current === user.id ? null : user.id))}
                     >
@@ -206,7 +216,7 @@ export function FriendsView({
                           }}
                         >
                           <Icon name="copy" size="sm" />
-                          Copy DeCave ID
+                          {t("common.friends.copyId")}
                         </button>
                         <button
                           type="button"
@@ -217,7 +227,7 @@ export function FriendsView({
                           }}
                         >
                           <Icon name="close" size="sm" />
-                          Unfriend…
+                          {t("common.friends.unfriend")}
                         </button>
                       </div>
                     )}
@@ -231,20 +241,20 @@ export function FriendsView({
 
       <aside className="dcf-side">
         <div className="dcf-side-block">
-          <div className="dcf-label">Your DeCave ID</div>
+          <div className="dcf-label">{t("common.friends.yourId")}</div>
           <div className="dcf-id">
             <span title={currentUser.id}>{currentUser.id}</span>
             <button type="button" className="ds-btn ds-btn-sm" onClick={() => void copyMyDecaveId()}>
               <Icon name="copy" size="sm" />
-              Copy
+              {t("common.actions.copy")}
             </button>
           </div>
-          <small className="dcf-hint">Share it so friends can add you.</small>
+          <small className="dcf-hint">{t("common.friends.yourIdHint")}</small>
         </div>
 
         <div className="dcf-side-block">
           <label className="dcf-label" htmlFor="dcf-add-input">
-            Add a friend
+            {t("chat.groupMembers.addTitle")}
           </label>
           <input
             id="dcf-add-input"
@@ -254,7 +264,7 @@ export function FriendsView({
             onKeyDown={(event) => {
               if (event.key === "Enter" && !friendIdBusy) void addFriendByDecaveId();
             }}
-            placeholder="Paste their DeCave ID"
+            placeholder={t("common.friends.pasteId")}
             autoComplete="off"
             spellCheck={false}
           />
@@ -265,7 +275,7 @@ export function FriendsView({
             onClick={() => void addFriendByDecaveId()}
           >
             <Icon name="user-plus" size="sm" />
-            {friendIdBusy ? "Sending…" : "Send request"}
+            {friendIdBusy ? t("common.status.sending") : t("common.friends.sendRequest")}
           </button>
           {friendIdNotice && (
             <div className={`ds-notice ${friendIdNotice.toLowerCase().includes("sent") ? "ok" : ""}`} role="status">
@@ -277,7 +287,9 @@ export function FriendsView({
 
         {incomingFriendRequests.length > 0 && (
           <div className="dcf-side-block">
-            <div className="dcf-label">Requests · {incomingFriendRequests.length}</div>
+            <div className="dcf-label">
+              {t("common.friends.requestsCount", { number: incomingFriendRequests.length })}
+            </div>
             {incomingFriendRequests.map((user) => (
               <div className="dcf-request" key={user.id}>
                 <UserAvatar username={user.username} avatarUrl={user.avatarUrl} />
@@ -287,8 +299,8 @@ export function FriendsView({
                 <button
                   type="button"
                   className="ds-btn ds-btn-primary ds-icon-btn ds-btn-sm"
-                  title="Accept"
-                  aria-label={`Accept ${user.username}`}
+                  title={t("common.actions.accept")}
+                  aria-label={t("common.friends.acceptUser", { name: user.username })}
                   onClick={() => void socialAction(user.id, "accept")}
                 >
                   <Icon name="check" />
@@ -296,8 +308,8 @@ export function FriendsView({
                 <button
                   type="button"
                   className="ds-btn ds-btn-ghost ds-icon-btn ds-btn-sm"
-                  title="Decline"
-                  aria-label={`Decline ${user.username}`}
+                  title={t("common.actions.decline")}
+                  aria-label={t("common.friends.declineUser", { name: user.username })}
                   onClick={() => void socialAction(user.id, "reject")}
                 >
                   <Icon name="close" />

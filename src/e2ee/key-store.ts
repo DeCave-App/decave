@@ -8,6 +8,8 @@
 // folder is useless without the user's OS login. Browsers, and desktops without a
 // keychain, store the key itself.
 
+import { i18next } from "../i18n";
+
 const DB_NAME = "decave-e2ee";
 const STORE = "account-keys";
 
@@ -16,13 +18,13 @@ type StoredKey = Uint8Array | { v: 1; keychain: string };
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === "undefined") {
-      reject(new Error("This browser can't store encryption keys."));
+      reject(new Error(i18next.t("dm.e2ee.client.noKeyStorage")));
       return;
     }
     const request = indexedDB.open(DB_NAME, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(STORE);
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("Could not open key storage."));
+    request.onerror = () => reject(request.error ?? new Error(i18next.t("dm.e2ee.client.openStorageFailed")));
   });
 }
 
@@ -33,8 +35,8 @@ async function withStore<T>(mode: IDBTransactionMode, run: (store: IDBObjectStor
       const transaction = db.transaction(STORE, mode);
       const request = run(transaction.objectStore(STORE));
       transaction.oncomplete = () => resolve(request.result);
-      transaction.onerror = () => reject(transaction.error ?? new Error("Key storage failed."));
-      transaction.onabort = () => reject(transaction.error ?? new Error("Key storage failed."));
+      transaction.onerror = () => reject(transaction.error ?? new Error(i18next.t("dm.e2ee.client.storageFailed")));
+      transaction.onabort = () => reject(transaction.error ?? new Error(i18next.t("dm.e2ee.client.storageFailed")));
     });
   } finally {
     db.close();

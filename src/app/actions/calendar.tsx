@@ -11,6 +11,7 @@ import {
 } from "../../features/events";
 import type { Server, ServerMemberView, HubCalendarEvent } from "../types";
 import { UserAvatar } from "../components/UserAvatar";
+import { i18next } from "../../i18n/index.ts";
 import type { HubPanelsState } from "../state/hub-panels";
 
 export type CalendarActionsDeps = {
@@ -81,7 +82,8 @@ export function createCalendarActions(deps: CalendarActionsDeps) {
   };
 
   const eventMemberName = (userId: string) =>
-    hubMembers.find((candidate) => candidate.userId === userId)?.username ?? "Hub member";
+    hubMembers.find((candidate) => candidate.userId === userId)?.username ??
+    i18next.t("hub.actions.calendar.memberFallback");
 
   const openCalendarItem = (item: CalendarItem) => {
     setEventDrawerItem(item);

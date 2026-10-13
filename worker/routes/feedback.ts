@@ -1,7 +1,7 @@
 // In-app feedback and bug reports.
 
 import { requireUser } from "../lib/sessions";
-import { boundedBodyJson, json, requestKey } from "../lib/http";
+import { boundedBodyJson, json, requestKey, apiError } from "../lib/http";
 import { nowIso, publicIdOf } from "../db";
 import type { ApiContext } from "./context";
 
@@ -17,23 +17,23 @@ export async function handleFeedbackRoutes({ request, env, p, method }: ApiConte
       env.AUTH_RATE_LIMITER.limit({ key: requestKey(request, "feedback") }),
     ]);
     if (!accountLimit.success || !ipLimit.success) {
-      return json({ error: "Too many feedback submissions. Try again shortly." }, 429);
+      return apiError("feedback.tooManySubmissions", 429);
     }
 
     const body = await boundedBodyJson(request, FEEDBACK_BODY_LIMIT);
-    if (!body) return json({ error: "Feedback request is too large." }, 413);
+    if (!body) return apiError("feedback.requestTooLarge", 413);
 
     const type = body.type === undefined ? "bug" : body.type;
-    if (type !== "bug" && type !== "feature") return json({ error: "Feedback type must be bug or feature." }, 400);
+    if (type !== "bug" && type !== "feature") return apiError("feedback.typeInvalid", 400);
     const message = typeof body.message === "string" ? body.message.trim() : "";
-    if (message.length > 4000) return json({ error: "Feedback message must be 4000 characters or fewer." }, 400);
+    if (message.length > 4000) return apiError("feedback.messageTooLong", 400);
     const contact = typeof body.contact === "string" ? body.contact.trim() : "";
     if (body.contact !== undefined && typeof body.contact !== "string") {
-      return json({ error: "Contact email must be text." }, 400);
+      return apiError("feedback.contactEmailInvalid", 400);
     }
-    if (contact.length > 254) return json({ error: "Contact email must be 254 characters or fewer." }, 400);
+    if (contact.length > 254) return apiError("feedback.contactEmailTooLong", 400);
 
-    if (!message) return json({ error: "Feedback cannot be empty." }, 400);
+    if (!message) return apiError("feedback.empty", 400);
 
     const id = crypto.randomUUID();
     const createdAt = nowIso();

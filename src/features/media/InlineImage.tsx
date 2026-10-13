@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { validateLegacyAttachmentUrl, readBoundedLegacyAttachmentBody } from "./attachment-download";
+import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/Icon";
 import "./inlineImage.css";
 
@@ -37,6 +38,7 @@ type Props = {
 
 /** A photo inside a message: loads when scrolled into view, opens full size on click. */
 export function InlineImage({ attachment, baseUrl, authorizedFetch, onDownload, decrypt }: Props) {
+  const { t } = useTranslation(["chat"]);
   const key = attachment.url;
   const [src, setSrc] = useState<string | null>(() => cache.get(key) ?? null);
   const [failed, setFailed] = useState(false);
@@ -114,8 +116,8 @@ export function InlineImage({ attachment, baseUrl, authorizedFetch, onDownload, 
   if (failed) {
     return (
       <button type="button" className="chat-media-preview" onClick={onDownload}>
-        <span>Image · {attachment.name}</span>
-        <small>Couldn't show the preview. Download instead.</small>
+        <span>{t("chat.media.image.failedName", { name: attachment.name })}</span>
+        <small>{t("chat.media.image.failedHint")}</small>
       </button>
     );
   }
@@ -127,7 +129,7 @@ export function InlineImage({ attachment, baseUrl, authorizedFetch, onDownload, 
         type="button"
         className={`dc-inline-image${src ? " is-loaded" : ""}`}
         onClick={() => src && setOpen(true)}
-        aria-label={`Open image ${attachment.name}`}
+        aria-label={t("chat.media.image.open", { name: attachment.name })}
         title={attachment.name}
       >
         {src ? (
@@ -135,7 +137,7 @@ export function InlineImage({ attachment, baseUrl, authorizedFetch, onDownload, 
         ) : (
           <span className="dc-inline-image-placeholder">
             <Icon name="image" />
-            Loading image…
+            {t("chat.media.image.loading")}
           </span>
         )}
       </button>
@@ -152,13 +154,13 @@ export function InlineImage({ attachment, baseUrl, authorizedFetch, onDownload, 
             <span>{attachment.name}</span>
             <button type="button" className="ds-btn ds-btn-sm" onClick={onDownload}>
               <Icon name="download" size="sm" />
-              Download
+              {t("chat.media.image.download")}
             </button>
             <button
               type="button"
               className="ds-btn ds-btn-sm ds-btn-ghost"
               onClick={() => setOpen(false)}
-              aria-label="Close"
+              aria-label={t("chat.media.image.close")}
             >
               <Icon name="close" size="sm" />
             </button>

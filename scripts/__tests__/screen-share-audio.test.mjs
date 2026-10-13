@@ -9,6 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const app = readAppSource();
 const electronMain = fs.readFileSync(path.join(root, "electron/main.cjs"), "utf8");
 const electronPreload = fs.readFileSync(path.join(root, "electron/preload.cjs"), "utf8");
+const chatCatalog = fs.readFileSync(path.join(root, "shared/i18n/locales/en/chat.json"), "utf8");
 
 test("ordinary screen audio stays attached to the screen stream", () => {
   // Routing lives in classifyMeshAudio (screen-sfu/screen-audio.ts, unit-tested there).
@@ -61,7 +62,8 @@ test("desktop loopback excludes DeCave voice playback from the outgoing share", 
   assert.match(electronMain, /audio: "loopback"/);
   assert.match(app, /screen\.removeTrack\(audioTrack\)/);
   assert.match(app, /audioTrack\.stop\(\)/);
-  assert.match(app, /started without system audio: this device cannot keep DeCave voices out/);
+  assert.match(app, /i18next\.t\("chat\.actions\.screen\.systemAudioDropped"\)/);
+  assert.match(chatCatalog, /started without system audio: this device cannot keep DeCave voices out/);
 });
 
 test("screen cards measure video RTP with timestamped byte deltas", () => {

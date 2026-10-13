@@ -1,10 +1,15 @@
 // Presentation for the optional forum post extensions (type, poll, LFG, media).
+import { useTranslation } from "react-i18next";
 import type { ForumLfg, ForumMedia, ForumPoll, ForumPostType } from "../../../shared/forum";
 import { FORUM_TYPE_META, pollTallies } from "./forumModel";
 import { Icon } from "../../components/Icon";
-import { localeForLanguage, preferredTimeOptions } from "../../app/locale";
+import { preferredTimeOptions } from "../../app/locale";
+import { squadValueLabel } from "../../app/views/squadLabels";
+import { i18next } from "../../i18n/index.ts";
+import { formatDateParts } from "../shared/dateParts";
 
 export function TypeBadge({ type, compact }: { type: ForumPostType; compact?: boolean }) {
+  useTranslation(["forum"]);
   const meta = FORUM_TYPE_META[type];
   return (
     <span className={`fx-type-badge t-${type}`} title={meta.label}>
@@ -15,7 +20,7 @@ export function TypeBadge({ type, compact }: { type: ForumPostType; compact?: bo
 }
 
 const formatWhen = (time: number) =>
-  new Date(time).toLocaleString(localeForLanguage(), {
+  formatDateParts(time, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -26,9 +31,11 @@ const formatWhen = (time: number) =>
 
 function remaining(endsAt: number, now: number) {
   const minutes = Math.round((endsAt - now) / 60000);
-  if (minutes < 60) return `${Math.max(1, minutes)}m left`;
+  if (minutes < 60) return i18next.t("forum.poll.minutesLeft", { count: Math.max(1, minutes) });
   const hours = Math.round(minutes / 60);
-  return hours < 48 ? `${hours}h left` : `${Math.round(hours / 24)}d left`;
+  return hours < 48
+    ? i18next.t("forum.poll.hoursLeft", { count: hours })
+    : i18next.t("forum.poll.daysLeft", { count: Math.round(hours / 24) });
 }
 
 export function PollBlock(props: {
@@ -39,6 +46,7 @@ export function PollBlock(props: {
   onVote?: (optionIndex: number) => void;
   compact?: boolean;
 }) {
+  const { t } = useTranslation(["forum"]);
   const { poll } = props;
   const now = Date.now();
   const closed = poll.endsAt !== null && poll.endsAt <= now;
@@ -49,15 +57,15 @@ export function PollBlock(props: {
   return (
     <div className={`fx-poll${props.compact ? " compact" : ""}`} onClick={(event) => event.stopPropagation()}>
       <div className="fx-poll-meta">
-        <span>{poll.multi ? "Choose any" : "Choose one"}</span>
-        <span>
-          {tally.voters} voter{tally.voters === 1 ? "" : "s"}
-        </span>
+        <span>{poll.multi ? t("forum.poll.chooseAny") : t("forum.poll.chooseOne")}</span>
+        <span>{t("forum.poll.voters", { count: tally.voters })}</span>
         {poll.endsAt !== null && (
-          <span className={closed ? "closed" : ""}>{closed ? "Poll closed" : remaining(poll.endsAt, now)}</span>
+          <span className={closed ? "closed" : ""}>
+            {closed ? t("forum.poll.closed") : remaining(poll.endsAt, now)}
+          </span>
         )}
       </div>
-      <div className="fx-poll-options" role={props.onVote ? "group" : undefined} aria-label="Poll options">
+      <div className="fx-poll-options" role={props.onVote ? "group" : undefined} aria-label={t("forum.poll.options")}>
         {options.map((option, index) => {
           const percent = tally.total ? Math.round((tally.counts[index] / tally.total) * 100) : 0;
           const content = (
@@ -91,7 +99,7 @@ export function PollBlock(props: {
           );
         })}
         {props.compact && poll.options.length > options.length && (
-          <small className="fx-muted">+{poll.options.length - options.length} more</small>
+          <small className="fx-muted">{t("forum.poll.more", { count: poll.options.length - options.length })}</small>
         )}
       </div>
     </div>
@@ -99,27 +107,26 @@ export function PollBlock(props: {
 }
 
 export function LfgBlock({ lfg, compact }: { lfg: ForumLfg; compact?: boolean }) {
+  const { t } = useTranslation(["forum"]);
   return (
     <dl className={`fx-lfg${compact ? " compact" : ""}`}>
       <div>
-        <dt>Game</dt>
+        <dt>{t("forum.lfg.game")}</dt>
         <dd>{lfg.game}</dd>
       </div>
       {lfg.platform && (
         <div>
-          <dt>Platform</dt>
-          <dd>{lfg.platform}</dd>
+          <dt>{t("forum.lfg.platform")}</dt>
+          <dd>{squadValueLabel("platform", lfg.platform)}</dd>
         </div>
       )}
       <div>
-        <dt>Need</dt>
-        <dd>
-          {lfg.slots} player{lfg.slots === 1 ? "" : "s"}
-        </dd>
+        <dt>{t("forum.lfg.need")}</dt>
+        <dd>{t("forum.lfg.players", { count: lfg.slots })}</dd>
       </div>
       {lfg.startAt !== null && (
         <div>
-          <dt>Starts</dt>
+          <dt>{t("forum.lfg.starts")}</dt>
           <dd>{formatWhen(lfg.startAt)}</dd>
         </div>
       )}
@@ -138,9 +145,10 @@ export function MediaBlock({
   resolveUrl(url: string): string | null;
   compact?: boolean;
 }) {
+  const { t } = useTranslation(["forum"]);
   const local = resolveUrl(media.url);
   if (!compact && local && media.mime?.startsWith("image/"))
-    return <img className="fx-media-img" src={local} alt="Post media" loading="lazy" />;
+    return <img className="fx-media-img" src={local} alt={t("forum.media.alt")} loading="lazy" />;
   if (!compact && local && media.mime?.startsWith("video/"))
     return <video className="fx-media-video" src={local} controls preload="metadata" />;
   let host = "";
@@ -163,7 +171,7 @@ export function MediaBlock({
         <Icon name={media.mime?.startsWith("image/") ? "image" : "video"} size="sm" />
       </span>
       <span>
-        <strong>{host || "Media file"}</strong>
+        <strong>{host || t("forum.media.file")}</strong>
         <small>{media.url}</small>
       </span>
     </a>

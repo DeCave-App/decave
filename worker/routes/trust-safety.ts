@@ -38,7 +38,7 @@ import {
   rawSessionTokenFromRequest,
   tokenHash,
 } from "../db";
-import { json, boundedBodyJson, idFromPath, bodyJson } from "../lib/http";
+import { apiError, apiErrorLegacy, json, boundedBodyJson, idFromPath, bodyJson } from "../lib/http";
 import { requireUser, securityEvent, revokeAccountSessions } from "../lib/sessions";
 import { unreadSummary, markRead } from "../read-state";
 import { canAccessRoom } from "../lib/hubs";
@@ -360,9 +360,8 @@ export async function safetyResolveTarget(
 
   if (userTarget) {
     subject = await userByReference(env.DB, targetId);
-    if (!subject || subject.deleted_at || subject.erased_at)
-      return json({ error: "The reported user was not found." }, 404);
-    if (subject.id === reporter.id) return json({ error: "You cannot report your own account." }, 400);
+    if (!subject || subject.deleted_at || subject.erased_at) return apiError("trustSafety.reportedUserNotFound", 404);
+    if (subject.id === reporter.id) return apiError("trustSafety.reportSelfAccount", 400);
     if (targetType === "voice_participant") resolvedContextType = contextType ?? "voice";
   } else {
     const channelMessage = await env.DB.prepare(
@@ -374,7 +373,7 @@ export async function safetyResolveTarget(
     if (channelMessage) {
       const room = await getRoom(env.DB, channelMessage.room_id);
       if (!room || !(await dbCanAccessRoom(env.DB, room, reporter.id))) {
-        return json({ error: "You do not have access to that message." }, 403);
+        return apiError("trustSafety.messageNoAccess", 403);
       }
       subject = await env.DB.prepare("SELECT * FROM decave_users WHERE id=? LIMIT 1")
         .bind(channelMessage.author_user_id)
@@ -390,7 +389,7 @@ export async function safetyResolveTarget(
         .first<{ id: string; from_user_id: string; to_user_id: string }>();
       if (directMessage) {
         if (directMessage.from_user_id !== reporter.id && directMessage.to_user_id !== reporter.id) {
-          return json({ error: "You do not have access to that private message." }, 403);
+          return apiError("trustSafety.privateMessageNoAccess", 403);
         }
         const subjectId =
           directMessage.from_user_id === reporter.id ? directMessage.to_user_id : directMessage.from_user_id;
@@ -408,7 +407,7 @@ export async function safetyResolveTarget(
             .first<{ id: string; group_id: string; from_user_id: string }>();
           if (groupMessage) {
             if (!(await isGroupChatMember(env.DB, groupMessage.group_id, reporter.id))) {
-              return json({ error: "You do not have access to that group message." }, 403);
+              return apiError("trustSafety.groupMessageNoAccess", 403);
             }
             subject = await env.DB.prepare("SELECT * FROM decave_users WHERE id=? LIMIT 1")
               .bind(groupMessage.from_user_id)
@@ -426,9 +425,9 @@ export async function safetyResolveTarget(
       subject = await userByReference(env.DB, subjectReference);
     }
     if (!subject) {
-      return json({ error: "Include the reported user's DeCave ID for protected content." }, 400);
+      return apiError("trustSafety.reportedUserIdRequired", 400);
     }
-    if (subject.id === reporter.id) return json({ error: "You cannot report your own content." }, 400);
+    if (subject.id === reporter.id) return apiError("trustSafety.reportSelfContent", 400);
   }
 
   return {
@@ -454,11 +453,7 @@ export async function handleTrustSafetyApi(
     if (user instanceof Response) return user;
     void user;
     const key = await activeTrustSafetyKey(env.DB);
-    if (!key)
-      return json(
-        { error: "Encrypted evidence submission is not configured yet.", code: "EVIDENCE_KEY_UNAVAILABLE" },
-        503,
-      );
+    if (!key) return apiErrorLegacy("EVIDENCE_KEY_UNAVAILABLE", "trustSafety.evidenceKeyUnavailable", 503);
     return json(
       {
         keyId: key.key_id,
@@ -476,16 +471,13 @@ export async function handleTrustSafetyApi(
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const body = await boundedBodyJson(request, 16 * 1024);
-    if (!body) return json({ error: "Age information is too large." }, 413);
+    if (!body) return apiError("trustSafety.ageTooLarge", 413);
     const profile = deriveAgeProfile(body.birthDate);
-    if (!profile) return json({ error: "Enter a valid birth date." }, 400);
+    if (!profile) return apiError("trustSafety.birthDateInvalid", 400);
     await saveAgeProfile(env.DB, user.id, profile);
     await securityEvent(env, user.id, profile.ageStatus === "ineligible" ? "age.ineligible" : "age.confirmed", request);
     if (profile.ageStatus === "ineligible") {
-      return json(
-        { error: "DeCave accounts are available only to adults aged 18 or older.", code: "AGE_RESTRICTED" },
-        403,
-      );
+      return apiErrorLegacy("AGE_RESTRICTED", "trustSafety.ageRestricted", 403);
     }
     return json({ safety: safetyProfileForClient(await getSafetyProfile(env.DB, user.id)) });
   }
@@ -510,7 +502,7 @@ export async function handleTrustSafetyApi(
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const row = await safetyReportRow(env, decodeURIComponent(userReportDetail[1]));
-    if (!row || row.reporter_user_id !== user.id) return json({ error: "Report not found." }, 404);
+    if (!row || row.reporter_user_id !== user.id) return apiError("trustSafety.reportNotFound", 404);
     const evidence = await env.DB.prepare(
       `SELECT id,report_id,evidence_type,source_message_id,source_context_type,source_context_id,
               ciphertext_sha256,ciphertext_size,package_version,encryption_version,key_id,created_at
@@ -546,21 +538,20 @@ export async function handleTrustSafetyApi(
     if (user instanceof Response) return user;
     const reportId = decodeURIComponent(reportEvidenceRoute[1]);
     const report = await safetyReportRow(env, reportId);
-    if (!report || report.reporter_user_id !== user.id) return json({ error: "Report not found." }, 404);
+    if (!report || report.reporter_user_id !== user.id) return apiError("trustSafety.reportNotFound", 404);
     const maxBytes = EVIDENCE_UPLOAD_LIMITS.requestBytes;
     const declaredLength = Number(request.headers.get("content-length") ?? 0);
     if (Number.isFinite(declaredLength) && declaredLength > maxBytes)
-      return json({ error: "Evidence is too large." }, 413);
+      return apiError("trustSafety.evidenceTooLarge", 413);
     const boundedBytes = await readBoundedEvidence(request, maxBytes);
-    if (!boundedBytes) return json({ error: "Evidence is too large." }, 413);
+    if (!boundedBytes) return apiError("trustSafety.evidenceTooLarge", 413);
     const bytes = boundedBytes;
-    if (!bytes.byteLength) return json({ error: "Evidence is empty." }, 400);
+    if (!bytes.byteLength) return apiError("trustSafety.evidenceEmpty", 400);
 
     const expectedHash = (request.headers.get("X-DeCave-Evidence-Sha256") ?? "").trim().toLowerCase();
-    if (expectedHash && !/^[a-f0-9]{64}$/.test(expectedHash)) return json({ error: "Evidence hash is invalid." }, 400);
+    if (expectedHash && !/^[a-f0-9]{64}$/.test(expectedHash)) return apiError("trustSafety.evidenceHashInvalid", 400);
     const hash = await sha256Hex(bytes.buffer as ArrayBuffer);
-    if (expectedHash && expectedHash !== hash)
-      return json({ error: "Evidence hash does not match the uploaded ciphertext." }, 400);
+    if (expectedHash && expectedHash !== hash) return apiError("trustSafety.evidenceHashMismatch", 400);
     const headerKeyId = reportReference(request.headers.get("X-DeCave-Evidence-Key-Id"), 128);
 
     const evidenceType = request.headers.get("X-DeCave-Evidence-Type") ?? "context";
@@ -571,7 +562,7 @@ export async function handleTrustSafetyApi(
       evidenceType === "context" ||
       evidenceType === "voice_participant"
     )) {
-      return json({ error: "Evidence type is invalid." }, 400);
+      return apiError("trustSafety.evidenceTypeInvalid", 400);
     }
 
     const existingEvidence = await env.DB.prepare(
@@ -597,13 +588,8 @@ export async function handleTrustSafetyApi(
       );
 
     const key = await activeTrustSafetyKey(env.DB);
-    if (!key)
-      return json(
-        { error: "Encrypted evidence submission is not configured yet.", code: "EVIDENCE_KEY_UNAVAILABLE" },
-        503,
-      );
-    if (headerKeyId && headerKeyId !== key.key_id)
-      return json({ error: "Evidence key is no longer active. Refresh and try again." }, 409);
+    if (!key) return apiErrorLegacy("EVIDENCE_KEY_UNAVAILABLE", "trustSafety.evidenceKeyUnavailable", 503);
+    if (headerKeyId && headerKeyId !== key.key_id) return apiError("trustSafety.evidenceKeyInactive", 409);
 
     const evidenceId = crypto.randomUUID();
     const objectKey = `safety-evidence/v1/${reportId}/${evidenceId}.bin`;
@@ -721,7 +707,7 @@ export async function handleTrustSafetyApi(
           },
           200,
         );
-      if (existingReservation) return json({ error: "This evidence upload is already in progress." }, 409);
+      if (existingReservation) return apiError("trustSafety.evidenceUploadInProgress", 409);
       throw error;
     }
 
@@ -733,15 +719,15 @@ export async function handleTrustSafetyApi(
       )
         .bind(reportId, user.id)
         .first<{ active: number }>();
-      if (!activeReport) return json({ error: "Report not found." }, 404);
+      if (!activeReport) return apiError("trustSafety.reportNotFound", 404);
       const existingReservation = await env.DB.prepare(
         `SELECT id FROM decave_report_evidence_upload_reservations
          WHERE report_id=? AND ciphertext_sha256=? LIMIT 1`,
       )
         .bind(reportId, hash)
         .first<{ id: string }>();
-      if (existingReservation) return json({ error: "This evidence upload is already in progress." }, 409);
-      return json({ error: "Evidence upload quota exceeded." }, 429);
+      if (existingReservation) return apiError("trustSafety.evidenceUploadInProgress", 409);
+      return apiError("trustSafety.evidenceQuotaExceeded", 429);
     }
 
     const compensateReservation = async (): Promise<boolean> => {
@@ -761,7 +747,7 @@ export async function handleTrustSafetyApi(
       });
     } catch {
       await compensateReservation();
-      return json({ error: "Evidence storage is temporarily unavailable." }, 503);
+      return apiError("trustSafety.evidenceStorageUnavailable", 503);
     }
 
     const evidenceInsert = env.DB.prepare(
@@ -832,7 +818,7 @@ export async function handleTrustSafetyApi(
           .first<{ present: number }>();
         if (!committed) {
           await compensateReservation();
-          return json({ error: "The report changed while evidence was uploading." }, 409);
+          return apiError("trustSafety.reportChanged", 409);
         }
       }
       await env.DB.prepare("DELETE FROM decave_report_evidence_upload_reservations WHERE id=?").bind(evidenceId).run();
@@ -862,7 +848,7 @@ export async function handleTrustSafetyApi(
     if (user instanceof Response) return user;
     const target = await userByReference(env.DB, decodeURIComponent(blockDetail[1]));
     if (!target || target.id === user.id || target.deleted_at || target.erased_at)
-      return json({ error: "User not found." }, 404);
+      return apiError("trustSafety.userNotFound", 404);
     if (method === "DELETE") {
       await env.DB.prepare("DELETE FROM decave_user_blocks WHERE blocker_user_id=? AND blocked_user_id=?")
         .bind(user.id, target.id)
@@ -904,7 +890,7 @@ export async function handleTrustSafetyApi(
     if (user instanceof Response) return user;
     const target = await userByReference(env.DB, decodeURIComponent(muteDetail[1]));
     if (!target || target.id === user.id || target.deleted_at || target.erased_at)
-      return json({ error: "User not found." }, 404);
+      return apiError("trustSafety.userNotFound", 404);
     if (method === "DELETE") {
       await env.DB.prepare("DELETE FROM decave_user_mutes WHERE muter_user_id=? AND muted_user_id=?")
         .bind(user.id, target.id)
@@ -936,11 +922,11 @@ export async function handleTrustSafetyApi(
     if (body.scope === "room") {
       const roomId = Number(body.channelId);
       const room = Number.isSafeInteger(roomId) && roomId > 0 ? await getRoom(env.DB, roomId) : null;
-      if (!room || !(await canAccessRoom(env.DB, room, user.id))) return json({ error: "Room not found." }, 404);
+      if (!room || !(await canAccessRoom(env.DB, room, user.id))) return apiError("trustSafety.roomNotFound", 404);
       await markRead(env.DB, user.id, "room", String(roomId));
     } else if (body.scope === "dm") {
       const other = typeof body.userId === "string" ? await userByReference(env.DB, body.userId) : null;
-      if (!other || other.id === user.id) return json({ error: "User not found." }, 404);
+      if (!other || other.id === user.id) return apiError("trustSafety.userNotFound", 404);
       await markRead(env.DB, user.id, "dm", other.id);
       // Lets the sender's open chat flip "Sent" to "Seen" without reloading.
       await realtimeBroadcast(
@@ -949,7 +935,7 @@ export async function handleTrustSafetyApi(
         { userIds: [other.id] },
       ).catch(() => undefined);
     } else {
-      return json({ error: "Scope must be room or dm." }, 400);
+      return apiError("trustSafety.scopeInvalid", 400);
     }
     return json({ success: true });
   }
@@ -958,10 +944,10 @@ export async function handleTrustSafetyApi(
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const sessionToken = rawSessionTokenFromRequest(request);
-    if (!sessionToken) return json({ error: "An active session is required." }, 401);
+    if (!sessionToken) return apiError("trustSafety.sessionRequired", 401);
     const sessionHash = tokenHash(sessionToken);
     const body = await bodyJson(request);
-    if (!isExpoPushToken(body.token)) return json({ error: "Invalid push token." }, 400);
+    if (!isExpoPushToken(body.token)) return apiError("trustSafety.pushTokenInvalid", 400);
     if (method === "DELETE") await removePushToken(env, user.id, sessionHash, body.token);
     else
       await registerPushToken(
@@ -1000,16 +986,16 @@ export async function handleTrustSafetyApi(
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const limited = await env.AUTH_RATE_LIMITER.limit({ key: `trust-safety-report:${user.id}` });
-    if (!limited.success) return json({ error: "Too many reports submitted. Try again shortly." }, 429);
+    if (!limited.success) return apiError("trustSafety.reportRateLimited", 429);
     const body = await boundedBodyJson(request, 32 * 1024);
-    if (!body) return json({ error: "Report is too large." }, 413);
+    if (!body) return apiError("trustSafety.reportTooLarge", 413);
     const targetType = body.targetType;
     const category = body.category;
     if (!isReportTargetType(targetType))
-      return json({ error: `Target type must be one of: ${REPORT_TARGET_TYPES.join(", ")}.` }, 400);
-    if (!isReportCategory(category)) return json({ error: `Choose a report category.` }, 400);
+      return apiError("trustSafety.targetTypeInvalid", 400, { types: REPORT_TARGET_TYPES.join(", ") });
+    if (!isReportCategory(category)) return apiError("trustSafety.categoryRequired", 400);
     const targetId = reportReference(body.targetId);
-    if (!targetId) return json({ error: "Choose the content or user to report." }, 400);
+    if (!targetId) return apiError("trustSafety.targetRequired", 400);
     const contextType = reportReference(body.contextType, 64) || null;
     const contextId = reportReference(body.contextId, 256) || null;
     const contextLabel = reportReference(body.contextLabel, 160) || null;
@@ -1135,7 +1121,7 @@ export async function handleTrustSafetyApi(
   );
   if (method === "GET" && adminReportDetail) {
     const row = await safetyReportRow(env, decodeURIComponent(adminReportDetail[1]));
-    if (!row) return json({ error: "Report not found." }, 404);
+    if (!row) return apiError("trustSafety.reportNotFound", 404);
     const revealReporter = url.searchParams.get("revealReporter") === "1";
     if (revealReporter) {
       const reauthError = await ownerRequireReauth(request, env, owner.id);
@@ -1187,7 +1173,7 @@ export async function handleTrustSafetyApi(
   if (method === "GET" && adminCaseDetail) {
     const caseId = decodeURIComponent(adminCaseDetail[1]);
     const caseRow = await safetyCaseRow(env, caseId);
-    if (!caseRow) return json({ error: "Case not found." }, 404);
+    if (!caseRow) return apiError("trustSafety.caseNotFound", 404);
     await trustSafetyAuditStatement(env.DB, {
       actorUserId: owner.id,
       caseId,
@@ -1301,10 +1287,10 @@ export async function handleTrustSafetyApi(
     const reauthError = await ownerRequireReauth(request, env, owner.id);
     if (reauthError) return reauthError;
     const report = await safetyReportRow(env, decodeURIComponent(reportStatusRoute[1]));
-    if (!report) return json({ error: "Report not found." }, 404);
+    if (!report) return apiError("trustSafety.reportNotFound", 404);
     const body = await boundedBodyJson(request, 16 * 1024);
     if (!body || !isReportStatus(body.status))
-      return json({ error: `Status must be one of: ${REPORT_STATUSES.join(", ")}.` }, 400);
+      return apiError("trustSafety.statusInvalid", 400, { statuses: REPORT_STATUSES.join(", ") });
     const resolutionCode = reportReference(body.resolutionCode, 80) || null;
     const resolutionNotes = reportDescription(body.resolutionNotes);
     const closedAt =
@@ -1341,10 +1327,10 @@ export async function handleTrustSafetyApi(
     const reauthError = await ownerRequireReauth(request, env, owner.id);
     if (reauthError) return reauthError;
     const report = await safetyReportRow(env, decodeURIComponent(reportUrgencyRoute[1]));
-    if (!report) return json({ error: "Report not found." }, 404);
+    if (!report) return apiError("trustSafety.reportNotFound", 404);
     const body = await boundedBodyJson(request, 16 * 1024);
     if (!body || !isReportUrgency(body.urgency))
-      return json({ error: `Urgency must be one of: ${REPORT_URGENCIES.join(", ")}.` }, 400);
+      return apiError("trustSafety.urgencyInvalid", 400, { urgencies: REPORT_URGENCIES.join(", ") });
     const reason = reportDescription(body.reason);
     await env.DB.batch([
       env.DB.prepare(
@@ -1375,10 +1361,10 @@ export async function handleTrustSafetyApi(
     const reauthError = await ownerRequireReauth(request, env, owner.id);
     if (reauthError) return reauthError;
     const caseId = decodeURIComponent(caseNoteRoute[1]);
-    if (!(await safetyCaseRow(env, caseId))) return json({ error: "Case not found." }, 404);
+    if (!(await safetyCaseRow(env, caseId))) return apiError("trustSafety.caseNotFound", 404);
     const body = await boundedBodyJson(request, 16 * 1024);
     const note = reportDescription(body?.note);
-    if (!note) return json({ error: "Note cannot be empty." }, 400);
+    if (!note) return apiError("trustSafety.noteEmpty", 400);
     const noteId = crypto.randomUUID();
     await env.DB.batch([
       env.DB.prepare(
@@ -1405,9 +1391,9 @@ export async function handleTrustSafetyApi(
     const caseId = decodeURIComponent(caseLinkRoute[1]);
     const body = await boundedBodyJson(request, 16 * 1024);
     const linkedCaseId = reportReference(body?.linkedCaseId, 128);
-    if (!linkedCaseId || linkedCaseId === caseId) return json({ error: "Choose a different case to link." }, 400);
+    if (!linkedCaseId || linkedCaseId === caseId) return apiError("trustSafety.linkCaseInvalid", 400);
     if (!(await safetyCaseRow(env, caseId)) || !(await safetyCaseRow(env, linkedCaseId)))
-      return json({ error: "Case not found." }, 404);
+      return apiError("trustSafety.caseNotFound", 404);
     const [first, second] = [caseId, linkedCaseId].sort();
     const relation = body?.relation === "duplicate" || body?.relation === "escalated_from" ? body.relation : "related";
     await env.DB.batch([
@@ -1434,7 +1420,7 @@ export async function handleTrustSafetyApi(
     if (reauthError) return reauthError;
     const caseId = decodeURIComponent(caseActionRoute[1]);
     const caseRow = await safetyCaseRow(env, caseId);
-    if (!caseRow) return json({ error: "Case not found." }, 404);
+    if (!caseRow) return apiError("trustSafety.caseNotFound", 404);
     const body = await boundedBodyJson(request, 16 * 1024);
     const actionType = body?.actionType;
     if (
@@ -1444,13 +1430,13 @@ export async function handleTrustSafetyApi(
       actionType !== "restrict" &&
       actionType !== "no_action_taken"
     )
-      return json({ error: "This action is not available in Phase 1." }, 400);
+      return apiError("trustSafety.actionUnavailable", 400);
     const noActionTaken = actionType === "no_action_taken";
     const storedActionType = noActionTaken ? "warning" : actionType;
     const storedReasonCode = noActionTaken ? "no_action_taken" : "";
     const finalStatus = noActionTaken ? "no_violation" : "action_taken";
     const reason = reportDescription(body?.reason);
-    if (!reason) return json({ error: "Action reason is required." }, 400);
+    if (!reason) return apiError("trustSafety.actionReasonRequired", 400);
     const targetReference = reportReference(body?.targetUserId, 128);
     const target = targetReference
       ? await userByReference(env.DB, targetReference)
@@ -1463,7 +1449,7 @@ export async function handleTrustSafetyApi(
       (actionType === "suspend" || actionType === "unsuspend") &&
       (!target || target.id === owner.id || target.platform_role === "owner")
     )
-      return json({ error: "This account cannot be changed by this action." }, 409);
+      return apiError("trustSafety.accountActionForbidden", 409);
     const durationRaw = Number(body?.durationHours);
     const durationHours =
       actionType === "suspend" && Number.isFinite(durationRaw) && durationRaw > 0
@@ -1549,7 +1535,7 @@ export async function handleTrustSafetyApi(
   );
   if (method === "GET" && subjectHistoryRoute) {
     const target = await userByReference(env.DB, decodeURIComponent(subjectHistoryRoute[1]));
-    if (!target) return json({ error: "User not found." }, 404);
+    if (!target) return apiError("trustSafety.userNotFound", 404);
     const [reports, cases, actions] = await Promise.all([
       env.DB.prepare(
         "SELECT r.*,c.case_number,NULL AS reporter_public_id,NULL AS reporter_username FROM decave_reports r JOIN decave_moderation_cases c ON c.id=r.case_id WHERE r.subject_user_id=? ORDER BY r.created_at DESC LIMIT 100",
@@ -1601,9 +1587,9 @@ export async function handleTrustSafetyApi(
         key_id: string;
         evidence_type: string;
       }>();
-    if (!evidence) return json({ error: "Evidence not found." }, 404);
+    if (!evidence) return apiError("trustSafety.evidenceNotFound", 404);
     const object = await env.MEDIA.get(evidence.object_key);
-    if (!object) return json({ error: "Evidence object is no longer available." }, 410);
+    if (!object) return apiError("trustSafety.evidenceObjectGone", 410);
     await env.DB.prepare(
       `INSERT INTO decave_moderation_audit_log
        (id,actor_user_id,case_id,report_id,evidence_id,event_type,new_value_json,created_at)
@@ -1641,5 +1627,5 @@ export async function handleTrustSafetyApi(
     return json({ events: rows.results }, 200, { "Cache-Control": "no-store, private" });
   }
 
-  return json({ error: "Trust & Safety endpoint not found." }, 404);
+  return apiError("trustSafety.endpointNotFound", 404);
 }

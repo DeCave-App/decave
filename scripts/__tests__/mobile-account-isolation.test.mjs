@@ -6,6 +6,11 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import ts from "typescript";
 
+// Mobile screens show text through t(); slices run with the English catalogs.
+await import("../test-support/i18n-english.mjs");
+const { i18next } = await import("../../src/i18n/index.ts");
+const t = (key, options) => i18next.t(key, options);
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 const sessionSource = read("mobile/src/providers/SessionProvider.tsx");
@@ -186,6 +191,7 @@ globalThis.invalidationState = () => [...invalidationCalls];
       sessionStore: storage.store,
       state,
       Alert: { alert: (...args) => state.alerts.push(args) },
+      t,
       apiJson,
       router: { replace: (route) => state.routes.push(route) },
       clearPushMemory() {},

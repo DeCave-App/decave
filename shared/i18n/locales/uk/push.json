@@ -1,0 +1,54 @@
+{
+  "hidden": {
+    "hubMessage": "Нове повідомлення в Hub",
+    "directMessage": "У тебе нове повідомлення"
+  },
+  "sender": {
+    "hubMessage": "{{sender}} надсилає повідомлення",
+    "directMessage": "{{sender}} пише тобі",
+    "inRoom": "{{sender}} у {{where}}",
+    "someone": "Хтось",
+    "unknownDirect": "Нове повідомлення"
+  },
+  "preview": {
+    "gif": "Надіслано GIF",
+    "attachment": "Надіслано вкладення",
+    "encrypted": "Надіслано тобі зашифроване повідомлення"
+  },
+  "mobile": {
+    "hiddenMention": "Тебе згадали в DeCave.",
+    "hiddenMessage": "У тебе нове повідомлення.",
+    "groupChat": "Груповий чат",
+    "hubMessage": "Повідомлення в Hub",
+    "sentMessage": "{{sender}} надсилає повідомлення.",
+    "mentionedIn": "Згадує тебе в {{place}}.",
+    "mentioned": "Згадує тебе.",
+    "sentPrivate": "Надсилає тобі приватне повідомлення.",
+    "withSender": "{{sender}}: {{text}}",
+    "unknownUser": "Користувач DeCave",
+    "hubRoom": "Кімната Hub",
+    "encryptedMessage": "🔒 Зашифроване повідомлення",
+    "channels": {
+      "messages": {
+        "name": "Повідомлення",
+        "description": "Приватні повідомлення, групові чати й сповіщення з Hub"
+      },
+      "silent": {
+        "name": "Повідомлення (без звуку)",
+        "description": "Тихі сповіщення про повідомлення DeCave"
+      }
+    },
+    "primer": {
+      "title": "Будь у курсі",
+      "message": "Отримуй сповіщення про приватні повідомлення, згадування, запити на дружбу і про те, що Squad готовий. Точніше налаштувати це можна в налаштуваннях.",
+      "allow": "Увімкнути"
+    },
+    "squad": {
+      "title": "Squad доступний",
+      "body_one": "{{game}}: готово {{count}} з 4 гравців.",
+      "body_few": "{{game}}: готово {{count}} з 4 гравців.",
+      "body_many": "{{game}}: готово {{count}} з 4 гравців.",
+      "body_other": "{{game}}: готово {{count}} з 4 гравців."
+    }
+  }
+}

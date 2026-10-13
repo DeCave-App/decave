@@ -1,5 +1,8 @@
 // Left sidebar of an open Hub: banner, Hub header and room list.
 
+import { hubRoleName } from "./roleLabels";
+import { formatNumber } from "../../i18n/format";
+import { useTranslation } from "react-i18next";
 import type { CSSProperties, Dispatch, SetStateAction, MutableRefObject, DragEvent as ReactDragEvent } from "react";
 import { Icon } from "../../components/Icon";
 import { HubRoomBoxes, type ForumPreview } from "../../features/hub-sidebar/HubRoomBoxes";
@@ -158,6 +161,7 @@ export function HubSidebar({
   voiceControls,
   contextMenus,
 }: Props) {
+  const { t } = useTranslation(["common", "hub", "chat"]);
   const { openUserContextMenu, openResourceContextMenu } = contextMenus;
   const { toggleMute, toggleDeafen, stopScreenShare, startScreenShare } = voiceControls;
   const { isScreenSharing } = callMedia;
@@ -198,8 +202,8 @@ export function HubSidebar({
       <button
         type="button"
         className="dc-hub-rail-fold"
-        title={hubRailCollapsed ? "Show Hub sidebar" : "Hide Hub sidebar"}
-        aria-label={hubRailCollapsed ? "Show Hub sidebar" : "Hide Hub sidebar"}
+        title={hubRailCollapsed ? t("hub.sidebar.show") : t("hub.sidebar.hide")}
+        aria-label={hubRailCollapsed ? t("hub.sidebar.show") : t("hub.sidebar.hide")}
         onClick={() =>
           setHubRailCollapsed((current) => {
             const next = !current;
@@ -239,17 +243,23 @@ export function HubSidebar({
               {currentServer.membershipPrivate && !isCurrentServerOwner ? (
                 <span>
                   <Icon name="lock" size="sm" />
-                  Membership private
+                  {t("hub.sidebar.membershipPrivate")}
                 </span>
               ) : (
                 <>
                   <span>
                     <i className="hsb-dot online" aria-hidden="true" />
-                    {(currentServer.onlineCount ?? 0).toLocaleString()} online
+                    {t("hub.sidebar.online", {
+                      count: currentServer.onlineCount ?? 0,
+                      value: formatNumber(currentServer.onlineCount ?? 0),
+                    })}
                   </span>
                   <span>
                     <i className="hsb-dot" aria-hidden="true" />
-                    {(currentServer.memberCount ?? 0).toLocaleString()} members
+                    {t("hub.sidebar.members", {
+                      count: currentServer.memberCount ?? 0,
+                      value: formatNumber(currentServer.memberCount ?? 0),
+                    })}
                   </span>
                 </>
               )}
@@ -262,25 +272,25 @@ export function HubSidebar({
                 {currentServer.ownerOnlyPosting && (
                   <span className="hsb-badge official">
                     <Icon name="check" size="sm" />
-                    Official
+                    {t("hub.sidebar.official")}
                   </span>
                 )}
                 {currentServer.myRole === "owner" && (
                   <span className="hsb-badge owner">
                     <Icon name="crown" size="sm" />
-                    Owner
+                    {t("common.roles.owner")}
                   </span>
                 )}
                 {currentServer.myRole === "admin" && (
                   <span className="hsb-badge">
                     <Icon name="shield" size="sm" />
-                    Admin
+                    {t("common.roles.admin")}
                   </span>
                 )}
                 {currentServer.visibility === "private" && (
                   <span className="hsb-badge">
                     <Icon name="lock" size="sm" />
-                    Private
+                    {t("hub.sidebar.private")}
                   </span>
                 )}
               </div>
@@ -293,8 +303,8 @@ export function HubSidebar({
             <button
               type="button"
               className="hsb-leave"
-              title="Leave hub"
-              aria-label="Leave hub"
+              title={t("hub.sidebar.leave")}
+              aria-label={t("hub.sidebar.leave")}
               onClick={() => void leaveServer()}
             >
               <Icon name="log-out" size="sm" />
@@ -306,7 +316,7 @@ export function HubSidebar({
       {showHubMembersPanel && (
         <div className="dc-hub-members-popover">
           <div className="dc-hub-members-popover-head">
-            <strong>Hub members</strong>
+            <strong>{t("hub.sidebar.membersTitle")}</strong>
             <button type="button" onClick={() => setShowHubMembersPanel(false)}>
               <Icon name="close" size="sm" />
             </button>
@@ -316,20 +326,20 @@ export function HubSidebar({
             type="search"
             value={hubMembersPanelSearch}
             onChange={(event) => setHubMembersPanelSearch(event.target.value)}
-            placeholder="Search Hub members"
-            aria-label="Search Hub members"
+            placeholder={t("hub.sidebar.searchMembers")}
+            aria-label={t("hub.sidebar.searchMembers")}
           />
           <div className="dc-hub-member-filters role-only">
             <select
               value={hubMembersPanelRole}
               onChange={(event) => setHubMembersPanelRole(event.target.value)}
-              aria-label="Filter Hub members by role"
+              aria-label={t("hub.sidebar.filterRole")}
             >
-              <option value="all">All roles</option>
-              <option value="owner">Owners</option>
-              <option value="admin">Admins</option>
-              <option value="moderator">Moderators</option>
-              <option value="member">Members</option>
+              <option value="all">{t("hub.sidebar.allRoles")}</option>
+              <option value="owner">{t("hub.sidebar.owners")}</option>
+              <option value="admin">{t("hub.sidebar.admins")}</option>
+              <option value="moderator">{t("hub.sidebar.moderators")}</option>
+              <option value="member">{t("hub.sidebar.membersFilter")}</option>
             </select>
           </div>
           {(() => {
@@ -360,19 +370,25 @@ export function HubSidebar({
                     <UserAvatar username={member.username} avatarUrl={member.avatarUrl} />
                     <span>
                       <strong>
-                        <span className="dc-member-role-icons" title={`${member.role} role`}>
+                        <span
+                          className="dc-member-role-icons"
+                          title={t("hub.sidebar.roleTitle", { role: hubRoleName(member.role) })}
+                        >
                           {memberRoleIcons(member)}
                         </span>{" "}
                         {member.username}
                       </strong>
                       <small>
-                        {member.role} · {presenceLabel(member.status, member.online)}
+                        {t("hub.sidebar.memberMeta", {
+                          role: hubRoleName(member.role),
+                          presence: presenceLabel(member.status, member.online),
+                        })}
                       </small>
                     </span>
                   </button>
                 ))}
                 {filteredMembers.length === 0 && (
-                  <div className="dc-hub-members-empty">No members match these filters.</div>
+                  <div className="dc-hub-members-empty">{t("hub.sidebar.noMembers")}</div>
                 )}
               </div>
             );
@@ -412,30 +428,42 @@ export function HubSidebar({
         }}
         forumPreviews={forumPreviews}
         homeActions={
-          <div className="dc-hub-visible-actions hsb-nav hbx-actions" role="toolbar" aria-label="Hub navigation">
+          <div
+            className="dc-hub-visible-actions hsb-nav hbx-actions"
+            role="toolbar"
+            aria-label={t("hub.sidebar.navigation")}
+          >
             {(!currentServer.membershipPrivate || isCurrentServerOwner) && (
               <button
                 type="button"
                 data-hub-members-toggle="true"
-                aria-label={`Members (${hubMembers.length})`}
-                data-tooltip={`Members · ${hubMembers.length}`}
+                aria-label={t("hub.sidebar.membersCount", { members: hubMembers.length })}
+                data-tooltip={t("hub.sidebar.membersTooltip", { members: hubMembers.length })}
                 aria-expanded={showHubMembersPanel}
                 onClick={() => setShowHubMembersPanel((value) => !value)}
               >
                 <HubActionIcon kind="members" />
-                <span>Members ({hubMembers.length})</span>
+                <span>{t("hub.sidebar.membersCount", { members: hubMembers.length })}</span>
               </button>
             )}
             {currentServer.channels.some((channel) => channel.type === "text") && (
               <button
                 type="button"
                 data-hub-calendar-toggle="true"
-                aria-label={`Calendar${hubCalendarUpcomingCount > 0 ? `, ${hubCalendarUpcomingCount} upcoming` : ""}`}
-                data-tooltip="Calendar"
+                aria-label={
+                  hubCalendarUpcomingCount > 0
+                    ? t("hub.sidebar.calendarUpcoming", { count: hubCalendarUpcomingCount })
+                    : t("hub.sidebar.calendar")
+                }
+                data-tooltip={t("hub.sidebar.calendar")}
                 onClick={() => openHubCalendar()}
               >
                 <HubActionIcon kind="calendar" />
-                <span>Calendar{hubCalendarUpcomingCount > 0 ? ` (${hubCalendarUpcomingCount})` : ""}</span>
+                <span>
+                  {hubCalendarUpcomingCount > 0
+                    ? t("hub.sidebar.calendarCount", { upcoming: hubCalendarUpcomingCount })
+                    : t("hub.sidebar.calendar")}
+                </span>
                 {hubCalendarUpcomingCount > 0 && (
                   <b className="hsb-nav-badge" aria-hidden="true">
                     {hubCalendarUpcomingCount > 9 ? "9+" : hubCalendarUpcomingCount}
@@ -444,9 +472,14 @@ export function HubSidebar({
               </button>
             )}
             {(canManageCurrentServer || canManageCurrentBots) && (
-              <button type="button" aria-label="Manage Hub" data-tooltip="Manage Hub" onClick={openManageServer}>
+              <button
+                type="button"
+                aria-label={t("hub.sidebar.manage")}
+                data-tooltip={t("hub.sidebar.manage")}
+                onClick={openManageServer}
+              >
                 <HubActionIcon kind="manage" />
-                <span>Manage Hub</span>
+                <span>{t("hub.sidebar.manage")}</span>
               </button>
             )}
           </div>
@@ -515,7 +548,7 @@ export function HubSidebar({
           const voiceRoom = voiceServer?.channels.find((channel) => channel.id === voiceChannelId);
           return (
             <VoicePanel
-              roomName={voiceRoom?.name ?? "Voice room"}
+              roomName={voiceRoom?.name ?? t("hub.sidebar.voiceRoom")}
               hubName={voiceServer && voiceServer.id !== currentServer.id ? voiceServer.name : undefined}
               status={voiceStatus}
               quality={voiceQuality}

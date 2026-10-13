@@ -1,0 +1,41 @@
+{
+  "common": {
+    "greeting": "Hola, {{username}}:",
+    "settingsPath": "Ajustes > Cuenta y seguridad"
+  },
+  "verify": {
+    "subject": "Verifica tu email de DeCave",
+    "text": "Hola, {{username}}. Verifica tu email de DeCave: {{link}}",
+    "heading": "Verifica tu email de DeCave",
+    "body": "Confirma esta dirección de email para activar tu cuenta.",
+    "button": "Verificar email",
+    "expiry": "Este enlace caduca en 24 horas."
+  },
+  "reset": {
+    "subject": "Restablece tu contraseña de DeCave",
+    "text": "Hola, {{username}}. Restablece tu contraseña de DeCave: {{link}}",
+    "heading": "Restablece tu contraseña de DeCave",
+    "body": "Si has pedido restablecer tu contraseña, usa el botón de abajo.",
+    "button": "Restablecer contraseña",
+    "expiry": "Este enlace caduca en 30 minutos."
+  },
+  "signInAlert": {
+    "subject": "Nuevo inicio de sesión en tu cuenta de DeCave",
+    "heading": "Nuevo inicio de sesión en DeCave",
+    "usedOnText": "Se acaba de iniciar sesión con tu cuenta de DeCave en: {{device}}",
+    "time": "Hora: {{when}}",
+    "usedOn": "Se acaba de iniciar sesión con tu cuenta en:",
+    "ifYou": "Si has sido tú, no tienes que hacer nada.",
+    "notYouText": "Si no has sido tú, protege tu cuenta ahora (se cerrará la sesión en todos los dispositivos y recibirás un enlace para restablecer la contraseña): {{link}}",
+    "turnOffText": "Puedes desactivar estos emails en {{settingsPath}}.",
+    "button": "No he sido yo",
+    "footer": "Se cerrará la sesión en todos los dispositivos y te enviaremos por email un enlace para restablecer la contraseña. El enlace funciona durante 7 días. Desactiva estos emails en {{settingsPath}}."
+  },
+  "emailChanged": {
+    "subject": "Se ha cambiado el email de tu cuenta de DeCave",
+    "heading": "Ha cambiado el email de tu cuenta de DeCave",
+    "changedText": "El email de tu cuenta de DeCave se ha cambiado a {{newEmail}}.",
+    "changed": "El email de tu cuenta se ha cambiado a <strong>{{newEmail}}</strong>.",
+    "notYou": "Si no has hecho este cambio, inicia sesión en DeCave, cambia tu contraseña y cierra la sesión en los demás dispositivos en {{settingsPath}}."
+  }
+}

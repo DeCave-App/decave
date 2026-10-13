@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
+import { useTranslation } from "react-i18next";
 import { API_BASE } from "@/src/lib/api";
 import { colors } from "@/src/theme";
 
@@ -25,6 +26,7 @@ export function TurnstileModal({
   onToken: (token: string) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation(["common", "auth"]);
   const [showChallenge, setShowChallenge] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
@@ -91,15 +93,15 @@ export function TurnstileModal({
       {showChallenge && (
         <View style={styles.head}>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>DECAVE SECURITY</Text>
-            <Text style={styles.title}>One more check</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("auth.mobile.turnstile.kicker")}</Text>
+            <Text style={styles.title}>{t("auth.mobile.turnstile.title")}</Text>
             <Text style={styles.subtitle}>
-              Cloudflare needs a quick interaction to finish verification.
+              {t("auth.mobile.turnstile.subtitle")}
             </Text>
           </View>
 
           <Pressable accessibilityRole="button" onPress={onCancel} hitSlop={12}>
-            <Text style={styles.close}>Cancel</Text>
+            <Text style={styles.close}>{t("common.actions.cancel")}</Text>
           </Pressable>
         </View>
       )}
@@ -124,7 +126,7 @@ export function TurnstileModal({
                 <View style={styles.loading}>
                   <ActivityIndicator color={colors.cyan} />
                   <Text style={styles.loadingText}>
-                    Finishing security verification…
+                    {t("auth.mobile.turnstile.finishing")}
                   </Text>
                 </View>
               )
@@ -138,7 +140,7 @@ export function TurnstileModal({
       {showChallenge && (
         <View style={styles.footer}>
           <Pressable accessibilityRole="button" style={styles.retry} onPress={retry}>
-            <Text style={styles.retryText}>Retry in background</Text>
+            <Text style={styles.retryText}>{t("auth.mobile.turnstile.retry")}</Text>
           </Pressable>
         </View>
       )}

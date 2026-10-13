@@ -1,0 +1,1167 @@
+{
+  "rule": {
+    "deleted": {
+      "room": "verwijderd kanaal (kies een ander)",
+      "voiceRoom": "verwijderd spraakkanaal (kies een ander)",
+      "role": "verwijderde rol (kies een andere)",
+      "rule": "verwijderde regel (kies een andere)"
+    },
+    "pick": {
+      "room": "(kies een kanaal)",
+      "voiceRoom": "(kies een spraakkanaal)",
+      "role": "(kies een rol)",
+      "rule": "(kies een regel)"
+    },
+    "duration": {
+      "days_one": "{{count}} dag",
+      "days_other": "{{count}} dagen",
+      "hours_one": "{{count}} uur",
+      "hours_other": "{{count}} uur",
+      "minutes_one": "{{count}} minuut",
+      "minutes_other": "{{count}} minuten"
+    },
+    "schedule": {
+      "every": "elke {{duration}}",
+      "daily": "elke dag om {{time}}",
+      "weekly": "elke {{day}} om {{time}}",
+      "cron": "volgens cron \"{{cron}}\"",
+      "any": "volgens een schema"
+    },
+    "anyVoiceRoom": "een willekeurig spraakkanaal",
+    "sameChannel": "hetzelfde kanaal",
+    "trigger": {
+      "command": "iemand /{{name}} gebruikt",
+      "message": {
+        "contains": "een bericht \"{{pattern}}\" bevat",
+        "startsWith": "een bericht met \"{{pattern}}\" begint",
+        "exact": "een bericht precies \"{{pattern}}\" is",
+        "regex": "een bericht overeenkomt met \"{{pattern}}\""
+      },
+      "memberJoin": "iemand lid wordt van de Hub",
+      "memberLeave": "iemand de Hub verlaat",
+      "roleAdded": "iemand {{role}} krijgt",
+      "roleRemoved": "iemand {{role}} verliest",
+      "reactionAdded": "iemand met {{emoji}} reageert",
+      "reactionRemoved": "iemand een {{emoji}}-reactie verwijdert",
+      "component": "iemand knop \"{{id}}\" gebruikt",
+      "formSubmit": "iemand formulier \"{{id}}\" verstuurt",
+      "voiceJoin": "iemand {{room}} binnenkomt",
+      "voiceLeave": "iemand {{room}} verlaat",
+      "hubEventStart": "een Hub-evenement begint",
+      "streamLive": "de stream live gaat op Twitch",
+      "streamOffline": "de stream stopt op Twitch"
+    },
+    "condition": {
+      "hasRole": "ze {{role}} hebben",
+      "lacksRole": "ze {{role}} niet hebben",
+      "channelIs": "het in {{room}} is",
+      "channelIsNot": "het niet in {{room}} is",
+      "accountAge_one": "hun account {{count}}+ dag oud is",
+      "accountAge_other": "hun account {{count}}+ dagen oud is",
+      "memberAge_one": "ze {{count}}+ dag geleden lid zijn geworden",
+      "memberAge_other": "ze {{count}}+ dagen geleden lid zijn geworden",
+      "chance": "{{percent}}% kans",
+      "timeOfDay": "het tussen {{from}} en {{to}} is",
+      "weekday": "het {{days}} is",
+      "noDay": "het geen enkele dag is (nooit)"
+    },
+    "action": {
+      "sendMessage": "stuur {{text}} in {{room}}",
+      "reply": "antwoord {{text}}",
+      "editMessage": "wijzig het bericht in {{text}}",
+      "pin": "pin het bericht vast",
+      "unpin": "maak het vastgepinde bericht los",
+      "deleteTrigger": "verwijder het bericht",
+      "react": "reageer met {{emoji}}",
+      "createThread": "start thread {{name}}",
+      "privateNotice": "zeg privé tegen het lid: {{text}}",
+      "addRole": "geef {{role}}",
+      "addRoleFor": "geef {{role}} voor {{duration}}",
+      "removeRole": "haal {{role}} weg",
+      "removeRoleFor": "haal {{role}} weg voor {{duration}}",
+      "toggleRole": "schakel {{role}} aan/uit",
+      "toggleRoleFor": "schakel {{role}} aan/uit voor {{duration}}",
+      "openForm": "open formulier {{title}}",
+      "startPoll": "start peiling {{question}}",
+      "createEvent": "maak evenement {{title}}",
+      "setVariable": "zet {{name}} op {{value}}",
+      "addVariable": "tel {{value}} op bij {{name}}",
+      "resetVariable": "reset {{name}}",
+      "wait": "wacht {{duration}}",
+      "stop": "stop",
+      "runRule": "voer {{rule}} uit",
+      "webhook": "roep {{method}} {{url}} aan"
+    },
+    "join": {
+      "and": "{{left}} en {{right}}",
+      "or": "{{left}} of {{right}}",
+      "then": "{{left}}, daarna {{right}}"
+    },
+    "sentence": {
+      "when": "Wanneer {{trigger}}",
+      "if": "Als {{conditions}}",
+      "ifBoth": "Als {{all}} en ({{any}})",
+      "do": "Dan: {{actions}}",
+      "doNothing": "Doe niets",
+      "otherwise": "Anders: {{actions}}"
+    },
+    "label": "Regel {{number}}",
+    "defaultFormField": "Antwoord"
+  },
+  "variable": {
+    "user": "Lid",
+    "channel": "Kanaal",
+    "date": "Datum van vandaag",
+    "random": "Willekeurig getal",
+    "text": "Berichttekst",
+    "textSample": "hoi allemaal",
+    "match": "Gevonden deel",
+    "matchSample": "hallo",
+    "emoji": "Emoji",
+    "value": "Gekozen waarde",
+    "streamTitle": "Streamtitel",
+    "streamTitleSample": "Ranked grinden vanavond",
+    "streamGame": "Game",
+    "streamUrl": "Streamlink",
+    "streamer": "Twitch-kanaal",
+    "insert": "Variabele invoegen",
+    "previewLabel": "Voorbeeld",
+    "preview": "Voorbeeld: {{text}}"
+  },
+  "capability": {
+    "send_messages": {
+      "label": "Berichten sturen",
+      "description": "Berichten, antwoorden, reacties, threads en persoonlijke berichten.",
+      "phrase": "berichten sturen"
+    },
+    "create_polls": {
+      "label": "Peilingen maken",
+      "description": "De actie Peiling starten.",
+      "phrase": "peilingen maken"
+    },
+    "create_events": {
+      "label": "Evenementen maken",
+      "description": "De actie Hub-evenement maken.",
+      "phrase": "evenementen maken"
+    },
+    "manage_roles": {
+      "label": "Rollen beheren",
+      "description": "Rollen geven, verwijderen en aan/uit schakelen.",
+      "phrase": "rollen beheren"
+    },
+    "manage_messages": {
+      "label": "Berichten beheren",
+      "description": "Berichten vastpinnen, losmaken en verwijderen.",
+      "phrase": "berichten beheren"
+    },
+    "webhooks": {
+      "label": "Webhooks aanroepen",
+      "description": "Verzoeken sturen naar HTTPS-URL's.",
+      "phrase": "webhooks aanroepen"
+    }
+  },
+  "catalogue": {
+    "triggers": {
+      "command": {
+        "label": "Slash-commando",
+        "description": "Een lid voert /naam uit in een kanaal.",
+        "fields": {
+          "name": {
+            "label": "Commandonaam",
+            "hint": "1-32 kleine letters, cijfers of streepjes, zonder slash."
+          },
+          "options": {
+            "label": "Opties",
+            "hint": "Lijst van {name, type (text|number|user|role|channel|choice), required, choices?}. Uit te lezen als {args.name}."
+          }
+        }
+      },
+      "message": {
+        "label": "Bericht geplaatst",
+        "description": "Een bericht in een kanaal komt overeen met een patroon.",
+        "fields": {
+          "mode": {
+            "label": "Overeenkomst"
+          },
+          "pattern": {
+            "label": "Patroon",
+            "hint": "Regex: maximaal 200 tekens, hoogstens één * of +, herhalingen alleen op losse tekens, groepen alleen voor (a|b)-keuzes. Controleert de eerste 500 tekens."
+          },
+          "caseSensitive": {
+            "label": "Hoofdlettergevoelig"
+          }
+        }
+      },
+      "memberJoin": {
+        "label": "Lid komt erbij",
+        "description": "Iemand wordt lid van de Hub."
+      },
+      "memberLeave": {
+        "label": "Lid vertrekt",
+        "description": "Iemand verlaat de Hub."
+      },
+      "roleAdded": {
+        "label": "Rol toegevoegd",
+        "description": "Een lid krijgt een rol.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          }
+        }
+      },
+      "roleRemoved": {
+        "label": "Rol verwijderd",
+        "description": "Een lid verliest een rol.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          }
+        }
+      },
+      "reactionAdded": {
+        "label": "Reactie toegevoegd",
+        "description": "Een lid reageert met een emoji.",
+        "fields": {
+          "emoji": {
+            "label": "Emoji"
+          },
+          "messageId": {
+            "label": "Alleen op bericht",
+            "hint": "Bericht-id; leeg voor elk bericht."
+          }
+        }
+      },
+      "reactionRemoved": {
+        "label": "Reactie verwijderd",
+        "description": "Een lid verwijdert een reactie.",
+        "fields": {
+          "emoji": {
+            "label": "Emoji"
+          },
+          "messageId": {
+            "label": "Alleen op bericht",
+            "hint": "Bericht-id; leeg voor elk bericht."
+          }
+        }
+      },
+      "component": {
+        "label": "Knop of keuzelijst gebruikt",
+        "description": "Een lid klikt op een knop of kiest iets uit een keuzelijst op een kaart.",
+        "fields": {
+          "customId": {
+            "label": "Id van knop of keuzelijst",
+            "hint": "De customId die op de kaart is ingesteld."
+          }
+        }
+      },
+      "formSubmit": {
+        "label": "Formulier verstuurd",
+        "description": "Een lid verstuurt een formulier dat door deze bot is geopend.",
+        "fields": {
+          "formId": {
+            "label": "Formulier-id",
+            "hint": "Velden zijn uit te lezen als {form.fieldId}."
+          }
+        }
+      },
+      "voiceJoin": {
+        "label": "Komt in spraak",
+        "description": "Een lid neemt deel aan een spraakkanaal.",
+        "fields": {
+          "roomId": {
+            "label": "Spraakkanaal",
+            "hint": "Leeg voor elk spraakkanaal."
+          }
+        }
+      },
+      "voiceLeave": {
+        "label": "Verlaat spraak",
+        "description": "Een lid verlaat een spraakkanaal.",
+        "fields": {
+          "roomId": {
+            "label": "Spraakkanaal",
+            "hint": "Leeg voor elk spraakkanaal."
+          }
+        }
+      },
+      "schedule": {
+        "label": "Volgens schema",
+        "description": "Draait op een timer, met minstens 5 minuten ertussen.",
+        "fields": {
+          "schedule": {
+            "label": "Schema",
+            "hint": "Precies één van every (minuten, >=5), daily (\"HH:MM\"), weekly ({day 0-6, time \"HH:MM\"}) of cron, plus timezone (IANA-naam)."
+          }
+        }
+      },
+      "hubEventStart": {
+        "label": "Hub-evenement begint",
+        "description": "Een gepland Hub-evenement begint."
+      },
+      "streamLive": {
+        "label": "Stream gaat live",
+        "description": "Het Twitch-kanaal van de Hub begint te streamen (vereist automatische livestatus in Streaminstellingen)."
+      },
+      "streamOffline": {
+        "label": "Stream stopt",
+        "description": "Het Twitch-kanaal van de Hub stopt met streamen."
+      }
+    },
+    "conditions": {
+      "hasRole": {
+        "label": "Heeft rol",
+        "description": "Het lid heeft een rol.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          }
+        }
+      },
+      "lacksRole": {
+        "label": "Heeft rol niet",
+        "description": "Het lid heeft de rol niet.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          }
+        }
+      },
+      "channelIs": {
+        "label": "Kanaal is",
+        "description": "Het gebeurde in een bepaald kanaal.",
+        "fields": {
+          "channelId": {
+            "label": "Kanaal"
+          }
+        }
+      },
+      "channelIsNot": {
+        "label": "Kanaal is niet",
+        "description": "Het gebeurde buiten een bepaald kanaal.",
+        "fields": {
+          "channelId": {
+            "label": "Kanaal"
+          }
+        }
+      },
+      "accountAge": {
+        "label": "Leeftijd account",
+        "description": "Het account is minstens zoveel dagen oud.",
+        "fields": {
+          "minDays": {
+            "label": "Minstens (dagen)"
+          }
+        }
+      },
+      "memberAge": {
+        "label": "Lidmaatschapsduur",
+        "description": "Het lid is minstens zoveel dagen geleden lid geworden van de Hub.",
+        "fields": {
+          "minDays": {
+            "label": "Minstens (dagen)"
+          }
+        }
+      },
+      "variable": {
+        "label": "Variabele",
+        "description": "Vergelijkt een opgeslagen variabele.",
+        "fields": {
+          "name": {
+            "label": "Variabele"
+          },
+          "scope": {
+            "label": "Bereik variabele",
+            "hint": "user: één waarde per lid; hub: één gedeelde waarde."
+          },
+          "op": {
+            "label": "Vergelijking"
+          },
+          "value": {
+            "label": "Waarde"
+          }
+        }
+      },
+      "chance": {
+        "label": "Willekeurige kans",
+        "description": "Slaagt in dit percentage van de gevallen.",
+        "fields": {
+          "percent": {
+            "label": "Procent",
+            "hint": "0-100."
+          }
+        }
+      },
+      "timeOfDay": {
+        "label": "Tijd van de dag",
+        "description": "De huidige tijd valt binnen een tijdvak.",
+        "fields": {
+          "from": {
+            "label": "Van",
+            "hint": "\"HH:MM\"."
+          },
+          "to": {
+            "label": "Tot",
+            "hint": "\"HH:MM\"."
+          },
+          "timezone": {
+            "label": "Tijdzone",
+            "hint": "IANA-naam, bijv. Europe/Amsterdam."
+          }
+        }
+      },
+      "weekday": {
+        "label": "Weekdag",
+        "description": "Vandaag is een van deze dagen.",
+        "fields": {
+          "days": {
+            "label": "Dagen",
+            "hint": "0 = zondag."
+          }
+        }
+      }
+    },
+    "actions": {
+      "sendMessage": {
+        "label": "Bericht sturen",
+        "description": "Plaatst een bericht in een kanaal.",
+        "fields": {
+          "channel": {
+            "label": "Kanaal",
+            "hint": "Een kanaal-id, of \"trigger\" voor het kanaal waar de gebeurtenis vandaan kwam."
+          },
+          "text": {
+            "label": "Bericht"
+          },
+          "card": {
+            "label": "Kaart",
+            "hint": "Optionele rijke kaart: titel, tekst, kleur, imageUrl, velden, maximaal 5 knoppen, één keuzelijst."
+          }
+        }
+      },
+      "reply": {
+        "label": "Antwoorden",
+        "description": "Antwoordt op het bericht of commando dat de regel startte.",
+        "fields": {
+          "text": {
+            "label": "Bericht"
+          },
+          "card": {
+            "label": "Kaart",
+            "hint": "Optionele rijke kaart: titel, tekst, kleur, imageUrl, velden, maximaal 5 knoppen, één keuzelijst."
+          }
+        }
+      },
+      "editMessage": {
+        "label": "Bericht bewerken",
+        "description": "Bewerkt een bericht dat de bot eerder in deze run heeft gestuurd.",
+        "fields": {
+          "messageRef": {
+            "label": "Bericht",
+            "hint": "\"trigger\" of een bericht-id."
+          },
+          "text": {
+            "label": "Nieuwe tekst"
+          }
+        }
+      },
+      "pin": {
+        "label": "Bericht vastpinnen",
+        "description": "Pint een bericht vast.",
+        "fields": {
+          "messageRef": {
+            "label": "Bericht",
+            "hint": "\"trigger\" of een bericht-id."
+          }
+        }
+      },
+      "unpin": {
+        "label": "Bericht losmaken",
+        "description": "Maakt een vastgepind bericht los.",
+        "fields": {
+          "messageRef": {
+            "label": "Bericht",
+            "hint": "\"trigger\" of een bericht-id."
+          }
+        }
+      },
+      "deleteTrigger": {
+        "label": "Triggerbericht verwijderen",
+        "description": "Verwijdert het bericht dat de regel startte."
+      },
+      "react": {
+        "label": "Reageren",
+        "description": "Voegt een reactie toe aan het bericht dat de regel startte.",
+        "fields": {
+          "emoji": {
+            "label": "Emoji"
+          }
+        }
+      },
+      "createThread": {
+        "label": "Thread maken",
+        "description": "Start een thread op het bericht dat de regel startte.",
+        "fields": {
+          "name": {
+            "label": "Threadnaam"
+          }
+        }
+      },
+      "privateNotice": {
+        "label": "Persoonlijk bericht",
+        "description": "Een bericht dat alleen het lid ziet.",
+        "fields": {
+          "text": {
+            "label": "Bericht"
+          }
+        }
+      },
+      "addRole": {
+        "label": "Rol geven",
+        "description": "Geeft het lid een rol.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          },
+          "durationMinutes": {
+            "label": "Weer weghalen na",
+            "hint": "Minuten. Laat leeg om de rol te houden."
+          }
+        }
+      },
+      "removeRole": {
+        "label": "Rol verwijderen",
+        "description": "Neemt een rol van het lid af.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          },
+          "durationMinutes": {
+            "label": "Teruggeven na",
+            "hint": "Minuten. Laat leeg om de rol weg te laten."
+          }
+        }
+      },
+      "toggleRole": {
+        "label": "Rol aan/uit",
+        "description": "Geeft de rol als het lid die niet heeft, en haalt hem anders weg.",
+        "fields": {
+          "roleId": {
+            "label": "Rol"
+          },
+          "durationMinutes": {
+            "label": "Terugzetten na",
+            "hint": "Minuten. Laat leeg om het zo te laten."
+          }
+        }
+      },
+      "openForm": {
+        "label": "Formulier openen",
+        "description": "Toont het lid een formulier (alleen vanuit een commando, knop of keuzelijst).",
+        "fields": {
+          "formId": {
+            "label": "Formulier-id"
+          },
+          "title": {
+            "label": "Titel"
+          },
+          "fields": {
+            "label": "Velden",
+            "hint": "Maximaal 5 van {id, label, style (short|long), required}."
+          }
+        }
+      },
+      "startPoll": {
+        "label": "Peiling starten",
+        "description": "Plaatst een peiling in het kanaal.",
+        "fields": {
+          "question": {
+            "label": "Vraag"
+          },
+          "options": {
+            "label": "Keuzes",
+            "hint": "2-10 keuzes."
+          }
+        }
+      },
+      "createEvent": {
+        "label": "Hub-evenement maken",
+        "description": "Plant een Hub-evenement.",
+        "fields": {
+          "title": {
+            "label": "Titel"
+          },
+          "startsInMinutes": {
+            "label": "Begint over",
+            "hint": "Minuten."
+          },
+          "durationMinutes": {
+            "label": "Duurt",
+            "hint": "Minuten."
+          }
+        }
+      },
+      "setVariable": {
+        "label": "Variabele instellen",
+        "description": "Slaat een waarde op.",
+        "fields": {
+          "name": {
+            "label": "Variabele"
+          },
+          "scope": {
+            "label": "Bereik variabele",
+            "hint": "user: één waarde per lid; hub: één gedeelde waarde."
+          },
+          "value": {
+            "label": "Waarde"
+          }
+        }
+      },
+      "addVariable": {
+        "label": "Optellen bij variabele",
+        "description": "Telt een getal op bij een opgeslagen waarde.",
+        "fields": {
+          "name": {
+            "label": "Variabele"
+          },
+          "scope": {
+            "label": "Bereik variabele",
+            "hint": "user: één waarde per lid; hub: één gedeelde waarde."
+          },
+          "value": {
+            "label": "Aantal"
+          }
+        }
+      },
+      "resetVariable": {
+        "label": "Variabele resetten",
+        "description": "Verwijdert een opgeslagen waarde.",
+        "fields": {
+          "name": {
+            "label": "Variabele"
+          },
+          "scope": {
+            "label": "Bereik variabele",
+            "hint": "user: één waarde per lid; hub: één gedeelde waarde."
+          }
+        }
+      },
+      "wait": {
+        "label": "Wachten",
+        "description": "Pauzeert voor de volgende acties (maximaal 7 dagen).",
+        "fields": {
+          "minutes": {
+            "label": "Wachten",
+            "hint": "Minuten, 1-10080."
+          }
+        }
+      },
+      "stop": {
+        "label": "Stoppen",
+        "description": "Stopt met het uitvoeren van de acties van deze regel."
+      },
+      "runRule": {
+        "label": "Andere regel uitvoeren",
+        "description": "Voert een andere regel van deze bot uit.",
+        "fields": {
+          "ruleId": {
+            "label": "Regel"
+          }
+        }
+      },
+      "webhook": {
+        "label": "Webhook aanroepen",
+        "description": "Roept een HTTPS-URL aan.",
+        "fields": {
+          "url": {
+            "label": "URL",
+            "hint": "Alleen HTTPS."
+          },
+          "method": {
+            "label": "Methode"
+          },
+          "body": {
+            "label": "Body"
+          }
+        }
+      }
+    }
+  },
+  "part": {
+    "triggers": "Trigger",
+    "conditions": "Voorwaarde",
+    "actions": "Actie",
+    "moveUp": "Omhoog",
+    "moveDown": "Omlaag",
+    "remove": "Verwijderen"
+  },
+  "field": {
+    "keep": "Houden",
+    "unit": "Eenheid",
+    "units": {
+      "minutes": "minuten",
+      "hours": "uur",
+      "days": "dagen"
+    },
+    "pickRoom": "Kies een kanaal",
+    "sameRoom": "Hetzelfde kanaal",
+    "pickVoiceRoom": "Kies een spraakkanaal",
+    "anyVoiceRoom": "Elk spraakkanaal",
+    "pickRole": "Kies een rol",
+    "pickRule": "Kies een regel",
+    "removeChoice": "Keuze verwijderen",
+    "addChoice": "Keuze toevoegen",
+    "optional": " (optioneel)"
+  },
+  "list": {
+    "noOptions": "Geen opties: leden typen alleen het commando.",
+    "optionName": "Optienaam",
+    "optionNamePlaceholder": "naam",
+    "optionType": "Optietype",
+    "optionTypes": {
+      "text": "tekst",
+      "number": "getal",
+      "user": "gebruiker",
+      "role": "rol",
+      "channel": "kanaal",
+      "choice": "keuze"
+    },
+    "choices": "Keuzes, gescheiden door komma's",
+    "choicesPlaceholder": "rood, groen, blauw",
+    "required": "verplicht",
+    "removeOption": "Optie verwijderen",
+    "addOption": "Optie toevoegen",
+    "fieldLabel": "Veldlabel",
+    "fieldLabelPlaceholder": "Label",
+    "fieldId": "Veld-id",
+    "fieldIdPlaceholder": "id",
+    "fieldSize": "Veldgrootte",
+    "short": "kort",
+    "long": "lang",
+    "removeField": "Veld verwijderen",
+    "addField": "Veld toevoegen",
+    "addCard": "Kaart toevoegen",
+    "cardTitle": "Kaarttitel",
+    "cardTitlePlaceholder": "Titel",
+    "cardColour": "Kaartkleur",
+    "removeCard": "Kaart verwijderen",
+    "cardText": "Kaarttekst",
+    "cardTextPlaceholder": "Tekst",
+    "buttonLabel": "Knoplabel",
+    "buttonId": "Knop-id",
+    "buttonIdPlaceholder": "knop-id",
+    "removeButton": "Knop verwijderen",
+    "addButton": "Knop toevoegen",
+    "buttonHint": "Een knop start regels met de trigger “Knop of keuzelijst gebruikt” en de id van de knop."
+  },
+  "activity": {
+    "loadFailed": "Kan activiteit niet laden.",
+    "errorsOnly": "Alleen fouten",
+    "refresh": "Vernieuwen",
+    "noErrors": "Geen fouten in de afgelopen 30 dagen.",
+    "empty": "Er is nog niets uitgevoerd.",
+    "runs": "Runs",
+    "status": {
+      "ok": "Uitgevoerd",
+      "error": "Fout",
+      "limited": "Limiet bereikt",
+      "skipped": "Overgeslagen"
+    },
+    "deletedRule": "Verwijderde regel",
+    "detail": "{{action}}: {{text}}"
+  },
+  "status": {
+    "off": "Uit",
+    "unpublished": "Niet-gepubliceerde wijzigingen",
+    "live": "Live"
+  },
+  "page": {
+    "updateFailed": "Kan de bot niet bijwerken.",
+    "resumeFailed": "Kan de bot niet hervatten.",
+    "needsFixing_one": "{{count}} regel moet worden aangepast",
+    "needsFixing_other": "{{count}} regels moeten worden aangepast",
+    "saving": "Opslaan…",
+    "unsaved": "Sommige regels zijn nog niet opgeslagen",
+    "allPublished": "Alles is gepubliceerd",
+    "published": "Gepubliceerd. De bot voert deze regels nu uit.",
+    "publishFailed": "Kan niet publiceren.",
+    "buildFailed": "Dat lukte niet, probeer het anders te formuleren",
+    "back": "← Bots",
+    "ruleCount_one": "{{count}} regel",
+    "ruleCount_other": "{{count}} regels",
+    "publishTitle": "Concepten live zetten",
+    "publishing": "Publiceren…",
+    "publish": "Publiceren",
+    "pausedNotice": "Gepauzeerd na herhaalde fouten. Bekijk Activiteit, pas de regels aan en hervat de bot.",
+    "resume": "Hervatten",
+    "missingCapabilities": "Voor deze regels moet de bot het volgende mogen: <strong>{{list}}</strong>. Anders mislukken die acties.",
+    "allow": "Toestaan",
+    "sections": "Botonderdelen",
+    "tabs": {
+      "rules": "Regels",
+      "test": "Test",
+      "activity": "Activiteit",
+      "settings": "Instellingen"
+    }
+  },
+  "section": {
+    "loadFailed": "Kan bots niet laden.",
+    "loading": "Bots laden…",
+    "retry": "Opnieuw",
+    "title": "Bots",
+    "intro": "Bots beantwoorden commando's, verwelkomen leden, delen rollen uit en meer. Geen code nodig.",
+    "newBot": "Nieuwe bot",
+    "emptyTitle": "Nog geen bots",
+    "emptyHint": "Begin met een sjabloon zoals Welkom of Dobbelsteen. Het kost een minuutje.",
+    "paused": "Gepauzeerd na herhaalde fouten, bekijk Activiteit",
+    "turnOff": "Uitzetten",
+    "turnOn": "Aanzetten",
+    "isOn": "{{name}} staat aan",
+    "tokenBots": "Tokenbots (voor developers)"
+  },
+  "describe": {
+    "label": "Beschrijf wat de bot moet doen",
+    "remaining": "Nog {{remaining}} van {{total}} over vandaag",
+    "building": "Bouwen…",
+    "submit": "Bouwen"
+  },
+  "newBot": {
+    "fileProblems_one": "Het bestand heeft {{count}} probleem: {{path}} {{message}}",
+    "fileProblems_other": "Het bestand heeft {{count}} problemen: {{path}} {{message}}",
+    "genericError": "Er ging iets mis.",
+    "fileTooLarge": "Dat bestand is te groot voor een botexport.",
+    "fileInvalid": "Dat bestand is geen DeCave-botexport.",
+    "importedUnresolved": "Geïmporteerd. Deze zijn niet gevonden in deze Hub, dus kies ze opnieuw: {{names}}",
+    "imported": "Geïmporteerd. Controleer de regels en publiceer daarna.",
+    "close": "Sluiten",
+    "templates": "Begin met een sjabloon",
+    "createdFromTemplate": "Gemaakt vanuit een sjabloon. Controleer elke regel en publiceer daarna.",
+    "creating": "Maken…",
+    "describe": "Beschrijf het",
+    "describePlaceholder": "bijv. Als iemand lid wordt, verwelkom diegene in #algemeen en geef de rol Lid",
+    "scratch": "Helemaal zelf",
+    "name": "Botnaam",
+    "create": "Maken",
+    "import": "Importeren",
+    "importing": "Importeren…",
+    "chooseFile": "Kies een botbestand"
+  },
+  "ruleCard": {
+    "scope": "Waar en hoe vaak",
+    "rooms": "Kanalen",
+    "allRooms": "Alle kanalen",
+    "cooldownMember": "Cooldown per lid (seconden)",
+    "cooldownRoom": "Cooldown per kanaal (seconden)",
+    "aiLabel": "Wijzig deze regel met AI",
+    "aiPlaceholder": "Wijzig het met AI, bijv. “alleen in het weekend”",
+    "thinking": "Nadenken…",
+    "change": "Wijzigen",
+    "paused": "Gepauzeerd",
+    "new": "Nieuw",
+    "changed": "Gewijzigd",
+    "status": {
+      "saved": "Concept opgeslagen",
+      "pending": "Opslaan…",
+      "saving": "Opslaan…",
+      "invalid": "Moet worden aangepast",
+      "failed": "Niet opgeslagen"
+    },
+    "pauseTitle": "Deze regel pauzeren",
+    "resumeTitle": "Deze regel hervatten",
+    "pause": "{{label}} pauzeren",
+    "resume": "{{label}} hervatten",
+    "moveUp": "{{label}} omhoog",
+    "moveDown": "{{label}} omlaag",
+    "duplicate": "Dupliceren",
+    "delete": "Verwijderen",
+    "error": "{{message}} Open de regel om het op te lossen.",
+    "errorsMore_one": "{{message}} (+{{count}} meer) Open de regel om het op te lossen.",
+    "errorsMore_other": "{{message}} (+{{count}} meer) Open de regel om het op te lossen.",
+    "generated": "Gegenereerd, controleer voordat je publiceert",
+    "when": "Wanneer",
+    "if": "Als",
+    "match": "Voldoen aan",
+    "all": "al deze",
+    "any": "een van deze",
+    "always": "Altijd, tenzij je een voorwaarde toevoegt.",
+    "addCondition": "Voorwaarde toevoegen",
+    "addConditionTo": "Voorwaarde toevoegen ({{key}})",
+    "do": "Doe",
+    "addAction": "Actie toevoegen",
+    "otherwise": "Anders"
+  },
+  "rules": {
+    "unsupported": "De AI kon niet alles doen:",
+    "emptyTitle": "Nog geen regels",
+    "emptyHint": "Een regel bepaalt wat hem start, wanneer hij geldt en wat de bot doet.",
+    "limit_one": "Een bot kan maximaal {{count}} regel hebben.",
+    "limit_other": "Een bot kan maximaal {{count}} regels hebben.",
+    "add": "Regel toevoegen",
+    "describePlaceholder": "Of beschrijf een regel, bijv. “geef @Lid als iemand met ✅ reageert in #regels”",
+    "deleteLabel": "Regel verwijderen",
+    "deletePublished": "{{label}} verwijderen? Hij blijft draaien tot je publiceert.",
+    "deleteDraft": "{{label}} verwijderen? Hij is nooit gepubliceerd, dus hij wordt meteen verwijderd.",
+    "cancel": "Annuleren"
+  },
+  "schedule": {
+    "label": "Schema",
+    "every": "Elke …",
+    "daily": "Elke dag om",
+    "weekly": "Elke week op",
+    "cron": "Cron",
+    "minutesLabel": "Minuten",
+    "minutes": "minuten",
+    "time": "Tijd",
+    "day": "Dag",
+    "cronExpression": "Cron-expressie",
+    "timezone": "Tijdzone",
+    "hint": "Minstens 5 minuten ertussen. Tijdzone is een IANA-naam zoals Europe/Amsterdam."
+  },
+  "settings": {
+    "saveFailed": "Kan niet opslaan.",
+    "on": "Bot staat aan",
+    "onHint": "Als hij uit staat, draait geen enkele regel. Concepten blijven bewaard.",
+    "name": "Naam",
+    "avatar": "Avatar-emoji",
+    "colour": "Kleur",
+    "description": "Beschrijving",
+    "save": "Opslaan",
+    "rooms": "Toegestane kanalen",
+    "roomsHint": "De bot doet alleen iets in deze kanalen. Niets gekozen betekent alle kanalen.",
+    "capabilities": "Machtigingen",
+    "capabilitiesHint": "Wat de bot mag doen. Acties die niet zijn toegestaan geven een fout in Activiteit.",
+    "export": "Exporteren",
+    "exportHint": "Een bestand met de bot en zijn regels. Kanalen en rollen worden op naam opgeslagen.",
+    "exportFailed": "Kan niet exporteren.",
+    "delete": "Bot verwijderen",
+    "deleteHint": "Verwijdert de bot, zijn regels en zijn activiteit.",
+    "deleteTitle": "{{name}} verwijderen?",
+    "deleteDescription": "De bot stopt meteen en zijn regels en activiteit worden verwijderd.",
+    "deleteFailed": "Kan niet verwijderen."
+  },
+  "test": {
+    "empty": "Voeg eerst een regel toe en sla hem op. Daarna kun je hem hier testen.",
+    "failed": "De test kon niet worden uitgevoerd.",
+    "intro": "Kies een regel, vul voorbeeldinvoer in en bekijk elke stap. Er wordt niets verstuurd of gewijzigd.",
+    "rule": "Regel",
+    "room": "Gebeurt in",
+    "firstRoom": "Het eerste kanaal",
+    "message": "Bericht",
+    "unsaved": "Deze regel heeft wijzigingen die nog niet zijn opgeslagen; de test gebruikt het laatst opgeslagen concept.",
+    "running": "Uitvoeren…",
+    "run": "Test uitvoeren",
+    "steps": "Teststappen",
+    "noMatch": "De regel is niet uitgevoerd: de trigger of voorwaarden kwamen niet overeen."
+  },
+  "api": {
+    "problems_one": "{{count}} probleem op te lossen",
+    "problems_other": "{{count}} problemen op te lossen"
+  },
+  "card": {
+    "badge": "BOT",
+    "noAnswerStatus": "De bot gaf geen antwoord ({{status}}).",
+    "noAnswer": "De bot gaf geen antwoord.",
+    "privateNotice": "Alleen jij kunt dit zien",
+    "openImage": "Afbeelding openen",
+    "chooseOption": "Kies een optie",
+    "choose": "Kiezen…",
+    "commands": "Botcommando's",
+    "form": {
+      "required": "{{field}} is verplicht.",
+      "sendFailedStatus": "Kan het formulier niet versturen ({{status}}).",
+      "sendFailed": "Kan het formulier niet versturen.",
+      "cancel": "Annuleren",
+      "sending": "Versturen…",
+      "submit": "Versturen",
+      "untitled": "Formulier"
+    }
+  },
+  "server": {
+    "commandUsage": "Gebruik: {{usage}}"
+  },
+  "validation": {
+    "notObject": "Moet een object zijn.",
+    "unknownField": "Onbekend veld.",
+    "nonEmptyString": "Mag niet leeg zijn.",
+    "maxLength": "Mag maximaal {{max}} tekens lang zijn.",
+    "boolean": "Moet true of false zijn.",
+    "numberRange": "Moet een getal van {{min}} tot {{max}} zijn.",
+    "oneOf": "Moet een van deze zijn: {{values}}.",
+    "time": "Moet een tijd zijn zoals 09:30.",
+    "idRequired": {
+      "role": "Moet een rol-id zijn.",
+      "voiceRoom": "Moet een spraakkanaal-id zijn.",
+      "channel": "Moet een kanaal-id zijn.",
+      "rule": "Moet een regel-id zijn."
+    },
+    "unknownId": {
+      "role": "Onbekende rol in deze Hub.",
+      "voiceRoom": "Onbekend spraakkanaal in deze Hub.",
+      "channel": "Onbekend kanaal in deze Hub.",
+      "rule": "Onbekende regel in deze Hub."
+    },
+    "numberOrText": "Moet een getal of korte tekst zijn.",
+    "commandName": "Gebruik 1-32 kleine letters, cijfers of streepjes.",
+    "builtInCommand": "Deze naam wordt al gebruikt door een ingebouwd commando.",
+    "list": "Moet een lijst zijn.",
+    "choices": "Mag maximaal 25 korte teksten bevatten.",
+    "invalidRegex": "Geen geldige reguliere expressie.",
+    "scheduleOneMode": "Stel precies één van every, daily, weekly of cron in.",
+    "scheduleMinimum": "Schema's moeten minstens elke {{minutes}} minuten draaien.",
+    "cronFields": "Cron moet 5 velden hebben: minuut uur dag maand weekdag.",
+    "unknownTrigger": "Onbekend type trigger.",
+    "weekdays": "Moet een lijst van dagen van 0 tot 6 zijn.",
+    "unknownCondition": "Onbekend type voorwaarde.",
+    "color": "Moet een kleur zijn zoals #aabbcc.",
+    "httpsLink": "Moet een https-link zijn.",
+    "cardFields": "Moet een lijst van maximaal 25 velden zijn.",
+    "buttonsOrSelect": "Een kaart kan knoppen of een keuzemenu hebben, niet allebei.",
+    "maxButtons": "Maximaal {{max}} knoppen.",
+    "selectOptions": "Moet een lijst van 1 tot 25 opties zijn.",
+    "formFields": "Een formulier heeft 1 tot {{max}} velden nodig.",
+    "pollOptions": "Heeft 2 tot 10 korte opties nodig.",
+    "waitRange": "Wachten moet tussen 1 en {{max}} minuten (7 dagen) zijn.",
+    "webhookHttps": "Webhook-URL's moeten beginnen met https://.",
+    "unknownAction": "Onbekend type actie.",
+    "actionList": "Moet een lijst van acties zijn.",
+    "actionRequired": "Heeft minstens één actie nodig.",
+    "maxActions": "Maximaal {{max}} acties per regel.",
+    "ruleVersion": "Niet-ondersteunde regelversie.",
+    "conditionList": "Moet een lijst van maximaal 20 voorwaarden zijn.",
+    "regex": {
+      "trailingBackslash": "Een patroon kan niet eindigen op \\.",
+      "backreference": "Terugverwijzingen zijn niet toegestaan.",
+      "escapeNotAllowed": "\\{{char}} is niet toegestaan.",
+      "emptyClass": "Lege [ ]-klassen zijn niet toegestaan.",
+      "classEscape": "Alleen \\d \\w \\s \\D \\W \\S \\n \\t of geëscapete symbolen binnen [ ].",
+      "classBracket": "Gebruik \\[ voor een letterlijke [ binnen [ ].",
+      "rangePlain": "Een bereik in [ ] heeft aan beide kanten een gewoon teken nodig.",
+      "rangeOrder": "Een bereik in [ ] staat in de verkeerde volgorde.",
+      "unclosedClass": "Niet-gesloten [ ].",
+      "literalBrace": "Gebruik \\{ voor een letterlijke {.",
+      "repeatCount": "Herhalingsaantallen boven {{max}} zijn niet toegestaan.",
+      "repeatOrder": "In {n,m} moet m minstens n zijn.",
+      "repeatRepeat": "Een herhaling kan niet herhaald of lazy gemaakt worden.",
+      "charNotAllowed": "\"{{char}}\" is hier niet toegestaan.",
+      "nestedGroup": "Groepen kunnen niet genest worden.",
+      "groupSyntax": "Lookarounds, benoemde groepen en inline flags zijn niet toegestaan.",
+      "unclosedGroup": "Niet-gesloten ( ).",
+      "emptyGroup": "Lege groepen zijn niet toegestaan.",
+      "emptyChoice": "Keuzes binnen ( | ) mogen niet leeg zijn.",
+      "choicePlain": "Keuzes binnen ( | ) moeten gewone tekst zonder herhalingen zijn.",
+      "groupRepeat": "Groepen ( ) kunnen niet herhaald worden.",
+      "bareChoice": "Zet keuzes binnen ( | ).",
+      "unmatchedParen": "Losse ).",
+      "unboundedRepeats": "Gebruik maximaal 1 open herhaling (*, + of {n,}).",
+      "boundedExtra": "Begrensde herhalingen (?, {n,m}) mogen in totaal maximaal {{max}} tekens toevoegen.",
+      "tooComplex": "Patroon is te complex."
+    }
+  },
+  "mobile": {
+    "hubBots": {
+      "nameCreated": "{{name}} gemaakt.",
+      "couldNotCreateTheBot": "Kan de bot niet maken.",
+      "hubControl": "HUB-BEHEER",
+      "noBotsYetStartFrom": "Nog geen bots. Begin met een sjabloon hieronder.",
+      "nameEnabled": "{{name}} ingeschakeld",
+      "hideActivity": "Activiteit verbergen",
+      "showActivity": "Activiteit tonen",
+      "noRunsYet": "Nog geen runs.",
+      "startFromATemplate": "BEGIN MET EEN SJABLOON",
+      "createBot": "Bot maken",
+      "createdPublishOnDesktop": "{{name}} gemaakt. Publiceer hem op desktop of web om hem live te zetten.",
+      "unpublishedEditOnDesktop": "Niet-gepubliceerde wijzigingen · Bewerk regels op desktop of web",
+      "editOnDesktop": "Bewerk regels op desktop of web.",
+      "manageOnDesktop": "Beheren op desktop of web"
+    },
+    "publishOnDesktop": "Publiceer hem op desktop of web om hem live te zetten",
+    "editOnDesktop": "Bewerk regels op desktop of web",
+    "tokenBot": "Beheren op desktop of web",
+    "pausedAfterErrors": "Gepauzeerd na fouten",
+    "summary": "{{rules}} · {{last}}",
+    "lastRun": "laatste run {{time}}",
+    "noRuns": "Nog geen runs",
+    "time": {
+      "minutes_one": "{{count}} min geleden",
+      "minutes_other": "{{count}} min geleden",
+      "hours_one": "{{count}} u geleden",
+      "hours_other": "{{count}} u geleden",
+      "days_one": "{{count}} d geleden",
+      "days_other": "{{count}} d geleden"
+    }
+  },
+  "run": {
+    "server": {
+      "publisherLeft": "De publicerende gebruiker zit niet meer in deze Hub",
+      "noChannel": "Deze trigger heeft geen kanaal",
+      "hubChannelsOnly": "Bots kunnen alleen iets doen in kanalen van de Hub",
+      "channelGone": "Kanaal bestaat niet meer",
+      "channelOtherHub": "Kanaal zit niet in deze Hub",
+      "textChannelsOnly": "Bots kunnen alleen posten in tekstkanalen en forums",
+      "channelNotAllowed": "Bot is niet toegestaan in dit kanaal",
+      "publisherNoAccess": "De publicerende gebruiker heeft geen toegang tot dit kanaal",
+      "publisherCantPost": "De publicerende gebruiker kan niet posten in deze Hub",
+      "roleGone": "Rol bestaat niet meer",
+      "publisherCantManageRole": "De publicerende gebruiker kan deze rol niet beheren",
+      "noMember": "Deze trigger heeft geen lid",
+      "memberLeft": "Lid zit niet meer in deze Hub",
+      "noMessage": "Deze trigger heeft geen bericht",
+      "messageGone": "Bericht bestaat niet meer",
+      "variableLimit": "Limiet voor variabelen bereikt",
+      "notANumber": "Waarde is geen getal",
+      "waitNeedsChannel": "Wachten vereist een tekstkanaal in deze Hub",
+      "rulesUnavailable": "Regels kunnen hier niet worden uitgevoerd",
+      "pollIncomplete": "Peilingen hebben een vraag en twee opties nodig",
+      "messageLimit": "Berichtlimiet bereikt",
+      "publisherCantCreateEvents": "De publicerende gebruiker kan geen evenementen maken",
+      "eventTitleEmpty": "Titel van evenement is leeg",
+      "eventTimesInvalid": "Tijden van evenement zijn ongeldig",
+      "tooManyEvents": "Deze Hub heeft te veel komende evenementen",
+      "formsNeedInteraction": "Formulieren hebben een commando of knop nodig",
+      "postFailed": "Kan het bericht niet plaatsen",
+      "forumReplyTarget": "Forumantwoorden moeten bij een forumpost horen",
+      "postLocked": "Deze post is vergrendeld",
+      "memberNoAccess": "Lid kan dit kanaal niet zien",
+      "editOwnOnly": "Bots kunnen alleen hun eigen berichten bewerken",
+      "cantEdit": "Dit bericht kan niet worden bewerkt",
+      "publisherCantModerate": "De publicerende gebruiker kan geen berichten modereren",
+      "publisherCantDelete": "De publicerende gebruiker kan dit bericht niet verwijderen",
+      "cantDeleteKind": "Bots kunnen dit soort bericht niet verwijderen",
+      "emojiRequired": "Emoji vereist",
+      "emojiReserved": "Die emoji is gereserveerd",
+      "threadsNeedForum": "Threads hebben een forumkanaal nodig",
+      "publisherCantPostForum": "De publicerende gebruiker kan niet posten in dit forum",
+      "threadNameEmpty": "Threadnaam is leeg",
+      "timedRoleNeedsChannel": "Tijdelijke rollen hebben een tekstkanaal in deze Hub nodig",
+      "webhookLimit": "Webhooklimiet bereikt",
+      "webhookUrlInvalid": "Webhook-URL is ongeldig",
+      "webhookHttpsOnly": "Webhook-URL moet https gebruiken",
+      "webhookNoLogin": "Webhook-URL mag geen inloggegevens bevatten",
+      "webhookNoPort": "Webhook-URL mag geen eigen poort gebruiken",
+      "webhookHostRefused": "Webhookhost is niet toegestaan",
+      "webhookRedirect": "Webhookdoorverwijzingen worden niet gevolgd",
+      "webhookTooLarge": "Webhookantwoord te groot",
+      "webhookTimedOut": "Webhook duurde te lang",
+      "webhookFailed": "Webhookverzoek mislukt",
+      "unknownAction": "Onbekende actie {{action}}",
+      "capabilityMissing": "Bot mag dit niet: {{capability}}",
+      "actionFailed": "Actie mislukt",
+      "ranActions": "Acties uitgevoerd",
+      "ranNothing": "Niets uitgevoerd",
+      "patternNotAllowed": "Patroon niet toegestaan",
+      "chainTooDeep": "Botketen te diep",
+      "coolingDown": "Cooldown actief",
+      "runLimit": "Runlimiet van de Hub voor deze minuut bereikt",
+      "conditionsNotMet": "Voorwaarden niet vervuld",
+      "ruleUnavailable": "Die regel is niet gepubliceerd of is gepauzeerd",
+      "ruleFailed": "Regel mislukt",
+      "runFailed": "Run mislukt",
+      "commandMissingOption": "{{option}} ontbreekt. Gebruik: {{usage}}",
+      "commandInvalidOption": "Ongeldige waarde voor {{option}}. Gebruik: {{usage}}",
+      "timerDropped": "Timer is twee keer mislukt; {{kind}} vervallen",
+      "wouldCall": "Zou {{method}} {{url}} aanroepen",
+      "wouldWait_one": "Zou {{count}} minuut wachten",
+      "wouldWait_other": "Zou {{count}} minuten wachten",
+      "roleStep": "{{action}}: rol {{role}}"
+    }
+  }
+}

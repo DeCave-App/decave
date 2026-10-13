@@ -2,6 +2,7 @@
 // GET /api/servers/:hubId/bot-commands (404 while the bot builder is off).
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   commandsFromResponse,
   filterCommands,
@@ -108,9 +109,10 @@ type Props = {
 };
 
 export function BotCommandSuggestions({ suggestions, activeIndex, onHover, onChoose }: Props) {
+  const { t } = useTranslation(["bots"]);
   if (!suggestions.length) return null;
   return (
-    <ul className="bot-command-suggestions" role="listbox" aria-label="Bot commands">
+    <ul className="bot-command-suggestions" role="listbox" aria-label={t("bots.card.commands")}>
       {suggestions.map((command, index) => (
         <li key={`${command.botId}:${command.name}`} role="option" aria-selected={index === activeIndex}>
           <button

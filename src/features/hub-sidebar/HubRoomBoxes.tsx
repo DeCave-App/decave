@@ -8,11 +8,14 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "../../components/Icon";
+import { formatRelative } from "../../i18n/format";
 import { buildRoomBoxes, denser, neighbourInBox, pickDensity, type RoomBox, type RoomDensity } from "./roomBoxesModel";
 import "./hubSidebar.css";
 import "./hubPolish.css";
 import "./hubBoxes.css";
+import { roomAccentVars } from "../room-settings/roomStyle";
 
 export type SidebarRoomType = "forum" | "text" | "voice";
 
@@ -25,6 +28,8 @@ export type SidebarRoom = {
   icon?: string;
   /** Voice room player cap (0/absent = none). */
   userLimit?: number;
+  /** Per-room accent ('#rrggbb'); absent/null = Hub accent. */
+  accent?: string | null;
 };
 
 export type SidebarVoiceParticipant = {
@@ -113,20 +118,13 @@ function LockGlyph() {
   );
 }
 
+/** Compact "time ago" for forum tiles: "now", "5m", "3h", "2d", "1w" in English. */
 export function relativeShort(iso: string, now = Date.now()): string {
-  const time = new Date(iso).getTime();
-  if (!Number.isFinite(time)) return "";
-  const minutes = Math.max(0, Math.round((now - time) / 60000));
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.round(hours / 24);
-  if (days < 7) return `${days}d`;
-  return `${Math.round(days / 7)}w`;
+  return formatRelative(iso, now);
 }
 
 export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoiceParticipant>(props: HubRoomBoxesProps<R, P>) {
+  const { t } = useTranslation(["hub"]);
   const boxes = useMemo(
     () => buildRoomBoxes(props.rooms, { ownerOnlyPosting: props.ownerOnlyPosting }),
     [props.rooms, props.ownerOnlyPosting],
@@ -215,11 +213,26 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
     window.setTimeout(() => document.querySelector<HTMLElement>(`.hbx-root [data-channel-id="${id}"]`)?.focus(), 0);
   };
 
-  const tileLabel = (room: R, extra: string) => {
+  // Box titles: owner-named categories as stored; the built-in boxes in the UI language.
+  const boxTitle = (box: RoomBox<R>) =>
+    box.kind === "forum"
+      ? t("hub.sidebar.boxes.forums")
+      : box.kind === "voice"
+        ? t("hub.sidebar.boxes.voice")
+        : box.key === "category:"
+          ? t("hub.sidebar.boxes.rooms")
+          : box.title;
+
+  /** Screen-reader label: the room name, then details, separated by commas. */
+  const tileLabel = (room: R, extras: string[]) => {
     const unread = props.unread[room.id] ?? 0;
     const mention = props.mentions[room.id] ?? 0;
     const locked = room.private === true || (room.type !== "voice" && props.ownerOnlyPosting);
-    return `${room.name}${extra}${locked ? ", private" : ""}${mention ? `, ${mention} mentions` : unread ? `, ${unread} unread` : ""}`;
+    const parts = [room.name, ...extras];
+    if (locked) parts.push(t("hub.sidebar.aria.private"));
+    if (mention) parts.push(t("hub.sidebar.aria.mentions", { count: mention }));
+    else if (unread) parts.push(t("hub.sidebar.aria.unread", { count: unread }));
+    return parts.join(", ");
   };
 
   const roomButtonProps = (room: R, box: RoomBox<R>) => {
@@ -228,6 +241,8 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
       type: "button" as const,
       ...scopedDragProps(room, box),
       "data-channel-id": room.id,
+      "data-room-accent": room.accent ? "true" : undefined,
+      style: roomAccentVars(room.accent),
       "aria-current": selected ? ("page" as const) : undefined,
       "aria-keyshortcuts": props.canManageRooms ? "Alt+ArrowUp Alt+ArrowDown" : undefined,
       onClick: (event: MouseEvent<HTMLButtonElement>) => {
@@ -280,14 +295,18 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
     return (
       <span
         className="hbx-lockwrap"
-        title={room.type !== "voice" && props.ownerOnlyPosting ? "Only the Hub owner can post" : "Private room"}
+        title={
+          room.type !== "voice" && props.ownerOnlyPosting
+            ? t("hub.sidebar.ownerOnlyPosting")
+            : t("hub.sidebar.privateRoom")
+        }
       >
         <LockGlyph />
       </span>
     );
   };
 
-  const renderPlainTile = (room: R, box: RoomBox<R>, extraLabel = "") => (
+  const renderPlainTile = (room: R, box: RoomBox<R>, extraLabel: string[] = []) => (
     <button
       key={room.id}
       {...roomButtonProps(room, box)}
@@ -306,17 +325,20 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
     const preview = props.forumPreviews[room.id];
     const fresh = preview?.unread === true || (props.unread[room.id] ?? 0) > 0;
     if (density === "chips" || density === "tight")
-      return renderPlainTile(
-        room,
-        box,
-        `, forum${preview ? `, newest thread ${preview.title}${preview.unread ? ", new" : ""}` : ""}`,
-      );
+      return renderPlainTile(room, box, [
+        t("hub.sidebar.aria.forum"),
+        ...(preview ? [t("hub.sidebar.aria.newestThread", { title: preview.title })] : []),
+        ...(preview?.unread ? [t("hub.sidebar.aria.new")] : []),
+      ]);
     return (
       <button
         key={room.id}
         {...roomButtonProps(room, box)}
         className={`hbx-forum${stateClass(room)}${fresh ? " is-fresh" : ""}`}
-        aria-label={tileLabel(room, `, forum${preview ? `, newest thread ${preview.title}` : ""}`)}
+        aria-label={tileLabel(room, [
+          t("hub.sidebar.aria.forum"),
+          ...(preview ? [t("hub.sidebar.aria.newestThread", { title: preview.title })] : []),
+        ])}
         title={room.name}
       >
         <span className="hbx-forum-head">
@@ -324,7 +346,7 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
           <span className="hbx-name">{room.name}</span>
           {lockFor(room)}
           {fresh ? (
-            <em className="hbx-fresh">New</em>
+            <em className="hbx-fresh">{t("hub.sidebar.forum.new")}</em>
           ) : preview ? (
             <em className="hbx-quiet">{relativeShort(preview.lastActivityAt)}</em>
           ) : null}
@@ -336,14 +358,12 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
                 {preview.solved ? "✓ " : ""}
                 {preview.title}
               </span>
-              <span className="hbx-thread-meta">
-                {preview.replyCount} {preview.replyCount === 1 ? "reply" : "replies"}
-              </span>
+              <span className="hbx-thread-meta">{t("hub.sidebar.forum.replies", { count: preview.replyCount })}</span>
             </>
           ) : preview === null ? (
-            <span className="hbx-thread-title is-empty">No threads yet</span>
+            <span className="hbx-thread-title is-empty">{t("hub.sidebar.forum.noThreads")}</span>
           ) : (
-            <span className="hbx-thread-title is-empty">Open to see threads</span>
+            <span className="hbx-thread-title is-empty">{t("hub.sidebar.forum.openToSee")}</span>
           )}
         </span>
       </button>
@@ -358,24 +378,29 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
         <button
           {...roomButtonProps(room, box)}
           className="hbx-voice-main"
-          aria-label={tileLabel(
-            room,
-            `, voice room, ${participants.length} connected${sharing ? ", someone is sharing their screen" : ""}${connected ? ", you are connected" : ""}`,
-          )}
-          title={`${room.name} · double-click to join`}
+          aria-label={tileLabel(room, [
+            t("hub.sidebar.aria.voiceRoom"),
+            t("hub.sidebar.aria.connectedCount", { count: participants.length }),
+            ...(sharing ? [t("hub.sidebar.aria.someoneSharing")] : []),
+            ...(connected ? [t("hub.sidebar.aria.youAreConnected")] : []),
+          ])}
+          title={t("hub.sidebar.voice.doubleClickToJoin", { name: room.name })}
         >
           {roomIcon(room)}
           <span className="hbx-voice-copy">
             <span className="hbx-name">{room.name}</span>
             <small>
-              {connected ? "You're here · " : ""}
-              {room.userLimit ? `${participants.length}/${room.userLimit}` : participants.length} in voice
-              {sharing ? " · sharing" : ""}
+              {connected ? t("hub.sidebar.voice.youreHere") : ""}
+              {t("hub.sidebar.voice.inVoice", {
+                count: participants.length,
+                people: room.userLimit ? `${participants.length}/${room.userLimit}` : participants.length,
+              })}
+              {sharing ? t("hub.sidebar.voice.sharing") : ""}
             </small>
           </span>
           {lockFor(room)}
         </button>
-        <ul className="hbx-people" aria-label={`In ${room.name}`}>
+        <ul className="hbx-people" aria-label={t("hub.sidebar.voice.peopleIn", { name: room.name })}>
           {participants.slice(0, 6).map((participant) => {
             const deafened =
               participant.deafened === true || participant.selfDeafened === true || participant.serverDeafened === true;
@@ -385,12 +410,12 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
               <li
                 key={participant.connectionId}
                 className={`hbx-person user-context-target${props.isSpeaking(participant) ? " speaking" : ""}${muted ? " muted" : ""}`}
-                title={`${participant.username}${deafened ? " (deafened)" : muted ? " (muted)" : ""}${participant.screenSharing ? " · sharing screen" : ""}`}
+                title={`${participant.username}${deafened ? t("hub.sidebar.voice.deafened") : muted ? t("hub.sidebar.voice.muted") : ""}${participant.screenSharing ? t("hub.sidebar.voice.sharingScreen") : ""}`}
                 onClick={(event) => props.onParticipantClick(event, participant)}
                 onContextMenu={(event) => props.onParticipantContextMenu(event, participant)}
               >
                 {props.renderAvatar(participant)}
-                {participant.screenSharing && <span className="hbx-live">LIVE</span>}
+                {participant.screenSharing && <span className="hbx-live">{t("hub.sidebar.voice.live")}</span>}
               </li>
             );
           })}
@@ -407,7 +432,7 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
       {props.reorderError && (
         <div className="hsb-error" role="alert">
           <span>{props.reorderError}</span>
-          <button type="button" aria-label="Dismiss" onClick={props.onDismissReorderError}>
+          <button type="button" aria-label={t("hub.sidebar.dismiss")} onClick={props.onDismissReorderError}>
             <Icon name="close" size="sm" />
           </button>
         </div>
@@ -422,9 +447,9 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
           <span className="hbx-home-icon" aria-hidden="true">
             <Icon name="home" size="sm" />
           </span>
-          <span className="hbx-name">Hub Home</span>
+          <span className="hbx-name">{t("hub.sidebar.hubHome")}</span>
           {props.homeBadge > 0 && (
-            <b className="hbx-badge accent" aria-label={`${props.homeBadge} rooms with new messages`}>
+            <b className="hbx-badge accent" aria-label={t("hub.sidebar.homeBadge", { count: props.homeBadge })}>
               {props.homeBadge > 99 ? "99+" : props.homeBadge}
             </b>
           )}
@@ -433,11 +458,11 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
       </div>
       {boxes.length === 0 && (
         <div className="hbx-empty">
-          <span>{props.canManageRooms ? "This Hub has no rooms yet." : "No rooms you can see yet."}</span>
+          <span>{props.canManageRooms ? t("hub.sidebar.empty.manager") : t("hub.sidebar.empty.member")}</span>
           {props.canManageRooms && (
             <button type="button" className="hbx-empty-add" onClick={() => props.onCreateRoom("text")}>
               <Icon name="plus" size="sm" />
-              Create a room
+              {t("hub.sidebar.createRoom")}
             </button>
           )}
         </div>
@@ -450,7 +475,7 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
           <section key={box.key} className={`hbx-box hbx-box--${box.kind}`} aria-labelledby={titleId}>
             <div className="hbx-box-head">
               <h3 className="hbx-box-title" id={titleId}>
-                <span>{box.title}</span>
+                <span>{boxTitle(box)}</span>
                 <em>{box.rooms.length}</em>
               </h3>
               {props.canManageRooms &&
@@ -459,10 +484,10 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
                     box.kind === "forum" ? "forum" : box.kind === "voice" ? "voice" : "text";
                   const label =
                     box.kind === "forum"
-                      ? "Create forum"
+                      ? t("hub.sidebar.createForum")
                       : box.kind === "voice"
-                        ? "Create voice room"
-                        : `Create room in ${box.title}`;
+                        ? t("hub.sidebar.createVoiceRoom")
+                        : t("hub.sidebar.createRoomIn", { box: boxTitle(box) });
                   return (
                     <button
                       type="button"
@@ -489,7 +514,13 @@ export function HubRoomBoxes<R extends SidebarRoom, P extends SidebarVoicePartic
                 )}
                 {plain.length > 0 && (
                   <div className="hbx-grid">
-                    {plain.map((room) => renderPlainTile(room, box, box.kind === "voice" ? ", voice room, empty" : ""))}
+                    {plain.map((room) =>
+                      renderPlainTile(
+                        room,
+                        box,
+                        box.kind === "voice" ? [t("hub.sidebar.aria.voiceRoom"), t("hub.sidebar.aria.empty")] : [],
+                      ),
+                    )}
                   </div>
                 )}
               </>

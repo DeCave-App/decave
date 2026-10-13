@@ -4,6 +4,7 @@ import type { Hub } from "@/src/types";
 import { Modal, View, Pressable, Text, ScrollView, TextInput, ActivityIndicator } from "react-native";
 import { styles } from "./hubScreen.styles";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { colors } from "@/src/theme";
 
 export function ManageHubSheet({
@@ -41,6 +42,7 @@ export function ManageHubSheet({
   onSave: () => void;
   onCreateRoom: () => void;
 }) {
+  const { t } = useTranslation(["common", "hub"]);
   return (
     <Modal
       visible={visible}
@@ -55,10 +57,10 @@ export function ManageHubSheet({
 
           <View style={styles.sheetHeader}>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.sheetKicker}>HUB MANAGEMENT</Text>
-              <Text style={styles.sheetTitle}>Manage {hub.name}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.sheetKicker}>{t("hub.mobile.manage.kicker")}</Text>
+              <Text style={styles.sheetTitle}>{t("hub.mobile.manage.title", { name: hub.name })}</Text>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" style={styles.sheetClose} onPress={onClose}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("common.actions.close")} style={styles.sheetClose} onPress={onClose}>
               <Ionicons name="close" size={20} color={colors.text} />
             </Pressable>
           </View>
@@ -68,44 +70,44 @@ export function ManageHubSheet({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.fieldLabel}>Hub name</Text>
+            <Text style={styles.fieldLabel}>{t("hub.manageHub.profile.name")}</Text>
             <TextInput
               value={name}
               onChangeText={onName}
               maxLength={40}
-              placeholder="Hub name"
+              placeholder={t("hub.manageHub.profile.name")}
               placeholderTextColor={colors.faint}
               style={styles.input}
             />
 
-            <Text style={styles.fieldLabel}>Description</Text>
+            <Text style={styles.fieldLabel}>{t("hub.manageHub.profile.description")}</Text>
             <TextInput
               value={description}
               onChangeText={onDescription}
               maxLength={300}
               multiline
-              placeholder="What is this Hub about?"
+              placeholder={t("hub.manageHub.profile.descriptionPlaceholder")}
               placeholderTextColor={colors.faint}
               style={[styles.input, styles.multiline]}
             />
 
-            <Text style={styles.fieldLabel}>Category</Text>
+            <Text style={styles.fieldLabel}>{t("hub.manageHub.profile.category")}</Text>
             <TextInput
               value={category}
               onChangeText={onCategory}
               maxLength={40}
-              placeholder="Gaming"
+              placeholder={t("hub.onboarding.defaultCategory")}
               placeholderTextColor={colors.faint}
               style={styles.input}
             />
 
             <View style={styles.permissionCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.permissionTitle}>Hub visibility</Text>
+                <Text style={styles.permissionTitle}>{t("hub.manageHub.visibility.label")}</Text>
                 <Text style={styles.permissionText}>
                   {isOwner
-                    ? "Only the Hub owner can change public/private visibility."
-                    : `This Hub is ${hub.visibility}. Visibility can only be changed by the owner.`}
+                    ? t("hub.mobile.manage.visibilityOwner")
+                    : t(hub.visibility === "public" ? "hub.mobile.manage.visibilityPublic" : "hub.mobile.manage.visibilityPrivate")}
                 </Text>
               </View>
             </View>
@@ -134,7 +136,7 @@ export function ManageHubSheet({
                           active && styles.segmentTextActive,
                         ]}
                       >
-                        {value === "private" ? "Private" : "Public"}
+                        {value === "private" ? t("hub.manageHub.visibility.private") : t("hub.manageHub.visibility.public")}
                       </Text>
                     </Pressable>
                   );
@@ -142,15 +144,15 @@ export function ManageHubSheet({
               </View>
             )}
 
-            <Text style={styles.sheetSectionTitle}>ROOMS</Text>
+            <Text style={styles.sheetSectionTitle}>{t("hub.mobile.manage.rooms")}</Text>
             <Pressable accessibilityRole="button" style={styles.createRoomCard} onPress={onCreateRoom}>
               <View style={styles.createRoomIcon}>
                 <Ionicons name="add" size={21} color={colors.cyan} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.createRoomTitle}>Create a new room</Text>
+                <Text style={styles.createRoomTitle}>{t("hub.mobile.manage.createRoom")}</Text>
                 <Text style={styles.createRoomText}>
-                  Add another Text Room or Voice Room to this Hub.
+                  {t("hub.mobile.manage.createRoomHint")}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.muted} />
@@ -166,7 +168,7 @@ export function ManageHubSheet({
               {busy ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.primaryButtonText}>Save Hub changes</Text>
+                <Text style={styles.primaryButtonText}>{t("hub.mobile.manage.save")}</Text>
               )}
             </Pressable>
           </ScrollView>

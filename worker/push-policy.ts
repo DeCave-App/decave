@@ -4,6 +4,10 @@
 // DM / mention switches, and how much of the message the preview may show.
 // Missing or invalid preview preferences fail closed to hidden text.
 
+import type { TFunction } from "i18next";
+import { DEFAULT_LOCALE } from "../shared/i18n/languages.ts";
+import { tWith, workerT } from "./lib/i18n";
+
 export type PushKind = "dm" | "mention" | "room";
 export type PushPreview = "full" | "sender" | "hidden";
 type Level = "all" | "mentions" | "nothing";
@@ -127,18 +131,26 @@ export function shouldPush(settings: PushSettings, context: PushContext): boolea
   return true;
 }
 
-/** Title and body as the person's preview setting allows. */
+/**
+ * Title and body as the person's preview setting allows, in the recipient's
+ * language (`t` from workerT; English when omitted). The sender, room name and
+ * message text are user content and are never translated.
+ */
 export function pushText(
   settings: PushSettings,
   sender: string,
   where: string | null,
   text: string,
+  t: TFunction = workerT(DEFAULT_LOCALE),
 ): { title: string; body: string } {
   if (settings.preview === "hidden")
-    return { title: "DeCave", body: where ? "New message in a Hub" : "You have a new message" };
+    return { title: "DeCave", body: t(where ? "push.hidden.hubMessage" : "push.hidden.directMessage") };
   if (settings.preview === "sender")
-    return { title: where ?? sender, body: where ? `${sender} sent a message` : `${sender} sent you a message` };
-  return { title: where ? `${sender} in ${where}` : sender, body: text };
+    return {
+      title: where ?? sender,
+      body: tWith(t, where ? "push.sender.hubMessage" : "push.sender.directMessage", { sender }),
+    };
+  return { title: where ? tWith(t, "push.sender.inRoom", { sender, where }) : sender, body: text };
 }
 
 /** Load push settings for these accounts in one query. */

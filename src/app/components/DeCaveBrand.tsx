@@ -1,5 +1,8 @@
 import decaveMark from "../../assets/decave-mark-reference.png";
 
+// The wordmark is the brand name split for styling; it is never translated.
+const WORDMARK = { start: "De", accent: "C", end: "ave" } as const;
+
 export function DeCaveBrand({ compact = false }: { compact?: boolean }) {
   return (
     <div
@@ -55,7 +58,7 @@ export function DeCaveBrand({ compact = false }: { compact?: boolean }) {
             textShadow: "none",
           }}
         >
-          <span style={{ color: "var(--ds-text)" }}>De</span>
+          <span style={{ color: "var(--ds-text)" }}>{WORDMARK.start}</span>
           <span
             style={{
               background: "linear-gradient(180deg, #667cff 0%, #6b57ff 45%, #8a49ff 100%)",
@@ -64,9 +67,9 @@ export function DeCaveBrand({ compact = false }: { compact?: boolean }) {
               WebkitTextFillColor: "transparent",
             }}
           >
-            C
+            {WORDMARK.accent}
           </span>
-          <span style={{ color: "var(--ds-text)" }}>ave</span>
+          <span style={{ color: "var(--ds-text)" }}>{WORDMARK.end}</span>
         </span>
       )}
     </div>
