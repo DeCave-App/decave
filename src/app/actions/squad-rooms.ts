@@ -11,9 +11,31 @@ export type SquadRoomActionsDeps = {
   voiceCall: {
     soundboardNotice: string;
     setSoundboardNotice: Dispatch<SetStateAction<string>>;
-    rtcStats: Record<string, { rttMs: number; lossPct: number; bitrateKbps: number | null }>;
+    rtcStats: Record<
+      string,
+      {
+        rttMs: number;
+        lossPct: number;
+        bitrateKbps: number | null;
+        concealPct?: number;
+        jitterMs?: number;
+        relayProtocol?: string;
+      }
+    >;
     setRtcStats: Dispatch<
-      SetStateAction<Record<string, { rttMs: number; lossPct: number; bitrateKbps: number | null }>>
+      SetStateAction<
+        Record<
+          string,
+          {
+            rttMs: number;
+            lossPct: number;
+            bitrateKbps: number | null;
+            concealPct?: number;
+            jitterMs?: number;
+            relayProtocol?: string;
+          }
+        >
+      >
     >;
     lobbyJoinMuted: boolean;
     setLobbyJoinMuted: Dispatch<SetStateAction<boolean>>;

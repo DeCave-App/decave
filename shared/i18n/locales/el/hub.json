@@ -916,6 +916,7 @@
     "connecting": "Σύνδεση…",
     "connected": "Η φωνή συνδέθηκε",
     "connectedPing": "Η φωνή συνδέθηκε · {{ms}} ms",
+    "qualityDetail": "Απώλεια πακέτων {{loss}}% · Συμπληρωμένος ήχος {{conceal}}% · Jitter {{jitter}} ms",
     "serverMuted": "Σίγαση από συντονιστή",
     "unmute": "Κατάργηση σίγασης",
     "mute": "Σίγαση",

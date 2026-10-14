@@ -953,6 +953,7 @@
     "connecting": "Conectando…",
     "connected": "Voz conectada",
     "connectedPing": "Voz conectada · {{ms}} ms",
+    "qualityDetail": "Pérdida de paquetes {{loss}} % · Audio reconstruido {{conceal}} % · Jitter {{jitter}} ms",
     "serverMuted": "Silenciado en el Hub",
     "unmute": "Activar micro",
     "mute": "Silenciar",

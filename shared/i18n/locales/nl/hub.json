@@ -916,6 +916,7 @@
     "connecting": "Verbinden…",
     "connected": "Spraak verbonden",
     "connectedPing": "Spraak verbonden · {{ms}} ms",
+    "qualityDetail": "Pakketverlies {{loss}}% · Opgevulde audio {{conceal}}% · Jitter {{jitter}} ms",
     "serverMuted": "Door server gedempt",
     "unmute": "Dempen opheffen",
     "mute": "Dempen",

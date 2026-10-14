@@ -7,7 +7,17 @@ import { useState } from "react";
 export function useVoiceCallState() {
   const [soundboardNotice, setSoundboardNotice] = useState("");
   const [rtcStats, setRtcStats] = useState<
-    Record<string, { rttMs: number; lossPct: number; bitrateKbps: number | null }>
+    Record<
+      string,
+      {
+        rttMs: number;
+        lossPct: number;
+        bitrateKbps: number | null;
+        concealPct?: number;
+        jitterMs?: number;
+        relayProtocol?: string;
+      }
+    >
   >({});
   const [lobbyJoinMuted, setLobbyJoinMuted] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("Disconnected");

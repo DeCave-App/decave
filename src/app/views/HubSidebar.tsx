@@ -88,6 +88,7 @@ type Props = {
   hiddenHubRailProps: Record<string, unknown>;
   ownVoiceRttMs: number | null;
   voiceQuality: "good" | "fair" | "poor" | null;
+  voiceAudioHealth: { loss: number; conceal: number; jitter: number } | null;
   hubHomeActive: boolean;
   hubHomeCatchUp: HubHomeCatchUp[];
   hubPanels: HubPanelsState;
@@ -152,6 +153,7 @@ export function HubSidebar({
   primaryHubsActive,
   hiddenHubRailProps,
   ownVoiceRttMs,
+  voiceAudioHealth,
   voiceQuality,
   hubHomeActive,
   hubHomeCatchUp,
@@ -553,6 +555,7 @@ export function HubSidebar({
               status={voiceStatus}
               quality={voiceQuality}
               rttMs={ownVoiceRttMs}
+              audioHealth={voiceAudioHealth}
               participants={voiceParticipants
                 .filter((participant) => participant.channelId === voiceChannelId)
                 .map((participant) => ({

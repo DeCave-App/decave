@@ -916,6 +916,7 @@
     "connecting": "Connecting…",
     "connected": "Voice connected",
     "connectedPing": "Voice connected · {{ms}} ms",
+    "qualityDetail": "Packet loss {{loss}}% · Concealed audio {{conceal}}% · Jitter {{jitter}} ms",
     "serverMuted": "Server muted",
     "unmute": "Unmute",
     "mute": "Mute",

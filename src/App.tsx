@@ -3800,8 +3800,25 @@ function App() {
     if (values.length === 0) return null;
     return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
   })();
-  const voiceQuality =
-    ownVoiceRttMs === null ? null : ownVoiceRttMs <= 80 ? "good" : ownVoiceRttMs <= 160 ? "fair" : "poor";
+  // Worst peer over the last poll: loss and concealment drive robotic or
+  // cutting-out voice, so they rate the connection alongside ping.
+  const voiceAudioHealth = (() => {
+    const stats = Object.values(voiceCall.rtcStats);
+    if (stats.length === 0) return null;
+    return {
+      loss: Math.max(...stats.map((item) => item.lossPct || 0)),
+      conceal: Math.max(...stats.map((item) => item.concealPct || 0)),
+      jitter: Math.max(...stats.map((item) => item.jitterMs || 0)),
+    };
+  })();
+  const voiceQuality: "good" | "fair" | "poor" | null =
+    ownVoiceRttMs === null
+      ? null
+      : ownVoiceRttMs > 160 || (voiceAudioHealth && Math.max(voiceAudioHealth.loss, voiceAudioHealth.conceal) >= 5)
+        ? "poor"
+        : ownVoiceRttMs > 80 || (voiceAudioHealth && Math.max(voiceAudioHealth.loss, voiceAudioHealth.conceal) >= 1.5)
+          ? "fair"
+          : "good";
   const hasActiveScreenShare = !!callMedia.localScreenStream || Object.keys(callMedia.remoteScreens).length > 0;
   const activeScreenShareCount = (callMedia.localScreenStream ? 1 : 0) + Object.keys(callMedia.remoteScreens).length;
   const hasActiveCamera = !!callMedia.localCameraStream || Object.keys(callMedia.remoteCameras).length > 0;
@@ -4361,6 +4378,7 @@ function App() {
         hiddenHubRailProps={hiddenHubRailProps}
         ownVoiceRttMs={ownVoiceRttMs}
         voiceQuality={voiceQuality}
+        voiceAudioHealth={voiceAudioHealth}
         hubHomeActive={hubHomeActive}
         hubHomeCatchUp={hubHomeCatchUp}
         hubPanels={hubPanels}

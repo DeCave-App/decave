@@ -916,6 +916,7 @@
     "connecting": "Wird verbunden …",
     "connected": "Voice verbunden",
     "connectedPing": "Voice verbunden · {{ms}} ms",
+    "qualityDetail": "Paketverlust {{loss}} % · Verdecktes Audio {{conceal}} % · Jitter {{jitter}} ms",
     "serverMuted": "Hub-weit stummgeschaltet",
     "unmute": "Stummschaltung aufheben",
     "mute": "Stummschalten",

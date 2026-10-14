@@ -1,10 +1,27 @@
-// While in voice, polls WebRTC stats per peer: round-trip time, packet loss and bitrate.
+// While in voice, polls WebRTC stats per peer: round-trip time, packet loss,
+// concealment, jitter, relay protocol and bitrate. Loss and concealment are
+// measured over the last poll interval, so short bursts (heard as robotic or
+// cutting-out voice) aren't averaged away over the whole call.
 
 import { type Dispatch, type SetStateAction, type MutableRefObject, useEffect } from "react";
 import type { PeerSession, RemoteScreen } from "../app/types";
 
 export type RtcStatsPollingDeps = {
-  setRtcStats: Dispatch<SetStateAction<Record<string, { rttMs: number; lossPct: number; bitrateKbps: number | null }>>>;
+  setRtcStats: Dispatch<
+    SetStateAction<
+      Record<
+        string,
+        {
+          rttMs: number;
+          lossPct: number;
+          bitrateKbps: number | null;
+          concealPct?: number;
+          jitterMs?: number;
+          relayProtocol?: string;
+        }
+      >
+    >
+  >;
   voiceChannelId: number | null;
   remoteScreensRef: MutableRefObject<Record<string, RemoteScreen>>;
   remoteCamerasRef: MutableRefObject<Record<string, RemoteScreen>>;
@@ -31,8 +48,22 @@ export function useRtcStatsPolling(deps: RtcStatsPollingDeps): void {
       return;
     }
 
+    const previousAudioCounters = new Map<
+      string,
+      { lost: number; received: number; concealed: number; totalSamples: number }
+    >();
     const updateRtcStats = async () => {
-      const next: Record<string, { rttMs: number; lossPct: number; bitrateKbps: number | null }> = {};
+      const next: Record<
+        string,
+        {
+          rttMs: number;
+          lossPct: number;
+          bitrateKbps: number | null;
+          concealPct?: number;
+          jitterMs?: number;
+          relayProtocol?: string;
+        }
+      > = {};
       const activeConnections = new Set<string>();
 
       for (const [connectionId, session] of peerSessionsRef.current.entries()) {
@@ -43,7 +74,10 @@ export function useRtcStatsPolling(deps: RtcStatsPollingDeps): void {
             mediaRtt = 0,
             lost = 0,
             received = 0,
-            audioBytes = 0;
+            audioBytes = 0,
+            concealed = 0,
+            totalSamples = 0,
+            jitterMs = 0;
           type VoiceCandidatePairStats = RTCStats & {
             selected?: boolean;
             nominated?: boolean;
@@ -51,6 +85,7 @@ export function useRtcStatsPolling(deps: RtcStatsPollingDeps): void {
             currentRoundTripTime?: number;
             responsesReceived?: number;
             totalRoundTripTime?: number;
+            localCandidateId?: string;
           };
           type InboundVideoStats = RTCStats & {
             kind?: string;
@@ -70,6 +105,9 @@ export function useRtcStatsPolling(deps: RtcStatsPollingDeps): void {
               lost += Number(report.packetsLost || 0);
               received += Number(report.packetsReceived || 0);
               audioBytes += Number(report.bytesReceived || 0);
+              concealed += Number(report.concealedSamples || 0);
+              totalSamples += Number(report.totalSamplesReceived || 0);
+              if (typeof report.jitter === "number") jitterMs = Math.max(jitterMs, report.jitter * 1000);
             }
           });
           // A PeerConnection can retain several successful ICE checks. Only
@@ -176,10 +214,32 @@ export function useRtcStatsPolling(deps: RtcStatsPollingDeps): void {
             inboundVideoBitrateSamplesRef.current.delete(connectionId);
           }
 
+          const previous = previousAudioCounters.get(connectionId);
+          previousAudioCounters.set(connectionId, { lost, received, concealed, totalSamples });
+          const lostDelta = Math.max(0, lost - (previous?.lost ?? 0));
+          const receivedDelta = Math.max(0, received - (previous?.received ?? 0));
+          const concealedDelta = Math.max(0, concealed - (previous?.concealed ?? 0));
+          const samplesDelta = Math.max(0, totalSamples - (previous?.totalSamples ?? 0));
+          const lossPct =
+            receivedDelta + lostDelta > 0 ? Math.round((lostDelta / (receivedDelta + lostDelta)) * 1000) / 10 : 0;
+          const concealPct = samplesDelta > 0 ? Math.round((concealedDelta / samplesDelta) * 1000) / 10 : 0;
+          const localCandidate = selectedPair?.localCandidateId
+            ? (reports.get(selectedPair.localCandidateId) as { relayProtocol?: string } | undefined)
+            : undefined;
+          const relayProtocol = localCandidate?.relayProtocol;
+          if (lossPct >= 3 || concealPct >= 3) {
+            console.warn(
+              `[voice-quality] peer ${connectionId}: loss ${lossPct}% concealed ${concealPct}% ` +
+                `jitter ${Math.round(jitterMs)} ms rtt ${Math.round(rtt)} ms relay ${relayProtocol ?? "unknown"}`,
+            );
+          }
           next[connectionId] = {
             rttMs: Math.round(rtt),
-            lossPct: received + lost > 0 ? Math.round((lost / (received + lost)) * 1000) / 10 : 0,
+            lossPct,
             bitrateKbps,
+            concealPct,
+            jitterMs: Math.round(jitterMs),
+            relayProtocol,
           };
         } catch {
           inboundVideoBitrateSamplesRef.current.delete(connectionId);

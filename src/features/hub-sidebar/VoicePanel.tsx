@@ -17,6 +17,7 @@ export type VoicePanelProps = {
   status: string;
   quality: "good" | "fair" | "poor" | null;
   rttMs: number | null;
+  audioHealth?: { loss: number; conceal: number; jitter: number } | null;
   participants: readonly VoicePanelParticipant[];
   muted: boolean;
   serverMuted: boolean;
@@ -67,7 +68,19 @@ export function VoicePanel(props: VoicePanelProps) {
           <i />
         </span>
         <span className="hsb-voice-panel-copy">
-          <strong>{qualityLabel}</strong>
+          <strong
+            title={
+              props.audioHealth && !connecting
+                ? t("hub.voicePanel.qualityDetail", {
+                    loss: props.audioHealth.loss,
+                    conceal: props.audioHealth.conceal,
+                    jitter: props.audioHealth.jitter,
+                  })
+                : undefined
+            }
+          >
+            {qualityLabel}
+          </strong>
           <small>
             {props.roomName}
             {props.hubName ? ` / ${props.hubName}` : ""}

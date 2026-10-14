@@ -990,6 +990,7 @@
     "connecting": "Łączenie…",
     "connected": "Połączono z głosem",
     "connectedPing": "Połączono z głosem · {{ms}} ms",
+    "qualityDetail": "Utrata pakietów {{loss}}% · Uzupełniony dźwięk {{conceal}}% · Jitter {{jitter}} ms",
     "serverMuted": "Wyciszony przez serwer",
     "unmute": "Włącz mikrofon",
     "mute": "Wycisz",
