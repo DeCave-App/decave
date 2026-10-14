@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ModalKeyboardAvoider } from "@/src/components/KeyboardAware";
 import { apiJson } from "@/src/lib/api";
 import { colors } from "@/src/theme";
 import type { SafetyProfile } from "@/src/types";
@@ -39,6 +40,7 @@ export function AgeGate({ token, onComplete }: AgeGateProps) {
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={() => {}}>
+      <ModalKeyboardAvoider>
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <Text maxFontSizeMultiplier={1.3} style={styles.kicker}>{t("common.ageGate.kicker")}</Text>
@@ -63,6 +65,7 @@ export function AgeGate({ token, onComplete }: AgeGateProps) {
           </Pressable>
         </View>
       </View>
+      </ModalKeyboardAvoider>
     </Modal>
   );
 }

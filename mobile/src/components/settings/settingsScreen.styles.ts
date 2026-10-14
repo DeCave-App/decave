@@ -325,6 +325,11 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  /** The language list under its row; the row's bottom border separates them. */
+  languageList: {
+    padding: 13,
+    paddingTop: 12,
+  },
   choiceBlock: {
     paddingTop: 12,
     marginTop: 6,

@@ -1305,9 +1305,11 @@
         "statusTextPlaceholder": "Quoi de neuf ?",
         "displayNamePlaceholder": "Le nom que les autres voient",
         "pronounsPlaceholder": "ex. elle, il, iel",
+        "bioPlaceholder": "Quelques mots sur toi",
         "statusTextEdit": "Modifier le statut personnalisé",
         "displayNameEdit": "Modifier le nom d'affichage",
-        "pronounsEdit": "Modifier les pronoms"
+        "pronounsEdit": "Modifier les pronoms",
+        "bioEdit": "Modifier la bio"
       }
     },
     "settings": {
@@ -1434,6 +1436,7 @@
       "enterYourCurrentPasswordTo": "Saisis ton mot de passe actuel pour continuer.",
       "settings": "PARAMÈTRES",
       "emailAddress": "ADRESSE E-MAIL",
+      "username": "NOM D'UTILISATEUR",
       "addAnEmailForRecovery": "Ajoute un e-mail pour la récupération et la protection du compte.",
       "newEmailAddress": "Nouvelle adresse e-mail",
       "emailAddress2": "Adresse e-mail",

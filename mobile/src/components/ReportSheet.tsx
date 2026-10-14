@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AccessibilityInfo, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ModalKeyboardAvoider } from "@/src/components/KeyboardAware";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { apiFetch, apiJson } from "@/src/lib/api";
@@ -123,6 +124,7 @@ export function ReportSheet({ visible, token, target, onClose, onSubmitted }: Re
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <ModalKeyboardAvoider>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.grabber} />
@@ -151,6 +153,7 @@ export function ReportSheet({ visible, token, target, onClose, onSubmitted }: Re
           <View style={styles.actions}><Pressable accessibilityRole="button" style={styles.cancel} onPress={onClose} disabled={busy}><Text style={styles.cancelText}>{t("safety.report.cancel")}</Text></Pressable><Pressable accessibilityRole="button" style={[styles.submit, busy && styles.disabled]} onPress={() => void submit()} disabled={busy}><Text style={styles.submitText}>{busy ? t("safety.report.submitting") : t("safety.report.submit")}</Text></Pressable></View>
         </Pressable>
       </Pressable>
+      </ModalKeyboardAvoider>
     </Modal>
   );
 }

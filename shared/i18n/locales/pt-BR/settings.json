@@ -1305,9 +1305,11 @@
         "statusTextPlaceholder": "O que está rolando?",
         "displayNamePlaceholder": "Como seu nome aparece para os outros",
         "pronounsPlaceholder": "ex.: ela/dela, ele/dele, elu/delu",
+        "bioPlaceholder": "Algumas palavras sobre você",
         "statusTextEdit": "Editar status personalizado",
         "displayNameEdit": "Editar nome exibido",
-        "pronounsEdit": "Editar pronomes"
+        "pronounsEdit": "Editar pronomes",
+        "bioEdit": "Editar bio"
       }
     },
     "settings": {
@@ -1434,6 +1436,7 @@
       "enterYourCurrentPasswordTo": "Digite sua senha atual para continuar.",
       "settings": "CONFIGURAÇÕES",
       "emailAddress": "ENDEREÇO DE E-MAIL",
+      "username": "NOME DE USUÁRIO",
       "addAnEmailForRecovery": "Adicione um e-mail para recuperação e proteção da conta.",
       "newEmailAddress": "Novo endereço de e-mail",
       "emailAddress2": "Endereço de e-mail",

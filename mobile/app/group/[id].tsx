@@ -38,6 +38,7 @@ import { discardGroupSend, dmE2ee, groupSocketFrame, rememberGroup, useDmE2ee } 
 import { GroupEncryptionBadge } from "@/src/providers/DmE2eeProvider";
 import { useTranslation } from "react-i18next";
 import { i18next } from "@/src/i18n";
+import { hour12Preference, useAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
 import { dateLocale } from "@/src/lib/date-locale";
 
 function previewMessage(text: string): string {
@@ -56,6 +57,8 @@ function inSameRun(a: GroupChatMessage | undefined, b: GroupChatMessage | undefi
 
 export default function GroupChatScreen() {
   const { t } = useTranslation(["dm", "common"]);
+  // Re-render when the synced time format loads or changes.
+  useAccountPreferencesSnapshot();
   const params = useLocalSearchParams<{ id: string }>();
   const groupId = params.id;
   const { token, user } = useSession();
@@ -566,7 +569,7 @@ export default function GroupChatScreen() {
 }
 
 function formatTime(value: string): string {
-  return new Date(value).toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit", hour12: hour12Preference() });
 }
 
 const styles = StyleSheet.create({

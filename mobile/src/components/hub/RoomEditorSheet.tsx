@@ -4,6 +4,7 @@ import type { Channel, ForumPostPolicy } from "@/src/types";
 import { type RoomType, type HubMember, ROOM_ICON_CHOICES } from "./hubShared";
 import { useState, useMemo } from "react";
 import { Modal, View, Pressable, Text, ScrollView, TextInput, Switch, ActivityIndicator } from "react-native";
+import { ModalKeyboardAvoider } from "@/src/components/KeyboardAware";
 import { styles } from "./hubScreen.styles";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -84,6 +85,7 @@ export function RoomEditorSheet({
       animationType="slide"
       onRequestClose={onClose}
     >
+      <ModalKeyboardAvoider>
       <View style={styles.modalOverlay}>
         <Pressable style={styles.modalBackdrop} onPress={onClose} />
         <View style={styles.sheet}>
@@ -403,6 +405,7 @@ export function RoomEditorSheet({
           </ScrollView>
         </View>
       </View>
+      </ModalKeyboardAvoider>
     </Modal>
   );
 }

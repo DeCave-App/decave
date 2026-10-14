@@ -1,28 +1,18 @@
 import { parseCommunityFeatures } from "../../shared/streamer-mode";
 import { canPostInChatRoom, type RoomRow } from "../db";
-// Hubs and rooms: access checks, room members, Hubs as sent to the client,
+// Hubs and rooms: access checks, room members, room lists,
 // voice counts, discovery signals and custom roles.
 
-import {
-  canAccessRoom as dbCanAccessRoom,
-  getRole,
-  userByReference,
-  publicIdOf,
-  nowIso,
-  type HubRow,
-  ensureGroupChatSchema,
-  getOfficialHubPostingPolicy,
-} from "../db";
+import { canAccessRoom as dbCanAccessRoom, getRole, userByReference, publicIdOf, nowIso } from "../db";
 import { safeJsonStringArray } from "../../shared/forum";
 import type { Env } from "./env";
-import { ensureHubFeatureSchema } from "./hub-schema";
-import { ensureSquadFinderSchema } from "./squad";
-import { ensureOfficialHubSchema, officialHubMembershipPrivate } from "./official-hubs";
-import { streamerHubsEnabled } from "./streamer";
-import { streamerMigrationExists, streamerLayoutForHub } from "../streamer/index.ts";
 import { mediaUrl } from "./media";
 import { type HubHomeConfig, normalizeHubHomeConfig } from "../../shared/hub-home";
 import { realtimeFetch } from "./realtime";
+
+// Hubs as sent to the client live in hub-list.ts (batched across Hubs).
+import { rowsForIds } from "./hub-list";
+export { hubForUser, hubsForUser } from "./hub-list";
 
 export function cleanRoomName(value: unknown): string {
   if (typeof value !== "string") return "";
@@ -199,77 +189,6 @@ export async function memberCount(db: D1Database, hubId: number): Promise<number
   return Number(row?.count ?? 0);
 }
 
-export async function hubForUser(env: Env, hub: HubRow, userId: string, streamerHubIds?: ReadonlySet<number>) {
-  await ensureHubFeatureSchema(env);
-  await ensureGroupChatSchema(env.DB);
-  await ensureSquadFinderSchema(env);
-  await ensureOfficialHubSchema(env);
-  const ringRow = await env.DB.prepare(
-    "SELECT icon_ring,theme,use_banner_background,chat_background_key,use_chat_background FROM decave_hubs WHERE id=?",
-  )
-    .bind(hub.id)
-    .first<{
-      icon_ring: number;
-      theme: string;
-      use_banner_background: number;
-      chat_background_key: string | null;
-      use_chat_background: number;
-    }>();
-  const home = await hubHomeConfig(env, hub.id);
-  const squadRow = await env.DB.prepare("SELECT 1 AS found FROM decave_squad_rooms WHERE hub_id=? LIMIT 1")
-    .bind(hub.id)
-    .first<{ found: number }>();
-  const myRole = await getRole(env.DB, hub.id, userId);
-  const membershipPrivate = await officialHubMembershipPrivate(env.DB, hub.id);
-  const postingPolicy = await getOfficialHubPostingPolicy(env.DB, hub.id);
-  const canSeeMembership = !membershipPrivate || myRole === "owner";
-  let layout: "standard" | "streamer" = "standard";
-  if (streamerHubIds) {
-    layout = streamerHubIds.has(hub.id) ? "streamer" : "standard";
-  } else if (streamerHubsEnabled(env) && (await streamerMigrationExists(env.DB))) {
-    try {
-      layout = await streamerLayoutForHub(env.DB, hub.id);
-    } catch (error) {
-      console.error("Could not read Streamer Hub layout", error instanceof Error ? error.name : "UnknownError");
-    }
-  }
-  return {
-    id: hub.id,
-    name: hub.name,
-    icon: hub.icon,
-    channels: await roomsForHub(env.DB, hub.id, userId),
-    ownerId:
-      (
-        await env.DB.prepare("SELECT public_id FROM decave_users WHERE id=?")
-          .bind(hub.owner_id)
-          .first<{ public_id: string | null }>()
-      )?.public_id ?? "",
-    myRole,
-    visibility: hub.visibility,
-    memberCount: canSeeMembership ? await memberCount(env.DB, hub.id) : null,
-    onlineCount: canSeeMembership ? await onlineCountForHub(env, hub.id) : null,
-    description: hub.description,
-    accent: hub.accent,
-    category: hub.category,
-    tags: await tagsForHub(env.DB, hub.id),
-    slowModeSeconds: hub.slow_mode_seconds,
-    iconUrl: mediaUrl(hub.icon_key),
-    bannerUrl: mediaUrl(hub.banner_key),
-    headerUrl: mediaUrl(hub.header_key ?? null),
-    chatBackgroundUrl: mediaUrl(ringRow?.chat_background_key ?? null),
-    iconRing: Number(ringRow?.icon_ring ?? 0) === 1,
-    theme: ringRow?.theme ?? "midnight",
-    useBannerBackground: Number(ringRow?.use_banner_background ?? 0) === 1,
-    useChatBackground: Number(ringRow?.use_chat_background ?? 0) === 1,
-    ...(layout === "streamer" ? { communityFeatures: await clientCommunityFeatures(env.DB, hub.id) } : {}),
-    isSquad: Boolean(squadRow?.found),
-    ownerOnlyPosting: postingPolicy.status === "unavailable" ? true : postingPolicy.ownerOnly,
-    membershipPrivate,
-    layout,
-    home,
-  };
-}
-
 /** The Hub Home layout, Welcome message and Rules (defaults when never edited). */
 export async function hubHomeConfig(env: Env, hubId: number): Promise<HubHomeConfig> {
   try {
@@ -341,12 +260,12 @@ export async function discoverSignals(
     console.warn("Discover: friend signals unavailable", error instanceof Error ? error.name : "UnknownError");
   }
   try {
-    const rooms = await env.DB.prepare(
-      `SELECT id, hub_id FROM decave_rooms WHERE type='voice' AND private=0 AND hub_id IN (${hubIds.map(() => "?").join(",")})`,
-    )
-      .bind(...hubIds)
-      .all<{ id: number; hub_id: number }>();
-    const hubByRoom = new Map(rooms.results.map((room) => [Number(room.id), Number(room.hub_id)] as const));
+    const rooms = await rowsForIds(hubIds, (ids, chunk) =>
+      env.DB.prepare(`SELECT id, hub_id FROM decave_rooms WHERE type='voice' AND private=0 AND hub_id IN (${ids})`)
+        .bind(...chunk)
+        .all<{ id: number; hub_id: number }>(),
+    );
+    const hubByRoom = new Map(rooms.map((room) => [Number(room.id), Number(room.hub_id)] as const));
     const counts = await voiceCountsForRooms(env, [...hubByRoom.keys()]);
     for (const [roomId, n] of counts) {
       const hubId = hubByRoom.get(roomId);
@@ -425,10 +344,4 @@ export async function hubCommunityFeatures(db: D1Database, hubId: number) {
   } catch {
     return parseCommunityFeatures(null);
   }
-}
-
-/** The subset of custom features the client UI needs. */
-async function clientCommunityFeatures(db: D1Database, hubId: number) {
-  const features = await hubCommunityFeatures(db, hubId);
-  return { voiceLimits: features.voiceLimits, subRoles: features.subRoles, faceitBadges: features.faceitBadges };
 }

@@ -27,6 +27,7 @@ import { botsEnabled } from "../bots/flags";
 import { json, bodyJson, idFromPath, apiError } from "../lib/http";
 import {
   hubForUser,
+  hubsForUser,
   discoverSignals,
   nextIntegerId,
   voiceCountsForRooms,
@@ -66,15 +67,17 @@ export async function handleHubListRoutes({ request, env, p, method }: ApiContex
   if (method === "GET" && p === "/api/servers") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-    const rows = await env.DB.prepare(
-      `SELECT h.* FROM decave_hubs h
+    const [rows, streamerHubIds] = await Promise.all([
+      env.DB.prepare(
+        `SELECT h.* FROM decave_hubs h
          JOIN decave_hub_members hm ON hm.hub_id=h.id
          WHERE hm.user_id=? ORDER BY h.id`,
-    )
-      .bind(user.id)
-      .all<HubRow>();
-    const streamerHubIds = await streamerHubIdsForUserSafe(env, user.id);
-    return json(await Promise.all(rows.results.map((hub) => hubForUser(env, hub, user.id, streamerHubIds))));
+      )
+        .bind(user.id)
+        .all<HubRow>(),
+      streamerHubIdsForUserSafe(env, user.id),
+    ]);
+    return json(await hubsForUser(env, rows.results, user.id, streamerHubIds));
   }
 
   return null;
@@ -92,33 +95,37 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
   if (method === "GET" && p === "/api/servers/discover") {
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
-    const rows = await env.DB.prepare("SELECT * FROM decave_hubs WHERE visibility='public' ORDER BY id").all<HubRow>();
-    const streamerHubIds = await streamerHubIdsForUserSafe(env, user.id);
-    const signals = await discoverSignals(
-      env,
-      user.id,
-      rows.results.map((hub) => hub.id),
-    );
-    const result = await Promise.all(
-      rows.results.map(async (hub) => {
-        const role = await getRole(env.DB, hub.id, user.id);
-        const base = await hubForUser(env, hub, user.id, streamerHubIds);
-        // Hubs that keep their member list private reveal neither friends nor voice presence.
-        const hidePeople = base.membershipPrivate === true && role !== "owner";
-        const friendNames = hidePeople ? [] : (signals.friends.get(hub.id) ?? []);
-        return {
-          ...base,
-          channels: undefined,
-          home: undefined,
-          joined: role !== null,
-          myRole: role,
-          createdAt: hub.created_at,
-          friendsInside: friendNames.length,
-          friendNames: friendNames.slice(0, 3),
-          voiceCount: hidePeople ? 0 : (signals.voice.get(hub.id) ?? 0),
-        };
-      }),
-    );
+    const [rows, streamerHubIds] = await Promise.all([
+      env.DB.prepare("SELECT * FROM decave_hubs WHERE visibility='public' ORDER BY id").all<HubRow>(),
+      streamerHubIdsForUserSafe(env, user.id),
+    ]);
+    // Discover drops the room list, so it is never loaded.
+    const [signals, bases] = await Promise.all([
+      discoverSignals(
+        env,
+        user.id,
+        rows.results.map((hub) => hub.id),
+      ),
+      hubsForUser(env, rows.results, user.id, streamerHubIds, { rooms: false }),
+    ]);
+    const result = rows.results.map((hub, index) => {
+      const base = bases[index];
+      const role = base.myRole;
+      // Hubs that keep their member list private reveal neither friends nor voice presence.
+      const hidePeople = base.membershipPrivate === true && role !== "owner";
+      const friendNames = hidePeople ? [] : (signals.friends.get(hub.id) ?? []);
+      return {
+        ...base,
+        channels: undefined,
+        home: undefined,
+        joined: role !== null,
+        myRole: role,
+        createdAt: hub.created_at,
+        friendsInside: friendNames.length,
+        friendNames: friendNames.slice(0, 3),
+        voiceCount: hidePeople ? 0 : (signals.voice.get(hub.id) ?? 0),
+      };
+    });
     result.sort(
       (a, b) => Number(a.joined) - Number(b.joined) || Number(b.memberCount ?? -1) - Number(a.memberCount ?? -1),
     );
@@ -344,9 +351,8 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const user = await requireUser(request, env);
     if (user instanceof Response) return user;
     const hubId = Number(hubBase[1]);
-    const hub = await getHub(env.DB, hubId);
+    const [hub, role] = await Promise.all([getHub(env.DB, hubId), getRole(env.DB, hubId, user.id)]);
     if (!hub) return apiError("hubs.serverNotFound", 404);
-    const role = await getRole(env.DB, hubId, user.id);
     if (method === "GET") {
       if (!role) return apiError("hubs.noServerAccess", 403);
       return json(await hubForUser(env, hub, user.id));

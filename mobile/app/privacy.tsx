@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Screen } from "@/src/components/Screen";
@@ -8,9 +8,12 @@ import { apiJson } from "@/src/lib/api";
 import {
   loadAccountPreferences,
   updateAccountPreferences,
+  type AccountPreferences,
+  type AccountPreferencesPatch,
   type ActivityVisibility,
   type FriendRequestPolicy,
 } from "@/src/lib/account-preferences";
+import { sendsTypingIndicators, setAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
 import { useSession } from "@/src/providers/SessionProvider";
 import { DmEncryptionSettings } from "@/src/providers/DmE2eeProvider";
 import { useDmE2ee } from "@/src/lib/e2ee/client";
@@ -36,6 +39,7 @@ export default function PrivacyScreen() {
   const { token } = useSession();
   const [friendPolicy, setFriendPolicy] = useState<FriendRequestPolicy | null>(null);
   const [activity, setActivity] = useState<ActivityVisibility | null>(null);
+  const [prefs, setPrefs] = useState<AccountPreferences | null>(null);
   const [blocks, setBlocks] = useState<BlockedAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,6 +58,7 @@ export default function PrivacyScreen() {
     if (prefs.status === "fulfilled") {
       setFriendPolicy(prefs.value.friendRequestPolicy ?? "everyone");
       setActivity(prefs.value.activityVisibility ?? "everyone");
+      setPrefs(prefs.value);
     } else {
       setError(prefs.reason instanceof Error ? prefs.reason.message : t("settings.mobile.privacy.couldNotLoadYourPrivacy"));
     }
@@ -94,6 +99,36 @@ export default function PrivacyScreen() {
       setActivity(previous);
       setError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotSaveThisSetting"));
     }
+  };
+
+  /** Typing indicators and stream previews: shown at once, put back if saving fails. */
+  const saveToggle = async (patch: AccountPreferencesPatch, optimistic: AccountPreferences) => {
+    if (!token || !prefs) return;
+    const previous = prefs;
+    setPrefs(optimistic);
+    setError("");
+    try {
+      const saved = await updateAccountPreferences(token, patch);
+      setPrefs(saved);
+      setAccountPreferencesSnapshot(saved);
+    } catch (cause) {
+      setPrefs(previous);
+      setError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotSaveThisSetting"));
+    }
+  };
+
+  const setTypingIndicators = (value: boolean) => {
+    if (!prefs) return;
+    const clientSettings = prefs.clientSettings ?? {};
+    void saveToggle(
+      { clientSettingsPatch: { privacy: { sendTypingIndicators: value } } },
+      { ...prefs, clientSettings: { ...clientSettings, privacy: { ...clientSettings.privacy, sendTypingIndicators: value } } },
+    );
+  };
+
+  const setStreamPreviews = (value: boolean) => {
+    if (!prefs) return;
+    void saveToggle({ allowStreamPreviews: value }, { ...prefs, allowStreamPreviews: value });
   };
 
   const unblock = (account: BlockedAccount) => {
@@ -172,6 +207,34 @@ export default function PrivacyScreen() {
               <Ionicons name="chatbubbles-outline" size={18} color={colors.cyan} />
               <Text style={styles.infoText}>{t("settings.mobile.privacy.onlyFriendsCanMessageYou")}</Text>
             </View>
+            <View style={[styles.card, styles.toggleCard]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>{t("settings.privacy.typing")}</Text>
+                <Text style={styles.optionDetail}>{t("settings.privacy.typingHelp")}</Text>
+              </View>
+              <Switch
+                accessibilityLabel={t("settings.privacy.typing")}
+                value={sendsTypingIndicators(prefs)}
+                onValueChange={setTypingIndicators}
+                disabled={!prefs}
+                trackColor={{ true: colors.violet }}
+              />
+            </View>
+
+            <Text style={styles.section}>{t("settings.anchors.streamPrivacy.label").toUpperCase()}</Text>
+            <View style={[styles.card, styles.toggleCard]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>{t("settings.privacy.streamPreviews")}</Text>
+                <Text style={styles.optionDetail}>{t("settings.privacy.streamPreviewsHelp")}</Text>
+              </View>
+              <Switch
+                accessibilityLabel={t("settings.privacy.streamPreviews")}
+                value={prefs?.allowStreamPreviews !== false}
+                onValueChange={setStreamPreviews}
+                disabled={!prefs}
+                trackColor={{ true: colors.violet }}
+              />
+            </View>
 
             {dmE2eeAvailable && (
               <>
@@ -215,6 +278,7 @@ const styles = StyleSheet.create({
   section: { color: colors.faint, fontSize: 13, fontWeight: "900", letterSpacing: 1.4, marginTop: 14, marginBottom: 7 },
   card: { padding: 12, borderRadius: 18, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border },
   cardTitle: { color: colors.text, fontSize: 13, fontWeight: "900" },
+  toggleCard: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 8 },
   stack: { gap: 7, marginTop: 10 },
   option: { minHeight: 54, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: colors.input, borderWidth: 1, borderColor: colors.border },
   optionActive: { backgroundColor: colors.cyanSoft, borderColor: "rgba(95,225,255,.30)" },

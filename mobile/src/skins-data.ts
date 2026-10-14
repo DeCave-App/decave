@@ -22,6 +22,8 @@ export type Palette = {
   muted: string;
   accent: string;
   accentSoft: string;
+  /** Selected buttons, tabs and pills under white text, when `accent` is too pale for that. */
+  fill?: string;
 };
 
 export type SkinDefinition = {
@@ -158,6 +160,7 @@ export const SKINS: SkinDefinition[] = [
       muted: "#AAB5C1",
       accent: "#DDEBFF",
       accentSoft: "rgba(221,235,255,.11)",
+      fill: "#5A7190",
     },
   },
   {
@@ -179,6 +182,7 @@ export const SKINS: SkinDefinition[] = [
       muted: "#858E99",
       accent: "#BFCBDA",
       accentSoft: "rgba(191,203,218,.10)",
+      fill: "#59616F",
     },
   },
 ];

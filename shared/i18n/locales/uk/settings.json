@@ -1313,9 +1313,11 @@
         "statusTextPlaceholder": "Що відбувається?",
         "displayNamePlaceholder": "Як інші бачать твоє ім’я",
         "pronounsPlaceholder": "напр., вона/її, він/його, вони/їх",
+        "bioPlaceholder": "Кілька слів про себе",
         "statusTextEdit": "Змінити власний статус",
         "displayNameEdit": "Змінити відображуване ім’я",
-        "pronounsEdit": "Змінити займенники"
+        "pronounsEdit": "Змінити займенники",
+        "bioEdit": "Змінити біо"
       }
     },
     "settings": {
@@ -1442,6 +1444,7 @@
       "enterYourCurrentPasswordTo": "Введи поточний пароль, щоб продовжити.",
       "settings": "НАЛАШТУВАННЯ",
       "emailAddress": "АДРЕСА EMAIL",
+      "username": "ІМ’Я КОРИСТУВАЧА",
       "addAnEmailForRecovery": "Додай email для відновлення й захисту акаунта.",
       "newEmailAddress": "Нова адреса email",
       "emailAddress2": "Адреса email",

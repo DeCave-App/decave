@@ -1,6 +1,8 @@
 import { Linking, StyleSheet, Text, View, type StyleProp, type TextStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/src/theme";
+import { showsLargeEmoji, useAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
+import { isEmojiOnly, LARGE_EMOJI_TEXT } from "@/src/lib/emoji-only";
 
 const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)\]]/gi;
 
@@ -37,6 +39,8 @@ export const linkStyle = { color: colors.cyan, textDecorationLine: "underline" }
 
 /** Message text with tappable http(s) links, plus a small domain chip for the first link. */
 export function LinkifiedText({ text, style, showChip = true }: { text: string; style?: StyleProp<TextStyle>; showChip?: boolean }) {
+  const prefs = useAccountPreferencesSnapshot();
+  if (showsLargeEmoji(prefs) && isEmojiOnly(text)) return <Text style={[style, LARGE_EMOJI_TEXT]}>{text}</Text>;
   const parts: Array<{ text: string; url?: string }> = [];
   let last = 0;
   for (const match of text.matchAll(URL_PATTERN)) {

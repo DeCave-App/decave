@@ -8,6 +8,7 @@ import { forumPostNotices } from "../../../../shared/forum";
 import { noticeText } from "@/src/lib/server-notice";
 import { linkStyle, openLink } from "@/src/components/LinkifiedText";
 import { styles } from "./channelScreen.styles";
+import { hour12Preference } from "@/src/lib/account-preferences-store";
 import { dateLocale } from "@/src/lib/date-locale";
 
 export const FORUM_POST_PREFIX = "__DECAVE_FORUM_POST_V1__";
@@ -81,6 +82,7 @@ export function formatMessageTime(value: string): string {
   return new Date(timestamp).toLocaleTimeString(dateLocale(), {
     hour: "2-digit",
     minute: "2-digit",
+    hour12: hour12Preference(),
   });
 }
 

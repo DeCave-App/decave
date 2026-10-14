@@ -124,7 +124,8 @@ function skinnedColors(): typeof dark {
     text: palette.text,
     muted: palette.muted,
     cyan: palette.accent,
-    violet: palette.accent,
+    // Filled selected states carry white text, so pale accents use a dimmer fill.
+    violet: palette.fill ?? palette.accent,
     lilac: palette.accent,
     cyanSoft: palette.accentSoft,
     violetSoft: palette.accentSoft,

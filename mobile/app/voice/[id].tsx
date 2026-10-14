@@ -23,7 +23,7 @@ import { useSpeakerRoute } from "@/src/hooks/useSpeakerRoute";
 import { useTranslation } from "react-i18next";
 
 export default function VoiceRoomScreen() {
-  const { t } = useTranslation(["voice", "common"]);
+  const { t } = useTranslation(["voice", "common", "hub"]);
   const params = useLocalSearchParams<{
     id: string;
     hubId?: string;
@@ -59,6 +59,7 @@ export default function VoiceRoomScreen() {
     serverDeafened,
     screenSharing,
     cameraSharing,
+    localCameraStream,
     screenShareError,
     remoteVideos,
     locallyMutedUserIds,
@@ -142,6 +143,7 @@ export default function VoiceRoomScreen() {
   }, [remoteVideos, roomParticipants]);
 
   const connected = voiceChannelId === channelId;
+  const streamCount = visibleVideos.length + (connected && localCameraStream ? 1 : 0);
   const joining = !connected && voiceStatus === "joining";
   const isSquadRoom = params.squad === "1";
 
@@ -537,20 +539,36 @@ export default function VoiceRoomScreen() {
           </View>
         )}
 
-        {visibleVideos.length > 0 && (
+        {(visibleVideos.length > 0 || (connected && localCameraStream)) && (
           <View style={styles.videoSection}>
             <View style={styles.peopleHeading}>
               <View>
                 <Text maxFontSizeMultiplier={1.3} style={styles.sectionKicker}>{t("voice.lobby.live")}</Text>
                 <Text style={styles.sectionTitle}>
-                  {visibleVideos.length === 1
+                  {streamCount === 1
                     ? t("voice.mobile.room.n1SharedStream")
-                    : t("voice.mobile.room.countSharedStreams", { count: visibleVideos.length })}
+                    : t("voice.mobile.room.countSharedStreams", { count: streamCount })}
                 </Text>
               </View>
             </View>
 
             <View style={styles.videoGrid}>
+              {connected && localCameraStream && (
+                <View style={styles.videoCard}>
+                  <RTCView
+                    streamURL={localCameraStream.toURL()}
+                    style={styles.video}
+                    objectFit="cover"
+                    mirror
+                  />
+                  <View style={styles.videoFooter}>
+                    <View style={styles.videoNameRow}>
+                      <Ionicons name="videocam-outline" size={14} color={colors.cyan} />
+                      <Text style={styles.videoName}>{t("hub.voiceStage.youCamera")}</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
               {visibleVideos.map((video) => {
                 const participant = roomParticipants.find(
                   (item) =>

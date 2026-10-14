@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PropsWithChildren } from "react";
-import { Keyboard, LayoutAnimation, Platform, View, type KeyboardEvent, type StyleProp, type ViewStyle } from "react-native";
+import { Keyboard, KeyboardAvoidingView, LayoutAnimation, Platform, View, type KeyboardEvent, type StyleProp, type ViewStyle } from "react-native";
 
 /**
  * Keeps the bottom of its content (the composer) above the keyboard.
@@ -49,5 +49,18 @@ export function KeyboardAware({ style, children }: PropsWithChildren<{ style?: S
     <View ref={ref} style={[{ flex: 1 }, style, { paddingBottom: inset }]}>
       {children}
     </View>
+  );
+}
+
+/**
+ * Directly inside a Modal: lifts a bottom sheet or dialog that has text fields
+ * above the keyboard. A Modal is its own window, so KeyboardAvoidingView's
+ * offsets are right there (unlike in screens, see KeyboardAware above).
+ */
+export function ModalKeyboardAvoider({ children }: PropsWithChildren) {
+  return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      {children}
+    </KeyboardAvoidingView>
   );
 }

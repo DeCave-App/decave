@@ -453,21 +453,26 @@ export async function getOfficialHubPostingPolicy(db: D1Database, hubId: number)
       .prepare("SELECT owner_only_posts FROM decave_official_hubs WHERE hub_id=? LIMIT 1")
       .bind(hubId)
       .first<{ owner_only_posts: unknown }>();
-    if (!row) return { status: "available", ownerOnly: false };
-    if (
-      typeof row.owner_only_posts !== "number" ||
-      !Number.isInteger(row.owner_only_posts) ||
-      (row.owner_only_posts !== 0 && row.owner_only_posts !== 1)
-    ) {
-      return { status: "unavailable" };
-    }
-    return {
-      status: "available",
-      ownerOnly: row.owner_only_posts === 1,
-    };
+    return officialHubPostingPolicyFromRow(row);
   } catch {
     return { status: "unavailable" };
   }
+}
+
+/** The policy an official-Hub row (or no row) stands for. Shared with the batched Hub list. */
+export function officialHubPostingPolicyFromRow(row: { owner_only_posts: unknown } | null): OfficialHubPostingPolicy {
+  if (!row) return { status: "available", ownerOnly: false };
+  if (
+    typeof row.owner_only_posts !== "number" ||
+    !Number.isInteger(row.owner_only_posts) ||
+    (row.owner_only_posts !== 0 && row.owner_only_posts !== 1)
+  ) {
+    return { status: "unavailable" };
+  }
+  return {
+    status: "available",
+    ownerOnly: row.owner_only_posts === 1,
+  };
 }
 
 export async function officialHubPostingDecision(
@@ -508,7 +513,11 @@ export async function customPermissions(
     )
     .bind(hubId, userId)
     .all<{ permissions_json: string }>();
+  return parseCustomPermissions(result.results);
+}
 
+/** Known permissions granted by a member's custom roles; unknown or malformed entries are ignored. */
+export function parseCustomPermissions(rows: readonly { permissions_json: string }[]): Set<CustomRolePermission> {
   const out = new Set<CustomRolePermission>();
   const allowed = new Set<CustomRolePermission>([
     "manageRooms",
@@ -521,7 +530,7 @@ export async function customPermissions(
     "manageBots",
   ]);
 
-  for (const row of result.results) {
+  for (const row of rows) {
     try {
       const values = JSON.parse(row.permissions_json) as unknown[];
       for (const value of values) {
@@ -661,7 +670,7 @@ export async function audit(
     .run();
 }
 
-function safeStringArray(value: unknown): string[] {
+export function safeStringArray(value: unknown): string[] {
   if (typeof value !== "string" || !value) return [];
   try {
     const parsed = JSON.parse(value);

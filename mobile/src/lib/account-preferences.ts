@@ -29,11 +29,14 @@ export type SyncedClientSettings = {
   v?: number;
   notifications?: Partial<SyncedNotifications>;
   privacy?: { notificationPreview?: NotificationPreview; sendTypingIndicators?: boolean };
+  chat?: { largeEmoji?: boolean } & Record<string, unknown>;
   notifyLevels?: { hubs?: Record<string, NotifyLevel>; rooms?: Record<string, NotifyLevel> };
   mutedHubs?: Record<string, number>;
   extra?: { quietHours?: Partial<QuietHours> } & Record<string, unknown>;
   timeZone?: string;
 };
+
+export type TimeFormat = "system" | "12h" | "24h";
 
 export type AccountPreferences = {
   loginAlerts: boolean;
@@ -41,12 +44,18 @@ export type AccountPreferences = {
   friendRequestPolicy: FriendRequestPolicy;
   streamerMode: boolean;
   allowStreamPreviews: boolean;
+  timeFormat: TimeFormat;
   clientSettings: SyncedClientSettings | null;
   clientSettingsUpdatedAt: string | null;
+  /** When the 30-day username cooldown ends (ISO), or null when it can change now. */
+  usernameChangeAvailableAt?: string | null;
 };
 
 export type AccountPreferencesPatch = Partial<
-  Pick<AccountPreferences, "loginAlerts" | "activityVisibility" | "friendRequestPolicy" | "streamerMode">
+  Pick<
+    AccountPreferences,
+    "loginAlerts" | "activityVisibility" | "friendRequestPolicy" | "streamerMode" | "allowStreamPreviews" | "timeFormat"
+  >
 > & {
   clientSettingsPatch?: SyncedClientSettings;
 };

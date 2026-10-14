@@ -1297,9 +1297,11 @@
         "statusTextPlaceholder": "Waar ben je mee bezig?",
         "displayNamePlaceholder": "Hoe je naam voor anderen wordt getoond",
         "pronounsPlaceholder": "bijv. zij/haar, hij/hem, hen/die",
+        "bioPlaceholder": "Een paar woorden over jezelf",
         "statusTextEdit": "Persoonlijke status bewerken",
         "displayNameEdit": "Weergavenaam bewerken",
-        "pronounsEdit": "Voornaamwoorden bewerken"
+        "pronounsEdit": "Voornaamwoorden bewerken",
+        "bioEdit": "Bio bewerken"
       }
     },
     "settings": {
@@ -1426,6 +1428,7 @@
       "enterYourCurrentPasswordTo": "Voer je huidige wachtwoord in om door te gaan.",
       "settings": "INSTELLINGEN",
       "emailAddress": "E-MAILADRES",
+      "username": "GEBRUIKERSNAAM",
       "addAnEmailForRecovery": "Voeg een e-mailadres toe voor herstel en accountbescherming.",
       "newEmailAddress": "Nieuw e-mailadres",
       "emailAddress2": "E-mailadres",

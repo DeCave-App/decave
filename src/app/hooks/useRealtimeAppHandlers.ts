@@ -24,6 +24,7 @@ import type {
   NotificationSettings,
   UiSoundEvent,
   VoiceJoinAttempt,
+  RemoteScreen,
 } from "../types";
 import { i18next } from "../../i18n/index.ts";
 import { realtimeErrorMessage } from "../../i18n/apiError.ts";
@@ -56,6 +57,7 @@ export type RealtimeAppHandlersDeps = {
   setAuthError: Dispatch<SetStateAction<string>>;
   voiceCall: VoiceCallState;
   callMedia: CallMediaState;
+  remoteScreensRef: MutableRefObject<Record<string, RemoteScreen>>;
   quietPresence: QuietPresenceModel;
   notifyLevelsRef: MutableRefObject<NotifyLevels>;
   setTypingUsers: Dispatch<SetStateAction<Record<string, number>>>;
@@ -181,6 +183,7 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
     setAuthError,
     voiceCall,
     callMedia,
+    remoteScreensRef,
     quietPresence,
     notifyLevelsRef,
     setTypingUsers,
@@ -411,6 +414,7 @@ export function useRealtimeAppHandlers(deps: RealtimeAppHandlersDeps): void {
           setIsServerDeafened: voiceCall.setIsServerDeafened,
           setRemoteScreens: callMedia.setRemoteScreens,
           setRemoteCameras: callMedia.setRemoteCameras,
+          remoteScreensRef,
           voiceReconnectChannelRef,
           voiceServerIdRef,
           voiceJoinAttemptRef,

@@ -14,6 +14,7 @@ import { Avatar } from "@/src/components/Avatar";
 import { Screen } from "@/src/components/Screen";
 import { HomeNowCards } from "@/src/components/HomeNowCards";
 import { API_BASE, apiJson } from "@/src/lib/api";
+import { loadHubList } from "@/src/lib/hub-list-cache";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useVoice } from "@/src/providers/VoiceProvider";
@@ -83,7 +84,8 @@ export default function HomeScreen() {
 
     try {
       const [nextHubs, nextSocial, dmData] = await Promise.all([
-        apiJson<Hub[]>("/api/servers", {}, token),
+        // Through the shared cache, so the Hubs tab and Hub pills open with this list.
+        loadHubList("mine", token),
         apiJson<SocialState>("/api/social", {}, token),
         apiJson<{ conversations: DmConversation[] }>("/api/dms", {}, token),
       ]);

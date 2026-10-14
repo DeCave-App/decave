@@ -116,6 +116,24 @@ export function accountPreferencesForClient(row: AccountPreferencesRow) {
   };
 }
 
+/**
+ * Whether a screen share may show previews. Clients that send no
+ * `allowStreamPreview` (the mobile app before 0.1.95) follow the account
+ * setting instead of defaulting to allowed.
+ */
+export async function screenPreviewAllowed(requested: unknown, stored: () => Promise<boolean>): Promise<boolean> {
+  return typeof requested === "boolean" ? requested : stored();
+}
+
+/** The account's Stream privacy setting; allowed when never set. */
+export async function storedAllowStreamPreviews(env: Env, userId: string): Promise<boolean> {
+  await ensureAccountPreferencesSchema(env);
+  const row = await env.DB.prepare("SELECT allow_stream_previews FROM decave_account_preferences WHERE user_id=?")
+    .bind(userId)
+    .first<{ allow_stream_previews: number }>();
+  return row ? row.allow_stream_previews !== 0 : true;
+}
+
 /** Linked accounts shown in Settings → Connections, in display order. */
 export const CONNECTION_PROVIDERS = ["steam", "twitch", "faceit"] as const;
 export type ConnectionProvider = (typeof CONNECTION_PROVIDERS)[number];

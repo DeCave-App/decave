@@ -33,6 +33,8 @@ export type VoiceEventContext = {
   setIsServerDeafened: Dispatch<SetStateAction<boolean>>;
   setRemoteScreens: Dispatch<SetStateAction<Record<string, RemoteScreen>>>;
   setRemoteCameras: Dispatch<SetStateAction<Record<string, RemoteScreen>>>;
+  /** Current remote screens, for moving a camera that was filed as a screen (see misfiledCameras). */
+  remoteScreensRef: MutableRefObject<Record<string, RemoteScreen>>;
   voiceReconnectChannelRef: MutableRefObject<number | null>;
   voiceServerIdRef: MutableRefObject<number | null>;
   voiceJoinAttemptRef: MutableRefObject<VoiceJoinAttempt | null>;
@@ -68,6 +70,26 @@ export type VoiceEventContext = {
   loadSoundboardSounds: () => Promise<void>;
 };
 
+/**
+ * Videos filed as screen shares whose sender turns out to be sharing a camera.
+ * A video track is sorted when it arrives, by the sender's flags at that
+ * moment; when the renegotiation offer beats the VOICE_STATE that sets
+ * cameraSharing, the camera lands under screens. Without this the next
+ * VOICE_STATE (camera on, screen off) deleted it and the camera never showed.
+ */
+export function misfiledCameras(
+  screens: Record<string, RemoteScreen>,
+  participants: readonly Pick<VoiceParticipant, "connectionId" | "cameraSharing" | "screenSharing">[],
+): Record<string, RemoteScreen> {
+  const moved: Record<string, RemoteScreen> = {};
+  for (const participant of participants) {
+    const screen = screens[participant.connectionId];
+    if (screen && participant.cameraSharing === true && participant.screenSharing !== true)
+      moved[participant.connectionId] = screen;
+  }
+  return moved;
+}
+
 /** Returns true when the frame was handled. */
 export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext): boolean {
   const {
@@ -81,6 +103,7 @@ export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext
     setIsServerDeafened,
     setRemoteScreens,
     setRemoteCameras,
+    remoteScreensRef,
     voiceReconnectChannelRef,
     voiceServerIdRef,
     voiceJoinAttemptRef,
@@ -128,6 +151,7 @@ export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext
     const cameraConnections = new Set(
       participants.filter((participant) => participant.cameraSharing).map((participant) => participant.connectionId),
     );
+    const movedCameras = misfiledCameras(remoteScreensRef.current, participants);
     setRemoteScreens((current) => {
       let changed = false;
       const next = { ...current };
@@ -144,6 +168,11 @@ export function handleVoiceEvent(data: RealtimeFrame, context: VoiceEventContext
       for (const connectionId of Object.keys(next))
         if (!cameraConnections.has(connectionId)) {
           delete next[connectionId];
+          changed = true;
+        }
+      for (const [connectionId, camera] of Object.entries(movedCameras))
+        if (!next[connectionId]) {
+          next[connectionId] = camera;
           changed = true;
         }
       return changed ? next : current;

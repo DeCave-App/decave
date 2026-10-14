@@ -63,6 +63,7 @@ import { nextBotTimerAt, runAllDueBotTimers } from "./bots/timers";
 import { inBackground, queueBotEvent, queueHubMessage, voiceRoomsOf } from "./bots/events";
 import { createRealtimeClient, RealtimeSfuError, screenSfuEnabled } from "./lib/realtime-sfu";
 import { serverNotice } from "./lib/notices";
+import { screenPreviewAllowed, storedAllowStreamPreviews } from "./lib/account-preferences";
 import { realtimeErrorFields } from "./lib/realtime-errors";
 import {
   canPull,
@@ -740,6 +741,28 @@ export class HubRoom extends DurableObject<Env> {
           .filter((x): x is string => !!x && visible.has(x)),
       );
       return Response.json({ count: ids.size });
+    }
+
+    // Online members for many Hubs at once (the Hub list), same rule as /internal/count.
+    if (url.pathname === "/internal/counts" && request.method === "POST") {
+      const body = await request.json<{ hubIds?: unknown }>();
+      const wanted = new Set(
+        (Array.isArray(body.hubIds) ? body.hubIds : [])
+          .map(Number)
+          .filter((id) => Number.isSafeInteger(id) && id > 0)
+          .slice(0, 2000),
+      );
+      const visible = await this.visibleOnlineUserIds();
+      const users = new Map<number, Set<string>>();
+      for (const state of this.states()) {
+        if (!state.userId || !wanted.has(state.serverId) || !visible.has(state.userId)) continue;
+        const set = users.get(state.serverId) ?? new Set<string>();
+        set.add(state.userId);
+        users.set(state.serverId, set);
+      }
+      return Response.json({
+        counts: Object.fromEntries([...wanted].map((id) => [id, users.get(id)?.size ?? 0])),
+      });
     }
 
     // Distinct users connected to each requested voice room (Discover's "in voice" signal).
@@ -1950,9 +1973,13 @@ export class HubRoom extends DurableObject<Env> {
           ? data.screenStreamId
           : null;
       const screenStreamId = sharing ? (advertised ?? state.screenStreamId ?? null) : null;
+      const userId = state.userId;
+      const allowStreamPreview = await screenPreviewAllowed(data.allowStreamPreview, () =>
+        storedAllowStreamPreviews(this.env, userId),
+      );
       if (
         state.screenSharing === sharing &&
-        state.allowStreamPreview === (data.allowStreamPreview !== false) &&
+        state.allowStreamPreview === allowStreamPreview &&
         (state.screenStreamId ?? null) === screenStreamId
       )
         return;
@@ -1961,7 +1988,7 @@ export class HubRoom extends DurableObject<Env> {
         ...(!sharing && state.screenSfu ? this.releaseScreenSfu(state, true) : state),
         screenSharing: sharing,
         screenStreamId,
-        allowStreamPreview: data.allowStreamPreview !== false,
+        allowStreamPreview,
       };
       this.attach(ws, state);
       await this.broadcastVoiceState(await this.hubOfRoom(state.voiceChannelId));

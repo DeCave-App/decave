@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import Constants from "expo-constants";
 import { useSession } from "@/src/providers/SessionProvider";
 import {
   Alert,
@@ -38,6 +39,8 @@ import { colors } from "@/src/theme";
 import { Avatar } from "@/src/components/Avatar";
 import { MenuSection, SettingsMenuRow, SectionHeading, SettingsCard, StatusHeader, Divider, SettingToggle } from "@/src/components/settings/SettingsParts";
 import { LanguagePicker } from "@/src/components/settings/LanguagePicker";
+import { ChatPreferences } from "@/src/components/settings/ChatPreferences";
+import { setAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
 import { I18N_PICKER_ENABLED } from "../../shared/i18n/flags.ts";
 import { useTranslation } from "react-i18next";
 
@@ -130,6 +133,7 @@ export default function SettingsScreen() {
         clientSettingsPatch: { ...patch, timeZone: deviceTimeZone() },
       });
       if (sessionTokenRef.current !== sessionToken) return false;
+      setAccountPreferencesSnapshot(prefs);
       if (prefs.clientSettings) applySynced(prefs.clientSettings);
       return true;
     } catch {
@@ -312,11 +316,13 @@ export default function SettingsScreen() {
 
           {I18N_PICKER_ENABLED && <LanguagePicker />}
 
+          <ChatPreferences />
+
           <MenuSection title={t("settings.mobile.settings.support")}>
             <SettingsMenuRow icon="help-circle-outline" tint="#67E8F9" title={t("settings.mobile.settings.helpFeedback")} detail={t("settings.mobile.settings.contactDecaveSupport")} onPress={() => void Linking.openURL("mailto:support@de-cave.com?subject=DeCave%20mobile%20support")} />
             <SettingsMenuRow icon="document-lock-outline" tint="#34D399" title={t("settings.support.privacy")} detail={t("settings.mobile.settings.whatDecaveCollectsAndHow")} onPress={() => void Linking.openURL("https://de-cave.com/privacy")} />
             <SettingsMenuRow icon="document-text-outline" tint="#FBBF24" title={t("settings.support.terms")} detail={t("settings.mobile.settings.theRulesForUsingDecave")} onPress={() => void Linking.openURL("https://de-cave.com/terms")} />
-            <SettingsMenuRow icon="information-circle-outline" tint="#A29DB2" title={t("settings.mobile.settings.aboutDecave")} detail={t("settings.mobile.settings.mobileAppAndServiceInformation")} value="0.1.0" last />
+            <SettingsMenuRow icon="information-circle-outline" tint="#A29DB2" title={t("settings.mobile.settings.aboutDecave")} detail={t("settings.mobile.settings.mobileAppAndServiceInformation")} value={Constants.expoConfig?.version} last />
           </MenuSection>
 
           <Pressable

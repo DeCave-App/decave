@@ -19,13 +19,14 @@ import {
   SplitContext,
   assetUrl,
 } from "@/src/components/hub/hubShared";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useVoice } from "@/src/providers/VoiceProvider";
 import type { Hub, Channel, ForumPostPolicy } from "@/src/types";
 import { apiJson } from "@/src/lib/api";
+import { cachedHub, rememberHub } from "@/src/lib/hub-list-cache";
 import { LoungeShell } from "@/src/components/LoungeShell";
 import { Screen } from "@/src/components/Screen";
 import { styles } from "@/src/components/hub/hubScreen.styles";
@@ -51,7 +52,9 @@ export default function HubScreen() {
   const { send } = useRealtime();
   const { voiceChannelId, voiceStatus, participants } = useVoice();
 
-  const [hub, setHub] = useState<Hub | null>(null);
+  // Drawn at once from the cached Hub list (header and rooms), then replaced by the server's copy.
+  const [hub, setHub] = useState<Hub | null>(() => cachedHub(token, hubId));
+  const hubConfirmed = useRef(false);
   const [loadError, setLoadError] = useState("");
 
   const [manageHubOpen, setManageHubOpen] = useState(false);
@@ -86,14 +89,28 @@ export default function HubScreen() {
 
     try {
       const value = await apiJson<Hub>(`/api/servers/${hubId}`, {}, token);
+      hubConfirmed.current = true;
       setHub(value);
+      rememberHub(token, value);
       send({ type: "JOIN_SERVER", serverId: hubId });
     } catch (error) {
+      // A cached copy the server never confirmed (e.g. access was lost) gives way to the error.
+      if (!hubConfirmed.current) setHub(null);
       setLoadError(
         error instanceof Error ? error.message : t("hub.mobile.hub.couldNotLoadThisHub"),
       );
     }
   }, [token, hubId, send]);
+
+  // Switching Hubs in place starts again from the cache for the new one.
+  const shownHubId = useRef(hubId);
+  useEffect(() => {
+    if (shownHubId.current === hubId) return;
+    shownHubId.current = hubId;
+    hubConfirmed.current = false;
+    setLoadError("");
+    setHub(cachedHub(token, hubId));
+  }, [hubId, token]);
 
   useEffect(() => {
     void loadHub();

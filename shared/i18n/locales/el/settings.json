@@ -1297,9 +1297,11 @@
         "statusTextPlaceholder": "Τι γίνεται;",
         "displayNamePlaceholder": "Πώς εμφανίζεται το όνομά σου στους άλλους",
         "pronounsPlaceholder": "π.χ. αυτή, αυτός, αυτό",
+        "bioPlaceholder": "Λίγα λόγια για σένα",
         "statusTextEdit": "Επεξεργασία προσαρμοσμένης κατάστασης",
         "displayNameEdit": "Επεξεργασία εμφανιζόμενου ονόματος",
-        "pronounsEdit": "Επεξεργασία αντωνυμιών"
+        "pronounsEdit": "Επεξεργασία αντωνυμιών",
+        "bioEdit": "Επεξεργασία βιογραφικού"
       }
     },
     "settings": {
@@ -1426,6 +1428,7 @@
       "enterYourCurrentPasswordTo": "Γράψε τον τρέχοντα κωδικό σου για να συνεχίσεις.",
       "settings": "ΡΥΘΜΙΣΕΙΣ",
       "emailAddress": "ΔΙΕΥΘΥΝΣΗ EMAIL",
+      "username": "ΟΝΟΜΑ ΧΡΗΣΤΗ",
       "addAnEmailForRecovery": "Πρόσθεσε email για ανάκτηση και προστασία του λογαριασμού.",
       "newEmailAddress": "Νέα διεύθυνση email",
       "emailAddress2": "Διεύθυνση email",

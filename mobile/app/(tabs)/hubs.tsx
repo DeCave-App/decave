@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { ModalKeyboardAvoider } from "@/src/components/KeyboardAware";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/src/components/Screen";
@@ -20,6 +21,10 @@ import { colors } from "@/src/theme";
 import type { Hub } from "@/src/types";
 import { useTranslation } from "react-i18next";
 import { hubCategoryText } from "@/src/lib/hub-category";
+import { useHubList } from "@/src/hooks/useHubList";
+import type { HubListKind } from "@/src/lib/hub-list-cache";
+
+const NO_HUBS: Hub[] = [];
 
 function assetUrl(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -31,9 +36,13 @@ export default function HubsScreen() {
   const { t } = useTranslation(["hub", "common"]);
   const { token } = useSession();
 
-  const [hubs, setHubs] = useState<Hub[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [discover, setDiscover] = useState<Hub[]>([]);
+  // Both lists come from the shared cache, so a revisit draws at once and refreshes behind it.
+  const { hubs: myHubs, refresh: refreshMine } = useHubList("mine");
+  const { hubs: publicHubs, refresh: refreshDiscover } = useHubList("discover");
+  const hubs = myHubs ?? NO_HUBS;
+  const discover = publicHubs ?? NO_HUBS;
+  // Lists whose first load failed stop showing the skeleton.
+  const [failed, setFailed] = useState<Record<HubListKind, boolean>>({ mine: false, discover: false });
   const params = useLocalSearchParams<{ mode?: string }>();
   const mode: "mine" | "discover" = params.mode === "discover" ? "discover" : "mine";
   // The mode lives in the route so the rail's Discover entry can deep-link to it.
@@ -50,27 +59,28 @@ export default function HubsScreen() {
   const [inviteCode, setInviteCode] = useState("");
   const [joiningInvite, setJoiningInvite] = useState(false);
 
-  const load = async () => {
+  const load = async (kind: HubListKind = "mine") => {
     if (!token) return;
 
     try {
-      const [mine, publicHubs] = await Promise.all([
-        apiJson<Hub[]>("/api/servers", {}, token),
-        apiJson<Hub[]>("/api/servers/discover", {}, token),
-      ]);
-
-      setHubs(mine);
-      setDiscover(publicHubs);
+      await (kind === "mine" ? refreshMine() : refreshDiscover());
+      setFailed((current) => (current[kind] ? { ...current, [kind]: false } : current));
     } catch (error) {
       setNotice(error instanceof Error ? error.message : t("hub.mobile.hubs.couldNotLoadHubs"));
-    } finally {
-      setLoaded(true);
+      setFailed((current) => ({ ...current, [kind]: true }));
     }
   };
 
   useEffect(() => {
-    void load();
+    void load("mine");
   }, [token]);
+
+  // Discover is the slower list; it loads only once that mode is shown.
+  useEffect(() => {
+    if (mode === "discover") void load("discover");
+  }, [token, mode]);
+
+  const loaded = mode === "mine" ? myHubs !== null || failed.mine : publicHubs !== null || failed.discover;
 
   const createHub = async () => {
     if (!token || !name.trim() || creating) return;
@@ -117,7 +127,7 @@ export default function HubsScreen() {
         { method: "POST" },
         token,
       );
-      await load();
+      await Promise.all([load("mine"), load("discover")]);
       setMode("mine");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : t("hub.mobile.hubs.couldNotJoinHub"));
@@ -146,7 +156,7 @@ export default function HubsScreen() {
 
   const refresh = async () => {
     setRefreshing(true);
-    await load();
+    await Promise.all([load("mine"), mode === "discover" ? load("discover") : null]);
     setRefreshing(false);
   };
 
@@ -353,6 +363,7 @@ export default function HubsScreen() {
         animationType="fade"
         onRequestClose={() => setCreateOpen(false)}
       >
+        <ModalKeyboardAvoider>
         <Pressable
           style={styles.overlay}
           onPress={() => setCreateOpen(false)}
@@ -442,6 +453,7 @@ export default function HubsScreen() {
             </View>
           </Pressable>
         </Pressable>
+        </ModalKeyboardAvoider>
       </Modal>
     </Screen>
   );

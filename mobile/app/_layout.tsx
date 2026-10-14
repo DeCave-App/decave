@@ -1,6 +1,8 @@
 import "react-native-gesture-handler";
 // Before anything that encrypts: Hermes needs crypto.getRandomValues from expo-crypto.
 import "@/src/lib/e2ee/polyfills";
+// Before the translation runtime: Hermes needs Intl.PluralRules for plural forms.
+import "@/src/lib/intl-polyfills";
 // Before any screen renders text: starts the translation runtime.
 import { useAccountLocaleSync } from "@/src/i18n";
 import { Stack } from "expo-router";

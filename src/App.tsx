@@ -3124,6 +3124,7 @@ function App() {
     setAuthError,
     voiceCall,
     callMedia,
+    remoteScreensRef,
     quietPresence,
     notifyLevelsRef,
     setTypingUsers,

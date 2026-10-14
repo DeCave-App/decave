@@ -338,17 +338,18 @@ async function testDirectCallRevocation() {
   assert.deepEqual([...refs.iceServersRef.current], []);
 }
 
-function voiceCaptureRuntime({ permission, cameraMedia, screenMedia, queuePeer } = {}) {
+function voiceCaptureRuntime({ permission, cameraMedia, screenMedia, queuePeer, cameraAdvert } = {}) {
   const refs = {
     voiceOperationGenerationRef: { current: 1 },
     voiceChannelRef: { current: 10 },
     sessionScopeRef: { current: { identity: "account-a:token-a", generation: 1 } },
     localCameraStreamRef: { current: null },
     localScreenStreamRef: { current: null },
+    cameraStartInFlightRef: { current: false },
     peerSessionsRef: { current: new Map() },
     voiceSettingsRef: { current: { screenShareQuality: "balanced" } },
   };
-  const state = { events: [], errors: [], screenErrors: [], cameraSharing: [], screenSharing: [], stopCamera: 0, stopScreen: 0, cameraMediaCalls: 0, screenMediaCalls: 0 };
+  const state = { events: [], errors: [], screenErrors: [], cameraSharing: [], localCameraStreams: [], screenSharing: [], stopCamera: 0, stopScreen: 0, cameraMediaCalls: 0, screenMediaCalls: 0, advertWaits: 0 };
   const permissionRequest = permission ?? Promise.resolve("granted");
   const mediaDevices = {
     getUserMedia: async () => { state.cameraMediaCalls += 1; return cameraMedia ? await cameraMedia : videoStream(mediaTrack("camera")); },
@@ -381,6 +382,8 @@ function voiceCaptureRuntime({ permission, cameraMedia, screenMedia, queuePeer }
     setVoiceError: (value) => state.errors.push(value),
     setScreenShareError: (value) => state.screenErrors.push(value),
     setCameraSharing: (value) => state.cameraSharing.push(value),
+    setLocalCameraStream: (value) => state.localCameraStreams.push(value),
+    waitForCameraAdvert: async () => { state.advertWaits += 1; if (cameraAdvert) await cameraAdvert; },
     setScreenSharing: (value) => state.screenSharing.push(value),
     stopCamera: () => { state.stopCamera += 1; refs.localCameraStreamRef.current = null; },
     stopScreenShare: () => { state.stopScreen += 1; refs.localScreenStreamRef.current = null; },
@@ -514,6 +517,46 @@ async function testVoiceRoomSwitchDuringPeerQueue() {
   assert.equal(track.stopped, 1);
   assert.equal(runtime.oldPeer.pc.getSenders().length, 0);
   assert.equal(runtime.refs.localCameraStreamRef.current, null);
+}
+
+async function testVoiceCameraWaitsForAdvertBeforeAttaching() {
+  // Peers classify the video track by our VOICE_STATE flags, so the track must
+  // not reach any peer connection until the server has advertised cameraSharing.
+  const advert = deferred();
+  const track = mediaTrack("advert-camera");
+  const runtime = voiceCaptureRuntime({ cameraMedia: Promise.resolve(videoStream(track)), cameraAdvert: advert.promise });
+  const pending = runtime.context.startCamera();
+  await flush();
+  assert.equal(runtime.state.events.length, 1);
+  assert.deepEqual({ ...runtime.state.events[0] }, { type: "VOICE_CAMERA_STATE", cameraSharing: true });
+  assert.equal(runtime.state.advertWaits, 1);
+  assert.equal(runtime.oldPeer.pc.getSenders().length, 0, "no camera sender before the advert");
+  assert.equal(runtime.refs.localCameraStreamRef.current, null, "renegotiations cannot pick the camera up early");
+  assert.equal(await runtime.context.startCamera(), false, "a second tap while waiting does not open another camera");
+  assert.equal(runtime.state.cameraMediaCalls, 1);
+  advert.resolve();
+  assert.equal(await pending, true);
+  assert.equal(runtime.oldPeer.pc.getSenders().length, 1);
+  assert.equal(runtime.oldPeer.pc.getSenders()[0].track, track);
+  assert.deepEqual([...runtime.state.cameraSharing], [true]);
+  assert.equal(runtime.state.localCameraStreams.at(-1)?.getVideoTracks()[0], track, "the self view gets the stream");
+  assert.equal(runtime.refs.cameraStartInFlightRef.current, false);
+}
+
+async function testVoiceCameraLeaveDuringAdvert() {
+  const advert = deferred();
+  const track = mediaTrack("advert-left-camera");
+  const runtime = voiceCaptureRuntime({ cameraMedia: Promise.resolve(videoStream(track)), cameraAdvert: advert.promise });
+  const pending = runtime.context.startCamera();
+  await flush();
+  runtime.refs.voiceOperationGenerationRef.current += 1;
+  runtime.refs.voiceChannelRef.current = null;
+  advert.resolve();
+  assert.equal(await pending, false);
+  assert.equal(track.stopped, 1);
+  assert.equal(runtime.oldPeer.pc.getSenders().length, 0);
+  assert.equal(runtime.refs.localCameraStreamRef.current, null);
+  assert.equal(runtime.refs.cameraStartInFlightRef.current, false);
 }
 
 function directCallRuntime({ permission, media, ice, phase = "idle" } = {}) {
@@ -660,8 +703,10 @@ await testVoiceLateCameraMediaAfterAccountSwitch();
 await testVoiceLateScreenMediaAfterRoomSwitch();
 await testVoiceSameAccountCaptureAndEndedCallbacks();
 await testVoiceRoomSwitchDuringPeerQueue();
+await testVoiceCameraWaitsForAdvertBeforeAttaching();
+await testVoiceCameraLeaveDuringAdvert();
 await testDirectCallLateIceAfterAccountSwitch();
 await testDirectCallLatePermissionAfterAccountSwitch();
 await testDirectCallLateMediaAfterAccountSwitch();
 await testDirectCallSameAccountAndPendingAcceptReset();
-console.log("mobile reliability runtime checks passed (15)");
+console.log("mobile reliability runtime checks passed (17)");

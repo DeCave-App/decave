@@ -2,6 +2,7 @@
 
 import type { Hub } from "@/src/types";
 import { Modal, View, Pressable, Text, ScrollView, TextInput, ActivityIndicator } from "react-native";
+import { ModalKeyboardAvoider } from "@/src/components/KeyboardAware";
 import { styles } from "./hubScreen.styles";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -50,6 +51,7 @@ export function ManageHubSheet({
       animationType="slide"
       onRequestClose={onClose}
     >
+      <ModalKeyboardAvoider>
       <View style={styles.modalOverlay}>
         <Pressable style={styles.modalBackdrop} onPress={onClose} />
         <View style={styles.sheet}>
@@ -174,6 +176,7 @@ export function ManageHubSheet({
           </ScrollView>
         </View>
       </View>
+      </ModalKeyboardAvoider>
     </Modal>
   );
 }

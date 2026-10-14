@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ModalKeyboardAvoider } from "@/src/components/KeyboardAware";
 import { apiJson } from "@/src/lib/api";
 import { linkStyle, openLink } from "@/src/components/LinkifiedText";
 import { colors } from "@/src/theme";
@@ -96,6 +97,7 @@ function FormModal({ form, roomId, token, onClose }: { form: BotForm; roomId: nu
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <ModalKeyboardAvoider>
       <View style={styles.overlay}>
         <View style={styles.dialog} accessibilityViewIsModal>
           <Text style={styles.dialogTitle}>{form.title}</Text>
@@ -132,6 +134,7 @@ function FormModal({ form, roomId, token, onClose }: { form: BotForm; roomId: nu
           </View>
         </View>
       </View>
+      </ModalKeyboardAvoider>
     </Modal>
   );
 }

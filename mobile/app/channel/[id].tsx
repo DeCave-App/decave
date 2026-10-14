@@ -43,6 +43,8 @@ import { BotBadge, BotMessage } from "@/src/components/channel/BotMessage";
 import { botMessageNotice, botMessageText, botRenderMode, messageBotFields } from "../../../shared/bots/card-view";
 import { noticeText } from "@/src/lib/server-text";
 import { useTranslation } from "react-i18next";
+import { sendsTypingIndicators, showsLargeEmoji, useAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
+import { isEmojiOnly, LARGE_EMOJI_TEXT } from "@/src/lib/emoji-only";
 
 type ChannelParams = {
   id: string;
@@ -68,6 +70,8 @@ export default function ChannelScreen() {
  */
 export function ChannelView({ params, embedded = false }: { params: ChannelParams; embedded?: boolean }) {
   const { t } = useTranslation(["chat", "common"]);
+  // Re-render when synced chat preferences (large emoji, time format) load or change.
+  useAccountPreferencesSnapshot();
 
   const channelId = Number(params.id);
   const hubId = Number(params.hubId ?? 0);
@@ -239,7 +243,8 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
     setInput(text);
     if (editingId) return;
     const now = Date.now();
-    if (text.trim() && now - typingSentRef.current > 2500) {
+    // Settings → Privacy → Send typing indicators (synced with desktop).
+    if (text.trim() && now - typingSentRef.current > 2500 && sendsTypingIndicators()) {
       typingSentRef.current = now;
       send({ type: "TYPING", channelId, active: true });
     } else if (!text.trim() && typingSentRef.current) {
@@ -695,7 +700,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                       if (!post) {
                         return (
                           <>
-                            <Text style={styles.messageText}>
+                            <Text style={[styles.messageText, showsLargeEmoji() && isEmojiOnly(item.text) && LARGE_EMOJI_TEXT]}>
                               {renderMessageText(item.text, user?.username)}
                             </Text>
                             {firstLink(item.text) ? <LinkChip url={firstLink(item.text)!} /> : null}

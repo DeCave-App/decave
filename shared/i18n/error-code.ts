@@ -27,7 +27,10 @@ export function errorText(code: ErrorCode, params?: ErrorParams): ErrorText {
   return params ? { code, params } : { code };
 }
 
-const englishPlurals = new Intl.PluralRules("en");
+/** Intl.PluralRules("en").select without Intl: Hermes (the mobile app) has no PluralRules. */
+export function englishPluralCategory(count: number): "one" | "other" {
+  return count === 1 ? "one" : "other";
+}
 
 /** The English text of an error code with its params filled in. */
 export function englishErrorText(code: ErrorCode, params?: ErrorParams): string {
@@ -38,7 +41,7 @@ export function englishErrorText(code: ErrorCode, params?: ErrorParams): string 
   const siblings = parent as Record<string, unknown> | undefined;
   let node = siblings?.[last];
   if (node === undefined && typeof params?.count === "number")
-    node = siblings?.[`${last}_${englishPlurals.select(params.count)}`] ?? siblings?.[`${last}_other`];
+    node = siblings?.[`${last}_${englishPluralCategory(params.count)}`] ?? siblings?.[`${last}_other`];
   const text = typeof node === "string" ? node : code;
   return text.replace(/\{\{\s*([^,}\s]+)[^}]*\}\}/g, (match, name: string) =>
     params && name in params ? String(params[name]) : match,

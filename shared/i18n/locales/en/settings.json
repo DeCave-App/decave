@@ -1297,9 +1297,11 @@
         "statusTextPlaceholder": "What’s happening?",
         "displayNamePlaceholder": "How your name shows to others",
         "pronounsPlaceholder": "e.g. she/her, he/him, they/them",
+        "bioPlaceholder": "A few words about you",
         "statusTextEdit": "Edit Custom status",
         "displayNameEdit": "Edit Display name",
-        "pronounsEdit": "Edit Pronouns"
+        "pronounsEdit": "Edit Pronouns",
+        "bioEdit": "Edit Bio"
       }
     },
     "settings": {
@@ -1426,6 +1428,7 @@
       "enterYourCurrentPasswordTo": "Enter your current password to continue.",
       "settings": "SETTINGS",
       "emailAddress": "EMAIL ADDRESS",
+      "username": "USERNAME",
       "addAnEmailForRecovery": "Add an email for recovery and account protection.",
       "newEmailAddress": "New email address",
       "emailAddress2": "Email address",

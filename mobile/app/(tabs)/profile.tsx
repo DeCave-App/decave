@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Clipboard,
   Image,
+  KeyboardAvoidingView,
   Platform,
   Modal,
   Pressable,
@@ -23,6 +24,8 @@ import { colors } from "@/src/theme";
 import type { AccountUser, PresenceStatus } from "@/src/types";
 import { useTranslation } from "react-i18next";
 import { dateLocale } from "@/src/lib/date-locale";
+import { ProfileMediaRows, useProfileMedia } from "@/src/components/profile/ProfileMedia";
+import { AccentPicker } from "@/src/components/profile/AccentPicker";
 
 // Labels come from statusCopy() in the screen, in the UI language.
 const statusOptions: Array<{
@@ -52,7 +55,8 @@ const statusOptions: Array<{
   },
 ];
 
-type EditablePresenceField = "statusText" | "displayName" | "pronouns"; // DECAVE_PARITY_PROFILE_INTERNAL
+type EditablePresenceField = "statusText" | "displayName" | "pronouns" | "bio"; // DECAVE_PARITY_PROFILE_INTERNAL
+type ProfilePatch = Partial<Pick<AccountUser, "bio" | "statusText" | "displayName" | "pronouns" | "accent">>;
 
 // Titles and placeholders come from fieldCopy in the screen, in the UI language.
 const editableFields: Record<EditablePresenceField, { maxLength: number; icon: string }> = {
@@ -67,6 +71,11 @@ const editableFields: Record<EditablePresenceField, { maxLength: number; icon: s
   pronouns: {
     maxLength: 24,
     icon: "pricetag-outline",
+  },
+  // The Worker keeps the first 190 characters (PUT /api/profile).
+  bio: {
+    maxLength: 190,
+    icon: "document-text-outline",
   },
 };
 
@@ -94,6 +103,11 @@ export default function ProfileScreen() {
       placeholder: t("settings.mobile.profile.fields.pronounsPlaceholder"),
       editTitle: t("settings.mobile.profile.fields.pronounsEdit"),
     },
+    bio: {
+      title: t("settings.profile.bio"),
+      placeholder: t("settings.mobile.profile.fields.bioPlaceholder"),
+      editTitle: t("settings.mobile.profile.fields.bioEdit"),
+    },
   };
   const { user, token, refreshUser, logout } = useSession();
   const [refreshing, setRefreshing] = useState(false);
@@ -104,6 +118,15 @@ export default function ProfileScreen() {
   const [savingField, setSavingField] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [savingAccent, setSavingAccent] = useState(false);
+  const media = useProfileMedia(
+    token,
+    async () => {
+      await refreshUser();
+      setNotice(t("settings.mobile.profile.profileUpdated"));
+    },
+    setNotice,
+  );
 
   if (!user) return null;
 
@@ -146,19 +169,11 @@ export default function ProfileScreen() {
     setEditValue("");
   };
 
-  const savePresenceField = async (nextValue = editValue) => {
-    if (!token || !editingField || savingField) return;
-
-    setSavingField(true);
+  // PUT /api/profile replaces every field it is sent, so each save sends the
+  // current values with `patch` applied.
+  const saveProfile = async (patch: ProfilePatch): Promise<boolean> => {
+    if (!token) return false;
     setNotice("");
-
-    const field = editingField;
-    const value = nextValue.trim().slice(0, editableFields[field].maxLength);
-    const statusText = field === "statusText" ? value : user.statusText ?? "";
-    const displayName = field === "displayName" ? value : user.displayName ?? "";
-    const pronouns = field === "pronouns" ? value : user.pronouns ?? "";
-    const activityText = user.activityText ?? "";
-
     try {
       await apiJson<{ user: AccountUser }>(
         "/api/profile",
@@ -166,31 +181,50 @@ export default function ProfileScreen() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            bio: user.bio,
+            bio: patch.bio ?? user.bio,
             status: user.status,
-            statusText,
-            activityText,
-            accent: user.accent,
-            displayName,
-            pronouns,
+            statusText: patch.statusText ?? user.statusText ?? "",
+            activityText: user.activityText ?? "",
+            accent: patch.accent ?? user.accent,
+            displayName: patch.displayName ?? user.displayName ?? "",
+            pronouns: patch.pronouns ?? user.pronouns ?? "",
           }),
         },
         token,
       );
 
       await refreshUser();
-      setEditingField(null);
-      setEditValue("");
       setNotice(t("settings.mobile.profile.profileUpdated"));
+      return true;
     } catch (error) {
       setNotice(
         error instanceof Error
           ? error.message
           : t("settings.mobile.profile.couldNotUpdateProfile"),
       );
-    } finally {
-      setSavingField(false);
+      return false;
     }
+  };
+
+  const savePresenceField = async (nextValue = editValue) => {
+    if (!token || !editingField || savingField) return;
+
+    setSavingField(true);
+    const field = editingField;
+    const value = nextValue.trim().slice(0, editableFields[field].maxLength);
+    const saved = await saveProfile({ [field]: value });
+    setSavingField(false);
+    if (saved) {
+      setEditingField(null);
+      setEditValue("");
+    }
+  };
+
+  const saveAccent = async (accent: string) => {
+    if (savingAccent) return;
+    setSavingAccent(true);
+    await saveProfile({ accent });
+    setSavingAccent(false);
   };
 
   const editingConfig = { ...editableFields[editingField ?? "statusText"], ...fieldCopy[editingField ?? "statusText"] };
@@ -225,7 +259,13 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.profileCard}>
-          <View style={styles.banner}>
+          <Pressable
+            style={styles.banner}
+            onPress={() => void media.change("banner")}
+            disabled={media.busy !== null}
+            accessibilityRole="button"
+            accessibilityLabel={bannerUri ? t("settings.profile.changeBanner") : t("settings.profile.addBanner")}
+          >
             {bannerUri ? (
               <Image
                 source={{ uri: bannerUri }}
@@ -239,22 +279,39 @@ export default function ProfileScreen() {
                 <View style={styles.bannerCyan} />
               </>
             )}
-          </View>
+            {media.busy === "banner" && (
+              <View style={styles.mediaBusy}>
+                <ActivityIndicator color="#fff" />
+              </View>
+            )}
+          </Pressable>
 
           <View style={styles.profileTop}>
-            <View style={styles.avatarWrap}>
-              <View style={styles.avatarRing}>
+            <Pressable
+              style={styles.avatarWrap}
+              onPress={() => void media.change("avatar")}
+              disabled={media.busy !== null}
+              accessibilityRole="button"
+              accessibilityLabel={t("settings.profile.changePhoto")}
+            >
+              {/* The profile accent colours the avatar ring, as on desktop. */}
+              <View style={[styles.avatarRing, { backgroundColor: user.accent || colors.panel }]}>
                 <Avatar
                   username={user.username}
                   avatarUrl={user.avatarUrl}
                   size={80}
                 />
+                {media.busy === "avatar" && (
+                  <View style={styles.mediaBusy}>
+                    <ActivityIndicator color="#fff" />
+                  </View>
+                )}
               </View>
               <View
                 style={[styles.presenceBadge, { backgroundColor: presenceColor(currentStatus.tone) }]}
                 accessibilityLabel={t("settings.mobile.profile.statusLabel", { label: statusCopy[currentStatus.value].label })}
               />
-            </View>
+            </Pressable>
 
             <Text style={styles.name} numberOfLines={1}>
               {shownName}
@@ -265,6 +322,11 @@ export default function ProfileScreen() {
             </Text>
             {!!memberSince && (
               <Text style={styles.memberSince}>{t("settings.mobile.profile.memberSinceMembersince", { memberSince })}</Text>
+            )}
+            {!!user.bio?.trim() && (
+              <Text style={styles.bio} numberOfLines={6}>
+                {user.bio.trim()}
+              </Text>
             )}
 
             <Pressable
@@ -382,6 +444,7 @@ export default function ProfileScreen() {
         <SectionHeader label={t("settings.mobile.profile.profileDetails")} />
 
         <View style={styles.info}>
+          <ProfileMediaRows user={user} media={media} />
           <EditableInfo
             icon={editableFields.displayName.icon}
             label={t("settings.anchors.displayName.label")}
@@ -393,8 +456,14 @@ export default function ProfileScreen() {
             label={t("settings.profile.pronouns")}
             value={user.pronouns?.trim() || t("settings.mobile.profile.notSet")}
             onPress={() => openEditor("pronouns")}
-            last
           />
+          <EditableInfo
+            icon={editableFields.bio.icon}
+            label={t("settings.profile.bio")}
+            value={user.bio?.trim() || t("settings.mobile.profile.notSet")}
+            onPress={() => openEditor("bio")}
+          />
+          <AccentPicker accent={user.accent} saving={savingAccent} onChange={(color) => void saveAccent(color)} />
         </View>
       </ScrollView>
 
@@ -404,6 +473,8 @@ export default function ProfileScreen() {
         animationType="fade"
         onRequestClose={closeEditor}
       >
+        {/* The input autofocuses: lift the sheet above the keyboard. */}
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <Pressable style={styles.modalBackdrop} onPress={closeEditor}>
           <Pressable style={styles.modalCard} onPress={() => {}}>
             <View style={styles.modalGrabber} />
@@ -442,9 +513,12 @@ export default function ProfileScreen() {
               maxLength={editingConfig.maxLength}
               autoCapitalize={editingField === "pronouns" ? "none" : "sentences"}
               autoFocus
-              style={styles.modalInput}
-              returnKeyType="done"
-              onSubmitEditing={() => void savePresenceField()}
+              // The bio takes several lines; Return adds a line there instead of saving.
+              multiline={editingField === "bio"}
+              textAlignVertical={editingField === "bio" ? "top" : "center"}
+              style={[styles.modalInput, editingField === "bio" && styles.modalInputMultiline]}
+              returnKeyType={editingField === "bio" ? "default" : "done"}
+              onSubmitEditing={editingField === "bio" ? undefined : () => void savePresenceField()}
             />
 
             <Text maxFontSizeMultiplier={1.3} style={styles.characterCount}>
@@ -492,6 +566,7 @@ export default function ProfileScreen() {
             </View>
           </Pressable>
         </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   );
@@ -668,6 +743,22 @@ const styles = StyleSheet.create({
     color: colors.faint,
     marginTop: 4,
     fontSize: 12,
+  },
+  bio: {
+    color: colors.text,
+    marginTop: 9,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  mediaBusy: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.overlay,
   },
   customStatus: {
     minHeight: 40,
@@ -1063,6 +1154,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 11,
     fontSize: 13,
+  },
+  modalInputMultiline: {
+    minHeight: 104,
+    maxHeight: 180,
+    paddingTop: 11,
   },
   characterCount: {
     color: colors.faint,

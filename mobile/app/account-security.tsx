@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import { dateLocale } from "@/src/lib/date-locale";
 
 export default function AccountSecurityScreen() {
-  const { t } = useTranslation(["settings", "common"]);
+  const { t } = useTranslation(["settings", "common", "chat", "errors"]);
   const { token, user, invalidate, refreshUser } = useSession();
   const [email, setEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
@@ -27,6 +27,14 @@ export default function AccountSecurityScreen() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+
+  // Username (the Worker enforces the format, uniqueness and 30-day cooldown)
+  const [newUsername, setNewUsername] = useState("");
+  const [usernamePassword, setUsernamePassword] = useState("");
+  const [usernameBusy, setUsernameBusy] = useState(false);
+  const [usernameNotice, setUsernameNotice] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [usernameAvailableAt, setUsernameAvailableAt] = useState<string | null>(null);
 
   // Two-factor sign-in
   const [mfa, setMfa] = useState<MfaStatus | null>(null);
@@ -65,7 +73,11 @@ export default function AccountSecurityScreen() {
     if (!token) return;
     let active = true;
     loadAccountPreferences(token)
-      .then((prefs) => { if (active) setLoginAlerts(Boolean(prefs.loginAlerts)); })
+      .then((prefs) => {
+        if (!active) return;
+        setLoginAlerts(Boolean(prefs.loginAlerts));
+        setUsernameAvailableAt(prefs.usernameChangeAvailableAt ?? null);
+      })
       .catch((cause) => { if (active) setAlertsError(cause instanceof Error ? cause.message : t("settings.mobile.accountSecurity.couldNotLoadThisSetting")); });
     return () => { active = false; };
   }, [token]);
@@ -218,6 +230,31 @@ export default function AccountSecurityScreen() {
     finally { setBusy(false); }
   };
 
+  const changeUsername = async () => {
+    if (!token || usernameBusy) return;
+    setUsernameError(""); setUsernameNotice("");
+    if (!newUsername.trim() || !usernamePassword) { setUsernameError(t("settings.mobile.accountSecurity.enterYourCurrentPassword")); return; }
+    setUsernameBusy(true);
+    try {
+      // apiFetch rather than apiJson: a cooldown refusal carries the date it ends.
+      const response = await apiFetch("/api/account/username", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: newUsername.trim(), currentPassword: usernamePassword }),
+      }, token);
+      const data = (await response.json().catch(() => ({}))) as ApiErrorBody & { usernameChangeAvailableAt?: unknown };
+      if (typeof data.usernameChangeAvailableAt === "string") setUsernameAvailableAt(data.usernameChangeAvailableAt);
+      if (!response.ok) {
+        throw new Error(apiErrorText(data, t("errors.mobile.requestFailed", { status: response.status })));
+      }
+      await refreshUser();
+      setNewUsername(""); setUsernamePassword("");
+      setUsernameNotice(t("chat.actions.account.usernameUpdated"));
+    } catch (cause) {
+      setUsernameError(cause instanceof Error ? cause.message : t("errors.client.account.changeUsername"));
+    } finally { setUsernameBusy(false); }
+  };
+
   const changePassword = async () => {
     if (!token || busy) return;
     setError(""); setNotice("");
@@ -253,6 +290,8 @@ export default function AccountSecurityScreen() {
     finally { setBusy(false); }
   };
 
+  const usernameLocked = !!usernameAvailableAt && Date.parse(usernameAvailableAt) > Date.now();
+
   return (
     <Screen>
       <View style={styles.top}>
@@ -261,6 +300,30 @@ export default function AccountSecurityScreen() {
         <Ionicons name="shield-checkmark-outline" size={22} color={colors.cyan} />
       </View>
       <ScrollView keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <Text style={styles.section}>{t("settings.mobile.accountSecurity.username")}</Text>
+        <View style={styles.card}>
+          <View style={styles.emailStatus}>
+            <Ionicons name="at-outline" size={20} color={colors.cyan} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.emailValue}>{user?.username}</Text>
+              <Text style={styles.hint}>{usernameLocked && usernameAvailableAt
+                ? t("settings.account.usernameAgain", { date: new Date(usernameAvailableAt).toLocaleDateString(dateLocale()) })
+                : t("settings.account.usernameRule")}</Text>
+            </View>
+          </View>
+          {!usernameLocked && (
+            <>
+              <View style={styles.divider} />
+              <Field label={t("common.account.edit.newUsername")} value={newUsername} onChangeText={setNewUsername} secure={false} />
+              <Field label={t("settings.twoFactor.currentPassword")} value={usernamePassword} onChangeText={setUsernamePassword} />
+              <Pressable accessibilityRole="button" style={[styles.primary, (usernameBusy || !newUsername.trim() || !usernamePassword) && styles.disabled]} disabled={usernameBusy || !newUsername.trim() || !usernamePassword} onPress={() => void changeUsername()}><Text style={styles.primaryText}>{usernameBusy ? t("common.status.checking") : t("common.account.edit.usernameTitle")}</Text></Pressable>
+              <Text style={styles.hint}>{t("common.account.edit.usernameBody")}</Text>
+            </>
+          )}
+          {!!usernameNotice && <Text style={[styles.notice, { marginTop: 8 }]}>{usernameNotice}</Text>}
+          {!!usernameError && <Text style={[styles.error, { marginTop: 8 }]}>{usernameError}</Text>}
+        </View>
+
         <Text style={styles.section}>{t("settings.mobile.accountSecurity.emailAddress")}</Text>
         <View style={styles.card}>
           <View style={styles.emailStatus}><Ionicons name={user?.emailVerified?"checkmark-circle":"mail-outline"} size={20} color={user?.emailVerified?colors.green:colors.cyan}/><View style={{flex:1}}><Text style={styles.emailValue}>{user?.email||t("settings.account.noEmail")}</Text><Text style={styles.hint}>{user?.email?(user.emailVerified?t("common.auth.verifiedEmail"):t("settings.account.verificationRequired")):t("settings.mobile.accountSecurity.addAnEmailForRecovery")}</Text></View></View>

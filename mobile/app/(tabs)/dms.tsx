@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { ModalKeyboardAvoider } from "@/src/components/KeyboardAware";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Screen } from "@/src/components/Screen";
@@ -634,6 +635,7 @@ export default function DmsScreen() {
         animationType="fade"
         onRequestClose={closeComposer}
       >
+        <ModalKeyboardAvoider>
         <Pressable style={styles.overlay} onPress={closeComposer}>
           <Pressable style={styles.modal} onPress={() => {}}>
             <View style={styles.modalGrabber} />
@@ -831,6 +833,7 @@ export default function DmsScreen() {
             </View>
           </Pressable>
         </Pressable>
+        </ModalKeyboardAvoider>
       </Modal>
     </Screen>
   );

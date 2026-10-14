@@ -56,6 +56,7 @@ import { DmEncryptionBadge, DmEncryptionNotice } from "@/src/providers/DmE2eePro
 import type { ImagePickerAsset } from "expo-image-picker";
 import { useTranslation } from "react-i18next";
 import { i18next } from "@/src/i18n";
+import { hour12Preference, useAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
 import { dateLocale } from "@/src/lib/date-locale";
 
 /** Encrypt a picked photo or video, upload the ciphertext and describe it for the encrypted message. */
@@ -104,6 +105,7 @@ function formatMessageTime(value: string): string {
   return new Date(timestamp).toLocaleTimeString(dateLocale(), {
     hour: "2-digit",
     minute: "2-digit",
+    hour12: hour12Preference(),
   });
 }
 
@@ -162,6 +164,8 @@ export default function DmScreen() {
  */
 export function DmView({ params, embedded = false, onClosed }: { params: DmParams; embedded?: boolean; onClosed?: () => void }) {
   const { t } = useTranslation(["dm", "chat", "common"]);
+  // Re-render when the synced time format loads or changes.
+  useAccountPreferencesSnapshot();
   const targetId = params.id;
   const fallbackName =
     typeof params.username === "string" ? params.username : t("dm.mobile.conversation.directMessage");

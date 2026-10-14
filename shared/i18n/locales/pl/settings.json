@@ -1313,9 +1313,11 @@
         "statusTextPlaceholder": "Co się dzieje?",
         "displayNamePlaceholder": "Jak inni widzą twoją nazwę",
         "pronounsPlaceholder": "np. ona/jej, on/jego, oni/ich",
+        "bioPlaceholder": "Kilka słów o sobie",
         "statusTextEdit": "Edytuj własny status",
         "displayNameEdit": "Edytuj wyświetlaną nazwę",
-        "pronounsEdit": "Edytuj zaimki"
+        "pronounsEdit": "Edytuj zaimki",
+        "bioEdit": "Edytuj bio"
       }
     },
     "settings": {
@@ -1442,6 +1444,7 @@
       "enterYourCurrentPasswordTo": "Wpisz obecne hasło, aby kontynuować.",
       "settings": "USTAWIENIA",
       "emailAddress": "ADRES E-MAIL",
+      "username": "NAZWA UŻYTKOWNIKA",
       "addAnEmailForRecovery": "Dodaj e-mail do odzyskiwania i ochrony konta.",
       "newEmailAddress": "Nowy adres e-mail",
       "emailAddress2": "Adres e-mail",

@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import * as SecureStore from "expo-secure-store";
+import { setAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
 import { loadAccountPreferences, type SyncedClientSettings } from "@/src/lib/account-preferences";
 import {
   NotificationSettingsStore,
@@ -59,7 +60,10 @@ export function NotificationSettingsProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     const session = store.activate(accountId, token);
+    // Signed out or switched accounts: forget the previous account's preferences.
+    setAccountPreferencesSnapshot(null);
     if (!session || !accountId || !token) return;
+    let active = true;
     const storageKey = notificationSettingsStorageKey(accountId);
 
     void SecureStore.getItemAsync(storageKey)
@@ -72,9 +76,15 @@ export function NotificationSettingsProvider({ children }: PropsWithChildren) {
       .catch(() => undefined);
 
     void loadAccountPreferences(token)
-      .then((preferences) => store.hydrateServer(session, notificationSettingsFromServer(preferences.clientSettings)))
+      .then((preferences) => {
+        if (active) setAccountPreferencesSnapshot(preferences);
+        store.hydrateServer(session, notificationSettingsFromServer(preferences.clientSettings));
+      })
       .catch(() => undefined)
       .finally(() => store.finishHydration(session));
+    return () => {
+      active = false;
+    };
   }, [accountId, token, store]);
 
   const value = useMemo<NotificationSettingsContextValue>(

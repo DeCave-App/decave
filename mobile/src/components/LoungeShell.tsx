@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type PropsWithChildren } from "react";
+import { useEffect, useMemo, type PropsWithChildren } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -6,7 +6,8 @@ import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { InShellContext } from "@/src/components/Screen";
 import { Avatar } from "@/src/components/Avatar";
-import { apiJson, absoluteMediaUrl } from "@/src/lib/api";
+import { absoluteMediaUrl } from "@/src/lib/api";
+import { useHubList } from "@/src/hooks/useHubList";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useUnread } from "@/src/providers/UnreadProvider";
 import { useVoice } from "@/src/providers/VoiceProvider";
@@ -16,6 +17,9 @@ import { colors } from "@/src/theme";
 import type { Hub } from "@/src/types";
 
 const HUB_TINTS = ["#7C3AED", "#DB2777", "#0891B2", "#16A34A", "#EA580C", "#4F46E5"];
+const NO_HUBS: Hub[] = [];
+// A Hub list loaded this recently is reused instead of fetched again.
+const HUB_PILLS_MAX_AGE_MS = 10_000;
 
 type RailItem = {
   key: string;
@@ -49,22 +53,19 @@ export function LoungeShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
   const { token, user } = useSession();
   const { voiceChannelId } = useVoice();
-  const [hubs, setHubs] = useState<Hub[]>([]);
+  const { hubs: cachedHubs, refresh: refreshHubs } = useHubList("mine");
+  const hubs = cachedHubs ?? NO_HUBS;
   const unread = useUnread();
 
-  const loadHubs = useCallback(async () => {
-    if (!token) return;
-    try {
-      setHubs(await apiJson<Hub[]>("/api/servers", {}, token));
-    } catch (error) {
-      console.warn("[lounge] could not load hubs", error);
-    }
-  }, [token]);
-
-  // Refresh when returning to the tabs so new or left Hubs show up.
+  // Pills draw from the shared cache at once. Navigating refreshes it so new or
+  // left Hubs show up, but not more than every few seconds (each tab and Hub
+  // screen mounts its own shell).
   useEffect(() => {
-    void loadHubs();
-  }, [loadHubs, pathname]);
+    if (!token) return;
+    refreshHubs({ maxAgeMs: HUB_PILLS_MAX_AGE_MS }).catch((error) =>
+      console.warn("[lounge] could not load hubs", error),
+    );
+  }, [token, refreshHubs, pathname]);
 
   const voiceLocation = useMemo(() => {
     if (voiceChannelId == null) return null;

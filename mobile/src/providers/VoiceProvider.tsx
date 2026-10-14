@@ -22,6 +22,7 @@ import {
 } from "react-native-webrtc";
 import { apiJson } from "@/src/lib/api";
 import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "@/src/lib/rtc-relay";
+import { createCameraAdvertWaiter } from "@/src/lib/voice-camera-advert";
 import { realtimeMessage } from "@/src/lib/server-text";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useSession } from "@/src/providers/SessionProvider";
@@ -99,6 +100,8 @@ type VoiceContextValue = {
   serverDeafened: boolean;
   screenSharing: boolean;
   cameraSharing: boolean;
+  /** This device's own camera while it is shared, for the self view. */
+  localCameraStream: MediaStream | null;
   screenShareError: string;
   remoteVideos: Record<string, RemoteVoiceVideo>;
   locallyMutedUserIds: string[];
@@ -201,6 +204,8 @@ export function VoiceProvider({ children }: PropsWithChildren) {
   const [serverDeafened, setServerDeafened] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
   const [cameraSharing, setCameraSharing] = useState(false);
+  const [localCameraStream, setLocalCameraStream] = useState<MediaStream | null>(null);
+  const [cameraAdvert] = useState(createCameraAdvertWaiter);
   const [screenShareError, setScreenShareError] = useState("");
   const [remoteVideos, setRemoteVideos] = useState<Record<string, RemoteVoiceVideo>>({});
   const [locallyMutedUserIds, setLocallyMutedUserIds] = useState<string[]>([]);
@@ -212,6 +217,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
   const pendingVoiceChannelRef = useRef<number | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const localCameraStreamRef = useRef<MediaStream | null>(null);
+  const cameraStartInFlightRef = useRef(false);
   const localScreenStreamRef = useRef<MediaStream | null>(null);
   const peerSessionsRef = useRef<Map<string, PeerSession>>(new Map());
   const iceServersRef = useRef<IceServer[]>([]);
@@ -326,6 +332,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     }
 
     localCameraStreamRef.current = null;
+    setLocalCameraStream(null);
     const trackIds = new Set(stream.getTracks().map((track) => track.id));
 
     for (const session of peerSessionsRef.current.values()) {
@@ -1211,6 +1218,13 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     send({ type: "VOICE_MODERATE", targetConnectionId, action });
   };
 
+  // Peers file a video track as camera or screen by our VOICE_STATE flags when it
+  // arrives; see voice-camera-advert.ts. Resolves once they have seen cameraSharing.
+  const waitForCameraAdvert = async (): Promise<void> => {
+    if (!connectionId) return;
+    await cameraAdvert.wait(connectionId);
+  };
+
   const requestCamera = async (): Promise<boolean> => {
     if (Platform.OS !== "android") return true;
     const result = await PermissionsAndroid.request(
@@ -1231,7 +1245,16 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       return false;
     }
     if (localCameraStreamRef.current) return true;
+    if (cameraStartInFlightRef.current) return false;
+    cameraStartInFlightRef.current = true;
+    try {
+      return await openAndShareCamera();
+    } finally {
+      cameraStartInFlightRef.current = false;
+    }
+  };
 
+  const openAndShareCamera = async (): Promise<boolean> => {
     const operationGeneration = voiceOperationGenerationRef.current;
     const channelId = voiceChannelRef.current;
     const captureIdentity = sessionIdentity;
@@ -1303,8 +1326,15 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       if (!send({ type: "VOICE_CAMERA_STATE", cameraSharing: true })) {
         throw new Error(t("voice.mobile.engine.cameraPublishFailed"));
       }
+      // Attach the track only once peers know it is a camera, or web shows nothing.
+      await waitForCameraAdvert();
+      if (!isCurrentCapture()) {
+        for (const track of camera.getTracks()) { try { track.stop(); } catch {} }
+        return false;
+      }
 
       localCameraStreamRef.current = camera;
+      setLocalCameraStream(camera);
       setCameraSharing(true);
       setVoiceError("");
       for (const session of peerSessionsRef.current.values()) {
@@ -1327,6 +1357,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     } catch (cause) {
       discardCamera();
       if (!isCurrentCapture()) return false;
+      setLocalCameraStream(null);
       setCameraSharing(false);
       {
         setVoiceError(errorMessage(cause, t("voice.mobile.engine.cameraStartFailed")));
@@ -1486,6 +1517,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       
       participantsRef.current = next;
       setParticipants(next);
+      cameraAdvert.observe(next);
 
       const nextByConnection = new Map(next.map((participant) => [participant.connectionId, participant]));
       for (const session of peerSessionsRef.current.values()) {
@@ -1775,6 +1807,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       serverDeafened,
       screenSharing,
       cameraSharing,
+      localCameraStream,
       screenShareError,
       remoteVideos,
       locallyMutedUserIds,
@@ -1812,6 +1845,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       serverDeafened,
       screenSharing,
       cameraSharing,
+      localCameraStream,
       screenShareError,
       remoteVideos,
       locallyMutedUserIds,
