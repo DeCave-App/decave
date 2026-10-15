@@ -914,6 +914,36 @@ export function createAdminActions(deps: AdminActionsDeps) {
     }
   };
 
+  const resendAdminVerificationEmail = async () => {
+    if (!selectedAdminAccount || !requireAdminPrivilegedUnlock()) return;
+
+    setAdminDashboardBusy(true);
+    setAdminDashboardNotice("");
+    try {
+      const response = await fetch(
+        `${HTTP_URL}/api/admin/accounts/${encodeURIComponent(selectedAdminAccount.id)}/resend-verification`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...adminReauthHeaders(),
+          },
+        },
+      );
+      const data = (await response.json()) as { success?: boolean; message?: string; error?: string };
+      if (!response.ok || !data.success) {
+        setAdminDashboardNotice(apiErrorMessage(data, "client.admin.resendVerification"));
+        return;
+      }
+      setAdminDashboardNotice(serverMessage(data, i18next.t("chat.actions.admin.verificationResent")));
+    } catch {
+      setAdminDashboardNotice(i18next.t("errors.client.connect"));
+    } finally {
+      setAdminDashboardBusy(false);
+    }
+  };
+
   const forceAdminPasswordReset = async () => {
     if (!selectedAdminAccount || !requireAdminPrivilegedUnlock()) return;
 
@@ -1156,6 +1186,7 @@ export function createAdminActions(deps: AdminActionsDeps) {
     unsuspendAdminAccount,
     correctAdminAccountAge,
     forceAdminPasswordReset,
+    resendAdminVerificationEmail,
     scheduleAdminAccountDeletion,
     restoreAdminAccount,
     eraseAdminAccount,

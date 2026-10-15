@@ -238,6 +238,7 @@
       "birthDateMissing": "Saisis la date de naissance corrigée.",
       "ageCorrected": "Âge corrigé et restriction d'âge levée.",
       "resetForced": "Réinitialisation du mot de passe imposée et e-mail de réinitialisation envoyé.",
+      "verificationResent": "E-mail de vérification envoyé.",
       "deleteReasonMissing": "Indique un motif avant de programmer la suppression.",
       "erasureAvailableAfter": "Compte désactivé. L'effacement définitif sera possible après le {{date}}.",
       "deletionScheduled": "Suppression du compte programmée.",

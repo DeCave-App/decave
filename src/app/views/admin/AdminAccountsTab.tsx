@@ -43,6 +43,7 @@ type Props = {
   unsuspendAdminAccount: () => Promise<void>;
   correctAdminAccountAge: () => Promise<void>;
   forceAdminPasswordReset: () => Promise<void>;
+  resendAdminVerificationEmail: () => Promise<void>;
   scheduleAdminAccountDeletion: () => Promise<void>;
   restoreAdminAccount: () => Promise<void>;
   eraseAdminAccount: () => Promise<void>;
@@ -83,6 +84,7 @@ export function AdminAccountsTab({
   unsuspendAdminAccount,
   correctAdminAccountAge,
   forceAdminPasswordReset,
+  resendAdminVerificationEmail,
   scheduleAdminAccountDeletion,
   restoreAdminAccount,
   eraseAdminAccount,
@@ -393,6 +395,22 @@ export function AdminAccountsTab({
                 >
                   {t("common.admin.accounts.forceReset")}
                 </button>
+                {selectedAdminAccount.email && !selectedAdminAccount.emailVerified && (
+                  <button
+                    type="button"
+                    className="modal-secondary"
+                    disabled={
+                      adminDashboardBusy ||
+                      Boolean(selectedAdminAccount.deletedAt) ||
+                      Boolean(selectedAdminAccount.erasedAt) ||
+                      !ownerReauthToken ||
+                      ownerReauthExpiresAt <= Date.now()
+                    }
+                    onClick={() => void resendAdminVerificationEmail()}
+                  >
+                    {t("common.admin.accounts.resendVerification")}
+                  </button>
+                )}
               </div>
             </div>
 

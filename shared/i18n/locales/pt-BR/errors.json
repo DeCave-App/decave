@@ -75,6 +75,7 @@
       "unsuspend": "Não foi possível remover a suspensão da conta.",
       "correctAge": "Não foi possível corrigir a idade da conta.",
       "forceReset": "Não foi possível forçar a redefinição de senha.",
+      "resendVerification": "Não foi possível reenviar o e-mail de verificação.",
       "scheduleDeletion": "Não foi possível agendar a exclusão da conta.",
       "restore": "Não foi possível restaurar a conta.",
       "erase": "Não foi possível apagar a conta.",
@@ -294,6 +295,7 @@
     "cannotSuspendSelf": "Você não pode suspender sua própria conta de dono.",
     "birthDateUnderage": "A data de nascimento corrigida precisa mostrar que o titular da conta tem pelo menos 18 anos.",
     "resetEmailFailed": "Não foi possível enviar o e-mail de redefinição de senha.",
+    "verificationEmailFailed": "Não foi possível enviar o e-mail de verificação.",
     "currentMfaCodeInvalid": "O código atual do autenticador ou de recuperação é inválido.",
     "dashboardRangeTooLong": "O intervalo do painel não pode passar de 90 dias",
     "dashboardRangeInvalid": "Intervalo de datas do painel inválido",
@@ -333,6 +335,7 @@
     "eraseConfirmMismatch": "Digite exatamente o nome de usuário atual para confirmar o apagamento permanente.",
     "useChangePassword": "Use Alterar senha na sua própria conta em vez de forçar uma redefinição.",
     "resetNeedsVerifiedEmail": "É preciso um e-mail verificado antes de forçar a redefinição de senha.",
+    "verificationNotNeeded": "Esta conta não tem e-mail pendente de verificação.",
     "verifyMfaBeforeReplace": "Verifique seu código atual do autenticador ou de recuperação antes de substituir o MFA.",
     "verifyEmailBeforePromote": "Verifique o e-mail da conta alvo antes de promovê-la a dono.",
     "erasureStorageFailure": "O apagamento permanente não conseguiu excluir todos os objetos armazenados. Tente a operação de novo."

@@ -240,6 +240,7 @@
       "birthDateMissing": "Podaj poprawioną datę urodzenia.",
       "ageCorrected": "Wiek poprawiony, a ograniczenie wiekowe zdjęte.",
       "resetForced": "Wymagany reset hasła, e-mail do resetu wysłany.",
+      "verificationResent": "Wysłano e-mail weryfikacyjny.",
       "deleteReasonMissing": "Podaj powód przed zaplanowaniem usunięcia.",
       "erasureAvailableAfter": "Konto zostało wyłączone. Trwałe wymazanie będzie dostępne po {{date}}.",
       "deletionScheduled": "Zaplanowano usunięcie konta.",

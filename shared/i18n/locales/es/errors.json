@@ -75,6 +75,7 @@
       "unsuspend": "No se pudo quitar la suspensión de la cuenta.",
       "correctAge": "No se pudo corregir la edad de la cuenta.",
       "forceReset": "No se pudo forzar el restablecimiento de la contraseña.",
+      "resendVerification": "No se pudo reenviar el email de verificación.",
       "scheduleDeletion": "No se pudo programar la eliminación de la cuenta.",
       "restore": "No se pudo restaurar la cuenta.",
       "erase": "No se pudo borrar la cuenta.",
@@ -294,6 +295,7 @@
     "cannotSuspendSelf": "No puedes suspender tu propia cuenta de propietario.",
     "birthDateUnderage": "La fecha de nacimiento corregida debe indicar que el titular de la cuenta tiene al menos 18 años.",
     "resetEmailFailed": "No se pudo enviar el email para restablecer la contraseña.",
+    "verificationEmailFailed": "No se pudo enviar el email de verificación.",
     "currentMfaCodeInvalid": "El código actual de la app de autenticación o de respaldo no es válido.",
     "dashboardRangeTooLong": "El rango del panel no puede superar los 90 días",
     "dashboardRangeInvalid": "Rango de fechas del panel no válido",
@@ -333,6 +335,7 @@
     "eraseConfirmMismatch": "Escribe el nombre de usuario actual exacto para confirmar el borrado permanente.",
     "useChangePassword": "Usa Cambiar contraseña para tu propia cuenta en lugar de forzar un restablecimiento.",
     "resetNeedsVerifiedEmail": "Se necesita un email verificado antes de forzar el restablecimiento de la contraseña.",
+    "verificationNotNeeded": "Esta cuenta no tiene un email sin verificar.",
     "verifyMfaBeforeReplace": "Verifica tu código actual de la app de autenticación o de respaldo antes de reemplazar la MFA.",
     "verifyEmailBeforePromote": "Verifica el email de la cuenta objetivo antes de ascenderla a propietaria.",
     "erasureStorageFailure": "El borrado permanente no pudo eliminar todos los objetos guardados. Reintenta la operación."

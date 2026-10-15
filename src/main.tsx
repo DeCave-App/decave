@@ -2,6 +2,7 @@
 import ReactDOM from "react-dom/client";
 import "./styles/design-system.css";
 import App from "./App";
+import { EmailVerificationHandoff } from "./app/components/EmailVerificationHandoff";
 import { I18nProvider } from "./i18n/I18nProvider";
 import { i18next } from "./i18n";
 import { followLocaleOnDesktop } from "./app/desktop";
@@ -85,6 +86,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <AppErrorBoundary>
       <I18nProvider>
         <App />
+        {/* Outside App so a signed-out visitor opening the email link sees it too. */}
+        <EmailVerificationHandoff />
       </I18nProvider>
     </AppErrorBoundary>
   </React.StrictMode>,

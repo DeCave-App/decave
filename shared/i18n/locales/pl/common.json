@@ -707,6 +707,7 @@
       "securityActions": "Akcje bezpieczeństwa",
       "revokeSessions": "Unieważnij sesje",
       "forceReset": "Wymuś reset hasła",
+      "resendVerification": "Wyślij ponownie e-mail weryfikacyjny",
       "ageTitle": "Uprawnienie wiekowe",
       "ageHint": "Jeśli data urodzenia została wpisana błędnie, właściciel może zweryfikować poprawioną datę. Musi ona wskazywać, że posiadacz konta ma co najmniej 18 lat.",
       "correctedBirthDate": "Poprawiona data urodzenia",

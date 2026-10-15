@@ -238,6 +238,7 @@
       "birthDateMissing": "Inserisci la data di nascita corretta.",
       "ageCorrected": "Età corretta e limitazione per età rimossa.",
       "resetForced": "Reimpostazione password richiesta ed email di reimpostazione inviata.",
+      "verificationResent": "Email di verifica inviata.",
       "deleteReasonMissing": "Inserisci un motivo prima di programmare l'eliminazione.",
       "erasureAvailableAfter": "Account disattivato ora. La cancellazione definitiva sarà disponibile dopo il {{date}}.",
       "deletionScheduled": "Eliminazione dell'account programmata.",

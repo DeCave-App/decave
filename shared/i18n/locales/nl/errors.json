@@ -75,6 +75,7 @@
       "unsuspend": "Kan schorsing van account niet opheffen.",
       "correctAge": "Kan de leeftijd van het account niet corrigeren.",
       "forceReset": "Kan wachtwoordreset niet afdwingen.",
+      "resendVerification": "Kon de verificatie-e-mail niet opnieuw sturen.",
       "scheduleDeletion": "Kan verwijdering van account niet inplannen.",
       "restore": "Kan account niet herstellen.",
       "erase": "Kan account niet wissen.",
@@ -294,6 +295,7 @@
     "cannotSuspendSelf": "Je kunt je eigen eigenaarsaccount niet schorsen.",
     "birthDateUnderage": "De gecorrigeerde geboortedatum moet laten zien dat de accounthouder minstens 18 is.",
     "resetEmailFailed": "Kan de e-mail om het wachtwoord te resetten niet versturen.",
+    "verificationEmailFailed": "Kon de verificatie-e-mail niet versturen.",
     "currentMfaCodeInvalid": "De huidige authenticator- of herstelcode is ongeldig.",
     "dashboardRangeTooLong": "Dashboardperiode mag niet langer zijn dan 90 dagen",
     "dashboardRangeInvalid": "Ongeldige dashboardperiode",
@@ -333,6 +335,7 @@
     "eraseConfirmMismatch": "Typ de exacte huidige gebruikersnaam om permanent wissen te bevestigen.",
     "useChangePassword": "Gebruik Wachtwoord wijzigen voor je eigen account in plaats van een reset af te dwingen.",
     "resetNeedsVerifiedEmail": "Een bevestigd e-mailadres is vereist voordat een wachtwoordreset kan worden afgedwongen.",
+    "verificationNotNeeded": "Dit account heeft geen onbevestigd e-mailadres.",
     "verifyMfaBeforeReplace": "Verifieer je huidige authenticator- of herstelcode voordat je MFA vervangt.",
     "verifyEmailBeforePromote": "Bevestig het e-mailadres van het doelaccount voordat je het tot eigenaar promoveert.",
     "erasureStorageFailure": "Permanent wissen kon niet alle opgeslagen objecten verwijderen. Probeer het opnieuw."

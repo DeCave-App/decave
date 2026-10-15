@@ -75,6 +75,7 @@
       "unsuspend": "Impossible de lever la suspension du compte.",
       "correctAge": "Impossible de corriger l'âge du compte.",
       "forceReset": "Impossible de forcer la réinitialisation du mot de passe.",
+      "resendVerification": "Impossible de renvoyer l'e-mail de vérification.",
       "scheduleDeletion": "Impossible de programmer la suppression du compte.",
       "restore": "Impossible de restaurer le compte.",
       "erase": "Impossible d'effacer le compte.",
@@ -294,6 +295,7 @@
     "cannotSuspendSelf": "Tu ne peux pas suspendre ton propre compte propriétaire.",
     "birthDateUnderage": "La date de naissance corrigée doit montrer que le titulaire du compte a au moins 18 ans.",
     "resetEmailFailed": "Impossible d'envoyer l'e-mail de réinitialisation du mot de passe.",
+    "verificationEmailFailed": "Impossible d'envoyer l'e-mail de vérification.",
     "currentMfaCodeInvalid": "Le code d'authentification ou de récupération actuel est invalide.",
     "dashboardRangeTooLong": "La période du tableau de bord ne peut pas dépasser 90 jours",
     "dashboardRangeInvalid": "Période du tableau de bord invalide",
@@ -333,6 +335,7 @@
     "eraseConfirmMismatch": "Tape exactement le nom d'utilisateur actuel pour confirmer l'effacement définitif.",
     "useChangePassword": "Utilise Changer le mot de passe pour ton propre compte au lieu de forcer une réinitialisation.",
     "resetNeedsVerifiedEmail": "Un e-mail vérifié est requis avant une réinitialisation forcée du mot de passe.",
+    "verificationNotNeeded": "Ce compte n'a pas d'e-mail non vérifié.",
     "verifyMfaBeforeReplace": "Vérifie ton code d'authentification ou de récupération actuel avant de remplacer la MFA.",
     "verifyEmailBeforePromote": "Vérifie l'e-mail du compte cible avant de le promouvoir propriétaire.",
     "erasureStorageFailure": "L'effacement définitif n'a pas pu supprimer tous les objets stockés. Relance l'opération."

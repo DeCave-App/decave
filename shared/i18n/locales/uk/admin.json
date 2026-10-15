@@ -356,6 +356,7 @@
     "password_changed_in_settings": "Пароль змінено в налаштуваннях",
     "password_reset_completed": "Скидання пароля завершено",
     "password_reset_forced": "Примусове скидання пароля",
+    "email_verification_resent": "Лист підтвердження надіслано повторно",
     "password_reset_requested": "Запит на скидання пароля",
     "platform_account_age_corrected": "Платформа: вік акаунта виправлено",
     "platform_account_deletion_scheduled": "Платформа: видалення акаунта заплановано",
@@ -376,6 +377,7 @@
     "platform_owner_promote_target_not_found": "Платформа: кандидата у власники не знайдено",
     "platform_owner_promoted": "Платформа: власника призначено",
     "platform_password_reset_forced": "Платформа: примусове скидання пароля",
+    "platform_verification_email_resent": "Платформа: лист підтвердження надіслано повторно",
     "platform_reauth_mfa_failed": "Платформа: повторна перевірка MFA не вдалася",
     "platform_reauth_password_failed": "Платформа: повторна перевірка пароля не вдалася",
     "platform_recovery_codes_regenerated": "Платформа: коди відновлення перегенеровано",
@@ -418,6 +420,7 @@
   },
   "server": {
     "passwordResetForced": "Потрібно скинути пароль. Лист для скидання надіслано.",
+    "verificationEmailResent": "Лист підтвердження надіслано.",
     "importAlreadyRolledBack": "Цей імпорт уже відкочено.",
     "accountErased": "Дані акаунта й медіа, що йому належать, стерто там, де це дозволяли правила зберігання. Докази безпеки, що зберігаються з юридичних підстав, і анонімізований запис аудиту залишаються.",
     "importRolledBack": "Створену структуру відкочено.",

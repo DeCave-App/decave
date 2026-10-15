@@ -356,6 +356,7 @@
     "password_changed_in_settings": "Zmieniono hasło w ustawieniach",
     "password_reset_completed": "Zakończono reset hasła",
     "password_reset_forced": "Wymuszono reset hasła",
+    "email_verification_resent": "Ponownie wysłano e-mail weryfikacyjny",
     "password_reset_requested": "Poproszono o reset hasła",
     "platform_account_age_corrected": "Platforma: poprawiono wiek konta",
     "platform_account_deletion_scheduled": "Platforma: zaplanowano usunięcie konta",
@@ -376,6 +377,7 @@
     "platform_owner_promote_target_not_found": "Platforma: nie znaleziono konta do awansu na właściciela",
     "platform_owner_promoted": "Platforma: awansowano na właściciela",
     "platform_password_reset_forced": "Platforma: wymuszono reset hasła",
+    "platform_verification_email_resent": "Platforma: ponownie wysłano e-mail weryfikacyjny",
     "platform_reauth_mfa_failed": "Platforma: nieudane ponowne uwierzytelnienie MFA",
     "platform_reauth_password_failed": "Platforma: nieudane ponowne uwierzytelnienie hasłem",
     "platform_recovery_codes_regenerated": "Platforma: wygenerowano nowe kody odzyskiwania",
@@ -418,6 +420,7 @@
   },
   "server": {
     "passwordResetForced": "Wymagany reset hasła. Wysłano e-mail do resetu.",
+    "verificationEmailResent": "Wysłano e-mail weryfikacyjny.",
     "importAlreadyRolledBack": "Ten import został już cofnięty.",
     "accountErased": "Dane konta i należące do niego multimedia zostały wymazane w zakresie, na jaki pozwalają zasady przechowywania. Dowody bezpieczeństwa objęte obowiązkiem prawnym oraz zanonimizowany wpis audytu pozostają zachowane.",
     "importRolledBack": "Utworzona struktura została cofnięta.",

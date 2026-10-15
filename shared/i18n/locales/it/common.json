@@ -703,6 +703,7 @@
       "securityActions": "Azioni di sicurezza",
       "revokeSessions": "Revoca sessioni",
       "forceReset": "Forza reimpostazione password",
+      "resendVerification": "Reinvia email di verifica",
       "ageTitle": "Idoneità per età",
       "ageHint": "Se la data di nascita è stata inserita in modo errato, un proprietario può verificare la data corretta. Deve dimostrare che il titolare dell'account ha almeno 18 anni.",
       "correctedBirthDate": "Data di nascita corretta",

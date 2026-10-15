@@ -238,6 +238,7 @@
       "birthDateMissing": "Introduce la fecha de nacimiento corregida.",
       "ageCorrected": "Edad corregida y restricción de edad eliminada.",
       "resetForced": "Restablecimiento de contraseña obligatorio y email de restablecimiento enviado.",
+      "verificationResent": "Email de verificación enviado.",
       "deleteReasonMissing": "Escribe un motivo antes de programar la eliminación.",
       "erasureAvailableAfter": "Cuenta desactivada. El borrado permanente estará disponible después del {{date}}.",
       "deletionScheduled": "Cuenta programada para su eliminación.",

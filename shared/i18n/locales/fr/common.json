@@ -703,6 +703,7 @@
       "securityActions": "Actions de sécurité",
       "revokeSessions": "Révoquer les sessions",
       "forceReset": "Imposer la réinitialisation du mot de passe",
+      "resendVerification": "Renvoyer l'e-mail de vérification",
       "ageTitle": "Éligibilité selon l'âge",
       "ageHint": "Si la date de naissance a été mal saisie, un propriétaire peut vérifier la date corrigée. Elle doit montrer que le titulaire du compte a au moins 18 ans.",
       "correctedBirthDate": "Date de naissance corrigée",

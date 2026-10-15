@@ -340,6 +340,7 @@
     "password_changed_in_settings": "Password cambiata nelle impostazioni",
     "password_reset_completed": "Reimpostazione password completata",
     "password_reset_forced": "Reimpostazione password forzata",
+    "email_verification_resent": "Email di verifica reinviata",
     "password_reset_requested": "Reimpostazione password richiesta",
     "platform_account_age_corrected": "Piattaforma: età dell'account corretta",
     "platform_account_deletion_scheduled": "Piattaforma: eliminazione account programmata",
@@ -360,6 +361,7 @@
     "platform_owner_promote_target_not_found": "Piattaforma: utente da promuovere a proprietario non trovato",
     "platform_owner_promoted": "Piattaforma: proprietario promosso",
     "platform_password_reset_forced": "Piattaforma: reimpostazione password forzata",
+    "platform_verification_email_resent": "Piattaforma: email di verifica reinviata",
     "platform_reauth_mfa_failed": "Piattaforma: riautenticazione MFA non riuscita",
     "platform_reauth_password_failed": "Piattaforma: riautenticazione con password non riuscita",
     "platform_recovery_codes_regenerated": "Piattaforma: codici di recupero rigenerati",
@@ -402,6 +404,7 @@
   },
   "server": {
     "passwordResetForced": "Reimpostazione della password obbligatoria. È stata inviata un'email per reimpostarla.",
+    "verificationEmailResent": "Email di verifica inviata.",
     "importAlreadyRolledBack": "Questa importazione è già stata annullata.",
     "accountErased": "I dati dell'account e i media di sua proprietà sono stati cancellati dove la conservazione lo consentiva. Le prove di sicurezza soggette a obbligo legale e il registro di audit anonimizzato restano conservati.",
     "importRolledBack": "La struttura creata è stata annullata.",

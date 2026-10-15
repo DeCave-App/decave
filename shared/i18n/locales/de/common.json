@@ -699,6 +699,7 @@
       "securityActions": "Sicherheitsaktionen",
       "revokeSessions": "Sitzungen widerrufen",
       "forceReset": "Passwort-Reset erzwingen",
+      "resendVerification": "Bestätigungs-E-Mail erneut senden",
       "ageTitle": "Altersberechtigung",
       "ageHint": "Wenn das Geburtsdatum falsch eingegeben wurde, kann ein Eigentümer das korrigierte Datum prüfen. Es muss zeigen, dass die Person, der der Account gehört, mindestens 18 ist.",
       "correctedBirthDate": "Korrigiertes Geburtsdatum",

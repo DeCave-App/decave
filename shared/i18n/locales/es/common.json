@@ -703,6 +703,7 @@
       "securityActions": "Acciones de seguridad",
       "revokeSessions": "Revocar sesiones",
       "forceReset": "Forzar restablecimiento de contraseña",
+      "resendVerification": "Reenviar email de verificación",
       "ageTitle": "Requisito de edad",
       "ageHint": "Si la fecha de nacimiento se introdujo mal, un propietario puede revisar la fecha corregida. Debe demostrar que el titular de la cuenta tiene al menos 18 años.",
       "correctedBirthDate": "Fecha de nacimiento corregida",

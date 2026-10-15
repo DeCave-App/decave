@@ -75,6 +75,7 @@
       "unsuspend": "Impossibile revocare la sospensione dell'account.",
       "correctAge": "Impossibile correggere l'età dell'account.",
       "forceReset": "Impossibile forzare la reimpostazione della password.",
+      "resendVerification": "Impossibile reinviare l'email di verifica.",
       "scheduleDeletion": "Impossibile programmare l'eliminazione dell'account.",
       "restore": "Impossibile ripristinare l'account.",
       "erase": "Impossibile cancellare definitivamente l'account.",
@@ -294,6 +295,7 @@
     "cannotSuspendSelf": "Non puoi sospendere il tuo account proprietario.",
     "birthDateUnderage": "La data di nascita corretta deve dimostrare che il titolare dell'account ha almeno 18 anni.",
     "resetEmailFailed": "Impossibile inviare l'email di reimpostazione della password.",
+    "verificationEmailFailed": "Impossibile inviare l'email di verifica.",
     "currentMfaCodeInvalid": "Il codice attuale dell'app di autenticazione o di recupero non è valido.",
     "dashboardRangeTooLong": "L'intervallo della dashboard non può superare i 90 giorni",
     "dashboardRangeInvalid": "Intervallo di date della dashboard non valido",
@@ -333,6 +335,7 @@
     "eraseConfirmMismatch": "Scrivi esattamente il nome utente attuale per confermare la cancellazione definitiva.",
     "useChangePassword": "Per il tuo account usa Cambia password invece di forzare una reimpostazione.",
     "resetNeedsVerifiedEmail": "Serve un'email verificata prima di forzare la reimpostazione della password.",
+    "verificationNotNeeded": "Questo account non ha un'email da verificare.",
     "verifyMfaBeforeReplace": "Verifica il codice attuale dell'app di autenticazione o di recupero prima di sostituire l'MFA.",
     "verifyEmailBeforePromote": "Verifica l'email dell'account di destinazione prima di promuoverlo a proprietario.",
     "erasureStorageFailure": "La cancellazione definitiva non è riuscita a eliminare tutti gli oggetti salvati. Riprova l'operazione."

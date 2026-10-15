@@ -75,6 +75,7 @@
       "unsuspend": "Could not unsuspend account.",
       "correctAge": "Could not correct the account age.",
       "forceReset": "Could not force password reset.",
+      "resendVerification": "Could not resend the verification email.",
       "scheduleDeletion": "Could not schedule account deletion.",
       "restore": "Could not restore account.",
       "erase": "Could not erase account.",
@@ -294,6 +295,7 @@
     "cannotSuspendSelf": "You cannot suspend your own owner account.",
     "birthDateUnderage": "The corrected birth date must show that the account holder is at least 18.",
     "resetEmailFailed": "Could not send the password reset email.",
+    "verificationEmailFailed": "Could not send the verification email.",
     "currentMfaCodeInvalid": "The current authenticator or recovery code is invalid.",
     "dashboardRangeTooLong": "Dashboard range cannot exceed 90 days",
     "dashboardRangeInvalid": "Invalid dashboard date range",
@@ -333,6 +335,7 @@
     "eraseConfirmMismatch": "Type the exact current username to confirm permanent erasure.",
     "useChangePassword": "Use Change Password for your own account instead of forcing a reset.",
     "resetNeedsVerifiedEmail": "A verified email is required before a forced password reset.",
+    "verificationNotNeeded": "This account has no unverified email to confirm.",
     "verifyMfaBeforeReplace": "Verify your current authenticator or recovery code before replacing MFA.",
     "verifyEmailBeforePromote": "Verify the target account email before promoting it to owner.",
     "erasureStorageFailure": "Permanent erasure could not delete every stored object. Retry the operation."

@@ -45,6 +45,7 @@ export function AdminDashboardPage({
     unsuspendAdminAccount,
     correctAdminAccountAge,
     forceAdminPasswordReset,
+    resendAdminVerificationEmail,
     scheduleAdminAccountDeletion,
     restoreAdminAccount,
     eraseAdminAccount,
@@ -254,6 +255,7 @@ export function AdminDashboardPage({
               unsuspendAdminAccount={unsuspendAdminAccount}
               correctAdminAccountAge={correctAdminAccountAge}
               forceAdminPasswordReset={forceAdminPasswordReset}
+              resendAdminVerificationEmail={resendAdminVerificationEmail}
               scheduleAdminAccountDeletion={scheduleAdminAccountDeletion}
               restoreAdminAccount={restoreAdminAccount}
               eraseAdminAccount={eraseAdminAccount}

@@ -236,6 +236,7 @@
       "birthDateMissing": "Enter the corrected birth date.",
       "ageCorrected": "Age corrected and the age restriction was removed.",
       "resetForced": "Password reset required and reset email sent.",
+      "verificationResent": "Verification email sent.",
       "deleteReasonMissing": "Enter a reason before scheduling deletion.",
       "erasureAvailableAfter": "Account disabled now. Permanent erasure becomes available after {{date}}.",
       "deletionScheduled": "Account scheduled for deletion.",

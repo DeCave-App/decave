@@ -75,6 +75,7 @@
       "unsuspend": "Nie udało się cofnąć zawieszenia konta.",
       "correctAge": "Nie udało się poprawić wieku konta.",
       "forceReset": "Nie udało się wymusić resetu hasła.",
+      "resendVerification": "Nie udało się ponownie wysłać e-maila weryfikacyjnego.",
       "scheduleDeletion": "Nie udało się zaplanować usunięcia konta.",
       "restore": "Nie udało się przywrócić konta.",
       "erase": "Nie udało się trwale wymazać konta.",
@@ -294,6 +295,7 @@
     "cannotSuspendSelf": "Nie możesz zawiesić własnego konta właściciela.",
     "birthDateUnderage": "Poprawiona data urodzenia musi wskazywać, że posiadacz konta ma co najmniej 18 lat.",
     "resetEmailFailed": "Nie udało się wysłać e-maila z resetem hasła.",
+    "verificationEmailFailed": "Nie udało się wysłać e-maila weryfikacyjnego.",
     "currentMfaCodeInvalid": "Obecny kod z aplikacji uwierzytelniającej lub kod odzyskiwania jest nieprawidłowy.",
     "dashboardRangeTooLong": "Zakres panelu nie może przekraczać 90 dni",
     "dashboardRangeInvalid": "Nieprawidłowy zakres dat panelu",
@@ -333,6 +335,7 @@
     "eraseConfirmMismatch": "Wpisz dokładną obecną nazwę użytkownika, aby potwierdzić trwałe wymazanie.",
     "useChangePassword": "Dla własnego konta użyj opcji Zmień hasło zamiast wymuszania resetu.",
     "resetNeedsVerifiedEmail": "Wymuszony reset hasła wymaga zweryfikowanego e-maila.",
+    "verificationNotNeeded": "To konto nie ma niezweryfikowanego adresu e-mail.",
     "verifyMfaBeforeReplace": "Zweryfikuj obecny kod z aplikacji uwierzytelniającej lub kod odzyskiwania, zanim zastąpisz MFA.",
     "verifyEmailBeforePromote": "Zweryfikuj e-mail docelowego konta, zanim awansujesz je na właściciela.",
     "erasureStorageFailure": "Trwałe wymazanie nie usunęło wszystkich zapisanych obiektów. Spróbuj ponownie."

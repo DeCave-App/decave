@@ -340,6 +340,7 @@
     "password_changed_in_settings": "Contraseña cambiada en Ajustes",
     "password_reset_completed": "Restablecimiento de contraseña completado",
     "password_reset_forced": "Restablecimiento de contraseña forzado",
+    "email_verification_resent": "Email de verificación reenviado",
     "password_reset_requested": "Restablecimiento de contraseña solicitado",
     "platform_account_age_corrected": "Plataforma: edad de la cuenta corregida",
     "platform_account_deletion_scheduled": "Plataforma: eliminación de cuenta programada",
@@ -360,6 +361,7 @@
     "platform_owner_promote_target_not_found": "Plataforma: no se encontró el usuario a ascender",
     "platform_owner_promoted": "Plataforma: propietario ascendido",
     "platform_password_reset_forced": "Plataforma: restablecimiento de contraseña forzado",
+    "platform_verification_email_resent": "Plataforma: email de verificación reenviado",
     "platform_reauth_mfa_failed": "Plataforma: reautenticación MFA fallida",
     "platform_reauth_password_failed": "Plataforma: reautenticación con contraseña fallida",
     "platform_recovery_codes_regenerated": "Plataforma: códigos de respaldo regenerados",
@@ -402,6 +404,7 @@
   },
   "server": {
     "passwordResetForced": "Debes restablecer la contraseña. Se envió un email para restablecerla.",
+    "verificationEmailResent": "Email de verificación enviado.",
     "importAlreadyRolledBack": "Esta importación ya se revirtió.",
     "accountErased": "Los datos de la cuenta y sus archivos multimedia se borraron donde la retención lo permitía. Se conservan las pruebas de seguridad bajo retención legal y el registro de auditoría anonimizado.",
     "importRolledBack": "Se revirtió la estructura creada.",

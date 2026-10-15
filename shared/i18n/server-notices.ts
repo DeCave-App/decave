@@ -156,6 +156,7 @@ export const SERVER_NOTICE_CODES = [
   "auth.server.verificationEmailSent",
   "auth.server.passwordChanged",
   "admin.server.passwordResetForced",
+  "admin.server.verificationEmailResent",
   "admin.server.importAlreadyRolledBack",
   "admin.server.importRolledBack",
   "admin.server.importRolledBackPartly",

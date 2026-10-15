@@ -75,6 +75,7 @@
       "unsuspend": "Account-Sperre konnte nicht aufgehoben werden.",
       "correctAge": "Das Account-Alter konnte nicht korrigiert werden.",
       "forceReset": "Passwort-Reset konnte nicht erzwungen werden.",
+      "resendVerification": "Die Bestätigungs-E-Mail konnte nicht erneut gesendet werden.",
       "scheduleDeletion": "Account-Löschung konnte nicht geplant werden.",
       "restore": "Account konnte nicht wiederhergestellt werden.",
       "erase": "Account konnte nicht endgültig gelöscht werden.",
@@ -294,6 +295,7 @@
     "cannotSuspendSelf": "Du kannst deinen eigenen Eigentümer-Account nicht sperren.",
     "birthDateUnderage": "Das korrigierte Geburtsdatum muss zeigen, dass die Person, der der Account gehört, mindestens 18 ist.",
     "resetEmailFailed": "Die E-Mail zum Zurücksetzen des Passworts konnte nicht gesendet werden.",
+    "verificationEmailFailed": "Die Bestätigungs-E-Mail konnte nicht gesendet werden.",
     "currentMfaCodeInvalid": "Der aktuelle Authenticator- oder Wiederherstellungscode ist ungültig.",
     "dashboardRangeTooLong": "Der Dashboard-Zeitraum darf 90 Tage nicht überschreiten",
     "dashboardRangeInvalid": "Ungültiger Dashboard-Zeitraum",
@@ -333,6 +335,7 @@
     "eraseConfirmMismatch": "Gib den exakten aktuellen Benutzernamen ein, um die endgültige Löschung zu bestätigen.",
     "useChangePassword": "Nutze für deinen eigenen Account „Passwort ändern“, statt einen Reset zu erzwingen.",
     "resetNeedsVerifiedEmail": "Für einen erzwungenen Passwort-Reset ist eine bestätigte E-Mail nötig.",
+    "verificationNotNeeded": "Dieses Konto hat keine unbestätigte E-Mail-Adresse.",
     "verifyMfaBeforeReplace": "Bestätige deinen aktuellen Authenticator- oder Wiederherstellungscode, bevor du MFA ersetzt.",
     "verifyEmailBeforePromote": "Bestätige die E-Mail des Ziel-Accounts, bevor du ihn zum Eigentümer ernennst.",
     "erasureStorageFailure": "Bei der endgültigen Löschung konnten nicht alle gespeicherten Objekte gelöscht werden. Versuch den Vorgang erneut."

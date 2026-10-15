@@ -14,7 +14,6 @@ import {
 } from "../shared/discord-template";
 import "./styles/app.css";
 import { Icon, type IconName } from "./components/Icon";
-import { EmailVerificationHandoff } from "./app/components/EmailVerificationHandoff";
 import "./styles/hub-templates.css";
 import { DiscordImportReview } from "./components/studio";
 import { resolveSkin, motionReduced } from "./features/settings";
@@ -4156,7 +4155,6 @@ function App() {
         } as CSSProperties
       }
     >
-      <EmailVerificationHandoff />
       {voiceMiniPlayerVisible && activeVoiceLocation && (
         <VoiceMiniPlayer
           voiceParticipants={voiceParticipants}

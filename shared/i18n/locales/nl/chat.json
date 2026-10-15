@@ -236,6 +236,7 @@
       "birthDateMissing": "Voer de gecorrigeerde geboortedatum in.",
       "ageCorrected": "Leeftijd gecorrigeerd en leeftijdsbeperking opgeheven.",
       "resetForced": "Wachtwoordreset vereist en reset-e-mail verstuurd.",
+      "verificationResent": "Verificatie-e-mail verstuurd.",
       "deleteReasonMissing": "Voer een reden in voordat je de verwijdering inplant.",
       "erasureAvailableAfter": "Account nu uitgeschakeld. Permanent wissen is mogelijk na {{date}}.",
       "deletionScheduled": "Account ingepland voor verwijdering.",

@@ -22,7 +22,7 @@ import {
 } from "../../trust-safety";
 import { securityEvent, revokeAccountSessions, createAuthToken, activeSuspension } from "../../lib/sessions";
 import { streamerMigrationExists, streamerRevokeParticipantStatements } from "../../streamer/index.ts";
-import { sendResetEmail } from "../../lib/email";
+import { sendResetEmail, sendVerificationEmail } from "../../lib/email";
 import { userLocale } from "../../lib/i18n";
 import { ownedHubCount } from "../../lib/hubs";
 import { UNDERAGE_DELETION_REASON } from "../../retention";
@@ -399,6 +399,53 @@ export async function handleAdminAccountRoutes({ request, env, url, p, method }:
     await platformAudit(env, owner.id, "platform.account_unsuspended", request, target.id);
     await securityEvent(env, target.id, "account.unsuspended", null);
     return json({ success: true });
+  }
+
+  const adminResendVerificationMatch = p.match(/^\/api\/admin\/accounts\/([^/]+)\/resend-verification$/);
+  if (method === "POST" && adminResendVerificationMatch) {
+    const owner = await requirePlatformOwner(request, env);
+    if (owner instanceof Response) return owner;
+    const reauthError = await ownerRequireReauth(request, env, owner.id);
+    if (reauthError) return reauthError;
+
+    const target = await userByReference(env.DB, decodeURIComponent(adminResendVerificationMatch[1]));
+    if (!target) return apiError("admin.accountNotFound", 404);
+    if (target.erased_at || target.deleted_at) {
+      return apiError("admin.accountNotActive", 409);
+    }
+    if (!target.email || target.email_verified_at) {
+      return apiError("admin.verificationNotNeeded", 409);
+    }
+
+    const token = await createAuthToken(env, target.id, "verify_email", 24 * 60 * 60 * 1000);
+    try {
+      await sendVerificationEmail(
+        env,
+        target.email,
+        target.username,
+        token,
+        authBaseUrlForEnvironment(env),
+        await userLocale(env.DB, target.id),
+      );
+    } catch (error) {
+      console.error("Could not resend verification email", error instanceof Error ? error.name : "UnknownError");
+      await env.DB.prepare("UPDATE decave_auth_tokens SET consumed_at=? WHERE token_hash=? AND consumed_at IS NULL")
+        .bind(nowIso(), tokenHash(token))
+        .run();
+      return apiError("admin.verificationEmailFailed", 502);
+    }
+
+    // Only the newest link stays usable.
+    await env.DB.prepare(
+      `UPDATE decave_auth_tokens SET consumed_at=?
+       WHERE user_id=? AND purpose='verify_email' AND token_hash<>? AND consumed_at IS NULL`,
+    )
+      .bind(nowIso(), target.id, tokenHash(token))
+      .run();
+
+    await platformAudit(env, owner.id, "platform.verification_email_resent", request, target.id);
+    await securityEvent(env, target.id, "email.verification_resent", null);
+    return json({ success: true, ...serverNotice("admin.server.verificationEmailResent") });
   }
 
   const adminForceResetMatch = p.match(/^\/api\/admin\/accounts\/([^/]+)\/force-password-reset$/);

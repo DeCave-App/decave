@@ -238,6 +238,7 @@
       "birthDateMissing": "Informe a data de nascimento corrigida.",
       "ageCorrected": "Idade corrigida e restrição de idade removida.",
       "resetForced": "Redefinição de senha exigida e e-mail de redefinição enviado.",
+      "verificationResent": "E-mail de verificação enviado.",
       "deleteReasonMissing": "Informe um motivo antes de agendar a exclusão.",
       "erasureAvailableAfter": "Conta desativada agora. O apagamento permanente fica disponível após {{date}}.",
       "deletionScheduled": "Conta agendada para exclusão.",

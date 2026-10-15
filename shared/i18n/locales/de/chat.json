@@ -236,6 +236,7 @@
       "birthDateMissing": "Gib das korrigierte Geburtsdatum ein.",
       "ageCorrected": "Alter korrigiert und Altersbeschränkung aufgehoben.",
       "resetForced": "Passwort-Zurücksetzung erforderlich und E-Mail zum Zurücksetzen gesendet.",
+      "verificationResent": "Bestätigungs-E-Mail gesendet.",
       "deleteReasonMissing": "Gib einen Grund ein, bevor du die Löschung planst.",
       "erasureAvailableAfter": "Account jetzt deaktiviert. Die dauerhafte Löschung ist ab {{date}} möglich.",
       "deletionScheduled": "Account zur Löschung vorgemerkt.",

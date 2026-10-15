@@ -699,6 +699,7 @@
       "securityActions": "Security actions",
       "revokeSessions": "Revoke Sessions",
       "forceReset": "Force Password Reset",
+      "resendVerification": "Resend Verification Email",
       "ageTitle": "Age eligibility",
       "ageHint": "If the birth date was entered incorrectly, an owner can review the corrected date. It must show the account holder is at least 18.",
       "correctedBirthDate": "Corrected birth date",

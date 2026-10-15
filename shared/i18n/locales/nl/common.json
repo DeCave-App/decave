@@ -699,6 +699,7 @@
       "securityActions": "Beveiligingsacties",
       "revokeSessions": "Sessies intrekken",
       "forceReset": "Wachtwoordreset afdwingen",
+      "resendVerification": "Verificatie-e-mail opnieuw sturen",
       "ageTitle": "Leeftijdsgeschiktheid",
       "ageHint": "Als de geboortedatum verkeerd is ingevoerd, kan een eigenaar de gecorrigeerde datum beoordelen. Daaruit moet blijken dat de accounthouder minstens 18 is.",
       "correctedBirthDate": "Gecorrigeerde geboortedatum",
