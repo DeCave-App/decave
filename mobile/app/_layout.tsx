@@ -22,6 +22,7 @@ import { QuickActionsBridge } from "@/src/components/QuickActionsBridge";
 import { SystemSurfacesBridge } from "@/src/components/SystemSurfacesBridge";
 import { VoiceCallKitBridge } from "@/src/components/VoiceCallKitBridge";
 import { IosBroadcastPicker } from "@/src/components/IosBroadcastPicker";
+import { AndroidUpdateBanner } from "@/src/components/AndroidUpdateBanner";
 import { SoundboardListener } from "@/src/components/Soundboard";
 import { useSkin } from "@/src/skin";
 
@@ -60,6 +61,7 @@ export default function RootLayout() {
                   animation: "fade",
                 }}
               />
+              <AndroidUpdateBanner />
                     </DirectCallProvider>
                   </VoiceProvider>
                 </VoiceSettingsProvider>

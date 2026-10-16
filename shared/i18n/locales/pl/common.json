@@ -850,6 +850,11 @@
     "notNow": "Nie teraz",
     "allow": "Zezwól",
     "signInAgain": "Zaloguj się ponownie, aby to zmienić.",
-    "signedInElsewhere": "Na to konto zalogowano się gdzieś indziej."
+    "signedInElsewhere": "Na to konto zalogowano się gdzieś indziej.",
+    "appUpdate": {
+      "title": "Dostępna aktualizacja",
+      "body": "DeCave {{version}} jest gotowy do pobrania.",
+      "download": "Pobierz"
+    }
   }
 }

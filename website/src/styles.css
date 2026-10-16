@@ -381,6 +381,23 @@ p {
   gap: 12px;
 }
 
+.hero-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.hero-platform-note {
+  color: var(--text-3);
+  font-size: 0.82em;
+  font-weight: 600;
+}
+
+.hero-platforms .btn svg {
+  flex-shrink: 0;
+}
+
 .hero-sub {
   color: var(--text-3);
   font-size: 0.92rem;
@@ -690,7 +707,7 @@ p {
 
 .download-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -1520,6 +1537,13 @@ p {
   .hero-actions,
   .hero-actions .btn {
     width: 100%;
+  }
+
+  .hero-platforms .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 6px;
+    padding: 0 10px;
   }
 
   .window-bar span {

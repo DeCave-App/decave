@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
   Linking,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -12,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
+import { AuthScroll } from "@/src/components/AuthScroll";
 import { TurnstileModal } from "@/src/components/TurnstileModal";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
@@ -26,6 +26,7 @@ export default function LoginScreen() {
   const [turnstileOpen, setTurnstileOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const passwordRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (pendingMfa) {
@@ -75,7 +76,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <AuthScroll contentContainerStyle={styles.scroll}>
         <View style={styles.box}>
           <View style={styles.brand}>
             <Image source={require("../../assets/decave-mark.png")} style={styles.mark} />
@@ -100,15 +101,21 @@ export default function LoginScreen() {
             autoComplete="email"
             autoCapitalize="none"
             autoCorrect={false}
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => passwordRef.current?.focus()}
             style={styles.input}
           />
           <TextInput
+            ref={passwordRef}
             value={password}
             onChangeText={setPassword}
             placeholder={t("common.auth.password")}
             placeholderTextColor={colors.faint}
             secureTextEntry
             autoCapitalize="none"
+            returnKeyType="go"
+            onSubmitEditing={() => { if (!working) beginLogin(); }}
             style={styles.input}
           />
 
@@ -153,7 +160,7 @@ export default function LoginScreen() {
             />
           </Text>
         </View>
-      </ScrollView>
+      </AuthScroll>
 
       <TurnstileModal
         visible={turnstileOpen}

@@ -326,6 +326,7 @@
       "idPending": "L'Hub ha accettato il messaggio, ma il suo ID non è ancora arrivato. Riprova dopo la riconnessione.",
       "searchUnavailable": "La ricerca non è disponibile al momento. Riprova tra un attimo.",
       "confirmDelete": "Vuoi eliminare questo messaggio?",
+      "confirmDeleteBody": "Il messaggio verrà rimosso per tutti nella stanza. L'operazione non può essere annullata.",
       "confirmDeleteAsOwner": "Vuoi eliminare il messaggio di {{username}} come proprietario?",
       "confirmDeleteAsAdmin": "Vuoi eliminare il messaggio di {{username}} come admin?",
       "confirmDeleteAsMember": "Vuoi eliminare il messaggio di {{username}} come membro?",

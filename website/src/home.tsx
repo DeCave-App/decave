@@ -16,11 +16,14 @@ import {
   MonitorUp,
   RefreshCw,
   ShieldCheck,
+  Smartphone,
   X,
 } from "lucide-react";
 import { FaqList, roadmap } from "./pages";
 import {
+  ANDROID_APK_URL,
   APP_VERSION,
+  IOS_TESTFLIGHT_URL,
   MAC_APPLE_SILICON_URL,
   SECURITY_EMAIL,
   SUPPORT_EMAIL,
@@ -153,7 +156,7 @@ function Hero({ onOpen }: { onOpen: (screen: Screen) => void }) {
     <section className="hero">
       <div className="hero-copy">
         <a className="pill" href="/roadmap">
-          <span className="pill-dot" aria-hidden="true" /> Alpha · Release {APP_VERSION} · Web, Mac & Windows
+          <span className="pill-dot" aria-hidden="true" /> Alpha · Release {APP_VERSION} · Web, desktop & mobile
         </a>
         <h1>
           Where your squad <span className="grad">hangs out</span> between matches.
@@ -168,6 +171,14 @@ function Hero({ onOpen }: { onOpen: (screen: Screen) => void }) {
           </a>
           <a className="btn btn-ghost btn-lg" href={WINDOWS_DOWNLOAD_URL}>
             <Download size={17} aria-hidden="true" /> Download for Windows
+          </a>
+        </div>
+        <div className="hero-platforms" aria-label="Mobile apps">
+          <a className="btn btn-ghost" href={IOS_TESTFLIGHT_URL}>
+            <Apple size={16} aria-hidden="true" /> iPhone <span className="hero-platform-note">TestFlight beta</span>
+          </a>
+          <a className="btn btn-ghost" href={ANDROID_APK_URL}>
+            <Smartphone size={16} aria-hidden="true" /> Android <span className="hero-platform-note">APK beta</span>
           </a>
         </div>
         <p className="hero-sub">
@@ -410,6 +421,26 @@ function Downloads() {
           <small>
             The Windows installer is not code-signed yet, so SmartScreen may warn you. Choose More info → Run anyway if
             you downloaded it from downloads.de-cave.com.
+          </small>
+        </article>
+        <article className="download">
+          <div className="download-title">
+            <Smartphone size={26} aria-hidden="true" />
+            <span className="badge-warn">Beta</span>
+          </div>
+          <h3>iPhone and Android</h3>
+          <p>Voice rooms, Hubs and DMs on your phone. Beta builds, updated often.</p>
+          <div className="download-split">
+            <a className="btn btn-ghost" href={IOS_TESTFLIGHT_URL}>
+              <Apple size={15} aria-hidden="true" /> iPhone (TestFlight)
+            </a>
+            <a className="btn btn-ghost" href={ANDROID_APK_URL}>
+              <Download size={15} aria-hidden="true" /> Android (.apk)
+            </a>
+          </div>
+          <small>
+            iPhone: install Apple’s TestFlight app, then open the link. Android: open the downloaded file and allow your
+            browser to install apps when asked. The app tells you when a new version is out.
           </small>
         </article>
       </div>

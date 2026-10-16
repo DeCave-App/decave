@@ -321,6 +321,7 @@
       "idPending": "The Hub accepted the message, but its message ID has not arrived yet. Try again after reconnecting.",
       "searchUnavailable": "Search is unavailable right now. Try again in a moment.",
       "confirmDelete": "Delete this message?",
+      "confirmDeleteBody": "This removes the message for everyone in the room. This cannot be undone.",
       "confirmDeleteAsOwner": "Delete {{username}}'s message as owner?",
       "confirmDeleteAsAdmin": "Delete {{username}}'s message as admin?",
       "confirmDeleteAsMember": "Delete {{username}}'s message as member?",

@@ -27,9 +27,11 @@ export function KeyboardAware({ style, children }: PropsWithChildren<{ style?: S
     const onShow = (event: KeyboardEvent) => {
       const keyboardTop = event.endCoordinates.screenY;
       ref.current?.measureInWindow((_x, y, _width, height) => {
-        // Measure without our own padding, which is part of the measured height.
+        // flex: 1 fixes this view's outer size, so our padding never changes
+        // its measured bottom. (Subtracting the padding here reset it to 0 on
+        // the second event while open, e.g. a keyboard changing height.)
         setInset((current) => {
-          const bottom = y + height - current;
+          const bottom = y + height;
           const next = Math.max(0, Math.round(bottom - keyboardTop));
           if (next !== current) animate(event);
           return next;

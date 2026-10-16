@@ -841,6 +841,11 @@
     "notNow": "Non ora",
     "allow": "Consenti",
     "signInAgain": "Accedi di nuovo per modificarlo.",
-    "signedInElsewhere": "È stato effettuato l'accesso a questo account da un altro dispositivo."
+    "signedInElsewhere": "È stato effettuato l'accesso a questo account da un altro dispositivo.",
+    "appUpdate": {
+      "title": "Aggiornamento disponibile",
+      "body": "DeCave {{version}} è pronto per il download.",
+      "download": "Scarica"
+    }
   }
 }

@@ -135,6 +135,7 @@
       "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"]
     },
     "plugins": [
+      "./plugins/withAndroidReleaseGuards",
       "expo-router",
       "expo-dev-client",
       [
@@ -170,6 +171,7 @@
       "expo-font",
       "expo-audio",
       "expo-quick-actions",
+      "./plugins/withoutAndroidCallKeep",
       "@config-plugins/react-native-callkeep",
       "./plugins/withSceneDelegate",
       "@bacons/apple-targets",

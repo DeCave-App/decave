@@ -919,22 +919,21 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     }
   };
 
+  // Title of the in-app confirm dialog; names the role when deleting someone else's message.
+  const deleteMessageConfirmTitle = (message: ChatMessage) =>
+    message.userId === currentUser?.id
+      ? i18next.t("chat.actions.message.confirmDelete")
+      : currentServer.myRole === "owner"
+        ? i18next.t("chat.actions.message.confirmDeleteAsOwner", { username: message.username })
+        : currentServer.myRole === "admin"
+          ? i18next.t("chat.actions.message.confirmDeleteAsAdmin", { username: message.username })
+          : currentServer.myRole === "member"
+            ? i18next.t("chat.actions.message.confirmDeleteAsMember", { username: message.username })
+            : i18next.t("chat.actions.message.confirmDeleteAsModerator", { username: message.username });
+
+  // Caller confirms first (HubMessageList shows the dialog).
   const deleteMessage = async (message: ChatMessage) => {
     if (!canDeleteMessage(message)) return;
-
-    const deletingOwnMessage = message.userId === currentUser?.id;
-    const confirmed = window.confirm(
-      deletingOwnMessage
-        ? i18next.t("chat.actions.message.confirmDelete")
-        : currentServer.myRole === "owner"
-          ? i18next.t("chat.actions.message.confirmDeleteAsOwner", { username: message.username })
-          : currentServer.myRole === "admin"
-            ? i18next.t("chat.actions.message.confirmDeleteAsAdmin", { username: message.username })
-            : currentServer.myRole === "member"
-              ? i18next.t("chat.actions.message.confirmDeleteAsMember", { username: message.username })
-              : i18next.t("chat.actions.message.confirmDeleteAsModerator", { username: message.username }),
-    );
-    if (!confirmed) return;
 
     try {
       const response = await authorizedFetch(
@@ -985,6 +984,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     startEditMessage,
     searchMessages,
     deleteMessage,
+    deleteMessageConfirmTitle,
   };
 }
 

@@ -1,10 +1,10 @@
 // The "Saved · Undo" toast at the bottom of Settings. One at a time; each new
-// message replaces the last and stays for six seconds.
+// message replaces the last and stays for three seconds.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSettingsT } from "./useSettingsT";
 
-export const SETTINGS_TOAST_MS = 6000;
+export const SETTINGS_TOAST_MS = 3000;
 
 type Toast = { id: number; messageKey: string; undo?: () => void };
 

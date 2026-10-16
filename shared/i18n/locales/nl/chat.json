@@ -321,6 +321,7 @@
       "idPending": "De Hub heeft het bericht geaccepteerd, maar de bericht-ID is nog niet binnen. Probeer het opnieuw nadat de verbinding is hersteld.",
       "searchUnavailable": "Zoeken is nu niet beschikbaar. Probeer het zo opnieuw.",
       "confirmDelete": "Dit bericht verwijderen?",
+      "confirmDeleteBody": "Het bericht wordt voor iedereen in de ruimte verwijderd. Dit kan niet ongedaan worden gemaakt.",
       "confirmDeleteAsOwner": "Bericht van {{username}} verwijderen als eigenaar?",
       "confirmDeleteAsAdmin": "Bericht van {{username}} verwijderen als beheerder?",
       "confirmDeleteAsMember": "Bericht van {{username}} verwijderen als lid?",

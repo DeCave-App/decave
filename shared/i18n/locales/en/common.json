@@ -832,6 +832,11 @@
     "notNow": "Not now",
     "allow": "Allow",
     "signInAgain": "Sign in again to change this.",
-    "signedInElsewhere": "This account was signed in somewhere else."
+    "signedInElsewhere": "This account was signed in somewhere else.",
+    "appUpdate": {
+      "title": "Update available",
+      "body": "DeCave {{version}} is ready to download.",
+      "download": "Download"
+    }
   }
 }

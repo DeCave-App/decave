@@ -331,6 +331,7 @@
       "idPending": "Hub przyjął wiadomość, ale jej ID jeszcze nie dotarło. Spróbuj ponownie po ponownym połączeniu.",
       "searchUnavailable": "Wyszukiwanie jest teraz niedostępne. Spróbuj za chwilę.",
       "confirmDelete": "Usunąć tę wiadomość?",
+      "confirmDeleteBody": "Wiadomość zostanie usunięta dla wszystkich w pokoju. Tej operacji nie można cofnąć.",
       "confirmDeleteAsOwner": "Usunąć wiadomość użytkownika {{username}} jako właściciel?",
       "confirmDeleteAsAdmin": "Usunąć wiadomość użytkownika {{username}} jako admin?",
       "confirmDeleteAsMember": "Usunąć wiadomość użytkownika {{username}} jako członek?",

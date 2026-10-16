@@ -841,6 +841,11 @@
     "notNow": "Pas maintenant",
     "allow": "Autoriser",
     "signInAgain": "Reconnecte-toi pour modifier ça.",
-    "signedInElsewhere": "Ce compte s'est connecté ailleurs."
+    "signedInElsewhere": "Ce compte s'est connecté ailleurs.",
+    "appUpdate": {
+      "title": "Mise à jour disponible",
+      "body": "DeCave {{version}} est prêt à être téléchargé.",
+      "download": "Télécharger"
+    }
   }
 }

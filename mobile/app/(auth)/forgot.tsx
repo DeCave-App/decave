@@ -3,13 +3,13 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { router } from "expo-router";
+import { AuthScroll } from "@/src/components/AuthScroll";
 import { TurnstileModal } from "@/src/components/TurnstileModal";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
@@ -35,7 +35,7 @@ export default function ForgotScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <AuthScroll contentContainerStyle={styles.scroll}>
         <View style={styles.box}>
           <View style={styles.brand}>
             <Image source={require("../../assets/decave-mark.png")} style={styles.mark} />
@@ -57,6 +57,8 @@ export default function ForgotScreen() {
             placeholderTextColor={colors.faint}
             keyboardType="email-address"
             autoCapitalize="none"
+            returnKeyType="send"
+            onSubmitEditing={() => { if (!working && email.trim()) setTurnstileOpen(true); }}
             style={styles.input}
           />
 
@@ -79,7 +81,7 @@ export default function ForgotScreen() {
             <Text style={styles.secondaryText}>{t("auth.mobile.register.backToSignIn")}</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </AuthScroll>
 
       <TurnstileModal
         visible={turnstileOpen}

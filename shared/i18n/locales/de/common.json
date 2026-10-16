@@ -832,6 +832,11 @@
     "notNow": "Nicht jetzt",
     "allow": "Erlauben",
     "signInAgain": "Melde dich erneut an, um das zu ändern.",
-    "signedInElsewhere": "Dieser Account wurde woanders angemeldet."
+    "signedInElsewhere": "Dieser Account wurde woanders angemeldet.",
+    "appUpdate": {
+      "title": "Update verfügbar",
+      "body": "DeCave {{version}} steht zum Download bereit.",
+      "download": "Herunterladen"
+    }
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "decave",
   "private": true,
-  "version": "0.1.157",
+  "version": "0.1.158",
   "description": "DeCave gaming chat and voice desktop client",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
@@ -48,7 +48,8 @@
     "release:public-source": "node scripts/release/sync-public-source.mjs",
     "desktop:dir:mac": "npm run build:web && electron-builder --mac --dir",
     "desktop:build:mac": "npm run build:web && electron-builder --mac dmg zip --arm64 --x64",
-    "release:upload:mac": "npm run publication:check && node website/scripts/upload-release-mac.mjs"
+    "release:upload:mac": "npm run publication:check && node website/scripts/upload-release-mac.mjs",
+    "release:upload:android": "npm run publication:check && node website/scripts/upload-release-android.mjs"
   },
   "dependencies": {
     "@noble/ciphers": "^2.4.0",

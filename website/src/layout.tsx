@@ -12,6 +12,9 @@ export const WEB_APP_URL = "https://app.de-cave.com";
 export const WINDOWS_DOWNLOAD_URL = "https://downloads.de-cave.com/DeCave-Setup.exe";
 export const MAC_APPLE_SILICON_URL = "https://downloads.de-cave.com/DeCave-Mac-arm64.dmg";
 export const MAC_INTEL_URL = "https://downloads.de-cave.com/DeCave-Mac-x64.dmg";
+// website/scripts/upload-release-android.mjs refreshes the APK on every Android release.
+export const ANDROID_APK_URL = "https://downloads.de-cave.com/DeCave.apk";
+export const IOS_TESTFLIGHT_URL = "https://testflight.apple.com/join/eGj1eyTM";
 export const SUPPORT_EMAIL = "support@de-cave.com";
 export const SECURITY_EMAIL = "security@de-cave.com";
 

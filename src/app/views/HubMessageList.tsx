@@ -1,5 +1,7 @@
 // Message list of a Hub text room.
 
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { BotBadge } from "../../features/bot-cards";
 import { messageBotFields } from "../../../shared/bots/card-view";
@@ -76,7 +78,9 @@ export function HubMessageList({
     togglePinMessage,
     startEditMessage,
     deleteMessage,
+    deleteMessageConfirmTitle,
   } = hubChat;
+  const [pendingDelete, setPendingDelete] = useState<ChatMessage | null>(null);
   const { setReplyingTo, setEditingMessage, setMessageInput, setPendingAttachment } = composer;
   return (
     <div
@@ -315,7 +319,7 @@ export function HubMessageList({
                 {canDeleteMessage(item) && (
                   <button
                     type="button"
-                    onClick={() => void deleteMessage(item)}
+                    onClick={() => setPendingDelete(item)}
                     title={
                       item.userId === currentUser.id && !author
                         ? t("chat.messages.deleteOwn")
@@ -388,6 +392,32 @@ export function HubMessageList({
           </div>
         ))}
       <div ref={messagesEndRef} />
+      {pendingDelete &&
+        createPortal(
+          <div className="modal-overlay" onClick={() => setPendingDelete(null)}>
+            <div className="modal" onClick={(event) => event.stopPropagation()} style={{ width: "min(440px, 92vw)" }}>
+              <h2>{deleteMessageConfirmTitle(pendingDelete)}</h2>
+              <p>{t("chat.actions.message.confirmDeleteBody")}</p>
+              <div className="modal-buttons ds-modal-actions">
+                <button type="button" className="ds-btn" onClick={() => setPendingDelete(null)}>
+                  {t("common.actions.cancel")}
+                </button>
+                <button
+                  type="button"
+                  className="ds-btn ds-btn-danger"
+                  onClick={() => {
+                    const message = pendingDelete;
+                    setPendingDelete(null);
+                    void deleteMessage(message);
+                  }}
+                >
+                  {t("chat.social.deleteDmConfirm")}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

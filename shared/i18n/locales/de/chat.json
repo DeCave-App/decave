@@ -321,6 +321,7 @@
       "idPending": "Der Hub hat die Nachricht angenommen, aber ihre Nachrichten-ID ist noch nicht angekommen. Versuch es nach dem Neuverbinden erneut.",
       "searchUnavailable": "Die Suche ist gerade nicht verfügbar. Versuch es gleich noch mal.",
       "confirmDelete": "Diese Nachricht löschen?",
+      "confirmDeleteBody": "Die Nachricht wird für alle im Raum entfernt. Das kann nicht rückgängig gemacht werden.",
       "confirmDeleteAsOwner": "Nachricht von {{username}} als Eigentümer löschen?",
       "confirmDeleteAsAdmin": "Nachricht von {{username}} als Admin löschen?",
       "confirmDeleteAsMember": "Nachricht von {{username}} als Mitglied löschen?",

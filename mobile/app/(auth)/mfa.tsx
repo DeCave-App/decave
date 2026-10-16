@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import {
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { router } from "expo-router";
+import { AuthScroll } from "@/src/components/AuthScroll";
 import { useSession } from "@/src/providers/SessionProvider";
 import { colors } from "@/src/theme";
 import { useTranslation } from "react-i18next";
@@ -44,7 +44,7 @@ export default function MfaScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <AuthScroll contentContainerStyle={styles.scroll}>
         <View style={styles.box}>
           <View style={styles.brand}>
             <Image source={require("../../assets/decave-mark.png")} style={styles.mark} />
@@ -79,7 +79,7 @@ export default function MfaScreen() {
             <Text style={styles.buttonText}>{busy ? t("common.status.checking") : isUser ? t("common.actions.continue") : t("auth.mobile.mfa.verifyEnter")}</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </AuthScroll>
     </View>
   );
 }

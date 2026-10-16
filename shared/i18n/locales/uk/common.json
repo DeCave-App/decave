@@ -850,6 +850,11 @@
     "notNow": "Не зараз",
     "allow": "Дозволити",
     "signInAgain": "Увійди знову, щоб це змінити.",
-    "signedInElsewhere": "У цей акаунт увійшли деінде."
+    "signedInElsewhere": "У цей акаунт увійшли деінде.",
+    "appUpdate": {
+      "title": "Доступне оновлення",
+      "body": "DeCave {{version}} готовий до завантаження.",
+      "download": "Завантажити"
+    }
   }
 }

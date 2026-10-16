@@ -326,6 +326,7 @@
       "idPending": "O Hub aceitou a mensagem, mas o ID dela ainda não chegou. Tente de novo depois de reconectar.",
       "searchUnavailable": "A busca está indisponível agora. Tente de novo em instantes.",
       "confirmDelete": "Excluir esta mensagem?",
+      "confirmDeleteBody": "A mensagem será removida para todos na sala. Isso não pode ser desfeito.",
       "confirmDeleteAsOwner": "Excluir a mensagem de {{username}} como dono?",
       "confirmDeleteAsAdmin": "Excluir a mensagem de {{username}} como admin?",
       "confirmDeleteAsMember": "Excluir a mensagem de {{username}} como membro?",

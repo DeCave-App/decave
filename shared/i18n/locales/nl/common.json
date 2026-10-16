@@ -832,6 +832,11 @@
     "notNow": "Niet nu",
     "allow": "Toestaan",
     "signInAgain": "Log opnieuw in om dit te wijzigen.",
-    "signedInElsewhere": "Dit account is ergens anders ingelogd."
+    "signedInElsewhere": "Dit account is ergens anders ingelogd.",
+    "appUpdate": {
+      "title": "Update beschikbaar",
+      "body": "DeCave {{version}} staat klaar om te downloaden.",
+      "download": "Downloaden"
+    }
   }
 }
