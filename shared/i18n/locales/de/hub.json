@@ -1317,7 +1317,8 @@
       "noVoiceRoomsInThis": "Keine Sprachräume in diesem Hub.",
       "pickARoomToStart": "Wähle einen Raum, um loszuchatten",
       "onlineMembers": "{{online}} online · {{count}} Mitglieder",
-      "withRole": "{{summary}} · {{role}}"
+      "withRole": "{{summary}} · {{role}}",
+      "couldNotLeave": "Der Hub konnte nicht verlassen werden."
     },
     "hubAdmin": {
       "hubSettingsUpdated": "Hub-Einstellungen aktualisiert.",
@@ -1436,7 +1437,8 @@
       "recentEvents_other": "{{count}} aktuelle Ereignisse",
       "mediaCurrent": "Aktuell: {{item}}",
       "mediaRemove": "{{item}} entfernen",
-      "mediaShow": "{{item}} anzeigen"
+      "mediaShow": "{{item}} anzeigen",
+      "deleteHubFailed": "Der Hub konnte nicht gelöscht werden."
     },
     "join": {
       "couldnTUseThisInvite": "Diese Einladung konnte nicht genutzt werden.",

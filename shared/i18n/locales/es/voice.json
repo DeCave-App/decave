@@ -140,7 +140,9 @@
       "encrypted": "Cifrado",
       "encryptedPing": "Cifrado · {{ping}} ms",
       "rejoining": "Volviendo a unirte a esta sala…",
-      "rejoiningAttempt": "Volviendo a unirte a esta sala (intento {{attempt}}/3)…"
+      "rejoiningAttempt": "Volviendo a unirte a esta sala (intento {{attempt}}/3)…",
+      "holdToTalk": "Mantén para hablar",
+      "talking": "Hablando…"
     },
     "rejoin": "Volver a la voz",
     "bar": {

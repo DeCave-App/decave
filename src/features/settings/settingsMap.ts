@@ -126,6 +126,7 @@ export const SETTINGS_ANCHORS: SettingsAnchor[] = [
   anchor("spoilers", "chat", "spoilers"),
   anchor("spellcheck", "chat", "spellcheck"),
   anchor("skin", "appearance", "skin", true),
+  anchor("glass", "appearance", "glass", true),
   anchor("theme-mode", "appearance", "themeMode", true),
   anchor("text-size", "appearance", "textSize", true),
   anchor("readability", "appearance", "readability", true),

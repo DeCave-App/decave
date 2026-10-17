@@ -140,7 +140,9 @@
       "encrypted": "Crittografata",
       "encryptedPing": "Crittografata · {{ping}} ms",
       "rejoining": "Rientro in questa stanza…",
-      "rejoiningAttempt": "Rientro in questa stanza (tentativo {{attempt}}/3)…"
+      "rejoiningAttempt": "Rientro in questa stanza (tentativo {{attempt}}/3)…",
+      "holdToTalk": "Tieni premuto per parlare",
+      "talking": "Stai parlando…"
     },
     "rejoin": "Rientra in vocale",
     "bar": {

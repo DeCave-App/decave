@@ -17,13 +17,14 @@ import { colors } from "@/src/theme";
 import { Avatar } from "@/src/components/Avatar";
 import { StatusIcon, InlineToggle, QualityButton, MoreItem, VoiceControl, ActionButton, VolumeStepper } from "@/src/components/voice-room/VoiceRoomControls";
 import { RTCView } from "react-native-webrtc";
+import { mirrorForFacing } from "@/src/lib/camera-facing";
 import { impactHaptic, tapHaptic } from "@/src/lib/haptics";
 import { SoundboardSheet } from "@/src/components/Soundboard";
 import { useSpeakerRoute } from "@/src/hooks/useSpeakerRoute";
 import { useTranslation } from "react-i18next";
 
 export default function VoiceRoomScreen() {
-  const { t } = useTranslation(["voice", "common", "hub"]);
+  const { t } = useTranslation(["voice", "common", "hub", "dm"]);
   const params = useLocalSearchParams<{
     id: string;
     hubId?: string;
@@ -60,6 +61,8 @@ export default function VoiceRoomScreen() {
     screenSharing,
     cameraSharing,
     localCameraStream,
+    cameraFacing,
+    flipCamera,
     screenShareError,
     remoteVideos,
     locallyMutedUserIds,
@@ -70,6 +73,7 @@ export default function VoiceRoomScreen() {
     leaveVoice,
     toggleMute,
     toggleDeafen,
+    setPushToTalkHeld,
     startCamera,
     stopCamera,
     startScreenShare,
@@ -556,11 +560,21 @@ export default function VoiceRoomScreen() {
               {connected && localCameraStream && (
                 <View style={styles.videoCard}>
                   <RTCView
+                    key={localCameraStream.toURL()}
                     streamURL={localCameraStream.toURL()}
                     style={styles.video}
                     objectFit="cover"
-                    mirror
+                    mirror={mirrorForFacing(cameraFacing)}
                   />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("dm.mobile.call.switchCamera")}
+                    hitSlop={8}
+                    style={styles.flipCameraButton}
+                    onPress={() => { tapHaptic(); void flipCamera(); }}
+                  >
+                    <Ionicons name="camera-reverse-outline" size={20} color="#fff" />
+                  </Pressable>
                   <View style={styles.videoFooter}>
                     <View style={styles.videoNameRow}>
                       <Ionicons name="videocam-outline" size={14} color={colors.cyan} />
@@ -741,6 +755,13 @@ export default function VoiceRoomScreen() {
               else void startScreenShare();
             }}
           />
+          {cameraSharing && (
+            <MoreItem
+              icon="camera-reverse-outline"
+              label={t("dm.mobile.call.switchCamera")}
+              onPress={() => { setMoreOpen(false); void flipCamera(); }}
+            />
+          )}
           {!!Number(params.hubId) && (
             <MoreItem icon="musical-notes-outline" label={t("voice.mobile.room.soundboard")} onPress={() => { setMoreOpen(false); setSoundboardOpen(true); }} />
           )}
@@ -752,6 +773,9 @@ export default function VoiceRoomScreen() {
         </View>
       )}
 
+      {connected && settings.pushToTalk && (
+        <PushToTalkButton disabled={muted || serverMuted} onHeld={setPushToTalkHeld} />
+      )}
       <View style={styles.controls}>
         {connected ? (
           <View style={styles.voiceControls}>
@@ -1050,5 +1074,39 @@ export default function VoiceRoomScreen() {
         onSubmitted={() => setTimeout(() => setReportTarget(null), 900)}
       />
     </Screen>
+  );
+}
+
+/** Push to talk: the mic sends only while this is held (and not muted). */
+function PushToTalkButton({ disabled, onHeld }: { disabled: boolean; onHeld: (held: boolean) => void }) {
+  const { t } = useTranslation(["voice"]);
+  const [held, setHeld] = useState(false);
+  const set = (next: boolean) => {
+    setHeld(next);
+    onHeld(next);
+  };
+  // Never leave the mic open if the screen goes away mid-press. A ref, because
+  // the provider hands out a new callback whenever voice state changes.
+  const onHeldRef = useRef(onHeld);
+  onHeldRef.current = onHeld;
+  useEffect(() => () => onHeldRef.current(false), []);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled, selected: held }}
+      accessibilityLabel={t("voice.mobile.room.holdToTalk")}
+      disabled={disabled}
+      onPressIn={() => {
+        impactHaptic();
+        set(true);
+      }}
+      onPressOut={() => set(false)}
+      style={[styles.pushToTalk, held && styles.pushToTalkHeld, disabled && { opacity: 0.45 }]}
+    >
+      <Ionicons name={held ? "mic" : "mic-outline"} size={22} color={held ? "#061018" : colors.text} />
+      <Text style={[styles.pushToTalkText, held && { color: "#061018" }]}>
+        {held ? t("voice.mobile.room.talking") : t("voice.mobile.room.holdToTalk")}
+      </Text>
+    </Pressable>
   );
 }

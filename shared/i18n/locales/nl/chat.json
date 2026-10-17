@@ -1040,7 +1040,6 @@
       "pinnedMessages": "Vastgepinde berichten",
       "returnToVoiceControls": "Terug naar spraakbediening",
       "voiceAndMessagesLiveTogether": "Spraak en berichten zitten samen in dit kanaal.",
-      "noPostsInThisForum": "Nog geen posts in dit forum.",
       "thisIsTheBeginningOf": "Dit is het begin van dit tekstkanaal.",
       "longPressForMessageActions": "Houd ingedrukt voor berichtacties",
       "pinned": "Vastgepind",
@@ -1050,9 +1049,7 @@
       "severalPeopleAreTyping": "Meerdere mensen typen…",
       "editingMessage": "Bericht bewerken",
       "replyingToNameValue": "Antwoord aan {{name}}: {{value}}",
-      "longPressAPostTo": "Houd een post ingedrukt om te antwoorden. Nieuwe forumposts kun je starten op desktop of web.",
       "addPhotoVideoOrGif": "Foto, video of gif toevoegen",
-      "writeAReply": "Schrijf een antwoord",
       "messageName": "Bericht in #{{name}}",
       "couldNotUpdateMute": "Kan demping niet bijwerken",
       "unmuteUsername": "Dempen van {{username}} opheffen",
@@ -1063,7 +1060,11 @@
       "reactedByYou": "{{emoji}} {{count}}, jij hebt gereageerd",
       "newCount": "{{number}} nieuw",
       "isTyping": "{{name}} typt…",
-      "twoTyping": "{{first}} en {{second}} typen…"
+      "twoTyping": "{{first}} en {{second}} typen…",
+      "couldNotSendSticker": "Kon sticker niet versturen",
+      "couldNotSendPoll": "Kon poll niet versturen",
+      "muteRoom": "Ruimte dempen",
+      "unmuteRoom": "Ruimte niet meer dempen"
     },
     "finder": {
       "searchFailed": "Zoeken mislukt.",
@@ -1083,7 +1084,8 @@
       "cameraOff": "Cameratoegang staat uit voor DeCave. Zet het aan in Instellingen.",
       "photosOff": "Fototoegang staat uit voor DeCave. Zet het aan in Instellingen.",
       "tooLarge": "Bijlagen mogen maximaal 25 MB zijn.",
-      "uploadFailed": "Kan de bijlage niet uploaden."
+      "uploadFailed": "Kan de bijlage niet uploaden.",
+      "poll": "Peiling"
     },
     "preview": {
       "mine": "Je bericht: {{body}}",

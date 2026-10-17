@@ -1040,7 +1040,6 @@
       "pinnedMessages": "Angepinnte Nachrichten",
       "returnToVoiceControls": "Zurück zur Sprachsteuerung",
       "voiceAndMessagesLiveTogether": "In diesem Raum gibt es Voice und Nachrichten zusammen.",
-      "noPostsInThisForum": "Noch keine Beiträge in diesem Forum.",
       "thisIsTheBeginningOf": "Das ist der Anfang dieses Textraums.",
       "longPressForMessageActions": "Lange drücken für Nachrichtenaktionen",
       "pinned": "Angepinnt",
@@ -1050,9 +1049,7 @@
       "severalPeopleAreTyping": "Mehrere Leute tippen …",
       "editingMessage": "Nachricht wird bearbeitet",
       "replyingToNameValue": "Antwort an {{name}}: {{value}}",
-      "longPressAPostTo": "Drück lange auf einen Beitrag, um zu antworten. Neue Forenbeiträge kannst du am Desktop oder im Web starten.",
       "addPhotoVideoOrGif": "Foto, Video oder GIF hinzufügen",
-      "writeAReply": "Antwort schreiben",
       "messageName": "Nachricht an #{{name}}",
       "couldNotUpdateMute": "Stummschaltung konnte nicht aktualisiert werden",
       "unmuteUsername": "Stummschaltung für {{username}} aufheben",
@@ -1063,7 +1060,11 @@
       "reactedByYou": "{{emoji}} {{count}}, du hast reagiert",
       "newCount": "{{number}} neu",
       "isTyping": "{{name}} tippt …",
-      "twoTyping": "{{first}} und {{second}} tippen …"
+      "twoTyping": "{{first}} und {{second}} tippen …",
+      "couldNotSendSticker": "Sticker konnte nicht gesendet werden",
+      "couldNotSendPoll": "Umfrage konnte nicht gesendet werden",
+      "muteRoom": "Raum stummschalten",
+      "unmuteRoom": "Stummschaltung des Raums aufheben"
     },
     "finder": {
       "searchFailed": "Suche fehlgeschlagen.",
@@ -1083,7 +1084,8 @@
       "cameraOff": "Der Kamerazugriff für DeCave ist aus. Schalte ihn in den Einstellungen ein.",
       "photosOff": "Der Fotozugriff für DeCave ist aus. Schalte ihn in den Einstellungen ein.",
       "tooLarge": "Anhänge dürfen bis zu 25 MB groß sein.",
-      "uploadFailed": "Der Anhang konnte nicht hochgeladen werden."
+      "uploadFailed": "Der Anhang konnte nicht hochgeladen werden.",
+      "poll": "Umfrage"
     },
     "preview": {
       "mine": "Deine Nachricht: {{body}}",

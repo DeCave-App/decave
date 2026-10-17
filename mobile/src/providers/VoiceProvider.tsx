@@ -23,6 +23,7 @@ import {
 import { apiJson } from "@/src/lib/api";
 import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "@/src/lib/rtc-relay";
 import { createCameraAdvertWaiter } from "@/src/lib/voice-camera-advert";
+import { type CameraFacing, flipCameraTrack, trackFacing } from "@/src/lib/camera-facing";
 import { realtimeMessage } from "@/src/lib/server-text";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useSession } from "@/src/providers/SessionProvider";
@@ -102,6 +103,8 @@ type VoiceContextValue = {
   cameraSharing: boolean;
   /** This device's own camera while it is shared, for the self view. */
   localCameraStream: MediaStream | null;
+  /** Which camera the shared camera is using. */
+  cameraFacing: CameraFacing;
   screenShareError: string;
   remoteVideos: Record<string, RemoteVoiceVideo>;
   locallyMutedUserIds: string[];
@@ -114,8 +117,12 @@ type VoiceContextValue = {
   leaveVoice: () => void;
   toggleMute: () => void;
   toggleDeafen: () => void;
+  /** Push to talk: true while "Hold to talk" is pressed. */
+  setPushToTalkHeld: (held: boolean) => void;
   startCamera: () => Promise<boolean>;
   stopCamera: () => void;
+  /** Switch the shared camera between front and back. */
+  flipCamera: () => Promise<void>;
   startScreenShare: () => Promise<boolean>;
   stopScreenShare: () => void;
   toggleLocalUserMute: (userId: string) => void;
@@ -205,6 +212,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
   const [screenSharing, setScreenSharing] = useState(false);
   const [cameraSharing, setCameraSharing] = useState(false);
   const [localCameraStream, setLocalCameraStream] = useState<MediaStream | null>(null);
+  const [cameraFacing, setCameraFacing] = useState<CameraFacing>("user");
   const [cameraAdvert] = useState(createCameraAdvertWaiter);
   const [screenShareError, setScreenShareError] = useState("");
   const [remoteVideos, setRemoteVideos] = useState<Record<string, RemoteVoiceVideo>>({});
@@ -218,6 +226,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const localCameraStreamRef = useRef<MediaStream | null>(null);
   const cameraStartInFlightRef = useRef(false);
+  const cameraFlipInFlightRef = useRef(false);
   const localScreenStreamRef = useRef<MediaStream | null>(null);
   const peerSessionsRef = useRef<Map<string, PeerSession>>(new Map());
   const iceServersRef = useRef<IceServer[]>([]);
@@ -243,6 +252,8 @@ export function VoiceProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     voiceSettingsRef.current = voiceSettings;
+    // Turning push to talk on or off changes whether the mic sends right now.
+    setLocalTrackEnabled();
   }, [voiceSettings]);
 
   const clearJoinTimeout = () => {
@@ -260,8 +271,11 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     setRecoveryAttempt(0);
   };
 
+  // Push to talk: the mic only sends while "Hold to talk" is held. Muting still wins.
+  const pushToTalkHeldRef = useRef(false);
   const setLocalTrackEnabled = () => {
-    const enabled = !(mutedRef.current || serverMutedRef.current);
+    const gated = voiceSettingsRef.current.pushToTalk && !pushToTalkHeldRef.current;
+    const enabled = !(mutedRef.current || serverMutedRef.current) && !gated;
     for (const track of localStreamRef.current?.getAudioTracks() ?? []) {
       track.enabled = enabled;
     }
@@ -333,6 +347,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
 
     localCameraStreamRef.current = null;
     setLocalCameraStream(null);
+    setCameraFacing("user");
     const trackIds = new Set(stream.getTracks().map((track) => track.id));
 
     for (const session of peerSessionsRef.current.values()) {
@@ -1181,6 +1196,12 @@ export function VoiceProvider({ children }: PropsWithChildren) {
     send({ type: "VOICE_MUTE", muted: next });
   };
 
+  const setPushToTalkHeld = (held: boolean) => {
+    if (pushToTalkHeldRef.current === held) return;
+    pushToTalkHeldRef.current = held;
+    setLocalTrackEnabled();
+  };
+
   const toggleDeafen = () => {
     if (voiceChannelRef.current === null) return;
     const next = !deafenedRef.current;
@@ -1335,6 +1356,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
 
       localCameraStreamRef.current = camera;
       setLocalCameraStream(camera);
+      setCameraFacing(trackFacing(videoTrack));
       setCameraSharing(true);
       setVoiceError("");
       for (const session of peerSessionsRef.current.values()) {
@@ -1363,6 +1385,24 @@ export function VoiceProvider({ children }: PropsWithChildren) {
         setVoiceError(errorMessage(cause, t("voice.mobile.engine.cameraStartFailed")));
       }
       return false;
+    }
+  };
+
+  const flipCamera = async (): Promise<void> => {
+    const camera = localCameraStreamRef.current;
+    const track = camera?.getVideoTracks()[0];
+    if (!camera || !track || cameraFlipInFlightRef.current) return;
+    cameraFlipInFlightRef.current = true;
+    try {
+      const facing = await flipCameraTrack(track);
+      if (localCameraStreamRef.current === camera) setCameraFacing(facing);
+    } catch (cause) {
+      console.warn("Could not switch camera for Hub voice.", cause);
+      if (localCameraStreamRef.current === camera) {
+        setVoiceError(errorMessage(cause, t("dm.mobile.call.cameraSwitchFailed")));
+      }
+    } finally {
+      cameraFlipInFlightRef.current = false;
     }
   };
 
@@ -1808,6 +1848,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       screenSharing,
       cameraSharing,
       localCameraStream,
+      cameraFacing,
       screenShareError,
       remoteVideos,
       locallyMutedUserIds,
@@ -1818,8 +1859,10 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       leaveVoice,
       toggleMute,
       toggleDeafen,
+      setPushToTalkHeld,
       startCamera,
       stopCamera,
+      flipCamera,
       startScreenShare,
       stopScreenShare,
       toggleLocalUserMute,
@@ -1846,6 +1889,7 @@ export function VoiceProvider({ children }: PropsWithChildren) {
       screenSharing,
       cameraSharing,
       localCameraStream,
+      cameraFacing,
       screenShareError,
       remoteVideos,
       locallyMutedUserIds,

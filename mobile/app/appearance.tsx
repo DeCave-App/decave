@@ -6,7 +6,7 @@ import { Screen } from "@/src/components/Screen";
 import { reloadAppAsync } from "expo";
 import * as SecureStore from "expo-secure-store";
 import { SKINS, type SkinId, useSkin } from "@/src/skin";
-import { COLOR_MODE_KEY, colorMode, type ColorMode } from "@/src/theme";
+import { COLOR_MODE_KEY, colorMode, colors, type ColorMode } from "@/src/theme";
 import { useTranslation } from "react-i18next";
 
 export default function AppearanceScreen() {
@@ -121,8 +121,8 @@ export default function AppearanceScreen() {
           disabled={!hasChanges || saving}
           onPress={() => void saveSkin()}
         >
-          <Ionicons name="checkmark" size={18} color={palette.bg} />
-          <Text style={[styles.saveButtonText, { color: palette.bg }]}>{saving ? t("common.status.saving") : hasChanges ? t("settings.mobile.appearance.saveSkin") : t("settings.mobile.appearance.skinSaved")}</Text>
+          <Ionicons name="checkmark" size={18} color={colors.solid} />
+          <Text style={[styles.saveButtonText, { color: colors.solid }]}>{saving ? t("common.status.saving") : hasChanges ? t("settings.mobile.appearance.saveSkin") : t("settings.mobile.appearance.skinSaved")}</Text>
         </Pressable>
       </View>
     </Screen>

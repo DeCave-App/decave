@@ -1040,7 +1040,6 @@
       "pinnedMessages": "Καρφιτσωμένα μηνύματα",
       "returnToVoiceControls": "Επιστροφή στα χειριστήρια φωνής",
       "voiceAndMessagesLiveTogether": "Η φωνή και τα μηνύματα βρίσκονται μαζί σε αυτό το δωμάτιο.",
-      "noPostsInThisForum": "Δεν υπάρχουν αναρτήσεις σε αυτό το φόρουμ ακόμα.",
       "thisIsTheBeginningOf": "Αυτή είναι η αρχή αυτού του δωματίου κειμένου.",
       "longPressForMessageActions": "Πάτα παρατεταμένα για ενέργειες μηνύματος",
       "pinned": "Καρφιτσωμένο",
@@ -1050,9 +1049,7 @@
       "severalPeopleAreTyping": "Πολλά άτομα πληκτρολογούν…",
       "editingMessage": "Επεξεργασία μηνύματος",
       "replyingToNameValue": "Απάντηση σε {{name}}: {{value}}",
-      "longPressAPostTo": "Πάτα παρατεταμένα σε μια ανάρτηση για απάντηση. Νέες αναρτήσεις φόρουμ ξεκινούν από desktop ή web.",
       "addPhotoVideoOrGif": "Προσθήκη φωτογραφίας, βίντεο ή GIF",
-      "writeAReply": "Γράψε απάντηση",
       "messageName": "Μήνυμα στο #{{name}}",
       "couldNotUpdateMute": "Δεν ήταν δυνατή η ενημέρωση της σίγασης",
       "unmuteUsername": "Κατάργηση σίγασης {{username}}",
@@ -1063,7 +1060,11 @@
       "reactedByYou": "{{emoji}} {{count}}, αντέδρασες",
       "newCount": "{{number}} νέα",
       "isTyping": "{{name}} πληκτρολογεί…",
-      "twoTyping": "{{first}} και {{second}} πληκτρολογούν…"
+      "twoTyping": "{{first}} και {{second}} πληκτρολογούν…",
+      "couldNotSendSticker": "Δεν ήταν δυνατή η αποστολή αυτοκόλλητου",
+      "couldNotSendPoll": "Δεν ήταν δυνατή η αποστολή της δημοσκόπησης",
+      "muteRoom": "Σίγαση δωματίου",
+      "unmuteRoom": "Κατάργηση σίγασης δωματίου"
     },
     "finder": {
       "searchFailed": "Η αναζήτηση απέτυχε.",
@@ -1083,7 +1084,8 @@
       "cameraOff": "Η πρόσβαση στην κάμερα είναι κλειστή για το DeCave. Ενεργοποίησέ την στις Ρυθμίσεις.",
       "photosOff": "Η πρόσβαση στις φωτογραφίες είναι κλειστή για το DeCave. Ενεργοποίησέ την στις Ρυθμίσεις.",
       "tooLarge": "Τα συνημμένα μπορούν να είναι έως 25 MB.",
-      "uploadFailed": "Δεν ήταν δυνατή η μεταφόρτωση του συνημμένου."
+      "uploadFailed": "Δεν ήταν δυνατή η μεταφόρτωση του συνημμένου.",
+      "poll": "Δημοσκόπηση"
     },
     "preview": {
       "mine": "Το μήνυμά σου: {{body}}",

@@ -5,6 +5,11 @@
 export type ThemeMode = "manual" | "system";
 export type MotionPreference = "system" | "reduce" | "full";
 export type MessageDensity = "cozy" | "compact";
+/** Liquid Glass: clear lets more of the backdrop through, tinted keeps text easier to read. */
+export type GlassStyle = "clear" | "tinted";
+/** What shows through the glass: the open Hub's banner (skin colors when it has none) or a built-in wallpaper. */
+export type GlassBackdrop = "hub" | "aurora" | "sunset" | "ocean" | "forest" | "graphite";
+export const GLASS_BACKDROPS: readonly GlassBackdrop[] = ["hub", "aurora", "sunset", "ocean", "forest", "graphite"];
 
 export type QuietHours = {
   enabled: boolean;
@@ -25,6 +30,12 @@ export type ExtraSettings = {
   highContrast: boolean;
   underlineLinks: boolean;
   showAltText: boolean;
+  /** See-through, blurred panels over the Hub's banner, in the current skin's colours. */
+  glassEffect: boolean;
+  glassStyle: GlassStyle;
+  glassBackdrop: GlassBackdrop;
+  /** Fall back to solid panels on slower devices and when the OS asks for less transparency. */
+  glassAutoOff: boolean;
   quietHours: QuietHours;
   /** Master volume for everyone you hear in voice, 0-200%. */
   outputVolume: number;
@@ -45,6 +56,10 @@ export const DEFAULT_EXTRA_SETTINGS: ExtraSettings = {
   highContrast: false,
   underlineLinks: false,
   showAltText: false,
+  glassEffect: false,
+  glassStyle: "clear",
+  glassBackdrop: "hub",
+  glassAutoOff: true,
   quietHours: { enabled: false, start: "23:00", end: "08:00", allowMentions: true },
   outputVolume: 100,
   cameraDeviceId: "",
@@ -71,6 +86,12 @@ export function normalizeExtraSettings(value: unknown, skins: readonly string[])
     highContrast: raw.highContrast === true,
     underlineLinks: raw.underlineLinks === true,
     showAltText: raw.showAltText === true,
+    glassEffect: raw.glassEffect === true,
+    glassStyle: raw.glassStyle === "tinted" ? "tinted" : "clear",
+    glassBackdrop: GLASS_BACKDROPS.includes(raw.glassBackdrop as GlassBackdrop)
+      ? (raw.glassBackdrop as GlassBackdrop)
+      : d.glassBackdrop,
+    glassAutoOff: raw.glassAutoOff !== false,
     quietHours: {
       enabled: quiet.enabled === true,
       start: typeof quiet.start === "string" && TIME.test(quiet.start) ? quiet.start : d.quietHours.start,
@@ -136,6 +157,30 @@ export function resolveSkin(settings: ExtraSettings, manualSkin: string, prefers
 /** Same check the OS uses for "reduce motion", honouring the user's override. */
 export function motionReduced(settings: ExtraSettings, systemPrefersReduced: boolean): boolean {
   return settings.motion === "reduce" || (settings.motion === "system" && systemPrefersReduced);
+}
+
+export type GlassEnvironment = {
+  /** The OS "reduce transparency" setting. */
+  reducedTransparency: boolean;
+  /** Few CPU cores or little memory, where live blur makes scrolling stutter. */
+  lowPowerDevice: boolean;
+};
+
+/**
+ * The glass style to draw, or null for solid panels. High contrast always wins,
+ * and with auto-off on, so do the OS transparency setting and slower devices.
+ */
+export function activeGlass(settings: ExtraSettings, environment: GlassEnvironment): GlassStyle | null {
+  if (!settings.glassEffect || settings.highContrast) return null;
+  if (settings.glassAutoOff && (environment.reducedTransparency || environment.lowPowerDevice)) return null;
+  return settings.glassStyle;
+}
+
+/** Hardware hints from the browser; unknown values count as capable. */
+export function isLowPowerDevice(hints: { hardwareConcurrency?: number; deviceMemory?: number }): boolean {
+  const cores = Number(hints.hardwareConcurrency);
+  const memory = Number(hints.deviceMemory);
+  return (Number.isFinite(cores) && cores > 0 && cores <= 2) || (Number.isFinite(memory) && memory > 0 && memory < 2);
 }
 
 export type Platform = "windows" | "mac" | "linux" | "other";

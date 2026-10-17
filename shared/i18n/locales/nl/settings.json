@@ -309,6 +309,10 @@
     "whatsNew": {
       "label": "Wat is er nieuw",
       "keywords": "patch notes changelog"
+    },
+    "glass": {
+      "label": "Glaseffect",
+      "keywords": "liquid glass transparant doorschijnend vervaging matglas"
     }
   },
   "toast": {
@@ -1203,7 +1207,53 @@
     "underline": "Links altijd onderstrepen",
     "underlineHelp": "Maak links in berichten goed zichtbaar zonder alleen op kleur te vertrouwen.",
     "altText": "Afbeeldingsbeschrijvingen tonen",
-    "altTextHelp": "De titel van gifs en stickers eronder tonen."
+    "altTextHelp": "De titel van gifs en stickers eronder tonen.",
+    "glassTitle": "Glaseffect",
+    "glass": {
+      "label": "Liquid Glass",
+      "help": "Doorschijnende, vervaagde panelen boven de banner van je Hub, in de kleuren van je skin.",
+      "styleLabel": "Glasstijl",
+      "clear": {
+        "label": "Helder",
+        "detail": "Meer van de banner schijnt door"
+      },
+      "tinted": {
+        "label": "Getint",
+        "detail": "Donkerder glas, beter leesbaar"
+      },
+      "autoOff": "Automatisch uitschakelen",
+      "autoOffHelp": "Gebruik ondoorzichtige panelen op tragere apparaten en als transparantie-effecten op deze computer uit staan.",
+      "offTransparency": "Glas staat nu uit omdat transparantie-effecten op deze computer uit staan. Zet „Automatisch uitschakelen” uit om het toch te gebruiken.",
+      "offDevice": "Glas staat nu uit omdat dit apparaat het misschien niet soepel weergeeft. Zet „Automatisch uitschakelen” uit om het toch te gebruiken.",
+      "offContrast": "Glas blijft uit zolang Hoog contrast aan staat.",
+      "backdropLabel": "Achtergrond",
+      "backdrop": {
+        "hub": {
+          "label": "Hub-banner",
+          "detail": "De kleuren van je skin als er geen banner is"
+        },
+        "aurora": {
+          "label": "Aurora",
+          "detail": "Roze, blauw en turquoise licht"
+        },
+        "graphite": {
+          "label": "Grafiet",
+          "detail": "Rustig, neutraal grijs"
+        },
+        "sunset": {
+          "label": "Zonsondergang",
+          "detail": "Warm oranje, rood en violet"
+        },
+        "ocean": {
+          "label": "Oceaan",
+          "detail": "Diepblauw en turquoise"
+        },
+        "forest": {
+          "label": "Bos",
+          "detail": "Smaragd- en limoengroen"
+        }
+      }
+    }
   },
   "language": {
     "title": "Datums en tijden",
@@ -1551,7 +1601,8 @@
         "everyone": "Iedereen",
         "friends": "Vrienden",
         "nobody": "Niemand"
-      }
+      },
+      "streamerModeHelp": "Verbergt je e-mailadres op deze telefoon. Gaat vanzelf aan terwijl je je scherm deelt."
     },
     "skins": {
       "neon": {
@@ -1576,6 +1627,15 @@
       "obsidian": {
         "description": "Bijna zwart glas met een strakke zilveren rand."
       }
+    },
+    "muted": {
+      "noneMuted": "Er is niets gedempt. Gebruik de bel in een Hub of ruimte om die te dempen."
+    },
+    "connections": {
+      "detail": "Steam, Twitch en FACEIT"
+    },
+    "voice": {
+      "pushToTalkHelp": "Je microfoon zendt alleen terwijl je ‘Ingedrukt houden om te praten’ vasthoudt in de spraakruimte."
     }
   },
   "linkPage": {

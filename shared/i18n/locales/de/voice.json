@@ -140,7 +140,9 @@
       "encrypted": "Verschlüsselt",
       "encryptedPing": "Verschlüsselt · {{ping}} ms",
       "rejoining": "Erneuter Beitritt zum Raum …",
-      "rejoiningAttempt": "Erneuter Beitritt zum Raum (Versuch {{attempt}}/3) …"
+      "rejoiningAttempt": "Erneuter Beitritt zum Raum (Versuch {{attempt}}/3) …",
+      "holdToTalk": "Zum Sprechen halten",
+      "talking": "Du sprichst …"
     },
     "rejoin": "Voice erneut beitreten",
     "bar": {

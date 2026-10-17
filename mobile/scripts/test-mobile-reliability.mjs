@@ -349,7 +349,7 @@ function voiceCaptureRuntime({ permission, cameraMedia, screenMedia, queuePeer, 
     peerSessionsRef: { current: new Map() },
     voiceSettingsRef: { current: { screenShareQuality: "balanced" } },
   };
-  const state = { events: [], errors: [], screenErrors: [], cameraSharing: [], localCameraStreams: [], screenSharing: [], stopCamera: 0, stopScreen: 0, cameraMediaCalls: 0, screenMediaCalls: 0, advertWaits: 0 };
+  const state = { events: [], errors: [], screenErrors: [], cameraSharing: [], localCameraStreams: [], cameraFacings: [], screenSharing: [], stopCamera: 0, stopScreen: 0, cameraMediaCalls: 0, screenMediaCalls: 0, advertWaits: 0 };
   const permissionRequest = permission ?? Promise.resolve("granted");
   const mediaDevices = {
     getUserMedia: async () => { state.cameraMediaCalls += 1; return cameraMedia ? await cameraMedia : videoStream(mediaTrack("camera")); },
@@ -383,6 +383,9 @@ function voiceCaptureRuntime({ permission, cameraMedia, screenMedia, queuePeer, 
     setScreenShareError: (value) => state.screenErrors.push(value),
     setCameraSharing: (value) => state.cameraSharing.push(value),
     setLocalCameraStream: (value) => state.localCameraStreams.push(value),
+    setCameraFacing: (value) => state.cameraFacings.push(value),
+    trackFacing: (track) => (track?.getSettings?.()?.facingMode === "environment" ? "environment" : "user"),
+    cameraFlipInFlightRef: { current: false },
     waitForCameraAdvert: async () => { state.advertWaits += 1; if (cameraAdvert) await cameraAdvert; },
     setScreenSharing: (value) => state.screenSharing.push(value),
     stopCamera: () => { state.stopCamera += 1; refs.localCameraStreamRef.current = null; },
@@ -597,7 +600,7 @@ function directCallRuntime({ permission, media, ice, phase = "idle" } = {}) {
     setPeer: (value) => { refs.peerRef.current = value; },
     setVideo: (value) => { refs.videoRef.current = value; },
     setPhase: (value) => { refs.phaseRef.current = value; },
-    setMuted: () => {}, setCameraEnabled: () => {}, setDurationSeconds: () => {}, setVolumeOpen: () => {}, setMinimized: () => {},
+    setMuted: () => {}, setCameraEnabled: () => {}, setCameraFacing: () => {}, trackFacing: () => "user", setDurationSeconds: () => {}, setVolumeOpen: () => {}, setMinimized: () => {},
     setError: (value) => state.errors.push(value),
     setLocalStream: (value) => { state.localStream = value; },
     setRemoteStream: (value) => { state.remoteStream = value; },

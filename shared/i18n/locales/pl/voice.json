@@ -140,7 +140,9 @@
       "encrypted": "Szyfrowane",
       "encryptedPing": "Szyfrowane · {{ping}} ms",
       "rejoining": "Ponowne dołączanie do pokoju…",
-      "rejoiningAttempt": "Ponowne dołączanie do pokoju (próba {{attempt}}/3)…"
+      "rejoiningAttempt": "Ponowne dołączanie do pokoju (próba {{attempt}}/3)…",
+      "holdToTalk": "Przytrzymaj, aby mówić",
+      "talking": "Mówisz…"
     },
     "rejoin": "Dołącz ponownie",
     "bar": {

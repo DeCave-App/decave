@@ -26,7 +26,11 @@ import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useVoice } from "@/src/providers/VoiceProvider";
 import type { Hub, Channel, ForumPostPolicy } from "@/src/types";
 import { apiJson } from "@/src/lib/api";
-import { cachedHub, rememberHub } from "@/src/lib/hub-list-cache";
+import { cachedHub, forgetHub, loadHubList, rememberHub } from "@/src/lib/hub-list-cache";
+import { isHubMuted, withHubMuted } from "@/src/lib/hub-mutes";
+import { tapHaptic } from "@/src/lib/haptics";
+import { useAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
+import { saveClientSettingsPatch } from "@/src/lib/client-settings";
 import { LoungeShell } from "@/src/components/LoungeShell";
 import { Screen } from "@/src/components/Screen";
 import { styles } from "@/src/components/hub/hubScreen.styles";
@@ -41,7 +45,7 @@ import { DEFAULT_HUB_CATEGORY } from "../../../shared/hub-categories";
 import { hubCategoryInput } from "@/src/lib/hub-category";
 
 export default function HubScreen() {
-  const { t } = useTranslation(["hub", "common"]);
+  const { t } = useTranslation(["hub", "common", "events", "streamer"]);
   const { width } = useWindowDimensions();
   const split = width >= SPLIT_MIN_WIDTH;
   const [splitRoom, setSplitRoom] = useState<SplitRoom | null>(null);
@@ -50,7 +54,17 @@ export default function HubScreen() {
   const hubId = Number(params.id);
   const { token } = useSession();
   const { send } = useRealtime();
-  const { voiceChannelId, voiceStatus, participants } = useVoice();
+  const { voiceChannelId, voiceStatus, participants, leaveVoice } = useVoice();
+  const [leaving, setLeaving] = useState(false);
+  const prefs = useAccountPreferencesSnapshot();
+  const hubMuted = isHubMuted(prefs?.clientSettings, hubId);
+  const toggleHubMute = () => {
+    if (!token) return;
+    tapHaptic();
+    void saveClientSettingsPatch(token, withHubMuted(prefs?.clientSettings, hubId, !hubMuted)).catch((error) =>
+      Alert.alert(hubMuted ? t("hub.contextMenu.unmuteHub") : t("hub.contextMenu.muteHub"), error instanceof Error ? error.message : t("hub.mobile.hub.tryAgain")),
+    );
+  };
 
   // Drawn at once from the cached Hub list (header and rooms), then replaced by the server's copy.
   const [hub, setHub] = useState<Hub | null>(() => cachedHub(token, hubId));
@@ -430,6 +444,32 @@ export default function HubScreen() {
     );
   };
 
+  const leaveHub = () => {
+    if (!token || !hub || hub.myRole === "owner" || leaving) return;
+    const leavingHub = hub;
+    Alert.alert(t("hub.sidebar.leave"), t("hub.actions.leave.confirm", { name: leavingHub.name }), [
+      { text: t("common.actions.cancel"), style: "cancel" },
+      {
+        text: t("common.actions.leave"),
+        style: "destructive",
+        onPress: () => void (async () => {
+          setLeaving(true);
+          try {
+            await apiJson(`/api/servers/${leavingHub.id}/leave`, { method: "POST" }, token);
+            if (voiceChannelId !== null && (leavingHub.channels ?? []).some((channel) => channel.id === voiceChannelId)) leaveVoice();
+            forgetHub(token, leavingHub.id);
+            void loadHubList("mine", token).catch(() => undefined);
+            router.replace("/(tabs)/hubs" as any);
+          } catch (error) {
+            Alert.alert(t("hub.sidebar.leave"), error instanceof Error ? error.message : t("hub.mobile.hub.couldNotLeave"));
+          } finally {
+            setLeaving(false);
+          }
+        })(),
+      },
+    ]);
+  };
+
   if (!hub) {
     return (
       <LoungeShell>
@@ -512,6 +552,15 @@ export default function HubScreen() {
           </Text>
         </View>
 
+        <Pressable
+          style={styles.manageButton}
+          onPress={toggleHubMute}
+          accessibilityRole="button"
+          accessibilityState={{ selected: hubMuted }}
+          accessibilityLabel={hubMuted ? t("hub.contextMenu.unmuteHub") : t("hub.contextMenu.muteHub")}
+        >
+          <Ionicons name={hubMuted ? "notifications-off" : "notifications-outline"} size={19} color={hubMuted ? colors.red : colors.text} />
+        </Pressable>
         {canManageHub && (
           <Pressable
             style={styles.manageButton}
@@ -549,6 +598,30 @@ export default function HubScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.muted} />
           </Pressable>
         )}
+
+        {hub.layout === "streamer" && (
+          <Pressable accessibilityRole="button" style={styles.adminStrip} onPress={() => router.push(`/hub-streamer/${hub.id}` as never)}>
+            <View style={styles.adminStripIcon}>
+              <Ionicons name="radio-outline" size={18} color={colors.cyan} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.adminStripTitle}>{t("streamer.overview.title")}</Text>
+              <Text style={styles.adminStripText}>{t("streamer.cards.queue.title")} · {t("streamer.giveaways.heading")}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+          </Pressable>
+        )}
+
+        <Pressable accessibilityRole="button" style={styles.adminStrip} onPress={() => router.push(`/hub-events/${hub.id}` as never)}>
+          <View style={styles.adminStripIcon}>
+            <Ionicons name="calendar-outline" size={18} color={colors.cyan} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.adminStripTitle}>{t("events.calendar.title")}</Text>
+            <Text style={styles.adminStripText}>{t("events.calendar.upcomingLabel")}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
 
         <ChannelSection
           title={t("hub.mobile.hub.textRooms")}
@@ -631,6 +704,21 @@ export default function HubScreen() {
             })
           )}
         </ChannelSection>
+
+        {!!hub.myRole && hub.myRole !== "owner" && (
+          <Pressable
+            accessibilityRole="button"
+            style={[styles.adminStrip, styles.leaveStrip]}
+            disabled={leaving}
+            onPress={leaveHub}
+          >
+            <View style={styles.adminStripIcon}>
+              <Ionicons name="exit-outline" size={18} color={colors.red} />
+            </View>
+            <Text style={[styles.adminStripTitle, { flex: 1, color: colors.red }]}>{t("hub.sidebar.leave")}</Text>
+            {leaving && <ActivityIndicator color={colors.red} />}
+          </Pressable>
+        )}
       </ScrollView>
 
       <ManageHubSheet

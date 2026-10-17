@@ -410,7 +410,9 @@
       "connected": "Verbunden · {{duration}}",
       "waitingVideo": "Warte auf Video …",
       "switchToVideo": "Zu Video wechseln",
-      "toggleCamera": "Kamera umschalten"
+      "toggleCamera": "Kamera umschalten",
+      "switchCamera": "Kamera wechseln",
+      "cameraSwitchFailed": "DeCave konnte die Kamera nicht wechseln."
     }
   },
   "preview": {

@@ -44,7 +44,19 @@ import { botMessageNotice, botMessageText, botRenderMode, messageBotFields } fro
 import { noticeText } from "@/src/lib/server-text";
 import { useTranslation } from "react-i18next";
 import { sendsTypingIndicators, showsLargeEmoji, useAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
+import { saveClientSettingsPatch } from "@/src/lib/client-settings";
 import { isEmojiOnly, LARGE_EMOJI_TEXT } from "@/src/lib/emoji-only";
+import { parseSticker, stickerMessageText, type HubAsset } from "@/src/lib/hub-assets";
+import { useHubAssets } from "@/src/hooks/useHubAssets";
+import { isReactionChip, parsePoll, pollVoteToggles } from "@/src/lib/polls";
+import { withRoomLevel } from "@/src/lib/hub-mutes";
+import { PollCard } from "@/src/components/chat/PollCard";
+import { PollComposerSheet } from "@/src/components/chat/PollComposerSheet";
+import { ForumRoomView } from "@/src/components/forum/ForumRoomView";
+import { parseChatEvent } from "@/src/lib/hub-events-model";
+import { EventChatCard } from "@/src/components/events/EventChatCard";
+import { BotCommandSuggestions, commandInsertText, useBotCommands } from "@/src/components/channel/BotCommandSuggestions";
+import { StickerMessage } from "@/src/components/channel/StickerMessage";
 
 type ChannelParams = {
   id: string;
@@ -65,19 +77,32 @@ export default function ChannelScreen() {
 }
 
 /**
- * The room chat. Rendered full-screen on iPhone, and as the right-hand pane of
- * the hub screen on iPad (embedded: no back button, the room list stays put).
+ * A room. Rendered full-screen on iPhone, and as the right-hand pane of the
+ * hub screen on iPad (embedded: no back button, the room list stays put).
+ * Forum rooms get the forum view (posts, threads, New post); others the chat.
  */
 export function ChannelView({ params, embedded = false }: { params: ChannelParams; embedded?: boolean }) {
+  const { t } = useTranslation(["chat"]);
+  if (params.forum === "1") {
+    return (
+      <ForumRoomView
+        channelId={Number(params.id)}
+        hubId={Number(params.hubId ?? 0)}
+        name={typeof params.name === "string" ? params.name : t("chat.mobile.channel.roomFallback")}
+        embedded={embedded}
+      />
+    );
+  }
+  return <ChatRoomView params={params} embedded={embedded} />;
+}
+
+function ChatRoomView({ params, embedded = false }: { params: ChannelParams; embedded?: boolean }) {
   const { t } = useTranslation(["chat", "common"]);
-  // Re-render when synced chat preferences (large emoji, time format) load or change.
-  useAccountPreferencesSnapshot();
 
   const channelId = Number(params.id);
   const hubId = Number(params.hubId ?? 0);
   const name = typeof params.name === "string" ? params.name : t("chat.mobile.channel.roomFallback");
   const isVoiceRoom = params.voice === "1";
-  const isForum = params.forum === "1";
 
   const { token, user } = useSession();
   const wide = useIsWide();
@@ -109,6 +134,19 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
   const [typingUsers, setTypingUsers] = useState<Record<string, { username: string; until: number }>>({});
   const typingSentRef = useRef(0);
   const [mediaOpen, setMediaOpen] = useState(false);
+  const hubAssets = useHubAssets(hubId, token);
+  const botCommands = useBotCommands(hubId, editingId ? "" : input, token);
+  // Also re-renders when synced chat preferences (large emoji, time format) load or change.
+  const prefs = useAccountPreferencesSnapshot();
+  const roomMuted = prefs?.clientSettings?.notifyLevels?.rooms?.[String(channelId)] === "nothing";
+  const toggleRoomMute = () => {
+    if (!token) return;
+    tapHaptic();
+    void saveClientSettingsPatch(token, withRoomLevel(prefs?.clientSettings, channelId, roomMuted ? null : "nothing")).catch((error) =>
+      Alert.alert(roomMuted ? t("chat.mobile.channel.unmuteRoom") : t("chat.mobile.channel.muteRoom"), error instanceof Error ? error.message : t("chat.mobile.channel.pleaseTryAgain")),
+    );
+  };
+  const [pollOpen, setPollOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -308,6 +346,41 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
     }
   };
 
+  const sendPoll = (text: string): boolean => {
+    if (send({ type: "CHAT_MESSAGE", text, channelId, replyToId: replyingTo?.id ?? null, attachment: null })) {
+      impactHaptic();
+      setReplyingTo(null);
+      return true;
+    }
+    Alert.alert(t("chat.mobile.channel.couldNotSendPoll"), t("chat.mobile.channel.realtimeIsReconnectingTryAgain"));
+    return false;
+  };
+
+  const voteInPoll = async (message: ChatMessage, optionIndex: number) => {
+    if (!user) return;
+    for (const key of pollVoteToggles(message.reactions, user.id, optionIndex)) await reactToMessage(message, key);
+  };
+
+  const openPollComposer = () => {
+    setMediaOpen(false);
+    // iOS can't present a second modal while the first is still sliding away.
+    setTimeout(() => setPollOpen(true), 350);
+  };
+
+  const chooseHubAsset = (asset: HubAsset) => {
+    setMediaOpen(false);
+    if (asset.kind === "emote") {
+      setInput(`${input}${input && !/\s$/.test(input) ? " " : ""}:${asset.name}: `);
+      return;
+    }
+    if (send({ type: "CHAT_MESSAGE", text: stickerMessageText(asset), channelId, replyToId: replyingTo?.id ?? null, attachment: null })) {
+      impactHaptic();
+      setReplyingTo(null);
+    } else {
+      Alert.alert(t("chat.mobile.channel.couldNotSendSticker"), t("chat.mobile.channel.realtimeIsReconnectingTryAgain"));
+    }
+  };
+
   const togglePin = async (message: ChatMessage) => {
     setActionMessage(null);
     if (!token) return;
@@ -355,7 +428,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
   };
 
   const beginEdit = (message: ChatMessage) => {
-    if (message.userId !== user?.id || parseForumPost(message.text)) return;
+    if (message.userId !== user?.id || parseForumPost(message.text) || parsePoll(message.text) || parseSticker(message.text) || parseChatEvent(message.text)) return;
     setReplyingTo(null);
     setEditingId(message.id);
     setInput(message.text, false);
@@ -448,7 +521,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
 
           <View style={styles.channelIcon}>
             <Ionicons
-              name={isForum ? "albums" : "chatbubble-ellipses"}
+              name="chatbubble-ellipses"
               size={17}
               color={colors.cyan}
             />
@@ -508,9 +581,16 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
               <Ionicons name="volume-high" size={16} color={colors.cyan} />
             </Pressable>
           ) : (
-            <View style={styles.hashBadge}>
-              <Text style={styles.hashText}>#</Text>
-            </View>
+            <Pressable
+              style={styles.hashBadge}
+              onPress={toggleRoomMute}
+              accessibilityRole="button"
+              accessibilityState={{ selected: roomMuted }}
+              accessibilityLabel={roomMuted ? t("chat.mobile.channel.unmuteRoom") : t("chat.mobile.channel.muteRoom")}
+              hitSlop={6}
+            >
+              <Ionicons name={roomMuted ? "notifications-off" : "notifications-outline"} size={16} color={roomMuted ? colors.red : colors.cyan} />
+            </Pressable>
           )}
         </View>
 
@@ -562,9 +642,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
               <Text style={styles.emptyText}>
                 {isVoiceRoom
                   ? t("chat.mobile.channel.voiceAndMessagesLiveTogether")
-                  : isForum
-                    ? t("chat.mobile.channel.noPostsInThisForum")
-                    : t("chat.mobile.channel.thisIsTheBeginningOf")}
+                  : t("chat.mobile.channel.thisIsTheBeginningOf")}
               </Text>
             </View>
           }
@@ -693,7 +771,13 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                           showHead={false}
                         />
                       ) : null;
-                    })() : parseGif(item.text) ? (
+                    })() : parseChatEvent(item.text) ? (
+                      <EventChatCard payload={parseChatEvent(item.text)!} hubId={hubId} token={token} />
+                    ) : parsePoll(item.text) ? (
+                      <PollCard poll={parsePoll(item.text)!} reactions={item.reactions} userId={user?.id} onVote={(index) => void voteInPoll(item, index)} />
+                    ) : parseSticker(item.text) ? (
+                      <StickerMessage sticker={parseSticker(item.text)!} />
+                    ) : parseGif(item.text) ? (
                       <MessageImage url={parseGif(item.text)!.url} title={parseGif(item.text)!.title} token={token} authenticated />
                     ) : !item.text ? null : (() => {
                       const post = parseForumPost(item.text, item);
@@ -701,7 +785,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                         return (
                           <>
                             <Text style={[styles.messageText, showsLargeEmoji() && isEmojiOnly(item.text) && LARGE_EMOJI_TEXT]}>
-                              {renderMessageText(item.text, user?.username)}
+                              {renderMessageText(item.text, user?.username, hubAssets)}
                             </Text>
                             {firstLink(item.text) ? <LinkChip url={firstLink(item.text)!} /> : null}
                           </>
@@ -719,7 +803,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                           )}
                           {!!post.body && (
                             <Text style={styles.messageText}>
-                              {renderMessageText(post.body, user?.username)}
+                              {renderMessageText(post.body, user?.username, hubAssets)}
                             </Text>
                           )}
                         </View>
@@ -774,9 +858,9 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
                     )}
 
                     {!!item.reactions &&
-                      Object.keys(item.reactions).length > 0 && (
+                      Object.keys(item.reactions).some(isReactionChip) && (
                         <View style={styles.reactions}>
-                          {Object.entries(item.reactions).map(
+                          {Object.entries(item.reactions).filter(([key]) => isReactionChip(key)).map(
                             ([emoji, userIds]) => (
                               <Pressable
                                 key={emoji}
@@ -855,13 +939,8 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
             </Pressable>
           </View>
         )}
-        {isForum && !replyingTo ? (
-          <View style={styles.composerShell}>
-            <Text style={styles.composerHint}>
-              {t("chat.mobile.channel.longPressAPostTo")}
-            </Text>
-          </View>
-        ) : <View style={styles.composerShell}>
+        <View style={styles.composerShell}>
+          <BotCommandSuggestions suggestions={botCommands} onChoose={(command) => setInput(commandInsertText(command))} />
           {sendFailed && <SendFailedBanner onRetry={() => void sendMessage()} onDismiss={() => setSendFailed(false)} />}
           <View style={styles.composer}>
             <Pressable
@@ -878,7 +957,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
               testID="room-composer"
               value={input}
               onChangeText={onChangeInput}
-              placeholder={replyingTo && isForum ? t("chat.mobile.channel.writeAReply") : t("chat.mobile.channel.messageName", { name })}
+              placeholder={t("chat.mobile.channel.messageName", { name })}
               placeholderTextColor={colors.faint}
               style={styles.input}
               multiline
@@ -902,7 +981,7 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
             </Pressable>
           </View>
 
-        </View>}
+        </View>
       </KeyboardAware>
       <Modal visible={actionMessage !== null} transparent animationType="fade" onRequestClose={() => setActionMessage(null)}>
         <Pressable style={styles.actionBackdrop} onPress={() => setActionMessage(null)}>
@@ -931,7 +1010,11 @@ export function ChannelView({ params, embedded = false }: { params: ChannelParam
         onPickLibrary={() => void sendAttachmentFrom("library")}
         onPickCamera={() => void sendAttachmentFrom("camera")}
         onGif={sendGif}
+        hubAssets={hubAssets}
+        onHubAsset={chooseHubAsset}
+        onPoll={openPollComposer}
       />
+      <PollComposerSheet visible={pollOpen} onClose={() => setPollOpen(false)} onPost={sendPoll} />
       <ChannelFinderSheet
         mode={finder}
         channelId={channelId}

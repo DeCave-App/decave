@@ -1317,7 +1317,8 @@
       "noVoiceRoomsInThis": "Geen spraakkanalen in deze Hub.",
       "pickARoomToStart": "Kies een kanaal om te beginnen met chatten",
       "onlineMembers": "{{online}} online · {{count}} leden",
-      "withRole": "{{summary}} · {{role}}"
+      "withRole": "{{summary}} · {{role}}",
+      "couldNotLeave": "Kon deze Hub niet verlaten."
     },
     "hubAdmin": {
       "hubSettingsUpdated": "Hub-instellingen bijgewerkt.",
@@ -1436,7 +1437,8 @@
       "recentEvents_other": "{{count}} recente gebeurtenissen",
       "mediaCurrent": "Huidige {{item}}",
       "mediaRemove": "{{item}} verwijderen",
-      "mediaShow": "{{item}} tonen"
+      "mediaShow": "{{item}} tonen",
+      "deleteHubFailed": "Kon deze Hub niet verwijderen."
     },
     "join": {
       "couldnTUseThisInvite": "Kon deze uitnodiging niet gebruiken.",

@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -23,6 +24,8 @@ import { useTranslation } from "react-i18next";
 import { DEFAULT_HUB_CATEGORY } from "../../../shared/hub-categories";
 import { hubCategoryField, hubCategoryInput } from "@/src/lib/hub-category";
 import { dateLocale } from "@/src/lib/date-locale";
+import { forgetHub, loadHubList } from "@/src/lib/hub-list-cache";
+import { DiscordImportCard } from "@/src/components/hub/DiscordImportCard";
 
 type HubRole = "owner" | "admin" | "member";
 type Permission =
@@ -49,7 +52,7 @@ type Hub = {
   slowModeSeconds?: number;
   visibility?: "public" | "private";
   myRole?: HubRole | null;
-  channels?: Array<{ id: number; name: string; type: string; private?: boolean }>;
+  channels?: Array<{ id: number; name: string; type: string; private?: boolean; category?: string }>;
 };
 
 type CustomRole = {
@@ -524,6 +527,25 @@ export default function HubAdminScreen() {
     finally { setBusy(""); }
   };
 
+  const deleteHub = () => {
+    if (!token || !hub || !isOwner || busy) return;
+    const target = hub;
+    Alert.alert(t("hub.manageHub.danger.delete"), t("hub.actions.delete.confirm", { name: target.name }), [
+      { text: t("common.actions.cancel"), style: "cancel" },
+      { text: t("common.actions.delete"), style: "destructive", onPress: () => void (async () => {
+        setBusy("hub-delete");
+        setError("");
+        try {
+          await apiJson(`/api/servers/${target.id}`, { method: "DELETE" }, token);
+          forgetHub(token, target.id);
+          void loadHubList("mine", token).catch(() => undefined);
+          router.replace("/(tabs)/hubs" as any);
+        } catch (cause) { setError(errorMessage(cause, t("hub.mobile.hubAdmin.deleteHubFailed"))); }
+        finally { setBusy(""); }
+      })() },
+    ]);
+  };
+
   const deleteBot = (bot: HubBot) => Alert.alert(t("hub.mobile.hubAdmin.deleteBot"), t("hub.mobile.hubAdmin.deleteName", { name: bot.name }), [
     { text: t("common.actions.cancel"), style: "cancel" },
     { text: t("common.actions.delete"), style: "destructive", onPress: () => void (async () => {
@@ -674,6 +696,16 @@ export default function HubAdminScreen() {
           {bots.length === 0 ? <Text style={styles.muted}>{t("hub.mobile.hubAdmin.noHubBots")}</Text> : bots.map((bot) => <View key={bot.id} style={styles.simpleRow}><Ionicons name="hardware-chip-outline" size={17} color={bot.enabled?colors.green:colors.muted} /><View style={{flex:1}}><Text style={styles.actionTitle}>{bot.name}</Text><Text style={styles.muted}>{bot.enabled?t("hub.mobile.hubAdmin.enabled"):t("hub.mobile.hubAdmin.disabled")}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={bot.enabled ? t("hub.mobile.hubAdmin.pauseName", { name: bot.name }) : t("hub.mobile.hubAdmin.resumeName", { name: bot.name })} style={styles.iconButton} onPress={() => void toggleBot(bot)}><Ionicons name={bot.enabled?"pause-outline":"play-outline"} size={16} color={colors.cyan}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t("hub.mobile.hubAdmin.deleteName2", { name: bot.name })} style={styles.iconButtonDanger} onPress={() => deleteBot(bot)}><Ionicons name="trash-outline" size={16} color={colors.red}/></Pressable></View>)}
         </Section>}
 
+        {canManage && token && <Section title={t("hub.manageHub.importDiscord.title")}>
+          <DiscordImportCard
+            hubId={hubId}
+            token={token}
+            existingRooms={(hub.channels ?? []).map((room) => ({ id: room.id, name: room.name, type: room.type, category: room.category ?? "GENERAL" }))}
+            existingRoles={roles.map((role) => ({ id: role.id, name: role.name, color: role.color }))}
+            onChanged={() => void load()}
+          />
+        </Section>}
+
         {auditLog.length > 0 && <Section title={t("hub.mobile.hubAdmin.auditLog")}>
           <Pressable style={styles.auditToggle} accessibilityRole="button" accessibilityState={{ expanded: auditExpanded }} onPress={() => setAuditExpanded((value) => !value)}>
             <View style={styles.auditToggleIcon}><Ionicons name="document-text-outline" size={16} color={colors.cyan} /></View>
@@ -681,6 +713,14 @@ export default function HubAdminScreen() {
             <Ionicons name={auditExpanded ? "chevron-up" : "chevron-down"} size={17} color={colors.faint} />
           </Pressable>
           {auditExpanded && auditLog.slice(0, 30).map((entry) => <View key={entry.id} style={styles.auditRow}><Text style={styles.actionTitle}>{entry.action}</Text><Text style={styles.muted}>{entry.actorUsername || entry.actorUserId || t("hub.mobile.hubAdmin.system")}{entry.targetUsername ? ` → ${entry.targetUsername}` : ""}{entry.detail ? ` · ${entry.detail}` : ""}</Text><Text style={styles.auditTime}>{new Date(entry.timestamp).toLocaleString(dateLocale())}</Text></View>)}
+        </Section>}
+
+        {isOwner && <Section title={t("hub.manageHub.nav.danger.label")}>
+          <Pressable accessibilityRole="button" style={styles.actionRow} disabled={!!busy} onPress={deleteHub}>
+            <View style={styles.iconButtonDanger}><Ionicons name="trash-outline" size={16} color={colors.red} /></View>
+            <View style={{ flex: 1 }}><Text style={[styles.actionTitle, { color: colors.red }]}>{t("hub.manageHub.danger.delete")}</Text><Text style={styles.muted}>{t("hub.manageHub.danger.description")}</Text></View>
+            {busy === "hub-delete" && <ActivityIndicator color={colors.red} />}
+          </Pressable>
         </Section>}
 
         {!!notice && <Text style={styles.notice}>{notice}</Text>}

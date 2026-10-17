@@ -1057,7 +1057,6 @@
       "pinnedMessages": "Mensagens fixadas",
       "returnToVoiceControls": "Voltar aos controles de voz",
       "voiceAndMessagesLiveTogether": "Voz e mensagens ficam juntas nesta sala.",
-      "noPostsInThisForum": "Ainda não há postagens neste fórum.",
       "thisIsTheBeginningOf": "Este é o começo desta sala de texto.",
       "longPressForMessageActions": "Toque e segure para ver as ações da mensagem",
       "pinned": "Fixada",
@@ -1067,9 +1066,7 @@
       "severalPeopleAreTyping": "Várias pessoas estão digitando…",
       "editingMessage": "Editando mensagem",
       "replyingToNameValue": "Respondendo a {{name}}: {{value}}",
-      "longPressAPostTo": "Toque e segure uma postagem para responder. Novas postagens no fórum podem ser criadas no desktop ou na web.",
       "addPhotoVideoOrGif": "Adicionar foto, vídeo ou GIF",
-      "writeAReply": "Escreva uma resposta",
       "messageName": "Conversar em #{{name}}",
       "couldNotUpdateMute": "Não foi possível atualizar o silenciamento",
       "unmuteUsername": "Reativar notificações de {{username}}",
@@ -1080,7 +1077,11 @@
       "reactedByYou": "{{emoji}} {{count}}, você reagiu",
       "newCount": "{{number}} novas",
       "isTyping": "{{name}} está digitando…",
-      "twoTyping": "{{first}} e {{second}} estão digitando…"
+      "twoTyping": "{{first}} e {{second}} estão digitando…",
+      "couldNotSendSticker": "Não foi possível enviar a figurinha",
+      "couldNotSendPoll": "Não foi possível enviar a enquete",
+      "muteRoom": "Silenciar sala",
+      "unmuteRoom": "Reativar sala"
     },
     "finder": {
       "searchFailed": "A busca falhou.",
@@ -1100,7 +1101,8 @@
       "cameraOff": "O acesso à câmera está desativado para o DeCave. Ative nas configurações do aparelho.",
       "photosOff": "O acesso às fotos está desativado para o DeCave. Ative nas configurações do aparelho.",
       "tooLarge": "Os anexos podem ter até 25 MB.",
-      "uploadFailed": "Não foi possível enviar o anexo."
+      "uploadFailed": "Não foi possível enviar o anexo.",
+      "poll": "Enquete"
     },
     "preview": {
       "mine": "Sua mensagem: {{body}}",

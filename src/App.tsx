@@ -16,7 +16,7 @@ import "./styles/app.css";
 import { Icon, type IconName } from "./components/Icon";
 import "./styles/hub-templates.css";
 import { DiscordImportReview } from "./components/studio";
-import { resolveSkin, motionReduced } from "./features/settings";
+import { resolveSkin, motionReduced, activeGlass } from "./features/settings";
 import { ManageHubPanel } from "./features/manage-hub";
 import { RoomSettingsPanel } from "./features/room-settings";
 import {
@@ -155,6 +155,7 @@ import { useDesktopUpdates } from "./app/hooks/useDesktopUpdates";
 import APP_SHELL_CSS from "./styles/shell/app-shell.css?raw";
 import POLISHED_SKINS_CSS from "./styles/shell/polished-skins.css?raw";
 import REFERENCE_UI_CSS from "./styles/shell/reference-ui.css?raw";
+import LIQUID_GLASS_CSS from "./styles/shell/liquid-glass.css?raw";
 import { AuthScreen } from "./app/views/AuthScreen";
 import { HubOnboardingScreen } from "./app/views/HubOnboardingScreen";
 import { LogoutConfirmDialog } from "./app/views/LogoutConfirmDialog";
@@ -291,6 +292,8 @@ function App() {
   const { t } = useTranslation(["common", "hub", "chat"]);
   useInjectedStyle("decave-polished-skins-v1", POLISHED_SKINS_CSS);
   useInjectedStyle("decave-reference-ui-v2", REFERENCE_UI_CSS);
+  // Last, so the glass treatment overrides the skins while it is on.
+  useInjectedStyle("decave-liquid-glass-v1", LIQUID_GLASS_CSS);
 
   const [authToken, setAuthToken] = useState("");
   const [currentUser, setCurrentUser] = useState<AccountUser | null>(null);
@@ -303,15 +306,26 @@ function App() {
   const toggleRoomMute = useRoomMute(preferences);
   const extraSettingsRef = useRef(preferences.extraSettings);
   extraSettingsRef.current = preferences.extraSettings;
-  const { prefersDark, systemReducedMotion } = useSystemAppearance();
+  const { prefersDark, systemReducedMotion, systemReducedTransparency, lowPowerDevice } = useSystemAppearance();
   /** The skin on screen: the chosen one, or the light/dark pick when following the computer. */
   const displaySkin = resolveSkin(preferences.extraSettings, preferences.appSkin, prefersDark) as AppSkin;
+  const glassEnvironment = useMemo(
+    () => ({ reducedTransparency: systemReducedTransparency, lowPowerDevice }),
+    [systemReducedTransparency, lowPowerDevice],
+  );
+  const glassStyle = activeGlass(preferences.extraSettings, glassEnvironment);
   // Mirror the skin onto <html>/<body> so overlays portaled to document.body
   // resolve the same design tokens as surfaces inside .app.
   useLayoutEffect(() => {
     document.documentElement.dataset.skin = displaySkin;
     document.body.dataset.skin = displaySkin;
   }, [displaySkin]);
+  useLayoutEffect(() => {
+    for (const element of [document.documentElement, document.body]) {
+      if (glassStyle) element.dataset.glass = glassStyle;
+      else delete element.dataset.glass;
+    }
+  }, [glassStyle]);
   const authForm = useAuthFormState();
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
   const [turnstileTestMode, setTurnstileTestMode] = useState(false);
@@ -4125,6 +4139,8 @@ function App() {
       data-contrast={preferences.extraSettings.highContrast ? "high" : undefined}
       data-underline-links={preferences.extraSettings.underlineLinks ? "true" : undefined}
       data-show-alt={preferences.extraSettings.showAltText ? "true" : undefined}
+      data-glass={glassStyle ?? undefined}
+      data-glass-backdrop={glassStyle ? preferences.extraSettings.glassBackdrop : undefined}
       data-workspace={
         showAdminDashboard
           ? "admin"
@@ -4151,6 +4167,14 @@ function App() {
           ...((showManageServer ? manageUseChatBackground : currentServer.useChatBackground === true) &&
           currentServer.chatBackgroundUrl
             ? { "--dc-chat-background": `url(${HTTP_URL}${currentServer.chatBackgroundUrl})` }
+            : {}),
+          // Liquid Glass shows the open Hub's banner through the panels.
+          ...(glassStyle &&
+          preferences.extraSettings.glassBackdrop === "hub" &&
+          !showHome &&
+          !overlayWorkspaceOpen &&
+          currentServer.bannerUrl
+            ? { "--dc-glass-art": `url(${HTTP_URL}${currentServer.bannerUrl})` }
             : {}),
         } as CSSProperties
       }
@@ -5106,6 +5130,7 @@ function App() {
           preferences={preferences}
           prefersDark={prefersDark}
           systemReducedMotion={systemReducedMotion}
+          glassEnvironment={glassEnvironment}
           settingsWindow={settingsWindow}
           profileMedia={profileMedia}
           profileAvatarError={profileAvatarError}

@@ -309,6 +309,10 @@
     "whatsNew": {
       "label": "Novità",
       "keywords": "patch notes changelog"
+    },
+    "glass": {
+      "label": "Effetto vetro",
+      "keywords": "liquid glass trasparente traslucido sfocatura satinato"
     }
   },
   "toast": {
@@ -1211,7 +1215,53 @@
     "underline": "Sottolinea sempre i link",
     "underlineHelp": "Rende i link nei messaggi facili da individuare senza affidarsi al colore.",
     "altText": "Mostra le descrizioni delle immagini",
-    "altTextHelp": "Mostra il titolo di GIF e sticker sotto di essi."
+    "altTextHelp": "Mostra il titolo di GIF e sticker sotto di essi.",
+    "glassTitle": "Effetto vetro",
+    "glass": {
+      "label": "Liquid Glass",
+      "help": "Pannelli traslucidi e sfocati sopra il banner del tuo Hub, nei colori della tua skin.",
+      "styleLabel": "Stile del vetro",
+      "clear": {
+        "label": "Chiaro",
+        "detail": "Il banner si vede di più"
+      },
+      "tinted": {
+        "label": "Oscurato",
+        "detail": "Vetro più scuro, più leggibile"
+      },
+      "autoOff": "Disattiva automaticamente",
+      "autoOffHelp": "Usa pannelli pieni sui dispositivi più lenti e quando gli effetti di trasparenza sono disattivati su questo computer.",
+      "offTransparency": "Il vetro è disattivato perché gli effetti di trasparenza sono disattivati su questo computer. Disattiva «Disattiva automaticamente» per usarlo comunque.",
+      "offDevice": "Il vetro è disattivato perché questo dispositivo potrebbe non gestirlo in modo fluido. Disattiva «Disattiva automaticamente» per usarlo comunque.",
+      "offContrast": "Il vetro resta disattivato finché il Contrasto elevato è attivo.",
+      "backdropLabel": "Sfondo",
+      "backdrop": {
+        "hub": {
+          "label": "Banner dell'Hub",
+          "detail": "I colori della tua skin quando non c'è un banner"
+        },
+        "aurora": {
+          "label": "Aurora",
+          "detail": "Luce rosa, blu e turchese"
+        },
+        "graphite": {
+          "label": "Grafite",
+          "detail": "Grigio neutro e calmo"
+        },
+        "sunset": {
+          "label": "Tramonto",
+          "detail": "Arancione, rosso e viola caldi"
+        },
+        "ocean": {
+          "label": "Oceano",
+          "detail": "Blu profondo e turchese"
+        },
+        "forest": {
+          "label": "Foresta",
+          "detail": "Verde smeraldo e lime"
+        }
+      }
+    }
   },
   "language": {
     "title": "Date e orari",
@@ -1563,7 +1613,8 @@
         "everyone": "Tutti",
         "friends": "Amici",
         "nobody": "Nessuno"
-      }
+      },
+      "streamerModeHelp": "Nasconde il tuo indirizzo email su questo telefono. Si attiva da solo mentre condividi lo schermo."
     },
     "skins": {
       "neon": {
@@ -1588,6 +1639,15 @@
       "obsidian": {
         "description": "Vetro quasi nero con un pulito bordo argentato."
       }
+    },
+    "muted": {
+      "noneMuted": "Niente è silenziato. Usa la campanella di un Hub o di una stanza per silenziarlo."
+    },
+    "connections": {
+      "detail": "Steam, Twitch e FACEIT"
+    },
+    "voice": {
+      "pushToTalkHelp": "Il microfono trasmette solo mentre tieni premuto «Tieni premuto per parlare» nella stanza vocale."
     }
   },
   "linkPage": {

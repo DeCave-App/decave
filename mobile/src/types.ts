@@ -97,6 +97,12 @@ export type Channel = {
   private?: boolean;
   forumGuidelines?: string;
   forumPostPolicy?: ForumPostPolicy;
+  /** Moderator-set forum tags (forum rooms). */
+  forumTags?: unknown;
+  forumPostRoleIds?: string[];
+  forumPostMemberIds?: string[];
+  /** False when I may not post in this room. */
+  canPost?: boolean;
   /** Per-room accent ('#rrggbb'); null/absent = Hub accent. */
   accent?: string | null;
 };
@@ -116,6 +122,10 @@ export type Hub = {
   category?: string;
   tags?: string[];
   slowModeSeconds?: number;
+  /** "streamer" for Streamer Hubs (creator overview). */
+  layout?: string;
+  /** Only the owner may post in this Hub. */
+  ownerOnlyPosting?: boolean;
   iconUrl?: string | null;
   bannerUrl?: string | null;
   joined?: boolean;

@@ -1057,7 +1057,6 @@
       "pinnedMessages": "Messaggi fissati",
       "returnToVoiceControls": "Torna ai controlli vocali",
       "voiceAndMessagesLiveTogether": "Chat vocale e messaggi convivono in questa stanza.",
-      "noPostsInThisForum": "Ancora nessun post in questo forum.",
       "thisIsTheBeginningOf": "Questo è l'inizio di questa stanza testuale.",
       "longPressForMessageActions": "Tieni premuto per le azioni sul messaggio",
       "pinned": "Fissato",
@@ -1067,9 +1066,7 @@
       "severalPeopleAreTyping": "Diverse persone stanno scrivendo…",
       "editingMessage": "Stai modificando il messaggio",
       "replyingToNameValue": "Stai rispondendo a {{name}}: {{value}}",
-      "longPressAPostTo": "Tieni premuto un post per rispondere. I nuovi post del forum si possono creare da desktop o web.",
       "addPhotoVideoOrGif": "Aggiungi foto, video o GIF",
-      "writeAReply": "Scrivi una risposta",
       "messageName": "Scrivi in #{{name}}",
       "couldNotUpdateMute": "Impossibile aggiornare il silenziamento",
       "unmuteUsername": "Riattiva {{username}}",
@@ -1080,7 +1077,11 @@
       "reactedByYou": "{{emoji}} {{count}}, hai reagito",
       "newCount": "{{number}} nuovi",
       "isTyping": "{{name}} sta scrivendo…",
-      "twoTyping": "{{first}} e {{second}} stanno scrivendo…"
+      "twoTyping": "{{first}} e {{second}} stanno scrivendo…",
+      "couldNotSendSticker": "Impossibile inviare lo sticker",
+      "couldNotSendPoll": "Impossibile inviare il sondaggio",
+      "muteRoom": "Silenzia stanza",
+      "unmuteRoom": "Riattiva stanza"
     },
     "finder": {
       "searchFailed": "Ricerca non riuscita.",
@@ -1100,7 +1101,8 @@
       "cameraOff": "L'accesso alla fotocamera è disattivato per DeCave. Attivalo in Impostazioni.",
       "photosOff": "L'accesso alle foto è disattivato per DeCave. Attivalo in Impostazioni.",
       "tooLarge": "Gli allegati possono essere fino a 25 MB.",
-      "uploadFailed": "Impossibile caricare l'allegato."
+      "uploadFailed": "Impossibile caricare l'allegato.",
+      "poll": "Sondaggio"
     },
     "preview": {
       "mine": "Il tuo messaggio: {{body}}",

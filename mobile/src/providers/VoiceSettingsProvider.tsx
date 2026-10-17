@@ -15,6 +15,8 @@ export type VoiceSettings = {
   echoCancellation: boolean;
   autoGainControl: boolean;
   joinMuted: boolean;
+  /** Transmit only while "Hold to talk" is held in the voice room. */
+  pushToTalk: boolean;
   screenShareQuality: ScreenShareQuality;
 };
 
@@ -32,6 +34,7 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   echoCancellation: true,
   autoGainControl: true,
   joinMuted: false,
+  pushToTalk: false,
   screenShareQuality: "balanced",
 };
 
@@ -45,6 +48,7 @@ function normalize(value: Partial<VoiceSettings> | null | undefined): VoiceSetti
       : "balanced";
 
   return {
+    pushToTalk: value?.pushToTalk === true,
     noiseSuppression:
       typeof value?.noiseSuppression === "boolean"
         ? value.noiseSuppression

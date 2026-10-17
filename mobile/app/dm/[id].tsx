@@ -58,6 +58,9 @@ import { useTranslation } from "react-i18next";
 import { i18next } from "@/src/i18n";
 import { hour12Preference, useAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
 import { dateLocale } from "@/src/lib/date-locale";
+import { isReactionChip, parsePoll, pollVoteToggles } from "@/src/lib/polls";
+import { PollCard } from "@/src/components/chat/PollCard";
+import { PollComposerSheet } from "@/src/components/chat/PollComposerSheet";
 
 /** Encrypt a picked photo or video, upload the ciphertext and describe it for the encrypted message. */
 async function uploadEncryptedAsset(targetId: string, asset: ImagePickerAsset, token: string) {
@@ -134,6 +137,8 @@ function formatDayLabel(value: string): string {
 }
 
 function previewMessage(text: string): string {
+  const poll = parsePoll(text);
+  if (poll) return `${i18next.t("chat.actions.poll.kicker")}: ${poll.question}`;
   const preview = text.replace(/\s+/g, " ").trim();
   if (!preview) return i18next.t("dm.mobile.conversation.messageFallback");
   return preview.length > 88 ? `${preview.slice(0, 85)}…` : preview;
@@ -198,6 +203,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
   const [reportTarget, setReportTarget] = useState<MobileReportTarget | null>(null);
   const listRef = useRef<FlatList<DirectMessage>>(null);
   const [mediaOpen, setMediaOpen] = useState(false);
+  const [pollOpen, setPollOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -329,8 +335,44 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
     }
   };
 
+  const voteInPoll = async (message: DirectMessage, optionIndex: number) => {
+    if (!user) return;
+    const toggles = pollVoteToggles(message.reactions, user.id, optionIndex);
+    // An encrypted vote replaces the earlier one in a single sealed update (dmReactionBody).
+    if (message.envelope) {
+      if (toggles.includes(`poll_${optionIndex}`)) await reactToMessage(message, `poll_${optionIndex}`);
+      return;
+    }
+    for (const key of toggles) await reactToMessage(message, key);
+  };
+
+  const sendPoll = async (text: string): Promise<boolean> => {
+    if (!targetId) return false;
+    let frame: Record<string, unknown>;
+    try {
+      frame = await dmSocketFrame(targetId, text, replyingTo?.id ?? null);
+    } catch (error) {
+      Alert.alert(t("chat.mobile.channel.couldNotSendPoll"), e2eeErrorText(error, t("dm.mobile.dms.pleaseTryAgain")));
+      return false;
+    }
+    if (send(frame)) {
+      impactHaptic();
+      setReplyingTo(null);
+      return true;
+    }
+    discardDmSend(frame.clientMessageId);
+    Alert.alert(t("chat.mobile.channel.couldNotSendPoll"), t("dm.mobile.conversation.realtimeIsReconnectingTryAgain"));
+    return false;
+  };
+
+  const openPollComposer = () => {
+    setMediaOpen(false);
+    // iOS can't present a second modal while the first is still sliding away.
+    setTimeout(() => setPollOpen(true), 350);
+  };
+
   const beginEdit = (message: DirectMessage) => {
-    if (message.fromUserId !== user?.id) return;
+    if (message.fromUserId !== user?.id || parsePoll(message.text)) return;
     // A message this phone can't decrypt has no text to edit.
     if (message.e2ee === "locked" || message.e2ee === "failed") return;
     setReplyingTo(null);
@@ -772,6 +814,8 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                       </View>
                     ) : legacyAttachment && isImageMime(legacyAttachment.mimeType) ? (
                       <MessageImage url={legacyAttachment.url} title={legacyAttachment.name} token={token} authenticated decrypt={attachmentDecrypter(legacyAttachment)} mimeType={legacyAttachment.mimeType} onSave={() => void downloadLegacyAttachment(legacyAttachment)} />
+                    ) : parsePoll(item.text) ? (
+                      <PollCard poll={parsePoll(item.text)!} reactions={item.reactions} userId={user?.id} onVote={(index) => void voteInPoll(item, index)} />
                     ) : parseGif(item.text) ? (
                       <MessageImage url={parseGif(item.text)!.url} title={parseGif(item.text)!.title} token={token} authenticated />
                     ) : legacyAttachment ? (
@@ -782,9 +826,9 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                     ) : <LinkifiedText style={styles.messageText} text={item.text} />}
 
                     {!!item.reactions &&
-                      Object.keys(item.reactions).length > 0 && (
+                      Object.keys(item.reactions).some(isReactionChip) && (
                         <View style={styles.reactions}>
-                          {Object.entries(item.reactions).map(
+                          {Object.entries(item.reactions).filter(([key]) => isReactionChip(key)).map(
                             ([emoji, userIds]) => (
                               <Pressable
                                 key={emoji}
@@ -947,7 +991,9 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         onPickLibrary={() => void sendAttachmentFrom("library")}
         onPickCamera={() => void sendAttachmentFrom("camera")}
         onGif={sendGif}
+        onPoll={openPollComposer}
       />
+      <PollComposerSheet visible={pollOpen} onClose={() => setPollOpen(false)} onPost={sendPoll} />
       <ReportSheet
         visible={reportTarget !== null}
         token={token}

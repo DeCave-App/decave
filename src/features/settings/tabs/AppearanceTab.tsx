@@ -4,7 +4,7 @@
 import type { SettingsWindowProps } from "../../../app/views/settings/SettingsWindow";
 import type { AppSkin } from "../../../app/types";
 import { APP_SKIN_OPTIONS } from "../../../app/settings-storage";
-import { ReadabilityPanel, ThemeModePanel } from "../AppearancePanels";
+import { GlassPanel, ReadabilityPanel, ThemeModePanel } from "../AppearancePanels";
 import { FieldError, SettingsSection } from "../SettingsControls";
 import { SLIDER_DEBOUNCE_MS, useStateField } from "../useSettingField";
 import { useSettingsT } from "../useSettingsT";
@@ -18,7 +18,7 @@ const SIZE_PRESETS: [number, string][] = [
 
 export function AppearanceTab(props: SettingsWindowProps) {
   const { t, tk } = useSettingsT();
-  const { preferences, prefersDark, systemReducedMotion, chooseAppSkin } = props;
+  const { preferences, prefersDark, systemReducedMotion, glassEnvironment, chooseAppSkin } = props;
   const { appSkin, extraSettings, setExtraSettings, accessibilityTextScale, setAccessibilityTextScale } = preferences;
   const synced = ["account", "device"] as const;
   const skin = useStateField("appearance.skin", appSkin, (next: AppSkin) => chooseAppSkin(next), synced);
@@ -51,6 +51,10 @@ export function AppearanceTab(props: SettingsWindowProps) {
           ))}
         </div>
         <FieldError field={skin} />
+      </SettingsSection>
+
+      <SettingsSection anchor="glass" title={t("settings.appearance.glassTitle")}>
+        <GlassPanel field={extra} environment={glassEnvironment} />
       </SettingsSection>
 
       <SettingsSection anchor="theme-mode" title={t("settings.appearance.themeTitle")}>

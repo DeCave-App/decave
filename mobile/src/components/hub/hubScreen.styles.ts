@@ -148,6 +148,11 @@ export const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 20,
   },
+  leaveStrip: {
+    backgroundColor: colors.redSoft,
+    borderColor: "rgba(255,95,120,.24)",
+    marginTop: 4,
+  },
   adminStripIcon: {
     width: 38,
     height: 38,

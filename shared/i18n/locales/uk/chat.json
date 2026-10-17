@@ -1074,7 +1074,6 @@
       "pinnedMessages": "Закріплені повідомлення",
       "returnToVoiceControls": "Назад до керування голосом",
       "voiceAndMessagesLiveTogether": "У цій кімнаті голос і повідомлення разом.",
-      "noPostsInThisForum": "На цьому форумі ще немає публікацій.",
       "thisIsTheBeginningOf": "Це початок цієї текстової кімнати.",
       "longPressForMessageActions": "Утримуй для дій з повідомленням",
       "pinned": "Закріплено",
@@ -1084,9 +1083,7 @@
       "severalPeopleAreTyping": "Кілька людей пишуть…",
       "editingMessage": "Редагування повідомлення",
       "replyingToNameValue": "Відповідь користувачу {{name}}: {{value}}",
-      "longPressAPostTo": "Утримуй публікацію, щоб відповісти. Нові публікації на форумі можна створювати на комп’ютері або в браузері.",
       "addPhotoVideoOrGif": "Додати фото, відео чи GIF",
-      "writeAReply": "Напиши відповідь",
       "messageName": "Написати в #{{name}}",
       "couldNotUpdateMute": "Не вдалося змінити сповіщення",
       "unmuteUsername": "Увімкнути сповіщення від {{username}}",
@@ -1097,7 +1094,11 @@
       "reactedByYou": "{{emoji}} {{count}}, твоя реакція",
       "newCount": "Нових: {{number}}",
       "isTyping": "{{name}} пише…",
-      "twoTyping": "{{first}} і {{second}} пишуть…"
+      "twoTyping": "{{first}} і {{second}} пишуть…",
+      "couldNotSendSticker": "Не вдалося надіслати стікер",
+      "couldNotSendPoll": "Не вдалося надіслати опитування",
+      "muteRoom": "Вимкнути сповіщення кімнати",
+      "unmuteRoom": "Увімкнути сповіщення кімнати"
     },
     "finder": {
       "searchFailed": "Пошук не вдався.",
@@ -1117,7 +1118,8 @@
       "cameraOff": "Доступ DeCave до камери вимкнено. Увімкни його в Налаштуваннях.",
       "photosOff": "Доступ DeCave до фото вимкнено. Увімкни його в Налаштуваннях.",
       "tooLarge": "Вкладення можуть мати розмір до 25 МБ.",
-      "uploadFailed": "Не вдалося завантажити вкладення."
+      "uploadFailed": "Не вдалося завантажити вкладення.",
+      "poll": "Опитування"
     },
     "preview": {
       "mine": "Твоє повідомлення: {{body}}",

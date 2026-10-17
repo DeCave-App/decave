@@ -140,7 +140,9 @@
       "encrypted": "Versleuteld",
       "encryptedPing": "Versleuteld · {{ping}} ms",
       "rejoining": "Opnieuw deelnemen aan dit kanaal…",
-      "rejoiningAttempt": "Opnieuw deelnemen aan dit kanaal (poging {{attempt}}/3)…"
+      "rejoiningAttempt": "Opnieuw deelnemen aan dit kanaal (poging {{attempt}}/3)…",
+      "holdToTalk": "Ingedrukt houden om te praten",
+      "talking": "Je praat…"
     },
     "rejoin": "Opnieuw deelnemen",
     "bar": {

@@ -327,6 +327,15 @@
     "publish": "Publicar"
   },
   "mobile": {
-    "untitledPost": "Postagem sem título"
+    "untitledPost": "Postagem sem título",
+    "compose": {
+      "start": {
+        "none": "Não definido",
+        "now": "Agora",
+        "h1": "Em 1 hora",
+        "h3": "Em 3 horas",
+        "d1": "Amanhã"
+      }
+    }
   }
 }

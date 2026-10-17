@@ -1057,7 +1057,6 @@
       "pinnedMessages": "Messages épinglés",
       "returnToVoiceControls": "Revenir aux commandes vocales",
       "voiceAndMessagesLiveTogether": "Le vocal et les messages cohabitent dans ce salon.",
-      "noPostsInThisForum": "Aucun post dans ce forum pour l'instant.",
       "thisIsTheBeginningOf": "C'est le début de ce salon textuel.",
       "longPressForMessageActions": "Appui long pour les actions du message",
       "pinned": "Épinglé",
@@ -1067,9 +1066,7 @@
       "severalPeopleAreTyping": "Plusieurs personnes écrivent…",
       "editingMessage": "Modification du message",
       "replyingToNameValue": "En réponse à {{name}} : {{value}}",
-      "longPressAPostTo": "Appui long sur un post pour répondre. Les nouveaux posts se créent sur ordinateur ou sur le web.",
       "addPhotoVideoOrGif": "Ajouter une photo, une vidéo ou un GIF",
-      "writeAReply": "Écris une réponse",
       "messageName": "Envoyer un message dans #{{name}}",
       "couldNotUpdateMute": "Impossible de modifier les notifications",
       "unmuteUsername": "Réactiver les notifications de {{username}}",
@@ -1080,7 +1077,11 @@
       "reactedByYou": "{{emoji}} {{count}}, tu as réagi",
       "newCount": "{{number}} nouveaux",
       "isTyping": "{{name}} écrit…",
-      "twoTyping": "{{first}} et {{second}} écrivent…"
+      "twoTyping": "{{first}} et {{second}} écrivent…",
+      "couldNotSendSticker": "Impossible d’envoyer l’autocollant",
+      "couldNotSendPoll": "Impossible d’envoyer le sondage",
+      "muteRoom": "Mettre le salon en sourdine",
+      "unmuteRoom": "Réactiver le salon"
     },
     "finder": {
       "searchFailed": "La recherche a échoué.",
@@ -1100,7 +1101,8 @@
       "cameraOff": "L'accès à la caméra est désactivé pour DeCave. Active-le dans les Réglages.",
       "photosOff": "L'accès aux photos est désactivé pour DeCave. Active-le dans les Réglages.",
       "tooLarge": "Les pièces jointes peuvent faire jusqu'à 25 Mo.",
-      "uploadFailed": "Impossible d'envoyer la pièce jointe."
+      "uploadFailed": "Impossible d'envoyer la pièce jointe.",
+      "poll": "Sondage"
     },
     "preview": {
       "mine": "Ton message : {{body}}",

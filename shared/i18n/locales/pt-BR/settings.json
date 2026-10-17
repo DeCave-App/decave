@@ -309,6 +309,10 @@
     "whatsNew": {
       "label": "Novidades",
       "keywords": "notas de atualização patch notes changelog"
+    },
+    "glass": {
+      "label": "Efeito de vidro",
+      "keywords": "liquid glass transparente translúcido desfoque fosco"
     }
   },
   "toast": {
@@ -1211,7 +1215,53 @@
     "underline": "Sempre sublinhar links",
     "underlineHelp": "Deixa os links nas mensagens fáceis de ver sem depender da cor.",
     "altText": "Mostrar descrições de imagens",
-    "altTextHelp": "Mostra o título de GIFs e figurinhas embaixo deles."
+    "altTextHelp": "Mostra o título de GIFs e figurinhas embaixo deles.",
+    "glassTitle": "Efeito de vidro",
+    "glass": {
+      "label": "Liquid Glass",
+      "help": "Painéis translúcidos e desfocados sobre o banner do seu Hub, nas cores da sua skin.",
+      "styleLabel": "Estilo do vidro",
+      "clear": {
+        "label": "Claro",
+        "detail": "Mais do banner aparece"
+      },
+      "tinted": {
+        "label": "Escurecido",
+        "detail": "Vidro mais escuro, mais fácil de ler"
+      },
+      "autoOff": "Desativar automaticamente",
+      "autoOffHelp": "Usa painéis sólidos em dispositivos mais lentos e quando os efeitos de transparência estão desativados neste computador.",
+      "offTransparency": "O vidro está desativado agora porque os efeitos de transparência estão desativados neste computador. Desative “Desativar automaticamente” para usá-lo mesmo assim.",
+      "offDevice": "O vidro está desativado agora porque este dispositivo pode não exibi-lo com fluidez. Desative “Desativar automaticamente” para usá-lo mesmo assim.",
+      "offContrast": "O vidro fica desativado enquanto o Alto contraste estiver ativado.",
+      "backdropLabel": "Fundo",
+      "backdrop": {
+        "hub": {
+          "label": "Banner do Hub",
+          "detail": "As cores da sua skin quando não há banner"
+        },
+        "aurora": {
+          "label": "Aurora",
+          "detail": "Luz rosa, azul e turquesa"
+        },
+        "graphite": {
+          "label": "Grafite",
+          "detail": "Cinza neutro e calmo"
+        },
+        "sunset": {
+          "label": "Pôr do sol",
+          "detail": "Laranja, vermelho e violeta quentes"
+        },
+        "ocean": {
+          "label": "Oceano",
+          "detail": "Azul profundo e turquesa"
+        },
+        "forest": {
+          "label": "Floresta",
+          "detail": "Verde esmeralda e lima"
+        }
+      }
+    }
   },
   "language": {
     "title": "Datas e horas",
@@ -1563,7 +1613,8 @@
         "everyone": "Todos",
         "friends": "Amigos",
         "nobody": "Ninguém"
-      }
+      },
+      "streamerModeHelp": "Oculta seu endereço de e-mail neste celular. Liga sozinho enquanto você compartilha a tela."
     },
     "skins": {
       "neon": {
@@ -1588,6 +1639,15 @@
       "obsidian": {
         "description": "Vidro quase preto com borda prateada limpa."
       }
+    },
+    "muted": {
+      "noneMuted": "Nada está silenciado. Use o sino de um Hub ou de uma sala para silenciar."
+    },
+    "connections": {
+      "detail": "Steam, Twitch e FACEIT"
+    },
+    "voice": {
+      "pushToTalkHelp": "Seu microfone só transmite enquanto você segura “Segure para falar” na sala de voz."
     }
   },
   "linkPage": {

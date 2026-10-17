@@ -140,7 +140,9 @@
       "encrypted": "Chiffré",
       "encryptedPing": "Chiffré · {{ping}} ms",
       "rejoining": "Reconnexion à ce salon…",
-      "rejoiningAttempt": "Reconnexion à ce salon (tentative {{attempt}}/3)…"
+      "rejoiningAttempt": "Reconnexion à ce salon (tentative {{attempt}}/3)…",
+      "holdToTalk": "Maintenir pour parler",
+      "talking": "Tu parles…"
     },
     "rejoin": "Rejoindre le vocal",
     "bar": {

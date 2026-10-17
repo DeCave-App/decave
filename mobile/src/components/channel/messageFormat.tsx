@@ -2,7 +2,7 @@
 // with mentions and links, times, day labels and attachment sizes.
 
 import { t } from "i18next";
-import { Text } from "react-native";
+import { Image, Text } from "react-native";
 import { messageBotFields } from "../../../../shared/bots/card-view";
 import { forumPostNotices } from "../../../../shared/forum";
 import { noticeText } from "@/src/lib/server-notice";
@@ -10,6 +10,10 @@ import { linkStyle, openLink } from "@/src/components/LinkifiedText";
 import { styles } from "./channelScreen.styles";
 import { hour12Preference } from "@/src/lib/account-preferences-store";
 import { dateLocale } from "@/src/lib/date-locale";
+import { findEmote, parseSticker, type HubAsset } from "@/src/lib/hub-assets";
+import { parsePoll } from "@/src/lib/polls";
+import { parseChatEvent } from "@/src/lib/hub-events-model";
+import { assetUrl } from "@/src/components/hub/hubShared";
 
 export const FORUM_POST_PREFIX = "__DECAVE_FORUM_POST_V1__";
 
@@ -37,15 +41,34 @@ export function parseForumPost(text: string, message?: { bot?: unknown }): Forum
 }
 
 export function messagePreviewText(text: string, message?: { bot?: unknown }): string {
+  const event = parseChatEvent(text);
+  if (event) return `${t("events.card.kicker")}: ${event.title}`;
+  const poll = parsePoll(text);
+  if (poll) return `${t("chat.actions.poll.kicker")}: ${poll.question}`;
+  const sticker = parseSticker(text);
+  if (sticker) return sticker.name ? `:${sticker.name}:` : t("chat.actions.emoji.hubAssets");
   return parseForumPost(text, message)?.title ?? text;
 }
 
 export const CHANNEL_REACTION_EMOJIS = ["👍","❤️","😂","🔥","🎉","😮","😢","😡","👏","💯","🎮","🏆"];
 
-export function renderMessageText(text: string, username?: string) {
+/** Message text with links, mentions and (in Hubs) the Hub's custom `:emotes:` inline. */
+export function renderMessageText(text: string, username?: string, emotes: readonly HubAsset[] = []) {
   const ownMention = username ? `@${username.toLowerCase()}` : "";
 
-  return text.split(/(https?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)\]]|@everyone|@[a-zA-Z0-9_.-]+)/gi).map((part, index) => {
+  return text.split(messageTokenPattern()).map((part, index) => {
+    const emote = emotes.length > 0 ? findEmote(emotes, part) : null;
+    const emoteUri = emote ? assetUrl(emote.url) : null;
+    if (emote && emoteUri) {
+      return (
+        <Image
+          key={`${index}:${part}`}
+          source={{ uri: emoteUri }}
+          style={EMOTE_STYLE}
+          accessibilityLabel={`:${emote.name}:`}
+        />
+      );
+    }
     if (/^https?:\/\//i.test(part)) {
       return (
         <Text key={`${index}:${part}`} style={linkStyle} accessibilityRole="link" onPress={() => openLink(part)}>
@@ -73,6 +96,26 @@ export function renderMessageText(text: string, username?: string) {
       </Text>
     );
   });
+}
+
+const EMOTE_STYLE = { width: 22, height: 22 } as const;
+
+const LINK_AND_MENTION = String.raw`https?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)\]]|@everyone|@[a-zA-Z0-9_.-]+`;
+let tokenPattern: RegExp | undefined;
+
+/**
+ * Links, mentions and `:emote:` names (any letters, like the server allows).
+ * Built on first use inside try, as in emoji-only.ts: a Unicode property
+ * regex the engine rejected at import time would break every chat screen.
+ */
+function messageTokenPattern(): RegExp {
+  if (tokenPattern) return tokenPattern;
+  try {
+    tokenPattern = new RegExp(String.raw`(${LINK_AND_MENTION}|:[\p{L}\p{N}_-]+:)`, "giu");
+  } catch {
+    tokenPattern = new RegExp(String.raw`(${LINK_AND_MENTION}|:[A-Za-z0-9_-]+:)`, "gi");
+  }
+  return tokenPattern;
 }
 
 export function formatMessageTime(value: string): string {

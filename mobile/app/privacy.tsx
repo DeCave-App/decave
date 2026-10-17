@@ -126,6 +126,11 @@ export default function PrivacyScreen() {
     );
   };
 
+  const setStreamerMode = (value: boolean) => {
+    if (!prefs) return;
+    void saveToggle({ streamerMode: value }, { ...prefs, streamerMode: value });
+  };
+
   const setStreamPreviews = (value: boolean) => {
     if (!prefs) return;
     void saveToggle({ allowStreamPreviews: value }, { ...prefs, allowStreamPreviews: value });
@@ -222,6 +227,19 @@ export default function PrivacyScreen() {
             </View>
 
             <Text style={styles.section}>{t("settings.anchors.streamPrivacy.label").toUpperCase()}</Text>
+            <View style={[styles.card, styles.toggleCard]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>{t("settings.privacy.streamerMode")}</Text>
+                <Text style={styles.optionDetail}>{t("settings.mobile.privacy.streamerModeHelp")}</Text>
+              </View>
+              <Switch
+                accessibilityLabel={t("settings.privacy.streamerMode")}
+                value={prefs?.streamerMode === true}
+                onValueChange={setStreamerMode}
+                disabled={!prefs}
+                trackColor={{ true: colors.violet }}
+              />
+            </View>
             <View style={[styles.card, styles.toggleCard]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{t("settings.privacy.streamPreviews")}</Text>

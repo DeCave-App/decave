@@ -136,13 +136,12 @@ export function reconcileAttachmentDeletionStatements(
       db
         .prepare(
           `INSERT OR IGNORE INTO decave_media_deletion_queue(object_key,queued_at,attempts,last_attempt_at)
-           SELECT candidate.object_key,?,0,NULL FROM (
-             SELECT ? AS object_key${chunk.map(() => " UNION ALL SELECT ?").join("")}
-           ) candidate
-           WHERE NOT EXISTS(SELECT 1 FROM decave_messages WHERE attachment_key=candidate.object_key)
-             AND NOT EXISTS(SELECT 1 FROM decave_attachment_access WHERE r2_key=candidate.object_key)`,
+           SELECT candidate.value,?,0,NULL FROM json_each(?) candidate
+           WHERE NOT EXISTS(SELECT 1 FROM decave_messages WHERE attachment_key=candidate.value)
+             AND NOT EXISTS(SELECT 1 FROM decave_attachment_access WHERE r2_key=candidate.value)`,
         )
-        .bind(queuedAt, ...chunk),
+        // A JSON array, not a UNION ALL of one SELECT per key: D1 allows at most 5 compound terms.
+        .bind(queuedAt, JSON.stringify(chunk)),
     );
   }
   return statements;
@@ -150,49 +149,54 @@ export function reconcileAttachmentDeletionStatements(
 
 /**
  * Every R2 object owned by one Hub (channel attachments, assets, soundboard and
- * artwork, room backgrounds, clip thumbnails). Bind the Hub id
- * HUB_MEDIA_OBJECT_KEYS_BINDS times. Callers must run
- * ensureHubFeatureSchema and ensureSoundboardSchema first.
+ * artwork, room backgrounds, clip thumbnails), one SELECT per source, each
+ * binding the Hub id once. Production D1 rejects a compound SELECT with more
+ * than 5 terms ("too many terms in compound SELECT"), so these must never be
+ * joined into one UNION. Callers must run ensureHubFeatureSchema and
+ * ensureSoundboardSchema first.
  */
-export const HUB_MEDIA_OBJECT_KEYS_SQL = `SELECT attachment_key AS object_key FROM decave_messages WHERE hub_id=? AND attachment_key IS NOT NULL
-  UNION SELECT r2_key AS object_key FROM decave_attachment_access WHERE hub_id=?
-  UNION SELECT r2_key AS object_key FROM decave_hub_assets WHERE hub_id=?
-  UNION SELECT r2_key AS object_key FROM decave_soundboard_sounds WHERE hub_id=?
-  UNION SELECT icon_key AS object_key FROM decave_hubs WHERE id=? AND icon_key IS NOT NULL
-  UNION SELECT banner_key AS object_key FROM decave_hubs WHERE id=? AND banner_key IS NOT NULL
-  UNION SELECT chat_background_key AS object_key FROM decave_hubs WHERE id=? AND chat_background_key IS NOT NULL
-  UNION SELECT header_key AS object_key FROM decave_hubs WHERE id=? AND header_key IS NOT NULL
-  UNION SELECT background_key AS object_key FROM decave_rooms WHERE hub_id=? AND background_key IS NOT NULL
-  UNION SELECT thumbnail_key AS object_key FROM decave_twitch_clips_posted WHERE hub_id=? AND thumbnail_key IS NOT NULL AND thumbnail_key<>''`;
-export const HUB_MEDIA_OBJECT_KEYS_BINDS = 10;
+export const HUB_MEDIA_OBJECT_KEY_SOURCES = [
+  "SELECT attachment_key AS object_key FROM decave_messages WHERE hub_id=? AND attachment_key IS NOT NULL",
+  "SELECT r2_key AS object_key FROM decave_attachment_access WHERE hub_id=?",
+  "SELECT r2_key AS object_key FROM decave_hub_assets WHERE hub_id=?",
+  "SELECT r2_key AS object_key FROM decave_soundboard_sounds WHERE hub_id=?",
+  "SELECT icon_key AS object_key FROM decave_hubs WHERE id=? AND icon_key IS NOT NULL",
+  "SELECT banner_key AS object_key FROM decave_hubs WHERE id=? AND banner_key IS NOT NULL",
+  "SELECT chat_background_key AS object_key FROM decave_hubs WHERE id=? AND chat_background_key IS NOT NULL",
+  "SELECT header_key AS object_key FROM decave_hubs WHERE id=? AND header_key IS NOT NULL",
+  "SELECT background_key AS object_key FROM decave_rooms WHERE hub_id=? AND background_key IS NOT NULL",
+  "SELECT thumbnail_key AS object_key FROM decave_twitch_clips_posted WHERE hub_id=? AND thumbnail_key IS NOT NULL AND thumbnail_key<>''",
+] as const;
 
 export async function hubMediaObjectKeys(db: D1Database, hubId: number): Promise<string[]> {
-  const rows = await db
-    .prepare(HUB_MEDIA_OBJECT_KEYS_SQL)
-    .bind(...Array<number>(HUB_MEDIA_OBJECT_KEYS_BINDS).fill(hubId))
-    .all<{ object_key: string }>();
-  return [...new Set(rows.results.map((row) => row.object_key).filter(Boolean))];
+  const results = await Promise.all(
+    HUB_MEDIA_OBJECT_KEY_SOURCES.map((sql) => db.prepare(sql).bind(hubId).all<{ object_key: string }>()),
+  );
+  return [...new Set(results.flatMap((result) => result.results.map((row) => row.object_key)).filter(Boolean))];
 }
 
 /**
  * Queue a Hub's R2 objects for deletion inside the same D1 batch that deletes
- * the Hub. `guardSql` (with `guardBindings`) is appended as an extra WHERE
- * condition so a guarded Hub deletion only queues media when it will succeed.
+ * the Hub: one INSERT per media source. `guardSql` (with `guardBindings`) is
+ * appended as an extra WHERE condition so a guarded Hub deletion only queues
+ * media when it will succeed.
  */
-export function queueHubMediaDeletionStatement(
+export function queueHubMediaDeletionStatements(
   db: D1Database,
   hubId: number,
   queuedAt: string,
   guardSql = "1=1",
   guardBindings: unknown[] = [],
-): D1PreparedStatement {
-  return db
-    .prepare(
-      `INSERT OR IGNORE INTO decave_media_deletion_queue(object_key,queued_at,attempts,last_attempt_at)
-       SELECT object_key,?,0,NULL FROM (${HUB_MEDIA_OBJECT_KEYS_SQL})
-       WHERE object_key IS NOT NULL AND (${guardSql})`,
-    )
-    .bind(queuedAt, ...Array<number>(HUB_MEDIA_OBJECT_KEYS_BINDS).fill(hubId), ...guardBindings);
+): D1PreparedStatement[] {
+  return HUB_MEDIA_OBJECT_KEY_SOURCES.map((sql) =>
+    db
+      .prepare(
+        `INSERT OR IGNORE INTO decave_media_deletion_queue(object_key,queued_at,attempts,last_attempt_at)
+         SELECT object_key,?,0,NULL FROM (${sql})
+         WHERE object_key IS NOT NULL AND (${guardSql})`,
+      )
+      .bind(queuedAt, hubId, ...guardBindings),
+  );
 }
 
 /** Attempt R2 deletion only for keys that are actually queued (a guarded batch may have skipped them). */

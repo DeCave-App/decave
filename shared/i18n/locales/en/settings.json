@@ -309,6 +309,10 @@
     "whatsNew": {
       "label": "What's new",
       "keywords": "patch notes changelog"
+    },
+    "glass": {
+      "label": "Glass effect",
+      "keywords": "liquid glass transparent translucent blur frosted see-through"
     }
   },
   "toast": {
@@ -1203,7 +1207,53 @@
     "underline": "Always underline links",
     "underlineHelp": "Make links in messages easy to spot without relying on colour.",
     "altText": "Show image descriptions",
-    "altTextHelp": "Show the title of GIFs and stickers under them."
+    "altTextHelp": "Show the title of GIFs and stickers under them.",
+    "glassTitle": "Glass effect",
+    "glass": {
+      "label": "Liquid Glass",
+      "help": "See-through, blurred panels over your Hub's banner, in your skin's colors.",
+      "styleLabel": "Glass style",
+      "clear": {
+        "label": "Clear",
+        "detail": "More of the banner shows through"
+      },
+      "tinted": {
+        "label": "Tinted",
+        "detail": "Darker glass, easier to read"
+      },
+      "autoOff": "Turn off automatically",
+      "autoOffHelp": "Use solid panels on slower devices and when transparency effects are turned off on this computer.",
+      "offTransparency": "Glass is off right now because transparency effects are turned off on this computer. Turn off “Turn off automatically” to use it anyway.",
+      "offDevice": "Glass is off right now because this device may not run it smoothly. Turn off “Turn off automatically” to use it anyway.",
+      "offContrast": "Glass stays off while High contrast is on.",
+      "backdropLabel": "Backdrop",
+      "backdrop": {
+        "hub": {
+          "label": "Hub banner",
+          "detail": "Your skin's colors when there's no banner"
+        },
+        "aurora": {
+          "label": "Aurora",
+          "detail": "Pink, blue and teal light"
+        },
+        "graphite": {
+          "label": "Graphite",
+          "detail": "Calm, neutral gray"
+        },
+        "sunset": {
+          "label": "Sunset",
+          "detail": "Warm orange, red and violet"
+        },
+        "ocean": {
+          "label": "Ocean",
+          "detail": "Deep blue and turquoise"
+        },
+        "forest": {
+          "label": "Forest",
+          "detail": "Emerald and lime green"
+        }
+      }
+    }
   },
   "language": {
     "title": "Dates & times",
@@ -1551,7 +1601,8 @@
         "everyone": "Everyone",
         "friends": "Friends",
         "nobody": "Nobody"
-      }
+      },
+      "streamerModeHelp": "Hides your email address on this phone. Turns on by itself while you share your screen."
     },
     "skins": {
       "neon": {
@@ -1576,6 +1627,15 @@
       "obsidian": {
         "description": "Near-black glass with a clean silver edge."
       }
+    },
+    "muted": {
+      "noneMuted": "Nothing is muted. Use the bell on a Hub or in a room to mute it."
+    },
+    "connections": {
+      "detail": "Steam, Twitch and FACEIT"
+    },
+    "voice": {
+      "pushToTalkHelp": "Your mic sends only while you hold Hold to talk in the voice room."
     }
   },
   "linkPage": {

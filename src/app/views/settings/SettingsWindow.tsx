@@ -10,6 +10,7 @@ import { SettingsPersistContext, useSettingsPersist, type PersistSettings } from
 import type { SettingsTabId } from "../../../features/settings/settingsMap";
 import type { MfaStatus } from "../../../features/settings/TwoFactorPanel";
 import type { CheckupItem } from "../../../features/settings/checkup/checks";
+import type { GlassEnvironment } from "../../../features/settings/extraSettings";
 import { setCheckupDismissed } from "../../../features/settings/checkup/dismissed";
 import { useCheckup } from "../../../features/settings/checkup/useCheckup";
 import { YourSetupTab } from "../../../features/settings/checkup/YourSetupTab";
@@ -57,6 +58,8 @@ export type SettingsWindowProps = {
   preferences: PreferencesState;
   prefersDark: boolean;
   systemReducedMotion: boolean;
+  /** Why Liquid Glass may be switched off automatically on this device. */
+  glassEnvironment: GlassEnvironment;
   settingsWindow: SettingsWindowState;
   profileMedia: ProfileMediaState;
   profileAvatarError: string;

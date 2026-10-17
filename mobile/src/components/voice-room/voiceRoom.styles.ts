@@ -416,6 +416,17 @@ export const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
     backgroundColor: "#02040A",
   },
+  flipCameraButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+  },
   videoFooter: {
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -560,6 +571,29 @@ export const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
+  pushToTalk: {
+    position: "absolute",
+    alignSelf: "center",
+    bottom: 104,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 26,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  pushToTalkHeld: {
+    backgroundColor: colors.green,
+    borderColor: colors.green,
+  },
+  pushToTalkText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "900",
+  },
   controls: {
     position: "absolute",
     alignSelf: "center",

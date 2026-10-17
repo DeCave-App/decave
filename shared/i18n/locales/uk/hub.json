@@ -1401,7 +1401,8 @@
       "noVoiceRoomsInThis": "У цьому Hub немає голосових кімнат.",
       "pickARoomToStart": "Вибери кімнату, щоб почати спілкування",
       "onlineMembers": "{{online}} онлайн · учасників: {{count}}",
-      "withRole": "{{summary}} · {{role}}"
+      "withRole": "{{summary}} · {{role}}",
+      "couldNotLeave": "Не вдалося вийти з цього Hub."
     },
     "hubAdmin": {
       "hubSettingsUpdated": "Налаштування Hub оновлено.",
@@ -1522,7 +1523,8 @@
       "recentEvents_other": "{{count}} недавньої події",
       "mediaCurrent": "Поточне: {{item}}",
       "mediaRemove": "Прибрати: {{item}}",
-      "mediaShow": "Показувати: {{item}}"
+      "mediaShow": "Показувати: {{item}}",
+      "deleteHubFailed": "Не вдалося видалити цей Hub."
     },
     "join": {
       "couldnTUseThisInvite": "Не вдалося використати це запрошення.",

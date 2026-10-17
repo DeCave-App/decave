@@ -140,7 +140,9 @@
       "encrypted": "Encrypted",
       "encryptedPing": "Encrypted · {{ping}} ms",
       "rejoining": "Rejoining this room…",
-      "rejoiningAttempt": "Rejoining this room (attempt {{attempt}}/3)…"
+      "rejoiningAttempt": "Rejoining this room (attempt {{attempt}}/3)…",
+      "holdToTalk": "Hold to talk",
+      "talking": "Talking…"
     },
     "rejoin": "Rejoin voice",
     "bar": {

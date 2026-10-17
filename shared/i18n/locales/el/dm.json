@@ -410,7 +410,9 @@
       "connected": "Συνδέθηκε · {{duration}}",
       "waitingVideo": "Αναμονή για βίντεο…",
       "switchToVideo": "Αλλαγή σε βίντεο",
-      "toggleCamera": "Εναλλαγή κάμερας"
+      "toggleCamera": "Εναλλαγή κάμερας",
+      "switchCamera": "Αλλαγή κάμερας",
+      "cameraSwitchFailed": "Το DeCave δεν μπόρεσε να αλλάξει κάμερα."
     }
   },
   "preview": {

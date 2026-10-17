@@ -311,6 +311,15 @@
     "publish": "Publiceren"
   },
   "mobile": {
-    "untitledPost": "Post zonder titel"
+    "untitledPost": "Post zonder titel",
+    "compose": {
+      "start": {
+        "none": "Niet ingesteld",
+        "now": "Nu",
+        "h1": "Over 1 uur",
+        "h3": "Over 3 uur",
+        "d1": "Morgen"
+      }
+    }
   }
 }

@@ -309,6 +309,10 @@
     "whatsNew": {
       "label": "Nouveautés",
       "keywords": "patch notes journal des modifications"
+    },
+    "glass": {
+      "label": "Effet verre",
+      "keywords": "liquid glass transparent translucide flou dépoli"
     }
   },
   "toast": {
@@ -1211,7 +1215,53 @@
     "underline": "Toujours souligner les liens",
     "underlineHelp": "Rend les liens des messages faciles à repérer sans dépendre de la couleur.",
     "altText": "Afficher les descriptions d'images",
-    "altTextHelp": "Affiche le titre des GIF et autocollants en dessous."
+    "altTextHelp": "Affiche le titre des GIF et autocollants en dessous.",
+    "glassTitle": "Effet verre",
+    "glass": {
+      "label": "Liquid Glass",
+      "help": "Des panneaux translucides et floutés au-dessus de la bannière de ton Hub, aux couleurs de ton skin.",
+      "styleLabel": "Style du verre",
+      "clear": {
+        "label": "Clair",
+        "detail": "La bannière transparaît davantage"
+      },
+      "tinted": {
+        "label": "Teinté",
+        "detail": "Verre plus sombre, plus lisible"
+      },
+      "autoOff": "Désactiver automatiquement",
+      "autoOffHelp": "Panneaux opaques sur les appareils plus lents et quand les effets de transparence sont désactivés sur cet ordinateur.",
+      "offTransparency": "Le verre est désactivé car les effets de transparence sont désactivés sur cet ordinateur. Désactive « Désactiver automatiquement » pour l’utiliser quand même.",
+      "offDevice": "Le verre est désactivé car cet appareil risque de ne pas l’afficher de façon fluide. Désactive « Désactiver automatiquement » pour l’utiliser quand même.",
+      "offContrast": "Le verre reste désactivé tant que le Contraste élevé est activé.",
+      "backdropLabel": "Arrière-plan",
+      "backdrop": {
+        "hub": {
+          "label": "Bannière du Hub",
+          "detail": "Les couleurs de ton skin s’il n’y a pas de bannière"
+        },
+        "aurora": {
+          "label": "Aurore",
+          "detail": "Lumière rose, bleue et turquoise"
+        },
+        "graphite": {
+          "label": "Graphite",
+          "detail": "Gris neutre et apaisant"
+        },
+        "sunset": {
+          "label": "Coucher de soleil",
+          "detail": "Orange, rouge et violet chaleureux"
+        },
+        "ocean": {
+          "label": "Océan",
+          "detail": "Bleu profond et turquoise"
+        },
+        "forest": {
+          "label": "Forêt",
+          "detail": "Vert émeraude et citron vert"
+        }
+      }
+    }
   },
   "language": {
     "title": "Dates & heures",
@@ -1563,7 +1613,8 @@
         "everyone": "Tout le monde",
         "friends": "Amis",
         "nobody": "Personne"
-      }
+      },
+      "streamerModeHelp": "Masque ton adresse e-mail sur ce téléphone. S’active tout seul pendant que tu partages ton écran."
     },
     "skins": {
       "neon": {
@@ -1588,6 +1639,15 @@
       "obsidian": {
         "description": "Verre presque noir avec un liseré argenté net."
       }
+    },
+    "muted": {
+      "noneMuted": "Rien n’est en sourdine. Utilise la cloche d’un Hub ou d’un salon pour le mettre en sourdine."
+    },
+    "connections": {
+      "detail": "Steam, Twitch et FACEIT"
+    },
+    "voice": {
+      "pushToTalkHelp": "Ton micro n’émet que pendant que tu maintiens « Maintenir pour parler » dans le salon vocal."
     }
   },
   "linkPage": {

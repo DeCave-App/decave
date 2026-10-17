@@ -1,4 +1,5 @@
-import type { ExtraSettings, MessageDensity, MotionPreference } from "./extraSettings";
+import { GLASS_BACKDROPS } from "./extraSettings";
+import type { ExtraSettings, GlassEnvironment, GlassStyle, MessageDensity, MotionPreference } from "./extraSettings";
 import { FieldError } from "./SettingsControls";
 import type { SettingField } from "./useSettingField";
 import { useSettingsT } from "./useSettingsT";
@@ -186,6 +187,96 @@ export function ReadabilityPanel({ field, systemReducedMotion }: A11yProps) {
         checked={value.showAltText}
         onChange={(showAltText) => onChange({ ...value, showAltText })}
       />
+      <FieldError field={field} />
+    </div>
+  );
+}
+
+const GLASS_STYLES: GlassStyle[] = ["clear", "tinted"];
+
+type GlassProps = {
+  field: SettingField<ExtraSettings>;
+  environment: GlassEnvironment;
+};
+
+/** Settings → Appearance & accessibility: Liquid Glass on top of any skin. */
+export function GlassPanel({ field, environment }: GlassProps) {
+  const { t, tk } = useSettingsT();
+  const value = field.value;
+  const onChange = field.set;
+  const blockedNote = !value.glassEffect
+    ? null
+    : value.highContrast
+      ? t("settings.appearance.glass.offContrast")
+      : value.glassAutoOff && environment.reducedTransparency
+        ? t("settings.appearance.glass.offTransparency")
+        : value.glassAutoOff && environment.lowPowerDevice
+          ? t("settings.appearance.glass.offDevice")
+          : null;
+  return (
+    <div className="dcs-card">
+      <Toggle
+        label={t("settings.appearance.glass.label")}
+        detail={t("settings.appearance.glass.help")}
+        checked={value.glassEffect}
+        onChange={(glassEffect) => onChange({ ...value, glassEffect })}
+      />
+      {blockedNote && (
+        <p className="dcs-section-note" role="status">
+          {blockedNote}
+        </p>
+      )}
+      {value.glassEffect && (
+        <>
+          <div className="dcs-field">
+            <span>{t("settings.appearance.glass.styleLabel")}</span>
+            <div className="dcs-segmented" role="radiogroup" aria-label={t("settings.appearance.glass.styleLabel")}>
+              {GLASS_STYLES.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={value.glassStyle === id}
+                  className={value.glassStyle === id ? "is-active" : ""}
+                  onClick={() => onChange({ ...value, glassStyle: id })}
+                >
+                  <strong>{tk(`settings.appearance.glass.${id}.label`)}</strong>
+                  <small>{tk(`settings.appearance.glass.${id}.detail`)}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="dcs-field">
+            <span>{t("settings.appearance.glass.backdropLabel")}</span>
+            <div
+              className="dcs-segmented dcs-segmented-3 dcs-backdrops"
+              role="radiogroup"
+              aria-label={t("settings.appearance.glass.backdropLabel")}
+            >
+              {GLASS_BACKDROPS.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={value.glassBackdrop === id}
+                  className={value.glassBackdrop === id ? "is-active" : ""}
+                  onClick={() => onChange({ ...value, glassBackdrop: id })}
+                >
+                  <span className="dcs-backdrop-swatch" data-backdrop={id} aria-hidden="true" />
+                  <strong>{tk(`settings.appearance.glass.backdrop.${id}.label`)}</strong>
+                  <small>{tk(`settings.appearance.glass.backdrop.${id}.detail`)}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+          <Toggle
+            label={t("settings.appearance.glass.autoOff")}
+            detail={t("settings.appearance.glass.autoOffHelp")}
+            checked={value.glassAutoOff}
+            onChange={(glassAutoOff) => onChange({ ...value, glassAutoOff })}
+          />
+        </>
+      )}
       <FieldError field={field} />
     </div>
   );

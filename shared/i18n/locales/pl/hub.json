@@ -1401,7 +1401,8 @@
       "noVoiceRoomsInThis": "Brak pokoi głosowych w tym Hub.",
       "pickARoomToStart": "Wybierz pokój, aby zacząć pisać",
       "onlineMembers": "{{online}} online · członkowie: {{count}}",
-      "withRole": "{{summary}} · {{role}}"
+      "withRole": "{{summary}} · {{role}}",
+      "couldNotLeave": "Nie udało się opuścić tego Hub."
     },
     "hubAdmin": {
       "hubSettingsUpdated": "Zaktualizowano ustawienia Hub.",
@@ -1522,7 +1523,8 @@
       "recentEvents_other": "{{count}} ostatniego zdarzenia",
       "mediaCurrent": "Obecne: {{item}}",
       "mediaRemove": "Usuń: {{item}}",
-      "mediaShow": "Pokaż: {{item}}"
+      "mediaShow": "Pokaż: {{item}}",
+      "deleteHubFailed": "Nie udało się usunąć tego Hub."
     },
     "join": {
       "couldnTUseThisInvite": "Nie udało się użyć tego zaproszenia.",

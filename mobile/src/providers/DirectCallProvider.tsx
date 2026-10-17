@@ -29,6 +29,7 @@ import {
 } from "react-native-webrtc";
 import { t } from "i18next";
 import { apiJson } from "@/src/lib/api";
+import { type CameraFacing, flipCameraTrack, mirrorForFacing, trackFacing } from "@/src/lib/camera-facing";
 import { hasRelayIceServer, isRelayIceCandidate, RELAY_UNAVAILABLE_MESSAGE } from "@/src/lib/rtc-relay";
 import { realtimeMessage } from "@/src/lib/server-text";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
@@ -114,6 +115,8 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [cameraFacing, setCameraFacing] = useState<CameraFacing>("user");
+  const cameraFlipInFlightRef = useRef(false);
   const [volume, setVolume] = useState(100);
   const [volumeOpen, setVolumeOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
@@ -159,6 +162,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
     }
     localStreamRef.current = null;
     setLocalStream(null);
+    setCameraFacing("user");
   };
 
   const closePeer = () => {
@@ -281,6 +285,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       setLocalStream(stream);
       setMuted(false);
       setCameraEnabled(true);
+      setCameraFacing(trackFacing(stream.getVideoTracks()[0]));
       return stream;
     } catch (cause) {
       if (!isCurrent()) return null;
@@ -627,6 +632,7 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
       const refreshed = new MediaStream(local.getTracks());
       localStreamRef.current = refreshed;
       setLocalStream(refreshed);
+      setCameraFacing(trackFacing(track));
       cameraStream = null;
       setCallVideo(true);
       setCameraEnabled(true);
@@ -637,6 +643,22 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
         try { track.stop(); } catch {}
       }
       if (isCurrent()) setError(errorMessage(cause, t("dm.mobile.call.cameraOpenFailed")));
+    }
+  };
+
+  const flipCamera = async () => {
+    const local = localStreamRef.current;
+    const track = local?.getVideoTracks()[0];
+    if (!local || !track || cameraFlipInFlightRef.current) return;
+    cameraFlipInFlightRef.current = true;
+    try {
+      const facing = await flipCameraTrack(track);
+      if (localStreamRef.current === local) setCameraFacing(facing);
+    } catch (cause) {
+      console.warn("Could not switch direct-call camera.", cause);
+      if (localStreamRef.current === local) setError(errorMessage(cause, t("dm.mobile.call.cameraSwitchFailed")));
+    } finally {
+      cameraFlipInFlightRef.current = false;
     }
   };
 
@@ -851,10 +873,12 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
                 )}
                 {localStream && localStream.getVideoTracks().length > 0 && (
                   <RTCView
+                    key={localStream.toURL()}
                     streamURL={localStream.toURL()}
                     style={styles.localVideo}
                     objectFit="cover"
-                    mirror
+                    mirror={mirrorForFacing(cameraFacing)}
+                    zOrder={1}
                   />
                 )}
               </View>
@@ -885,6 +909,11 @@ export function DirectCallProvider({ children }: PropsWithChildren) {
                 {video && (
                   <Pressable accessibilityRole="button" accessibilityLabel={t("dm.mobile.call.toggleCamera")} style={[styles.roundButton, !cameraEnabled && styles.activeControl]} onPress={() => void toggleOrStartCamera()}>
                     <Ionicons name={localStreamRef.current?.getVideoTracks().length && cameraEnabled ? "videocam" : "videocam-off"} size={22} color={colors.text} />
+                  </Pressable>
+                )}
+                {video && cameraEnabled && !!localStream?.getVideoTracks().length && (
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("dm.mobile.call.switchCamera")} style={styles.roundButton} onPress={() => void flipCamera()}>
+                    <Ionicons name="camera-reverse" size={22} color={colors.text} />
                   </Pressable>
                 )}
                 <Pressable accessibilityRole="button" accessibilityLabel={t("dm.call.end")} style={[styles.roundButton, styles.decline]} onPress={endCall}>
@@ -941,7 +970,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
     borderRadius: 18,
     overflow: "hidden",
-    backgroundColor: colors.bg,
+    backgroundColor: colors.solid,
     borderWidth: 1,
     borderColor: colors.border,
   },

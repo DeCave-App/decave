@@ -3,6 +3,8 @@
 // the removed device never gets.
 
 import { useCallback, useEffect, useState } from "react";
+import { sessionDeviceFromJson } from "../../../shared/session-device";
+import { Icon } from "../../components/Icon";
 import { apiErrorMessage } from "../../i18n/apiError";
 import { deviceName } from "../../i18n/sessionDevice";
 import { DmKeyDeviceError, listKeyDevices, removeKeyDevice, type DmKeyDevice } from "../../e2ee/dm-e2ee-client";
@@ -13,6 +15,14 @@ type Props = {
   /** Refresh after the account's devices change (sign-outs elsewhere). */
   refreshKey?: unknown;
 };
+
+/** Same icons as the Signed-in sessions list: phone, desktop app or browser. */
+function deviceIcon(device: unknown) {
+  const app = sessionDeviceFromJson(device)?.app;
+  if (app === "mobile" || app === "mobileApp") return "phone";
+  if (app === "desktop" || app === "desktopApp") return "screen";
+  return "globe";
+}
 
 export function KeyDevicesList({ formatDate, refreshKey }: Props) {
   const { t } = useSettingsT();
@@ -69,6 +79,9 @@ export function KeyDevicesList({ formatDate, refreshKey }: Props) {
         <ul className="dcs-list">
           {devices.map((device) => (
             <li key={device.sessionId} className={`dcs-list-row${device.current ? " is-current" : ""}`}>
+              <span className="dcs-device-icon" aria-hidden="true">
+                <Icon name={deviceIcon(device.device)} size="sm" />
+              </span>
               <span className="dcs-list-copy">
                 <strong>
                   {deviceName(device.label, device.device) || t("settings.keyDevices.unknownDevice")}

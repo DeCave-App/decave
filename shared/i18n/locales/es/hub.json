@@ -1359,7 +1359,8 @@
       "noVoiceRoomsInThis": "No hay salas de voz en este Hub.",
       "pickARoomToStart": "Elige una sala para empezar a chatear",
       "onlineMembers": "{{online}} en línea · {{count}} miembros",
-      "withRole": "{{summary}} · {{role}}"
+      "withRole": "{{summary}} · {{role}}",
+      "couldNotLeave": "No se pudo salir de este Hub."
     },
     "hubAdmin": {
       "hubSettingsUpdated": "Ajustes del Hub actualizados.",
@@ -1479,7 +1480,8 @@
       "recentEvents_other": "{{count}} eventos recientes",
       "mediaCurrent": "{{item}} actual",
       "mediaRemove": "Quitar {{item}}",
-      "mediaShow": "Mostrar {{item}}"
+      "mediaShow": "Mostrar {{item}}",
+      "deleteHubFailed": "No se pudo eliminar este Hub."
     },
     "join": {
       "couldnTUseThisInvite": "No se pudo usar esta invitación.",

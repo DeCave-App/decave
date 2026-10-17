@@ -94,11 +94,6 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.panel,
   },
-  hashText: {
-    color: colors.cyan,
-    fontSize: 15,
-    fontWeight: "900",
-  },
   list: {
     paddingHorizontal: 12,
     paddingTop: 8,
@@ -354,11 +349,4 @@ export const styles = StyleSheet.create({
   },
   sendDisabled: {
     opacity: 0.34,
-  },
-  composerHint: {
-    color: colors.faint,
-    fontSize: 13,
-    lineHeight: 11,
-    textAlign: "center",
-    marginTop: 5,
   },});

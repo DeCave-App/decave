@@ -1359,7 +1359,8 @@
       "noVoiceRoomsInThis": "Aucun salon vocal dans ce Hub.",
       "pickARoomToStart": "Choisis un salon pour commencer à discuter",
       "onlineMembers": "{{online}} en ligne · {{count}} membres",
-      "withRole": "{{summary}} · {{role}}"
+      "withRole": "{{summary}} · {{role}}",
+      "couldNotLeave": "Impossible de quitter ce Hub."
     },
     "hubAdmin": {
       "hubSettingsUpdated": "Paramètres du Hub mis à jour.",
@@ -1479,7 +1480,8 @@
       "recentEvents_other": "{{count}} événements récents",
       "mediaCurrent": "Élément actuel : {{item}}",
       "mediaRemove": "Retirer : {{item}}",
-      "mediaShow": "Afficher : {{item}}"
+      "mediaShow": "Afficher : {{item}}",
+      "deleteHubFailed": "Impossible de supprimer ce Hub."
     },
     "join": {
       "couldnTUseThisInvite": "Impossible d'utiliser cette invitation.",

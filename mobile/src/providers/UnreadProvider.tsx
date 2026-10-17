@@ -14,7 +14,13 @@ type UnreadContextValue = {
   hubMentions: Counts;
   dms: Counts;
   dmTotal: number;
+  /** Mentions of me per room (channel id → count). */
+  roomMentions: Counts;
+  /** The Hub each counted room belongs to (channel id → hub id). */
+  roomHubs: Record<string, string>;
   markRoomRead: (channelId: number) => void;
+  /** Clears every room and DM count and saves read markers, so other devices agree. */
+  markAllRead: () => void;
   markDmRead: (userId: string) => void;
   /** A room shown outside its own route (the iPad split view); null when none. */
   setOpenRoom: (channelId: number | null) => void;
@@ -223,6 +229,16 @@ export function UnreadProvider({ children }: PropsWithChildren) {
     [putRead, sessionGeneration],
   );
 
+  const markAllRead = useCallback(() => {
+    const requestGeneration = sessionGeneration;
+    if (sessionScopeRef.current.generation !== requestGeneration) return;
+    for (const room of Object.keys(rooms)) putRead({ scope: "room", channelId: Number(room) });
+    for (const userId of Object.keys(dms)) putRead({ scope: "dm", userId });
+    setRooms({});
+    setMentions({});
+    setDms({});
+  }, [rooms, dms, putRead, sessionGeneration]);
+
   const value = useMemo<UnreadContextValue>(() => {
     const visibleRooms = countsGeneration === sessionGeneration ? rooms : {};
     const visibleRoomHub = countsGeneration === sessionGeneration ? roomHub : {};
@@ -239,8 +255,21 @@ export function UnreadProvider({ children }: PropsWithChildren) {
       if (hub) hubMentions[hub] = (hubMentions[hub] ?? 0) + count;
     }
     const dmTotal = Object.values(visibleDms).reduce((sum, count) => sum + count, 0);
-    return { rooms: visibleRooms, hubs, hubMentions, dms: visibleDms, dmTotal, markRoomRead, markDmRead, setOpenRoom, setOpenDm };
-  }, [rooms, roomHub, mentions, dms, countsGeneration, sessionGeneration, markRoomRead, markDmRead, setOpenRoom, setOpenDm]);
+    return {
+      rooms: visibleRooms,
+      hubs,
+      hubMentions,
+      dms: visibleDms,
+      dmTotal,
+      roomMentions: visibleMentions,
+      roomHubs: visibleRoomHub,
+      markRoomRead,
+      markAllRead,
+      markDmRead,
+      setOpenRoom,
+      setOpenDm,
+    };
+  }, [rooms, roomHub, mentions, dms, countsGeneration, sessionGeneration, markRoomRead, markAllRead, markDmRead, setOpenRoom, setOpenDm]);
 
   return <UnreadContext.Provider value={value}>{children}</UnreadContext.Provider>;
 }

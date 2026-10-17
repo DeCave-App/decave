@@ -343,6 +343,15 @@
     "publish": "Opublikuj"
   },
   "mobile": {
-    "untitledPost": "Post bez tytułu"
+    "untitledPost": "Post bez tytułu",
+    "compose": {
+      "start": {
+        "none": "Nie ustawiono",
+        "now": "Teraz",
+        "h1": "Za 1 godzinę",
+        "h3": "Za 3 godziny",
+        "d1": "Jutro"
+      }
+    }
   }
 }

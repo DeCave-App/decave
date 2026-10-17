@@ -290,6 +290,39 @@
   }
 }
 
+/* Liquid Glass backdrops: a preview of each wallpaper above its name.
+   The --lg-wall-* pictures come from styles/shell/liquid-glass.css. */
+.dc-settings-page .dcs-backdrop-swatch {
+  display: block;
+  height: 40px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--lg-wall-graphite);
+}
+.dc-settings-page .dcs-backdrop-swatch[data-backdrop="hub"] {
+  background:
+    radial-gradient(70% 90% at 15% 20%, var(--ds-accent), transparent 70%),
+    radial-gradient(70% 90% at 90% 30%, var(--ds-accent-2), transparent 70%), var(--ds-bg);
+}
+.dc-settings-page .dcs-backdrop-swatch[data-backdrop="aurora"] {
+  background: var(--lg-wall-aurora);
+}
+.dc-settings-page .dcs-backdrop-swatch[data-backdrop="sunset"] {
+  background: var(--lg-wall-sunset);
+}
+.dc-settings-page .dcs-backdrop-swatch[data-backdrop="ocean"] {
+  background: var(--lg-wall-ocean);
+}
+.dc-settings-page .dcs-backdrop-swatch[data-backdrop="forest"] {
+  background: var(--lg-wall-forest);
+}
+@media (max-width: 640px) {
+  .dc-settings-page .dcs-segmented.dcs-backdrops {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Camera */
 .dc-settings-page .dcs-camera {
   display: grid;

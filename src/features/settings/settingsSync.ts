@@ -21,6 +21,10 @@ export type SyncedExtra = Pick<
   | "highContrast"
   | "underlineLinks"
   | "showAltText"
+  | "glassEffect"
+  | "glassStyle"
+  | "glassBackdrop"
+  | "glassAutoOff"
   | "quietHours"
 >;
 
@@ -60,8 +64,21 @@ export type SyncSource = {
 };
 
 export function buildSyncedSettings(source: SyncSource): SyncedSettings {
-  const { themeMode, lightSkin, darkSkin, motion, density, highContrast, underlineLinks, showAltText, quietHours } =
-    source.extra;
+  const {
+    themeMode,
+    lightSkin,
+    darkSkin,
+    motion,
+    density,
+    highContrast,
+    underlineLinks,
+    showAltText,
+    glassEffect,
+    glassStyle,
+    glassBackdrop,
+    glassAutoOff,
+    quietHours,
+  } = source.extra;
   return {
     v: SYNCED_SETTINGS_VERSION,
     appSkin: source.appSkin,
@@ -75,6 +92,10 @@ export function buildSyncedSettings(source: SyncSource): SyncedSettings {
       highContrast,
       underlineLinks,
       showAltText,
+      glassEffect,
+      glassStyle,
+      glassBackdrop,
+      glassAutoOff,
       quietHours: { ...quietHours },
     },
     notifications: { ...source.notifications },

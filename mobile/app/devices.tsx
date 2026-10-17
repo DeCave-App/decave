@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { i18next } from "@/src/i18n";
 import { dateLocale } from "@/src/lib/date-locale";
 import { deviceName } from "@/src/lib/session-device";
+import { KeyDevicesCard } from "@/src/components/settings/KeyDevicesCard";
 
 type DeviceSession = {
   id: string;
@@ -57,6 +58,7 @@ export default function DevicesScreen() {
   const [sessions, setSessions] = useState<DeviceSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [keyRefresh, setKeyRefresh] = useState(0);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -138,7 +140,7 @@ export default function DevicesScreen() {
       </View>
       <ScrollView keyboardDismissMode="on-drag"
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={colors.cyan} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); setKeyRefresh((n) => n + 1); void load(); }} tintColor={colors.cyan} />}
       >
         <View style={styles.info}><Ionicons name="shield-checkmark-outline" size={18} color={colors.cyan} /><Text style={styles.infoText}>{t("settings.mobile.devices.mobileMayStaySignedIn")}</Text></View>
         <Pressable accessibilityRole="button" style={styles.scan} onPress={() => router.push("/scan-login" as any)}><Ionicons name="qr-code-outline" size={19} color={colors.cyan} /><View style={{ flex: 1 }}><Text style={styles.scanTitle}>{t("settings.mobile.devices.scanQrLogin")}</Text><Text style={styles.scanText}>{t("settings.mobile.devices.signInOnWebOr")}</Text></View><Ionicons name="chevron-forward" size={17} color={colors.muted} /></Pressable>
@@ -159,6 +161,7 @@ export default function DevicesScreen() {
             ))}
           </View>
         )}
+        <KeyDevicesCard token={token} refreshKey={keyRefresh} />
         <Pressable accessibilityRole="button" style={styles.danger} onPress={logoutAll}><Ionicons name="log-out-outline" size={18} color={colors.red} /><View style={{ flex: 1 }}><Text style={styles.dangerTitle}>{t("settings.mobile.devices.logOutAllActiveSessions")}</Text><Text style={styles.dangerText}>{t("settings.mobile.devices.endEveryDecaveLoginFor")}</Text></View></Pressable>
       </ScrollView>
     </Screen>

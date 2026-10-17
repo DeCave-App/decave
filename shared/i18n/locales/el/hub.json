@@ -1317,7 +1317,8 @@
       "noVoiceRoomsInThis": "Δεν υπάρχουν φωνητικά δωμάτια σε αυτό το Hub.",
       "pickARoomToStart": "Διάλεξε δωμάτιο για να ξεκινήσεις τη συζήτηση",
       "onlineMembers": "{{online}} σε σύνδεση · {{count}} μέλη",
-      "withRole": "{{summary}} · {{role}}"
+      "withRole": "{{summary}} · {{role}}",
+      "couldNotLeave": "Δεν ήταν δυνατή η αποχώρηση από αυτό το Hub."
     },
     "hubAdmin": {
       "hubSettingsUpdated": "Οι ρυθμίσεις του Hub ενημερώθηκαν.",
@@ -1436,7 +1437,8 @@
       "recentEvents_other": "{{count}} πρόσφατα συμβάντα",
       "mediaCurrent": "Τρέχον: {{item}}",
       "mediaRemove": "Αφαίρεση: {{item}}",
-      "mediaShow": "Εμφάνιση: {{item}}"
+      "mediaShow": "Εμφάνιση: {{item}}",
+      "deleteHubFailed": "Δεν ήταν δυνατή η διαγραφή αυτού του Hub."
     },
     "join": {
       "couldnTUseThisInvite": "Δεν ήταν δυνατή η χρήση αυτής της πρόσκλησης.",

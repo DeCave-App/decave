@@ -412,7 +412,9 @@
       "connected": "З'єднано · {{duration}}",
       "waitingVideo": "Очікування відео…",
       "switchToVideo": "Перейти на відео",
-      "toggleCamera": "Перемкнути камеру"
+      "toggleCamera": "Перемкнути камеру",
+      "switchCamera": "Змінити камеру",
+      "cameraSwitchFailed": "DeCave не вдалося змінити камеру."
     }
   },
   "preview": {

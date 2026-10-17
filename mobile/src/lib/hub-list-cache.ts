@@ -78,6 +78,16 @@ export function loadHubList(kind: HubListKind, token: string, { maxAgeMs = 0 } =
   return request;
 }
 
+/** Drops a Hub I left or deleted from my cached list, so it disappears at once. */
+export function forgetHub(token: string, hubId: number): void {
+  const entry = entries.mine;
+  if (entry.token !== token || !entry.hubs) return;
+  const hubs = entry.hubs.filter((item) => item.id !== hubId);
+  if (hubs.length === entry.hubs.length) return;
+  entry.hubs = hubs;
+  notify();
+}
+
 /** Puts a freshly loaded Hub (GET /api/servers/:id) into my cached list. */
 export function rememberHub(token: string, hub: Hub): void {
   const entry = entries.mine;

@@ -13,10 +13,12 @@ import { router } from "expo-router";
 import { Avatar } from "@/src/components/Avatar";
 import { Screen } from "@/src/components/Screen";
 import { HomeNowCards } from "@/src/components/HomeNowCards";
+import { JumpBackCard, UpcomingEventsCard } from "@/src/components/HomeUpcoming";
 import { API_BASE, apiJson } from "@/src/lib/api";
 import { loadHubList } from "@/src/lib/hub-list-cache";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
+import { useUnread } from "@/src/providers/UnreadProvider";
 import { useVoice } from "@/src/providers/VoiceProvider";
 import { colors } from "@/src/theme";
 import type {
@@ -172,7 +174,17 @@ export default function HomeScreen() {
               </View>
             </View>
           </View>
-
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("common.commandPalette.label")}
+              style={styles.inboxButton}
+              onPress={() => router.push("/quick-switch" as never)}
+            >
+              <Ionicons name="search" size={19} color={colors.text} />
+            </Pressable>
+            <InboxButton />
+          </View>
         </View>
 
         {voiceRecoveryState !== "idle" && (
@@ -209,7 +221,9 @@ export default function HomeScreen() {
         )}
 
 
+        <JumpBackCard hubs={hubs} connectedChannelId={voiceChannelId} />
         <HomeNowCards hubs={hubs} participants={participants} friends={social.friends} myUserId={user?.id} />
+        <UpcomingEventsCard hubs={hubs} token={token} />
 
         <SectionHeader
           title={t("common.mobile.home.friendsOnline")}
@@ -484,6 +498,32 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 28,
   },
+  inboxButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  inboxBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inboxBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "900",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -607,7 +647,7 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     backgroundColor: colors.green,
     borderWidth: 2,
-    borderColor: colors.bg,
+    borderColor: colors.solid,
   },
   friendName: {
     width: 62,
@@ -785,3 +825,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },});
+
+/** Unread rooms and DMs; red when someone mentioned me. */
+function InboxButton() {
+  const { t } = useTranslation(["common"]);
+  const { rooms, roomMentions, dms } = useUnread();
+  const unread = Object.keys(rooms).length + Object.keys(dms).length;
+  const mentioned = Object.keys(roomMentions).length > 0;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={unread ? `${t("common.inbox.kicker")}, ${unread}` : t("common.inbox.kicker")}
+      style={styles.inboxButton}
+      onPress={() => router.push("/inbox" as never)}
+    >
+      <Ionicons name="file-tray-outline" size={20} color={colors.text} />
+      {unread > 0 && (
+        <View style={[styles.inboxBadge, { backgroundColor: mentioned ? colors.red : colors.violet }]}>
+          <Text style={styles.inboxBadgeText}>{unread > 99 ? "99+" : unread}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}

@@ -140,7 +140,9 @@
       "encrypted": "Criptografada",
       "encryptedPing": "Criptografada · {{ping}} ms",
       "rejoining": "Voltando para esta sala…",
-      "rejoiningAttempt": "Voltando para esta sala (tentativa {{attempt}}/3)…"
+      "rejoiningAttempt": "Voltando para esta sala (tentativa {{attempt}}/3)…",
+      "holdToTalk": "Segure para falar",
+      "talking": "Falando…"
     },
     "rejoin": "Voltar para a voz",
     "bar": {

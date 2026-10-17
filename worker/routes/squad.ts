@@ -27,7 +27,7 @@ import {
   deleteQueuedMediaIfQueued,
   ensureMediaDeletionQueueSchema,
   hubMediaObjectKeys,
-  queueHubMediaDeletionStatement,
+  queueHubMediaDeletionStatements,
 } from "../lib/media";
 import type { ApiContext } from "./context";
 
@@ -478,6 +478,7 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
       groupMemberRemoval.bind(squadRoom.group_id, user.id, ...ownershipGuardBindings, ...successorGuardBindings),
       searchReset.bind(now, user.id, ...ownershipGuardBindings, ...successorGuardBindings),
     ];
+    let hubDeleteIndex = -1;
     if (isOwner && nextOwner) {
       statements.push(
         env.DB.prepare(
@@ -500,18 +501,22 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
         ).bind(hubId, user.id, hubId, nextOwner),
       );
     } else if (isOwner) {
+      const mediaQueue = queueHubMediaDeletionStatements(
+        env.DB,
+        hubId,
+        now,
+        `EXISTS(SELECT 1 FROM decave_hubs WHERE id=? AND owner_id=?)
+           AND EXISTS(SELECT 1 FROM decave_group_chats WHERE id=? AND owner_user_id=?)`,
+        [hubId, user.id, squadRoom.group_id, user.id],
+      );
+      // The Hub and group deletions follow the media queue inserts; their
+      // results are checked by position below.
+      hubDeleteIndex = statements.length + mediaQueue.length;
       // The media queue insert uses the same guard as the Hub deletion so
       // objects are queued only when the Hub row is really removed. The group
       // deletion is guarded on the Hub being gone (it was deleted just above).
       statements.push(
-        queueHubMediaDeletionStatement(
-          env.DB,
-          hubId,
-          now,
-          `EXISTS(SELECT 1 FROM decave_hubs WHERE id=? AND owner_id=?)
-           AND EXISTS(SELECT 1 FROM decave_group_chats WHERE id=? AND owner_user_id=?)`,
-          [hubId, user.id, squadRoom.group_id, user.id],
-        ),
+        ...mediaQueue,
         env.DB.prepare(
           `DELETE FROM decave_hubs WHERE id=? AND owner_id=?
            AND EXISTS(SELECT 1 FROM decave_group_chats WHERE id=? AND owner_user_id=?)`,
@@ -530,12 +535,14 @@ export async function handleSquadFinderRoutes({ request, env, p, method }: ApiCo
       );
     }
     const leaveResults = await env.DB.batch(statements);
+    const groupDeleteIndex = hubDeleteIndex + 1;
     if (isOwner && nextOwner && Number(leaveResults[0]?.meta.changes ?? 0) !== 1)
       return apiError("squad.nextOwnerIneligible", 409);
     if (
       isOwner &&
       !nextOwner &&
-      (Number(leaveResults[3]?.meta.changes ?? 0) !== 1 || Number(leaveResults[4]?.meta.changes ?? 0) !== 1)
+      (Number(leaveResults[hubDeleteIndex]?.meta.changes ?? 0) !== 1 ||
+        Number(leaveResults[groupDeleteIndex]?.meta.changes ?? 0) !== 1)
     )
       return apiError("squad.ownershipChanged", 409);
     if (isOwner && !nextOwner && squadMediaKeys.length) await deleteQueuedMediaIfQueued(env, squadMediaKeys);

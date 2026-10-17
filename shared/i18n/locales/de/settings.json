@@ -309,6 +309,10 @@
     "whatsNew": {
       "label": "Neuigkeiten",
       "keywords": "patchnotes changelog"
+    },
+    "glass": {
+      "label": "Glaseffekt",
+      "keywords": "liquid glass transparent durchscheinend unschärfe milchglas"
     }
   },
   "toast": {
@@ -1203,7 +1207,53 @@
     "underline": "Links immer unterstreichen",
     "underlineHelp": "Links in Nachrichten leicht erkennbar machen, ohne sich auf Farbe zu verlassen.",
     "altText": "Bildbeschreibungen anzeigen",
-    "altTextHelp": "Den Titel von GIFs und Stickern darunter anzeigen."
+    "altTextHelp": "Den Titel von GIFs und Stickern darunter anzeigen.",
+    "glassTitle": "Glaseffekt",
+    "glass": {
+      "label": "Liquid Glass",
+      "help": "Durchscheinende, weichgezeichnete Flächen über dem Banner deines Hubs, in den Farben deines Skins.",
+      "styleLabel": "Glasstil",
+      "clear": {
+        "label": "Klar",
+        "detail": "Mehr vom Banner scheint durch"
+      },
+      "tinted": {
+        "label": "Getönt",
+        "detail": "Dunkleres Glas, leichter zu lesen"
+      },
+      "autoOff": "Automatisch ausschalten",
+      "autoOffHelp": "Volle Flächen auf langsameren Geräten und wenn Transparenzeffekte auf diesem Computer ausgeschaltet sind.",
+      "offTransparency": "Glas ist gerade aus, weil Transparenzeffekte auf diesem Computer ausgeschaltet sind. Schalte „Automatisch ausschalten“ aus, um es trotzdem zu nutzen.",
+      "offDevice": "Glas ist gerade aus, weil dieses Gerät es vielleicht nicht flüssig darstellt. Schalte „Automatisch ausschalten“ aus, um es trotzdem zu nutzen.",
+      "offContrast": "Glas bleibt aus, solange Hoher Kontrast an ist.",
+      "backdropLabel": "Hintergrund",
+      "backdrop": {
+        "hub": {
+          "label": "Hub-Banner",
+          "detail": "Die Farben deines Skins, wenn es kein Banner gibt"
+        },
+        "aurora": {
+          "label": "Aurora",
+          "detail": "Rosa, blaues und türkises Licht"
+        },
+        "graphite": {
+          "label": "Graphit",
+          "detail": "Ruhiges, neutrales Grau"
+        },
+        "sunset": {
+          "label": "Sonnenuntergang",
+          "detail": "Warmes Orange, Rot und Violett"
+        },
+        "ocean": {
+          "label": "Ozean",
+          "detail": "Tiefes Blau und Türkis"
+        },
+        "forest": {
+          "label": "Wald",
+          "detail": "Smaragd- und Limettengrün"
+        }
+      }
+    }
   },
   "language": {
     "title": "Datum & Uhrzeit",
@@ -1551,7 +1601,8 @@
         "everyone": "Alle",
         "friends": "Freunde",
         "nobody": "Niemand"
-      }
+      },
+      "streamerModeHelp": "Blendet deine E-Mail-Adresse auf diesem Handy aus. Schaltet sich automatisch ein, während du deinen Bildschirm teilst."
     },
     "skins": {
       "neon": {
@@ -1576,6 +1627,15 @@
       "obsidian": {
         "description": "Fast schwarzes Glas mit klarer Silberkante."
       }
+    },
+    "muted": {
+      "noneMuted": "Nichts ist stummgeschaltet. Tippe auf die Glocke in einem Hub oder Raum, um ihn stummzuschalten."
+    },
+    "connections": {
+      "detail": "Steam, Twitch und FACEIT"
+    },
+    "voice": {
+      "pushToTalkHelp": "Dein Mikrofon sendet nur, solange du im Sprachraum „Zum Sprechen halten“ gedrückt hältst."
     }
   },
   "linkPage": {

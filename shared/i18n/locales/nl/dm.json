@@ -410,7 +410,9 @@
       "connected": "Verbonden · {{duration}}",
       "waitingVideo": "Wachten op video…",
       "switchToVideo": "Naar video",
-      "toggleCamera": "Camera aan/uit"
+      "toggleCamera": "Camera aan/uit",
+      "switchCamera": "Wissel camera",
+      "cameraSwitchFailed": "DeCave kon niet van camera wisselen."
     }
   },
   "preview": {

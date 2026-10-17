@@ -55,6 +55,7 @@ import { officialHubMembershipPrivate } from "../lib/official-hubs";
 import { safeJsonStringArray, normalizeForumTags } from "../../shared/forum";
 import { ensureSoundboardSchema } from "../lib/soundboard";
 import { serverNotice } from "../lib/notices";
+import { chunked } from "../lib/messages";
 import {
   deleteQueuedMedia,
   ensureMediaDeletionQueueSchema,
@@ -259,12 +260,14 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
     const threadCounts = new Map<number, number>();
     if (forumIds.length) {
       try {
-        const counts = await env.DB.prepare(
-          `SELECT channel_id, COUNT(*) AS n FROM decave_forum_post_state WHERE channel_id IN (${forumIds.map(() => "?").join(",")}) GROUP BY channel_id`,
-        )
-          .bind(...forumIds)
-          .all<{ channel_id: number; n: number }>();
-        for (const row of counts.results) threadCounts.set(Number(row.channel_id), Number(row.n));
+        for (const ids of chunked(forumIds)) {
+          const counts = await env.DB.prepare(
+            `SELECT channel_id, COUNT(*) AS n FROM decave_forum_post_state WHERE channel_id IN (${ids.map(() => "?").join(",")}) GROUP BY channel_id`,
+          )
+            .bind(...ids)
+            .all<{ channel_id: number; n: number }>();
+          for (const row of counts.results) threadCounts.set(Number(row.channel_id), Number(row.n));
+        }
       } catch (error) {
         console.warn("Hub preview: forum counts unavailable", error instanceof Error ? error.name : "UnknownError");
       }
@@ -573,9 +576,9 @@ export async function handleHubRoutes({ request, env, p, method, ctx }: ApiConte
       const custom = await env.DB.prepare(
         `SELECT id,name,color,icon,permissions_json
                   FROM decave_custom_roles
-                  WHERE hub_id=? AND id IN (${roleIds.results.map(() => "?").join(",") || "''"})`,
+                  WHERE hub_id=? AND id IN (SELECT value FROM json_each(?))`,
       )
-        .bind(hubId, ...roleIds.results.map((x) => x.role_id))
+        .bind(hubId, JSON.stringify(roleIds.results.map((x) => x.role_id)))
         .all<{ id: string; name: string; color: string; icon: string; permissions_json: string }>();
 
       const isSelf = row.id === user.id;

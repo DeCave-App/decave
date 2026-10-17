@@ -1057,7 +1057,6 @@
       "pinnedMessages": "Mensajes fijados",
       "returnToVoiceControls": "Volver a los controles de voz",
       "voiceAndMessagesLiveTogether": "La voz y los mensajes conviven en esta sala.",
-      "noPostsInThisForum": "Aún no hay publicaciones en este foro.",
       "thisIsTheBeginningOf": "Este es el comienzo de esta sala de texto.",
       "longPressForMessageActions": "Mantén pulsado para ver acciones del mensaje",
       "pinned": "Fijado",
@@ -1067,9 +1066,7 @@
       "severalPeopleAreTyping": "Varias personas están escribiendo…",
       "editingMessage": "Editando mensaje",
       "replyingToNameValue": "Respondiendo a {{name}}: {{value}}",
-      "longPressAPostTo": "Mantén pulsada una publicación para responder. Las nuevas publicaciones del foro se pueden crear en escritorio o web.",
       "addPhotoVideoOrGif": "Añadir foto, vídeo o GIF",
-      "writeAReply": "Escribe una respuesta",
       "messageName": "Mensaje en #{{name}}",
       "couldNotUpdateMute": "No se pudo actualizar el silencio",
       "unmuteUsername": "Dejar de silenciar a {{username}}",
@@ -1080,7 +1077,11 @@
       "reactedByYou": "{{emoji}} {{count}}, has reaccionado",
       "newCount": "{{number}} nuevos",
       "isTyping": "{{name}} está escribiendo…",
-      "twoTyping": "{{first}} y {{second}} están escribiendo…"
+      "twoTyping": "{{first}} y {{second}} están escribiendo…",
+      "couldNotSendSticker": "No se pudo enviar el sticker",
+      "couldNotSendPoll": "No se pudo enviar la encuesta",
+      "muteRoom": "Silenciar sala",
+      "unmuteRoom": "Dejar de silenciar sala"
     },
     "finder": {
       "searchFailed": "La búsqueda falló.",
@@ -1100,7 +1101,8 @@
       "cameraOff": "El acceso a la cámara está desactivado para DeCave. Actívalo en Ajustes.",
       "photosOff": "El acceso a las fotos está desactivado para DeCave. Actívalo en Ajustes.",
       "tooLarge": "Los archivos adjuntos pueden ocupar hasta 25 MB.",
-      "uploadFailed": "No se pudo subir el archivo adjunto."
+      "uploadFailed": "No se pudo subir el archivo adjunto.",
+      "poll": "Encuesta"
     },
     "preview": {
       "mine": "Tu mensaje: {{body}}",

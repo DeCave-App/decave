@@ -1040,7 +1040,6 @@
       "pinnedMessages": "Pinned messages",
       "returnToVoiceControls": "Return to voice controls",
       "voiceAndMessagesLiveTogether": "Voice and messages live together in this room.",
-      "noPostsInThisForum": "No posts in this forum yet.",
       "thisIsTheBeginningOf": "This is the beginning of this text room.",
       "longPressForMessageActions": "Long press for message actions",
       "pinned": "Pinned",
@@ -1050,9 +1049,7 @@
       "severalPeopleAreTyping": "Several people are typing…",
       "editingMessage": "Editing message",
       "replyingToNameValue": "Replying to {{name}}: {{value}}",
-      "longPressAPostTo": "Long press a post to reply. New forum posts can be started on desktop or web.",
       "addPhotoVideoOrGif": "Add photo, video or GIF",
-      "writeAReply": "Write a reply",
       "messageName": "Message #{{name}}",
       "couldNotUpdateMute": "Could not update mute",
       "unmuteUsername": "Unmute {{username}}",
@@ -1063,7 +1060,11 @@
       "reactedByYou": "{{emoji}} {{count}}, you reacted",
       "newCount": "{{number}} new",
       "isTyping": "{{name}} is typing…",
-      "twoTyping": "{{first}} and {{second}} are typing…"
+      "twoTyping": "{{first}} and {{second}} are typing…",
+      "couldNotSendSticker": "Could not send sticker",
+      "couldNotSendPoll": "Could not send poll",
+      "muteRoom": "Mute room",
+      "unmuteRoom": "Unmute room"
     },
     "finder": {
       "searchFailed": "Search failed.",
@@ -1083,7 +1084,8 @@
       "cameraOff": "Camera access is off for DeCave. Turn it on in Settings.",
       "photosOff": "Photo access is off for DeCave. Turn it on in Settings.",
       "tooLarge": "Attachments can be up to 25 MB.",
-      "uploadFailed": "Could not upload the attachment."
+      "uploadFailed": "Could not upload the attachment.",
+      "poll": "Poll"
     },
     "preview": {
       "mine": "Your message: {{body}}",

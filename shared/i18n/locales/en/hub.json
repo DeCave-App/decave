@@ -1317,7 +1317,8 @@
       "noVoiceRoomsInThis": "No voice rooms in this Hub.",
       "pickARoomToStart": "Pick a room to start chatting",
       "onlineMembers": "{{online}} online · {{count}} members",
-      "withRole": "{{summary}} · {{role}}"
+      "withRole": "{{summary}} · {{role}}",
+      "couldNotLeave": "Could not leave this Hub."
     },
     "hubAdmin": {
       "hubSettingsUpdated": "Hub settings updated.",
@@ -1436,7 +1437,8 @@
       "recentEvents_other": "{{count}} recent events",
       "mediaCurrent": "Current {{item}}",
       "mediaRemove": "Remove {{item}}",
-      "mediaShow": "Show {{item}}"
+      "mediaShow": "Show {{item}}",
+      "deleteHubFailed": "Could not delete this Hub."
     },
     "join": {
       "couldnTUseThisInvite": "Couldn't use this invite.",

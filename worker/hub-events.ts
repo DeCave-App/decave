@@ -250,10 +250,10 @@ async function resolveReferences(
     if (!(await deps.canAccessRoom(room, viewer.user.id))) return bad("voiceChannelId", "hubEvents.voiceRoomNoAccess");
   }
   if (input.audience === "roles") {
-    const marks = input.audienceIds.map(() => "?").join(",");
+    // json_each keeps this at two bound parameters; D1 caps a query at 100.
     const rows = await db
-      .prepare(`SELECT id FROM decave_custom_roles WHERE hub_id=? AND id IN (${marks})`)
-      .bind(viewer.hubId, ...input.audienceIds)
+      .prepare("SELECT id FROM decave_custom_roles WHERE hub_id=? AND id IN (SELECT value FROM json_each(?))")
+      .bind(viewer.hubId, JSON.stringify(input.audienceIds))
       .all<{ id: string }>();
     if (rows.results.length !== input.audienceIds.length) return bad("audienceIds", "hubEvents.audienceRolesInvalid");
     return { ok: true, storedAudienceIds: input.audienceIds };

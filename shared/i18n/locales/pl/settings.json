@@ -309,6 +309,10 @@
     "whatsNew": {
       "label": "Co nowego",
       "keywords": "patch notes lista zmian"
+    },
+    "glass": {
+      "label": "Efekt szkła",
+      "keywords": "liquid glass przezroczysty półprzezroczysty rozmycie matowe"
     }
   },
   "toast": {
@@ -1219,7 +1223,53 @@
     "underline": "Zawsze podkreślaj linki",
     "underlineHelp": "Linki w wiadomościach będą łatwe do zauważenia bez polegania na kolorze.",
     "altText": "Pokazuj opisy obrazów",
-    "altTextHelp": "Pokazuj tytuł GIF-ów i naklejek pod nimi."
+    "altTextHelp": "Pokazuj tytuł GIF-ów i naklejek pod nimi.",
+    "glassTitle": "Efekt szkła",
+    "glass": {
+      "label": "Liquid Glass",
+      "help": "Przezroczyste, rozmyte panele na tle banera Twojego Hub, w kolorach Twojej skórki.",
+      "styleLabel": "Styl szkła",
+      "clear": {
+        "label": "Przejrzysty",
+        "detail": "Baner jest lepiej widoczny"
+      },
+      "tinted": {
+        "label": "Przyciemniony",
+        "detail": "Ciemniejsze szkło, łatwiejsze do czytania"
+      },
+      "autoOff": "Wyłączaj automatycznie",
+      "autoOffHelp": "Pełne panele na wolniejszych urządzeniach i gdy efekty przezroczystości są wyłączone na tym komputerze.",
+      "offTransparency": "Szkło jest teraz wyłączone, bo efekty przezroczystości są wyłączone na tym komputerze. Wyłącz „Wyłączaj automatycznie”, aby i tak go używać.",
+      "offDevice": "Szkło jest teraz wyłączone, bo to urządzenie może nie wyświetlać go płynnie. Wyłącz „Wyłączaj automatycznie”, aby i tak go używać.",
+      "offContrast": "Szkło pozostaje wyłączone, dopóki włączony jest Wysoki kontrast.",
+      "backdropLabel": "Tło",
+      "backdrop": {
+        "hub": {
+          "label": "Baner Hub",
+          "detail": "Kolory Twojej skórki, gdy nie ma banera"
+        },
+        "aurora": {
+          "label": "Zorza",
+          "detail": "Różowe, niebieskie i turkusowe światło"
+        },
+        "graphite": {
+          "label": "Grafit",
+          "detail": "Spokojna, neutralna szarość"
+        },
+        "sunset": {
+          "label": "Zachód słońca",
+          "detail": "Ciepły pomarańcz, czerwień i fiolet"
+        },
+        "ocean": {
+          "label": "Ocean",
+          "detail": "Głęboki błękit i turkus"
+        },
+        "forest": {
+          "label": "Las",
+          "detail": "Szmaragdowa i limonkowa zieleń"
+        }
+      }
+    }
   },
   "language": {
     "title": "Daty i godziny",
@@ -1575,7 +1625,8 @@
         "everyone": "Wszyscy",
         "friends": "Znajomi",
         "nobody": "Nikt"
-      }
+      },
+      "streamerModeHelp": "Ukrywa twój adres e-mail na tym telefonie. Włącza się sam, gdy udostępniasz ekran."
     },
     "skins": {
       "neon": {
@@ -1600,6 +1651,15 @@
       "obsidian": {
         "description": "Prawie czarne szkło z czystą srebrną krawędzią."
       }
+    },
+    "muted": {
+      "noneMuted": "Nic nie jest wyciszone. Użyj dzwonka w Hub lub pokoju, aby go wyciszyć."
+    },
+    "connections": {
+      "detail": "Steam, Twitch i FACEIT"
+    },
+    "voice": {
+      "pushToTalkHelp": "Mikrofon nadaje tylko, gdy przytrzymujesz „Przytrzymaj, aby mówić” w pokoju głosowym."
     }
   },
   "linkPage": {

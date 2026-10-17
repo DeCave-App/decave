@@ -311,6 +311,15 @@
     "publish": "Publish"
   },
   "mobile": {
-    "untitledPost": "Untitled post"
+    "untitledPost": "Untitled post",
+    "compose": {
+      "start": {
+        "none": "Not set",
+        "now": "Now",
+        "h1": "In 1 hour",
+        "h3": "In 3 hours",
+        "d1": "Tomorrow"
+      }
+    }
   }
 }

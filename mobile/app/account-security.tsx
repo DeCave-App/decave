@@ -11,10 +11,12 @@ import { accountExportStatus } from "@/src/lib/account-export";
 import { colors } from "@/src/theme";
 import { useTranslation } from "react-i18next";
 import { dateLocale } from "@/src/lib/date-locale";
+import { useStreamerMode } from "@/src/hooks/useStreamerMode";
 
 export default function AccountSecurityScreen() {
   const { t } = useTranslation(["settings", "common", "chat", "errors"]);
   const { token, user, invalidate, refreshUser } = useSession();
+  const streamerMode = useStreamerMode();
   const [email, setEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
   const [emailMfaCode, setEmailMfaCode] = useState("");
@@ -326,7 +328,7 @@ export default function AccountSecurityScreen() {
 
         <Text style={styles.section}>{t("settings.mobile.accountSecurity.emailAddress")}</Text>
         <View style={styles.card}>
-          <View style={styles.emailStatus}><Ionicons name={user?.emailVerified?"checkmark-circle":"mail-outline"} size={20} color={user?.emailVerified?colors.green:colors.cyan}/><View style={{flex:1}}><Text style={styles.emailValue}>{user?.email||t("settings.account.noEmail")}</Text><Text style={styles.hint}>{user?.email?(user.emailVerified?t("common.auth.verifiedEmail"):t("settings.account.verificationRequired")):t("settings.mobile.accountSecurity.addAnEmailForRecovery")}</Text></View></View>
+          <View style={styles.emailStatus}><Ionicons name={user?.emailVerified?"checkmark-circle":"mail-outline"} size={20} color={user?.emailVerified?colors.green:colors.cyan}/><View style={{flex:1}}><Text style={styles.emailValue}>{streamerMode&&user?.email?t("settings.account.hiddenByStreamerMode"):(user?.email||t("settings.account.noEmail"))}</Text><Text style={styles.hint}>{user?.email?(user.emailVerified?t("common.auth.verifiedEmail"):t("settings.account.verificationRequired")):t("settings.mobile.accountSecurity.addAnEmailForRecovery")}</Text></View></View>
           <View style={styles.divider}/>
           <Field label={user?.email?t("settings.mobile.accountSecurity.newEmailAddress"):t("settings.mobile.accountSecurity.emailAddress2")} value={email} onChangeText={setEmail} secure={false} keyboardType="email-address" />
           <Field label={t("settings.twoFactor.currentPassword")} value={emailPassword} onChangeText={setEmailPassword} />

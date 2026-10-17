@@ -1074,7 +1074,6 @@
       "pinnedMessages": "Przypięte wiadomości",
       "returnToVoiceControls": "Wróć do sterowania głosem",
       "voiceAndMessagesLiveTogether": "W tym pokoju głos i wiadomości są razem.",
-      "noPostsInThisForum": "Na tym forum nie ma jeszcze postów.",
       "thisIsTheBeginningOf": "To początek tego pokoju tekstowego.",
       "longPressForMessageActions": "Przytrzymaj, aby zobaczyć akcje wiadomości",
       "pinned": "Przypięte",
@@ -1084,9 +1083,7 @@
       "severalPeopleAreTyping": "Kilka osób pisze…",
       "editingMessage": "Edytowanie wiadomości",
       "replyingToNameValue": "Odpowiadasz {{name}}: {{value}}",
-      "longPressAPostTo": "Przytrzymaj post, aby odpowiedzieć. Nowe posty na forum można zakładać na komputerze lub w wersji web.",
       "addPhotoVideoOrGif": "Dodaj zdjęcie, wideo lub GIF",
-      "writeAReply": "Napisz odpowiedź",
       "messageName": "Napisz na #{{name}}",
       "couldNotUpdateMute": "Nie udało się zmienić wyciszenia",
       "unmuteUsername": "Wyłącz wyciszenie: {{username}}",
@@ -1097,7 +1094,11 @@
       "reactedByYou": "{{emoji}} {{count}}, twoja reakcja",
       "newCount": "Nowe: {{number}}",
       "isTyping": "{{name}} pisze…",
-      "twoTyping": "{{first}} i {{second}} piszą…"
+      "twoTyping": "{{first}} i {{second}} piszą…",
+      "couldNotSendSticker": "Nie udało się wysłać naklejki",
+      "couldNotSendPoll": "Nie udało się wysłać ankiety",
+      "muteRoom": "Wycisz pokój",
+      "unmuteRoom": "Wyłącz wyciszenie pokoju"
     },
     "finder": {
       "searchFailed": "Wyszukiwanie nie powiodło się.",
@@ -1117,7 +1118,8 @@
       "cameraOff": "Dostęp DeCave do aparatu jest wyłączony. Włącz go w Ustawieniach.",
       "photosOff": "Dostęp DeCave do zdjęć jest wyłączony. Włącz go w Ustawieniach.",
       "tooLarge": "Załączniki mogą mieć maksymalnie 25 MB.",
-      "uploadFailed": "Nie udało się przesłać załącznika."
+      "uploadFailed": "Nie udało się przesłać załącznika.",
+      "poll": "Ankieta"
     },
     "preview": {
       "mine": "Twoja wiadomość: {{body}}",

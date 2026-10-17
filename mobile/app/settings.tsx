@@ -40,6 +40,9 @@ import { Avatar } from "@/src/components/Avatar";
 import { MenuSection, SettingsMenuRow, SectionHeading, SettingsCard, StatusHeader, Divider, SettingToggle } from "@/src/components/settings/SettingsParts";
 import { LanguagePicker } from "@/src/components/settings/LanguagePicker";
 import { ChatPreferences } from "@/src/components/settings/ChatPreferences";
+import { MutedPlacesCard } from "@/src/components/settings/MutedPlacesCard";
+import { useStreamerMode } from "@/src/hooks/useStreamerMode";
+import { isPlatformOwner } from "@/src/lib/admin-api";
 import { setAccountPreferencesSnapshot } from "@/src/lib/account-preferences-store";
 import { I18N_PICKER_ENABLED } from "../../shared/i18n/flags.ts";
 import { useTranslation } from "react-i18next";
@@ -86,6 +89,15 @@ export default function SettingsScreen() {
   const [quietEnd, setQuietEnd] = useState(quietHours.end);
   const [quietError, setQuietError] = useState("");
   const [hubs, setHubs] = useState<Hub[] | null>(null);
+  const streamerMode = useStreamerMode();
+  // Admin & Security is listed only for platform owners (the server decides).
+  const [platformOwner, setPlatformOwner] = useState(false);
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    void isPlatformOwner(token).then((value) => { if (!cancelled) setPlatformOwner(value); });
+    return () => { cancelled = true; };
+  }, [token]);
   const [hubsError, setHubsError] = useState("");
   const syncedRef = useRef<SyncedClientSettings | null>(null);
   const sessionTokenRef = useRef(token);
@@ -295,7 +307,7 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.menuRowCopy}>
               <Text maxFontSizeMultiplier={1.3} style={styles.accountName} numberOfLines={1}>{user?.username ?? t("settings.mobile.settings.yourAccount")}</Text>
-              <Text style={styles.menuRowDetail} numberOfLines={1}>{user?.email ?? t("settings.mobile.settings.accountEmailPassword")}</Text>
+              <Text style={styles.menuRowDetail} numberOfLines={1}>{streamerMode ? t("settings.account.hiddenByStreamerMode") : (user?.email ?? t("settings.mobile.settings.accountEmailPassword"))}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.lilac} />
           </Pressable>
@@ -304,9 +316,11 @@ export default function SettingsScreen() {
             <SettingsMenuRow icon="person-circle-outline" tint="#A78BFA" title={t("settings.mobile.settings.accountSecurity")} detail={t("settings.mobile.settings.passwordAccountAccessDisableOr")} onPress={() => router.push("/account-security" as any)} />
             <SettingsMenuRow icon="color-palette-outline" tint="#F472B6" title={t("settings.mobile.settings.appearance")} detail={t("settings.mobile.settings.themeSkinAndVisualPreferences")} onPress={() => router.push("/appearance" as any)} />
             <SettingsMenuRow icon="desktop-outline" tint="#67E8F9" title={t("settings.mobile.settings.devicesSessions")} detail={t("settings.mobile.settings.reviewAndLogOutActive")} onPress={() => router.push("/devices" as any)} />
+            <SettingsMenuRow icon="link-outline" tint="#818CF8" title={t("settings.connections.title")} detail={t("settings.mobile.connections.detail")} onPress={() => router.push("/connections" as any)} />
             <SettingsMenuRow icon="hand-left-outline" tint="#FB923C" title={t("settings.mobile.settings.privacySafety")} detail={t("settings.mobile.settings.friendRequestsActivityAndBlocked")} onPress={() => router.push("/privacy" as any)} />
             <SettingsMenuRow icon="shield-checkmark-outline" tint="#34D399" title={t("settings.mobile.settings.myReports")} detail={t("settings.mobile.settings.trackReportsAndSafetyCases")} onPress={() => router.push("/my-reports" as any)} />
-            <SettingsMenuRow icon="qr-code-outline" tint="#FBBF24" title={t("settings.mobile.settings.scanQrCode")} detail={t("settings.mobile.settings.signInToDecaveOn")} onPress={() => router.push("/scan-login" as any)} last />
+            <SettingsMenuRow icon="qr-code-outline" tint="#FBBF24" title={t("settings.mobile.settings.scanQrCode")} detail={t("settings.mobile.settings.signInToDecaveOn")} onPress={() => router.push("/scan-login" as any)} last={!platformOwner} />
+            {platformOwner && <SettingsMenuRow icon="shield-half-outline" tint="#F87171" title={t("common.admin.title")} detail={t("common.admin.lead")} onPress={() => router.push("/admin" as any)} last />}
           </MenuSection>
 
           <MenuSection title={t("settings.mobile.settings.appSettings")}>
@@ -624,6 +638,19 @@ export default function SettingsScreen() {
           />
         </SettingsCard>
 
+        <MutedPlacesCard
+          hubs={hubs}
+          settings={synced}
+          onPatch={(patch) => {
+            const sessionToken = token;
+            const current = syncedRef.current;
+            applySynced({ ...(current ?? {}), ...patch });
+            void pushSyncedPatch(patch).then((ok) => {
+              if (!ok && current && sessionToken && sessionTokenRef.current === sessionToken) applySynced(current);
+            });
+          }}
+        />
+
         <SectionHeading icon="grid-outline" title={t("settings.mobile.settings.hubs")} />
         <SettingsCard>
           <Text style={styles.choiceHelp}>{t("settings.mobile.settings.chooseWhatEachHubCan")}</Text>
@@ -761,6 +788,13 @@ export default function SettingsScreen() {
             onValueChange={(value) =>
               updateSettings({ autoGainControl: value })
             }
+          />
+          <SettingToggle
+            icon="hand-left-outline"
+            title={t("settings.voice.mode.pushToTalk")}
+            detail={t("settings.mobile.voice.pushToTalkHelp")}
+            value={settings.pushToTalk}
+            onValueChange={(value) => updateSettings({ pushToTalk: value })}
           />
           <SettingToggle
             icon="mic-off-outline"
