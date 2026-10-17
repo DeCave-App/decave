@@ -69,7 +69,7 @@ export function useDesktopUpdates() {
 
   const desktopInstalledVersion = hasDesktopActivityBridge()
     ? (desktopUpdateState?.currentVersion ?? t("chat.actions.desktopUpdate.versionLoading"))
-    : t("chat.actions.desktopUpdate.webVersion");
+    : `${__APP_VERSION__} · ${t("chat.actions.desktopUpdate.webVersion")}`;
   const installed = desktopInstalledVersion;
   const available = desktopUpdateState?.availableVersion ?? "";
   const desktopUpdateStatusCopy = !hasDesktopActivityBridge()

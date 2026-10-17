@@ -1,7 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import { readFileSync } from "node:fs";
+
+const { version } = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
 
 export default defineConfig({
+  // Shown in Settings > App on the web, where there is no desktop updater to ask.
+  define: { __APP_VERSION__: JSON.stringify(version) },
   publicDir: false,
   server: {
     host: "127.0.0.1",

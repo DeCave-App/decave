@@ -149,6 +149,7 @@ import { DiscordImportPanel } from "./app/components/DiscordImportPanel";
 import { useInjectedStyle } from "./app/hooks/useInjectedStyle";
 import { useSyncRef } from "./app/hooks/useSyncRef";
 import { useSystemAppearance } from "./app/hooks/useSystemAppearance";
+import { useWebReleaseRefresh } from "./app/hooks/useWebReleaseRefresh";
 import { useDesktopFitScale } from "./app/hooks/useDesktopFitScale";
 import { useHubMutes } from "./app/hooks/useHubMutes";
 import { useDesktopUpdates } from "./app/hooks/useDesktopUpdates";
@@ -1018,6 +1019,8 @@ function App() {
   }, [showHome, showSocial, showSettings, showServerBrowser, showAdminDashboard]);
 
   const desktopUpdates = useDesktopUpdates();
+  // A tab or Home Screen web app left open loads the newest release when someone returns to it.
+  useWebReleaseRefresh(voiceChannelId !== null || voiceCall.voiceStatus !== "Disconnected");
   const {
     desktopUpdateState,
     desktopUpdateAction,
