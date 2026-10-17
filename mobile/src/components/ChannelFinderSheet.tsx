@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: colors.panel,
+    backgroundColor: colors.sheet,
     borderWidth: 1,
     borderColor: colors.border,
   },

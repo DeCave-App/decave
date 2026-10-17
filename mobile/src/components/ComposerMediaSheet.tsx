@@ -154,7 +154,7 @@ export function ComposerMediaSheet({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(2,5,12,.72)" },
-  sheet: { padding: 16, paddingBottom: 30, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border },
+  sheet: { padding: 16, paddingBottom: 30, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.sheet, borderWidth: 1, borderColor: colors.border },
   grabber: { alignSelf: "center", width: 42, height: 4, borderRadius: 99, backgroundColor: colors.border, marginBottom: 14 },
   actions: { flexDirection: "row", gap: 10, marginBottom: 14 },
   assets: { marginBottom: 14 },

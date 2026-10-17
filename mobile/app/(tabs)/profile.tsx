@@ -970,7 +970,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel2,
   },
   statusIconActive: {
-    backgroundColor: colors.bg,
+    backgroundColor: colors.solid,
   },
   statusText: { color: colors.text, fontWeight: "900", fontSize: 12,
   },
@@ -1097,7 +1097,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderTopLeftRadius: 27,
     borderTopRightRadius: 27,
-    backgroundColor: colors.panel,
+    backgroundColor: colors.sheet2,
     borderWidth: 1,
     borderColor: colors.borderStrong,
   },
@@ -1141,7 +1141,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.panel2,
+    backgroundColor: colors.sheet,
   },
   modalInput: {
     minHeight: 48,

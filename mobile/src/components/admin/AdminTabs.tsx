@@ -705,6 +705,6 @@ const styles = StyleSheet.create({
   listRow: { gap: 2, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   badge: { overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, color: colors.muted, fontSize: 10, fontWeight: "900", backgroundColor: colors.panel2 },
   badgeCritical: { color: "#fff", backgroundColor: colors.red },
-  sheet: { flex: 1, backgroundColor: colors.bg },
+  sheet: { flex: 1, backgroundColor: colors.solid },
   sheetHead: { flexDirection: "row", alignItems: "center", gap: 10, padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
 });

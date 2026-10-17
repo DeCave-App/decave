@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   selectText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: "700" },
   placeholder: { color: colors.faint },
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(2,5,12,.72)" },
-  sheet: { paddingTop: 12, borderTopLeftRadius: 22, borderTopRightRadius: 22, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border },
+  sheet: { paddingTop: 12, borderTopLeftRadius: 22, borderTopRightRadius: 22, backgroundColor: colors.sheet, borderWidth: 1, borderColor: colors.border },
   sheetHead: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingBottom: 8 },
   sheetTitle: { flex: 1, color: colors.text, fontSize: 16, fontWeight: "900" },
   option: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 12 },

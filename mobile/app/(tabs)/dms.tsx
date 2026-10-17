@@ -1115,7 +1115,7 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: colors.panel,
+    backgroundColor: colors.sheet2,
     borderWidth: 1,
     borderColor: colors.borderStrong,
   },
@@ -1159,7 +1159,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.panel2,
+    backgroundColor: colors.sheet,
   },
   search: {
     minHeight: 46,

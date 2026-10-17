@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    backgroundColor: colors.panel,
+    backgroundColor: colors.sheet,
   },
   sheetHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   title: { flex: 1, color: colors.text, fontSize: 19, fontWeight: "900" },

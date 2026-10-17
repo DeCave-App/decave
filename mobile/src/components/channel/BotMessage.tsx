@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   onColor: { color: "#FFFFFF" },
   error: { color: colors.red, fontSize: 12 },
   overlay: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: colors.overlay },
-  dialog: { gap: 12, padding: 18, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel },
+  dialog: { gap: 12, padding: 18, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.sheet },
   dialogTitle: { color: colors.text, fontSize: 17, fontWeight: "900" },
   field: { gap: 4 },
   fieldLabel: { color: colors.text, fontSize: 13, fontWeight: "700" },

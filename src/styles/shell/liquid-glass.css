@@ -177,6 +177,15 @@
   backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
 }
 
+/* ---- phones: full-screen pages (Settings, Home, Discover) slide over the
+   chat, so they are solid there, like dialogs: Safari's blur is not reliable
+   enough to keep the chat underneath from showing through the text. ---- */
+@media (max-width: 900px) {
+  .app[data-glass][data-glass][data-skin][data-workspace] .dc-workspace-page {
+    background: var(--gc-bg-0) !important;
+  }
+}
+
 /* ---- wide screens: panels float apart with rounded, lit edges ----
    Phones keep their own layout (the sidebar slides over the chat there), so
    the gaps and padding would squeeze the columns. */

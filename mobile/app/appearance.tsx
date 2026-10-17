@@ -6,8 +6,10 @@ import { Screen } from "@/src/components/Screen";
 import { reloadAppAsync } from "expo";
 import * as SecureStore from "expo-secure-store";
 import { SKINS, type SkinId, useSkin } from "@/src/skin";
-import { COLOR_MODE_KEY, colorMode, type ColorMode } from "@/src/theme";
+import { COLOR_MODE_KEY, colorMode, colors, type ColorMode } from "@/src/theme";
 import { useTranslation } from "react-i18next";
+import { saveGlass, startupGlass, type GlassSettings } from "@/src/glass-data";
+import { GlassSettingsCard } from "@/src/components/settings/GlassSettingsCard";
 
 export default function AppearanceScreen() {
   const { t } = useTranslation(["settings", "common"]);
@@ -21,7 +23,11 @@ export default function AppearanceScreen() {
   );
   // Light mode keeps light surfaces and previews the skin's accent.
   const palette = colorMode === "light" ? { ...activePalette, accent: selectedSkin.lightAccent } : selectedSkin.palette;
-  const hasChanges = selectedSkinId !== activeSkin.id;
+  const [glass, setGlass] = useState<GlassSettings>(startupGlass);
+  const skinChanged = selectedSkinId !== activeSkin.id;
+  const glassChanged =
+    glass.enabled !== startupGlass.enabled || glass.style !== startupGlass.style || glass.backdrop !== startupGlass.backdrop;
+  const hasChanges = skinChanged || glassChanged;
 
   useEffect(() => {
     setSelectedSkinId(activeSkin.id);
@@ -38,7 +44,10 @@ export default function AppearanceScreen() {
     if (!hasChanges || saving) return;
     setSaving(true);
     setSaved(false);
-    await setSkin(selectedSkinId);
+    if (glassChanged) await saveGlass(glass);
+    // Both are read at startup, so either change reloads the app.
+    if (skinChanged) await setSkin(selectedSkinId);
+    else await reloadAppAsync("Glass changed");
     setSaving(false);
     setSaved(true);
   };
@@ -78,6 +87,16 @@ export default function AppearanceScreen() {
         {colorMode === "light" && (
           <Text style={[styles.help, { color: palette.muted, marginBottom: 14 }]}>{t("settings.mobile.appearance.inLightModeASkin")}</Text>
         )}
+        <GlassSettingsCard
+          value={glass}
+          onChange={(next) => {
+            setGlass(next);
+            setSaved(false);
+          }}
+          palette={palette}
+          skinId={selectedSkinId}
+          darkMode={colorMode === "dark"}
+        />
         <Text style={[styles.help, { color: palette.muted }]}>{t("settings.mobile.appearance.chooseAVisualStylePreview")}</Text>
         <View style={styles.grid}>
           {SKINS.map((skin) => {
@@ -121,8 +140,8 @@ export default function AppearanceScreen() {
           disabled={!hasChanges || saving}
           onPress={() => void saveSkin()}
         >
-          <Ionicons name="checkmark" size={18} color={palette.bg} />
-          <Text style={[styles.saveButtonText, { color: palette.bg }]}>{saving ? t("common.status.saving") : hasChanges ? t("settings.mobile.appearance.saveSkin") : t("settings.mobile.appearance.skinSaved")}</Text>
+          <Ionicons name="checkmark" size={18} color={colors.solid} />
+          <Text style={[styles.saveButtonText, { color: colors.solid }]}>{saving ? t("common.status.saving") : hasChanges ? (skinChanged ? t("settings.mobile.appearance.saveSkin") : t("settings.mobile.appearance.glass.apply")) : t("settings.mobile.appearance.skinSaved")}</Text>
         </Pressable>
       </View>
     </Screen>

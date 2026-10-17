@@ -1,11 +1,15 @@
 import * as SecureStore from "expo-secure-store";
 import { isSkinId, SKINS, SKIN_STORAGE_KEY, type SkinId } from "@/src/skins-data";
+import { startupGlass } from "@/src/glass-data";
+import { glassSurfaces } from "@/src/lib/glass-model";
 
 export type ColorMode = "dark" | "light";
 export const COLOR_MODE_KEY = "decave.colorMode";
 
 const dark = {
   bg: "#09080D",
+  /** Always-opaque page color, for sheets and overlays that must not show the glass backdrop. */
+  solid: "#09080D",
   panel: "#14121B",
   panel2: "#1B1825",
   nav: "rgba(20, 17, 29, 0.96)",
@@ -41,6 +45,7 @@ const dark = {
 
 const light: typeof dark = {
   bg: "#F5F4F9",
+  solid: "#F5F4F9",
   panel: "#FFFFFF",
   panel2: "#EEECF4",
   nav: "rgba(255, 255, 255, 0.97)",
@@ -116,6 +121,7 @@ function skinnedColors(): typeof dark {
   return {
     ...dark,
     bg: palette.bg,
+    solid: palette.bg,
     panel: palette.panel,
     panel2: palette.panel2,
     nav: palette.nav,
@@ -132,7 +138,27 @@ function skinnedColors(): typeof dark {
   };
 }
 
-export const colors = skinnedColors();
+/**
+ * Liquid Glass (Dark mode): pages turn see-through so the backdrop picture
+ * shows, and panels become clear or tinted glass in the skin's colors.
+ */
+export const glassActive = startupGlass.enabled && colorMode === "dark";
+
+export { glassSurfaces };
+
+export type ThemeColors = ReturnType<typeof skinnedColors> & {
+  /** Opaque panels for sheets, dialogs and menus over other content; equal to panel/panel2 without glass. */
+  sheet: string;
+  sheet2: string;
+};
+
+function glassColors(): ThemeColors {
+  const base = skinnedColors();
+  const sheets = { sheet: base.panel, sheet2: base.panel2 };
+  return glassActive ? { ...base, ...glassSurfaces(base, startupGlass.style), ...sheets } : { ...base, ...sheets };
+}
+
+export const colors = glassColors();
 
 export const radii = {
   xs: 8,

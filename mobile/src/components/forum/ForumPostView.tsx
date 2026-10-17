@@ -445,7 +445,7 @@ function VoteButton({ icon, active, label, onPress }: { icon: "arrow-up" | "arro
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: colors.solid },
   topBar: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   topButton: { width: 36, height: 36, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: colors.panel2 },
   topTitle: { flex: 1, color: colors.text, fontSize: 15, fontWeight: "900" },

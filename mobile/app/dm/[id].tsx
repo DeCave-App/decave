@@ -1011,7 +1011,7 @@ const styles = StyleSheet.create({
   callButtonText: { color: colors.text, fontSize: 12, fontWeight: "900" },
   reportConversationButton: { width: 36, height: 36, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: colors.cyanSoft, borderWidth: 1, borderColor: colors.border },
   actionBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(2,5,12,.72)" },
-  actionSheet: { padding: 16, paddingBottom: 28, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border },
+  actionSheet: { padding: 16, paddingBottom: 28, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.sheet, borderWidth: 1, borderColor: colors.border },
   actionGrabber: { alignSelf: "center", width: 42, height: 4, borderRadius: 99, backgroundColor: colors.border, marginBottom: 13 },
   emojiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
   emojiButton: { width: 48, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: colors.panel2, borderWidth: 1, borderColor: colors.border },

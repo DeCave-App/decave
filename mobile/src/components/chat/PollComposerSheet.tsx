@@ -116,7 +116,7 @@ export function PollComposerSheet({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(2,5,12,.72)" },
-  sheet: { maxHeight: "88%", padding: 16, paddingBottom: 30, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border },
+  sheet: { maxHeight: "88%", padding: 16, paddingBottom: 30, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.sheet, borderWidth: 1, borderColor: colors.border },
   grabber: { alignSelf: "center", width: 42, height: 4, borderRadius: 99, backgroundColor: colors.border, marginBottom: 14 },
   kicker: { color: colors.cyan, fontSize: 11, fontWeight: "900", letterSpacing: 0.6, textTransform: "uppercase" },
   title: { color: colors.text, fontSize: 20, fontWeight: "900" },

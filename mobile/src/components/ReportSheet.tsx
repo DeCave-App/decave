@@ -160,7 +160,7 @@ export function ReportSheet({ visible, token, target, onClose, onSubmitted }: Re
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(2,5,12,.78)" },
-  sheet: { maxHeight: "92%", padding: 16, paddingBottom: 28, gap: 10, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel },
+  sheet: { maxHeight: "92%", padding: 16, paddingBottom: 28, gap: 10, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.sheet },
   grabber: { alignSelf: "center", width: 42, height: 4, borderRadius: 99, backgroundColor: colors.border, marginBottom: 2 },
   head: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   kicker: { color: colors.cyan, fontSize: 12, fontWeight: "900", letterSpacing: 1.6 },
