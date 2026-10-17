@@ -1230,8 +1230,7 @@
         "detail": "Vidro mais escuro, mais fácil de ler"
       },
       "autoOff": "Desativar automaticamente",
-      "autoOffHelp": "Usa painéis sólidos em dispositivos mais lentos e quando os efeitos de transparência estão desativados neste computador.",
-      "offTransparency": "O vidro está desativado agora porque os efeitos de transparência estão desativados neste computador. Desative “Desativar automaticamente” para usá-lo mesmo assim.",
+      "autoOffHelp": "Usa painéis sólidos em dispositivos mais lentos, onde o vidro poderia deixar a rolagem travando.",
       "offDevice": "O vidro está desativado agora porque este dispositivo pode não exibi-lo com fluidez. Desative “Desativar automaticamente” para usá-lo mesmo assim.",
       "offContrast": "O vidro fica desativado enquanto o Alto contraste estiver ativado.",
       "backdropLabel": "Fundo",
@@ -1546,7 +1545,13 @@
       "inLightModeASkin": "No modo claro, a skin define a cor de destaque; o modo escuro usa o visual completo dela.",
       "chooseAVisualStylePreview": "Escolha um estilo visual, veja a prévia aqui e toque em Salvar skin. O DeCave reinicia com o novo visual, e sua escolha fica salva neste dispositivo.",
       "skinSaved": "Skin salva",
-      "saveSkin": "Salvar skin"
+      "saveSkin": "Salvar skin",
+      "glass": {
+        "help": "Painéis translúcidos sobre um fundo suave, nas cores da sua skin. O app reinicia para aplicar.",
+        "skinColors": "Cores da skin",
+        "darkOnly": "O Liquid Glass aparece no modo escuro. Mude para Escuro acima para usá-lo.",
+        "apply": "Aplicar vidro"
+      }
     },
     "devices": {
       "couldNotLoadActiveSessions": "Não foi possível carregar as sessões ativas.",

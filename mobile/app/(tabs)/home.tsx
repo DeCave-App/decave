@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     backgroundColor: colors.green,
     borderWidth: 2,
-    borderColor: colors.solid,
+    borderColor: colors.bg,
   },
   friendName: {
     width: 62,

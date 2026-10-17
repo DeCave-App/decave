@@ -1230,8 +1230,7 @@
         "detail": "Verre plus sombre, plus lisible"
       },
       "autoOff": "Désactiver automatiquement",
-      "autoOffHelp": "Panneaux opaques sur les appareils plus lents et quand les effets de transparence sont désactivés sur cet ordinateur.",
-      "offTransparency": "Le verre est désactivé car les effets de transparence sont désactivés sur cet ordinateur. Désactive « Désactiver automatiquement » pour l’utiliser quand même.",
+      "autoOffHelp": "Panneaux opaques sur les appareils plus lents, où le verre pourrait saccader au défilement.",
       "offDevice": "Le verre est désactivé car cet appareil risque de ne pas l’afficher de façon fluide. Désactive « Désactiver automatiquement » pour l’utiliser quand même.",
       "offContrast": "Le verre reste désactivé tant que le Contraste élevé est activé.",
       "backdropLabel": "Arrière-plan",
@@ -1546,7 +1545,13 @@
       "inLightModeASkin": "En mode clair, un skin définit la couleur d'accent ; le mode sombre utilise tout son style.",
       "chooseAVisualStylePreview": "Choisis un style visuel, prévisualise-le ici, puis appuie sur Enregistrer le skin. DeCave redémarre avec le nouveau look, et ton choix est enregistré sur cet appareil.",
       "skinSaved": "Skin enregistré",
-      "saveSkin": "Enregistrer le skin"
+      "saveSkin": "Enregistrer le skin",
+      "glass": {
+        "help": "Des panneaux translucides sur un fond doux, aux couleurs de ton skin. L’app redémarre pour l’appliquer.",
+        "skinColors": "Couleurs du skin",
+        "darkOnly": "Liquid Glass s’affiche en mode sombre. Passe en Sombre ci-dessus pour l’utiliser.",
+        "apply": "Appliquer le verre"
+      }
     },
     "devices": {
       "couldNotLoadActiveSessions": "Impossible de charger les sessions actives.",

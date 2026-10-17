@@ -240,7 +240,7 @@ export function BotRuleEditor({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.solid },
+  root: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerAction: { color: colors.muted, fontSize: 15, fontWeight: "700" },
   headerTitle: { flex: 1, textAlign: "center", color: colors.text, fontSize: 16, fontWeight: "900" },

@@ -430,7 +430,7 @@ export function ForumComposeSheet({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.solid },
+  root: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerAction: { color: colors.muted, fontSize: 15, fontWeight: "700" },
   publish: { color: colors.cyan, fontWeight: "900" },

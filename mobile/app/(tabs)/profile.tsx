@@ -970,7 +970,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel2,
   },
   statusIconActive: {
-    backgroundColor: colors.solid,
+    backgroundColor: colors.bg,
   },
   statusText: { color: colors.text, fontWeight: "900", fontSize: 12,
   },

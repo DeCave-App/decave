@@ -1230,8 +1230,7 @@
         "detail": "Cristal más oscuro, más fácil de leer"
       },
       "autoOff": "Desactivar automáticamente",
-      "autoOffHelp": "Usa paneles sólidos en dispositivos más lentos y cuando los efectos de transparencia están desactivados en este ordenador.",
-      "offTransparency": "El cristal está desactivado porque los efectos de transparencia están desactivados en este ordenador. Desactiva «Desactivar automáticamente» para usarlo igualmente.",
+      "autoOffHelp": "Usa paneles sólidos en dispositivos más lentos, donde el cristal podría hacer que el desplazamiento vaya a tirones.",
       "offDevice": "El cristal está desactivado porque puede que este dispositivo no lo muestre con fluidez. Desactiva «Desactivar automáticamente» para usarlo igualmente.",
       "offContrast": "El cristal sigue desactivado mientras Alto contraste esté activado.",
       "backdropLabel": "Fondo",
@@ -1546,7 +1545,13 @@
       "inLightModeASkin": "En modo claro, la skin define el color de acento; el modo oscuro usa su aspecto completo.",
       "chooseAVisualStylePreview": "Elige un estilo visual, previsualízalo aquí y toca Guardar skin. DeCave se reinicia con el nuevo aspecto y tu elección se guarda en este dispositivo.",
       "skinSaved": "Skin guardada",
-      "saveSkin": "Guardar skin"
+      "saveSkin": "Guardar skin",
+      "glass": {
+        "help": "Paneles translúcidos sobre un fondo suave, con los colores de tu skin. La app se reinicia para aplicarlo.",
+        "skinColors": "Colores del skin",
+        "darkOnly": "Liquid Glass se muestra en modo oscuro. Cambia a Oscuro arriba para usarlo.",
+        "apply": "Aplicar cristal"
+      }
     },
     "devices": {
       "couldNotLoadActiveSessions": "No se pudieron cargar las sesiones activas.",

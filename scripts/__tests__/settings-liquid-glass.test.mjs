@@ -9,7 +9,7 @@ const { normalizeExtraSettings, activeGlass, isLowPowerDevice, DEFAULT_EXTRA_SET
 const { buildSyncedSettings } = await import("../../src/features/settings/settingsSync.ts");
 
 const SKINS = ["nebula", "bright"];
-const capable = { reducedTransparency: false, lowPowerDevice: false };
+const capable = { lowPowerDevice: false };
 
 test("glass is off by default and keeps only known values", () => {
   const fresh = normalizeExtraSettings({}, SKINS);
@@ -40,10 +40,9 @@ test("glass is drawn only when it is on and nothing asks for solid panels", () =
   assert.equal(activeGlass(DEFAULT_EXTRA_SETTINGS, capable), null);
   assert.equal(activeGlass(on, capable), "tinted");
   assert.equal(activeGlass({ ...on, highContrast: true }, capable), null);
-  assert.equal(activeGlass(on, { reducedTransparency: true, lowPowerDevice: false }), null);
-  assert.equal(activeGlass(on, { reducedTransparency: false, lowPowerDevice: true }), null);
+  assert.equal(activeGlass(on, { lowPowerDevice: true }), null);
   const always = { ...on, glassAutoOff: false };
-  assert.equal(activeGlass(always, { reducedTransparency: true, lowPowerDevice: true }), "tinted");
+  assert.equal(activeGlass(always, { lowPowerDevice: true }), "tinted");
   assert.equal(activeGlass({ ...always, highContrast: true }, capable), null);
 });
 
@@ -51,7 +50,9 @@ test("only clearly weak hardware counts as a low-power device", () => {
   assert.equal(isLowPowerDevice({}), false);
   assert.equal(isLowPowerDevice({ hardwareConcurrency: 8, deviceMemory: 8 }), false);
   assert.equal(isLowPowerDevice({ hardwareConcurrency: 4, deviceMemory: 4 }), false);
-  assert.equal(isLowPowerDevice({ hardwareConcurrency: 2 }), true);
+  // Safari on iPhone reports 2 cores whatever the hardware, so 2 is not "weak".
+  assert.equal(isLowPowerDevice({ hardwareConcurrency: 2 }), false);
+  assert.equal(isLowPowerDevice({ hardwareConcurrency: 1 }), true);
   assert.equal(isLowPowerDevice({ deviceMemory: 1 }), true);
 });
 
@@ -80,7 +81,7 @@ test("every glass rule is scoped to [data-glass], so skins are untouched when it
   const selectors = css
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .split("}")
-    .map((block) => block.split("{")[0].trim())
+    .map((block) => block.split("{").slice(-2)[0].trim())
     .filter(Boolean);
   assert.ok(selectors.length > 5);
   // :root only defines the wallpaper pictures, which do nothing until glass is on.

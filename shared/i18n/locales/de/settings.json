@@ -1222,8 +1222,7 @@
         "detail": "Dunkleres Glas, leichter zu lesen"
       },
       "autoOff": "Automatisch ausschalten",
-      "autoOffHelp": "Volle Flächen auf langsameren Geräten und wenn Transparenzeffekte auf diesem Computer ausgeschaltet sind.",
-      "offTransparency": "Glas ist gerade aus, weil Transparenzeffekte auf diesem Computer ausgeschaltet sind. Schalte „Automatisch ausschalten“ aus, um es trotzdem zu nutzen.",
+      "autoOffHelp": "Volle Flächen auf langsameren Geräten, auf denen Glas das Scrollen ruckeln lassen könnte.",
       "offDevice": "Glas ist gerade aus, weil dieses Gerät es vielleicht nicht flüssig darstellt. Schalte „Automatisch ausschalten“ aus, um es trotzdem zu nutzen.",
       "offContrast": "Glas bleibt aus, solange Hoher Kontrast an ist.",
       "backdropLabel": "Hintergrund",
@@ -1537,7 +1536,13 @@
       "inLightModeASkin": "Im Hellmodus bestimmt ein Skin die Akzentfarbe; der Dunkelmodus nutzt seinen kompletten Look.",
       "chooseAVisualStylePreview": "Wähle einen Stil, sieh ihn dir hier in der Vorschau an und tippe dann auf Skin speichern. DeCave startet mit dem neuen Look neu und deine Wahl wird auf diesem Gerät gespeichert.",
       "skinSaved": "Skin gespeichert",
-      "saveSkin": "Skin speichern"
+      "saveSkin": "Skin speichern",
+      "glass": {
+        "help": "Durchscheinende Flächen über einem sanften Hintergrund, in den Farben deines Skins. Die App startet zum Übernehmen neu.",
+        "skinColors": "Skin-Farben",
+        "darkOnly": "Liquid Glass erscheint im dunklen Modus. Wechsle oben zu Dunkel, um es zu nutzen.",
+        "apply": "Glas übernehmen"
+      }
     },
     "devices": {
       "couldNotLoadActiveSessions": "Aktive Sitzungen konnten nicht geladen werden.",

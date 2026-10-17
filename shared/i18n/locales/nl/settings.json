@@ -1222,8 +1222,7 @@
         "detail": "Donkerder glas, beter leesbaar"
       },
       "autoOff": "Automatisch uitschakelen",
-      "autoOffHelp": "Gebruik ondoorzichtige panelen op tragere apparaten en als transparantie-effecten op deze computer uit staan.",
-      "offTransparency": "Glas staat nu uit omdat transparantie-effecten op deze computer uit staan. Zet „Automatisch uitschakelen” uit om het toch te gebruiken.",
+      "autoOffHelp": "Gebruik ondoorzichtige panelen op tragere apparaten, waar glas het scrollen kan laten haperen.",
       "offDevice": "Glas staat nu uit omdat dit apparaat het misschien niet soepel weergeeft. Zet „Automatisch uitschakelen” uit om het toch te gebruiken.",
       "offContrast": "Glas blijft uit zolang Hoog contrast aan staat.",
       "backdropLabel": "Achtergrond",
@@ -1537,7 +1536,13 @@
       "inLightModeASkin": "In lichte modus bepaalt een skin de accentkleur; donkere modus gebruikt de volledige look.",
       "chooseAVisualStylePreview": "Kies een visuele stijl, bekijk hem hier en tik op Skin opslaan. DeCave herstart met de nieuwe look en je keuze wordt op dit apparaat opgeslagen.",
       "skinSaved": "Skin opgeslagen",
-      "saveSkin": "Skin opslaan"
+      "saveSkin": "Skin opslaan",
+      "glass": {
+        "help": "Doorschijnende panelen boven een zachte achtergrond, in de kleuren van je skin. De app start opnieuw om het toe te passen.",
+        "skinColors": "Skinkleuren",
+        "darkOnly": "Liquid Glass verschijnt in de donkere modus. Kies hierboven Donker om het te gebruiken.",
+        "apply": "Glas toepassen"
+      }
     },
     "devices": {
       "couldNotLoadActiveSessions": "Kan actieve sessies niet laden.",

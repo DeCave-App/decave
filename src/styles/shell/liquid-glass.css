@@ -75,9 +75,6 @@
   --dc-panel: var(--lg-fill-inner);
   --dc-panel-2: var(--lg-fill-inner);
 
-  gap: var(--lg-gap) !important;
-  padding: var(--lg-gap) !important;
-  box-sizing: border-box !important;
   background:
     linear-gradient(var(--lg-scrim), var(--lg-scrim)),
     var(--dc-glass-art, linear-gradient(transparent, transparent)) center / cover no-repeat,
@@ -156,29 +153,13 @@
   --dcx-surface: var(--lg-fill-inner);
 }
 
-/* ---- the floating shell panels ---- */
+/* ---- the shell panels: glass at every size ---- */
 .app[data-glass][data-glass][data-skin][data-workspace]
   > :is(.vadrion-topbar, .server-bar, .channel-sidebar, .main, .members, .dc-app-bottom-bar) {
   background: var(--lg-fill) !important;
   background-image: none !important;
   -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) !important;
   backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) !important;
-  border: 1px solid var(--lg-line) !important;
-  border-radius: var(--lg-radius) !important;
-  box-shadow:
-    inset 0 1px 0 var(--lg-edge),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
-    var(--lg-shadow) !important;
-  margin: 0 !important;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* Hub sidebar: the banner already shows behind the glass, so drop the
-   painted cover backdrop and let the strip at the top carry the art. */
-.app[data-glass][data-glass][data-skin][data-workspace] > .channel-sidebar {
-  background: var(--lg-fill) !important;
-  background-image: none !important;
 }
 
 /* The message list shows the glass behind it, unless the Hub set its own chat background. */
@@ -194,15 +175,42 @@
   background-image: none !important;
   -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
   backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
-  border: 1px solid var(--lg-line);
-  border-radius: var(--lg-radius);
-  box-shadow:
-    inset 0 1px 0 var(--lg-edge),
-    var(--lg-shadow);
 }
 
-/* These pages are placed with fixed offsets from the old edge-to-edge layout;
-   pull them in by the extra padding and gaps so they line up with the panels. */
-.app[data-glass][data-glass][data-skin][data-workspace] > .dc-workspace-page {
-  margin: calc(var(--lg-gap) * 2) !important;
+/* ---- wide screens: panels float apart with rounded, lit edges ----
+   Phones keep their own layout (the sidebar slides over the chat there), so
+   the gaps and padding would squeeze the columns. */
+@media (min-width: 901px) {
+  .app[data-glass][data-skin] {
+    gap: var(--lg-gap) !important;
+    padding: var(--lg-gap) !important;
+    box-sizing: border-box !important;
+  }
+
+  .app[data-glass][data-glass][data-skin][data-workspace]
+    > :is(.vadrion-topbar, .server-bar, .channel-sidebar, .main, .members, .dc-app-bottom-bar) {
+    border: 1px solid var(--lg-line) !important;
+    border-radius: var(--lg-radius) !important;
+    box-shadow:
+      inset 0 1px 0 var(--lg-edge),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+      var(--lg-shadow) !important;
+    margin: 0 !important;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app[data-glass][data-glass][data-skin][data-workspace] .dc-workspace-page {
+    border: 1px solid var(--lg-line);
+    border-radius: var(--lg-radius);
+    box-shadow:
+      inset 0 1px 0 var(--lg-edge),
+      var(--lg-shadow);
+  }
+
+  /* These pages are placed with fixed offsets from the old edge-to-edge layout;
+     pull them in by the extra padding and gaps so they line up with the panels. */
+  .app[data-glass][data-glass][data-skin][data-workspace] > .dc-workspace-page {
+    margin: calc(var(--lg-gap) * 2) !important;
+  }
 }

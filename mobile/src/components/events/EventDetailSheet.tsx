@@ -183,7 +183,7 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.solid },
+  root: { flex: 1, backgroundColor: colors.bg },
   topBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   kicker: { flex: 1, color: colors.cyan, fontSize: 12, fontWeight: "900", textTransform: "uppercase" },
   close: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: colors.panel2 },

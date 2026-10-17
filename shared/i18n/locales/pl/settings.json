@@ -1238,8 +1238,7 @@
         "detail": "Ciemniejsze szkło, łatwiejsze do czytania"
       },
       "autoOff": "Wyłączaj automatycznie",
-      "autoOffHelp": "Pełne panele na wolniejszych urządzeniach i gdy efekty przezroczystości są wyłączone na tym komputerze.",
-      "offTransparency": "Szkło jest teraz wyłączone, bo efekty przezroczystości są wyłączone na tym komputerze. Wyłącz „Wyłączaj automatycznie”, aby i tak go używać.",
+      "autoOffHelp": "Pełne panele na wolniejszych urządzeniach, na których szkło mogłoby spowalniać przewijanie.",
       "offDevice": "Szkło jest teraz wyłączone, bo to urządzenie może nie wyświetlać go płynnie. Wyłącz „Wyłączaj automatycznie”, aby i tak go używać.",
       "offContrast": "Szkło pozostaje wyłączone, dopóki włączony jest Wysoki kontrast.",
       "backdropLabel": "Tło",
@@ -1555,7 +1554,13 @@
       "inLightModeASkin": "W trybie jasnym skórka ustawia kolor akcentu; tryb ciemny używa jej pełnego wyglądu.",
       "chooseAVisualStylePreview": "Wybierz styl, obejrzyj podgląd tutaj, a potem stuknij Zapisz skórkę. DeCave uruchomi się ponownie z nowym wyglądem, a twój wybór zostanie zapisany na tym urządzeniu.",
       "skinSaved": "Zapisano skórkę",
-      "saveSkin": "Zapisz skórkę"
+      "saveSkin": "Zapisz skórkę",
+      "glass": {
+        "help": "Przezroczyste panele na łagodnym tle, w kolorach Twojej skórki. Aplikacja uruchomi się ponownie, aby to zastosować.",
+        "skinColors": "Kolory skórki",
+        "darkOnly": "Liquid Glass działa w trybie ciemnym. Przełącz powyżej na Ciemny, aby go używać.",
+        "apply": "Zastosuj szkło"
+      }
     },
     "devices": {
       "couldNotLoadActiveSessions": "Nie udało się wczytać aktywnych sesji.",

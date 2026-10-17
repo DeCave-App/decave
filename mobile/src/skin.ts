@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { reloadAppAsync } from "expo";
 import * as SecureStore from "expo-secure-store";
-import { colorMode, colors, glassActive, glassSurfaces, startupSkinId } from "@/src/theme";
-import { startupGlass } from "@/src/glass-data";
+import { colorMode, colors, startupSkinId } from "@/src/theme";
 import { SKINS, SKIN_STORAGE_KEY, type Palette, type SkinId } from "@/src/skins-data";
 
 export { SKINS, type SkinDefinition, type SkinId } from "@/src/skins-data";
@@ -39,14 +38,6 @@ export function useSkin() {
   const palette: Palette =
     colorMode === "light"
       ? { bg: colors.bg, panel: colors.panel, panel2: colors.panel2, nav: colors.nav, border: colors.border, text: colors.text, muted: colors.muted, accent: colors.violet, accentSoft: colors.violetSoft }
-      : glassActive
-        ? { ...skin.palette, ...glassPalette(skin.palette) }
-        : skin.palette;
+      : skin.palette;
   return { skin, palette, setSkin };
-}
-
-/** The skin's surfaces as Liquid Glass (input is a theme-only color, so it is left out). */
-function glassPalette(palette: Palette): Omit<ReturnType<typeof glassSurfaces>, "input"> {
-  const { input: _input, ...surfaces } = glassSurfaces(palette, startupGlass.style);
-  return surfaces;
 }

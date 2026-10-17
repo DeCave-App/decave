@@ -1222,8 +1222,7 @@
         "detail": "Darker glass, easier to read"
       },
       "autoOff": "Turn off automatically",
-      "autoOffHelp": "Use solid panels on slower devices and when transparency effects are turned off on this computer.",
-      "offTransparency": "Glass is off right now because transparency effects are turned off on this computer. Turn off “Turn off automatically” to use it anyway.",
+      "autoOffHelp": "Use solid panels on slower devices, where glass could make scrolling stutter.",
       "offDevice": "Glass is off right now because this device may not run it smoothly. Turn off “Turn off automatically” to use it anyway.",
       "offContrast": "Glass stays off while High contrast is on.",
       "backdropLabel": "Backdrop",
@@ -1537,7 +1536,13 @@
       "inLightModeASkin": "In Light mode a skin sets the accent color; Dark mode uses its full look.",
       "chooseAVisualStylePreview": "Choose a visual style, preview it here, then tap Save skin. DeCave restarts with the new look, and your choice is stored on this device.",
       "skinSaved": "Skin saved",
-      "saveSkin": "Save skin"
+      "saveSkin": "Save skin",
+      "glass": {
+        "help": "See-through panels over a soft backdrop, in your skin's colors. The app restarts to apply it.",
+        "skinColors": "Skin colors",
+        "darkOnly": "Liquid Glass shows in Dark mode. Switch to Dark above to use it.",
+        "apply": "Apply glass"
+      }
     },
     "devices": {
       "couldNotLoadActiveSessions": "Could not load active sessions.",

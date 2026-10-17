@@ -25,7 +25,6 @@ import { IosBroadcastPicker } from "@/src/components/IosBroadcastPicker";
 import { AndroidUpdateBanner } from "@/src/components/AndroidUpdateBanner";
 import { SoundboardListener } from "@/src/components/Soundboard";
 import { useSkin } from "@/src/skin";
-import { GlassBackdrop } from "@/src/components/GlassBackdrop";
 
 /** Follows the language saved on the signed-in account. */
 function AccountLocaleSync() {
@@ -38,7 +37,6 @@ export default function RootLayout() {
   const { palette } = useSkin();
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.bg }}>
-      <GlassBackdrop />
       <SafeAreaProvider>
         <SessionProvider>
           <AccountLocaleSync />

@@ -208,11 +208,9 @@ export function GlassPanel({ field, environment }: GlassProps) {
     ? null
     : value.highContrast
       ? t("settings.appearance.glass.offContrast")
-      : value.glassAutoOff && environment.reducedTransparency
-        ? t("settings.appearance.glass.offTransparency")
-        : value.glassAutoOff && environment.lowPowerDevice
-          ? t("settings.appearance.glass.offDevice")
-          : null;
+      : value.glassAutoOff && environment.lowPowerDevice
+        ? t("settings.appearance.glass.offDevice")
+        : null;
   return (
     <div className="dcs-card">
       <Toggle

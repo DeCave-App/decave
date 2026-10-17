@@ -1,14 +1,11 @@
 import * as SecureStore from "expo-secure-store";
-import { isSkinId, SKINS, SKIN_STORAGE_KEY, type Palette, type SkinId } from "@/src/skins-data";
-import { startupGlass, type GlassStyle } from "@/src/glass-data";
+import { isSkinId, SKINS, SKIN_STORAGE_KEY, type SkinId } from "@/src/skins-data";
 
 export type ColorMode = "dark" | "light";
 export const COLOR_MODE_KEY = "decave.colorMode";
 
 const dark = {
   bg: "#09080D",
-  /** Always-opaque page color, for sheets and overlays that must not show the glass backdrop. */
-  solid: "#09080D",
   panel: "#14121B",
   panel2: "#1B1825",
   nav: "rgba(20, 17, 29, 0.96)",
@@ -44,7 +41,6 @@ const dark = {
 
 const light: typeof dark = {
   bg: "#F5F4F9",
-  solid: "#F5F4F9",
   panel: "#FFFFFF",
   panel2: "#EEECF4",
   nav: "rgba(255, 255, 255, 0.97)",
@@ -120,7 +116,6 @@ function skinnedColors(): typeof dark {
   return {
     ...dark,
     bg: palette.bg,
-    solid: palette.bg,
     panel: palette.panel,
     panel2: palette.panel2,
     nav: palette.nav,
@@ -137,48 +132,7 @@ function skinnedColors(): typeof dark {
   };
 }
 
-/** Same color at a new opacity; accepts #rrggbb and rgb()/rgba(). */
-function withAlpha(color: string, alpha: number): string {
-  if (color.startsWith("#")) return hexSoft(color, alpha);
-  const parts = color.match(/[\d.]+/g) ?? ["0", "0", "0"];
-  return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha})`;
-}
-
-/**
- * Liquid Glass (Dark mode): pages turn see-through so the backdrop picture
- * shows, and panels become clear or tinted glass in the skin's colors.
- */
-export const glassActive = startupGlass.enabled && colorMode === "dark";
-
-type GlassSurfaces = Pick<Palette, "bg" | "panel" | "panel2" | "nav" | "border">;
-
-export function glassSurfaces(base: GlassSurfaces, style: GlassStyle): GlassSurfaces & { input: string } {
-  if (style === "tinted") {
-    return {
-      bg: "transparent",
-      panel: withAlpha(base.panel, 0.66),
-      panel2: withAlpha(base.panel2, 0.62),
-      nav: withAlpha(base.bg, 0.74),
-      input: withAlpha(base.bg, 0.5),
-      border: "rgba(255, 255, 255, 0.14)",
-    };
-  }
-  return {
-    bg: "transparent",
-    panel: "rgba(255, 255, 255, 0.08)",
-    panel2: "rgba(255, 255, 255, 0.12)",
-    nav: "rgba(10, 10, 22, 0.4)",
-    input: "rgba(255, 255, 255, 0.07)",
-    border: "rgba(255, 255, 255, 0.16)",
-  };
-}
-
-function glassColors(): typeof dark {
-  const base = skinnedColors();
-  return glassActive ? { ...base, ...glassSurfaces(base, startupGlass.style) } : base;
-}
-
-export const colors = glassColors();
+export const colors = skinnedColors();
 
 export const radii = {
   xs: 8,

@@ -970,7 +970,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
     borderRadius: 18,
     overflow: "hidden",
-    backgroundColor: colors.solid,
+    backgroundColor: colors.bg,
     borderWidth: 1,
     borderColor: colors.border,
   },

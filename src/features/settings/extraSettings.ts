@@ -160,27 +160,30 @@ export function motionReduced(settings: ExtraSettings, systemPrefersReduced: boo
 }
 
 export type GlassEnvironment = {
-  /** The OS "reduce transparency" setting. */
-  reducedTransparency: boolean;
   /** Few CPU cores or little memory, where live blur makes scrolling stutter. */
   lowPowerDevice: boolean;
 };
 
 /**
  * The glass style to draw, or null for solid panels. High contrast always wins,
- * and with auto-off on, so do the OS transparency setting and slower devices.
+ * and with auto-off on, so do slower devices. The OS "reduce transparency"
+ * setting does not: it is off by default on many Windows PCs, and turning
+ * glass on here is the person's own explicit choice.
  */
 export function activeGlass(settings: ExtraSettings, environment: GlassEnvironment): GlassStyle | null {
   if (!settings.glassEffect || settings.highContrast) return null;
-  if (settings.glassAutoOff && (environment.reducedTransparency || environment.lowPowerDevice)) return null;
+  if (settings.glassAutoOff && environment.lowPowerDevice) return null;
   return settings.glassStyle;
 }
 
-/** Hardware hints from the browser; unknown values count as capable. */
+/**
+ * Hardware hints from the browser; unknown values count as capable. Core counts
+ * are not trusted below 2: Safari reports a capped count on fast iPhones and Macs.
+ */
 export function isLowPowerDevice(hints: { hardwareConcurrency?: number; deviceMemory?: number }): boolean {
   const cores = Number(hints.hardwareConcurrency);
   const memory = Number(hints.deviceMemory);
-  return (Number.isFinite(cores) && cores > 0 && cores <= 2) || (Number.isFinite(memory) && memory > 0 && memory < 2);
+  return cores === 1 || (Number.isFinite(memory) && memory > 0 && memory < 2);
 }
 
 export type Platform = "windows" | "mac" | "linux" | "other";

@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     left: 0,
     zIndex: 999,
     elevation: 999,
-    backgroundColor: colors.solid,
+    backgroundColor: colors.bg,
   },
   head: {
     paddingHorizontal: 20,
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   },
   web: {
     flex: 1,
-    backgroundColor: colors.solid,
+    backgroundColor: colors.bg,
   },
   loading: {
     position: "absolute",
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     left: 0,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.solid,
+    backgroundColor: colors.bg,
   },
   loadingText: {
     color: colors.muted,

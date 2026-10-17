@@ -306,13 +306,10 @@ function App() {
   const toggleRoomMute = useRoomMute(preferences);
   const extraSettingsRef = useRef(preferences.extraSettings);
   extraSettingsRef.current = preferences.extraSettings;
-  const { prefersDark, systemReducedMotion, systemReducedTransparency, lowPowerDevice } = useSystemAppearance();
+  const { prefersDark, systemReducedMotion, lowPowerDevice } = useSystemAppearance();
   /** The skin on screen: the chosen one, or the light/dark pick when following the computer. */
   const displaySkin = resolveSkin(preferences.extraSettings, preferences.appSkin, prefersDark) as AppSkin;
-  const glassEnvironment = useMemo(
-    () => ({ reducedTransparency: systemReducedTransparency, lowPowerDevice }),
-    [systemReducedTransparency, lowPowerDevice],
-  );
+  const glassEnvironment = useMemo(() => ({ lowPowerDevice }), [lowPowerDevice]);
   const glassStyle = activeGlass(preferences.extraSettings, glassEnvironment);
   // Mirror the skin onto <html>/<body> so overlays portaled to document.body
   // resolve the same design tokens as surfaces inside .app.
