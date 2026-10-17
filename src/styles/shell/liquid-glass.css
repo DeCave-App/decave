@@ -153,6 +153,16 @@
   --dcx-surface: var(--lg-fill-inner);
 }
 
+/* High contrast keeps glass but draws it darker, with strong edges, so text
+   keeps its contrast over any backdrop. */
+.app[data-glass][data-skin][data-contrast="high"] {
+  --lg-fill: color-mix(in srgb, var(--gc-bg-0) 76%, transparent);
+  --lg-fill-inner: rgba(255, 255, 255, 0.07);
+  --lg-scrim: rgba(4, 6, 14, 0.5);
+  --lg-line: color-mix(in srgb, var(--ds-text) 34%, transparent);
+  --gc-border: color-mix(in srgb, var(--ds-text) 42%, transparent);
+}
+
 /* ---- the shell panels: glass at every size ---- */
 .app[data-glass][data-glass][data-skin][data-workspace]
   > :is(.vadrion-topbar, .server-bar, .channel-sidebar, .main, .members, .dc-app-bottom-bar) {
@@ -177,12 +187,14 @@
   backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
 }
 
-/* ---- phones: full-screen pages (Settings, Home, Discover) slide over the
-   chat, so they are solid there, like dialogs: Safari's blur is not reliable
-   enough to keep the chat underneath from showing through the text. ---- */
+/* ---- phones: full-screen pages (Settings, Home, DMs, Discover) slide over
+   the chat, so they use a denser tint over a stronger blur: the backdrop's
+   colors come through, the chat underneath does not. ---- */
 @media (max-width: 900px) {
   .app[data-glass][data-glass][data-skin][data-workspace] .dc-workspace-page {
-    background: var(--gc-bg-0) !important;
+    background: color-mix(in srgb, var(--gc-bg-0) 72%, transparent) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(var(--lg-saturate)) !important;
+    backdrop-filter: blur(40px) saturate(var(--lg-saturate)) !important;
   }
 }
 

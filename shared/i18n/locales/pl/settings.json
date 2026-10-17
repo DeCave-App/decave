@@ -1240,7 +1240,6 @@
       "autoOff": "Wyłączaj automatycznie",
       "autoOffHelp": "Pełne panele na wolniejszych urządzeniach, na których szkło mogłoby spowalniać przewijanie.",
       "offDevice": "Szkło jest teraz wyłączone, bo to urządzenie może nie wyświetlać go płynnie. Wyłącz „Wyłączaj automatycznie”, aby i tak go używać.",
-      "offContrast": "Szkło pozostaje wyłączone, dopóki włączony jest Wysoki kontrast.",
       "backdropLabel": "Tło",
       "backdrop": {
         "hub": {

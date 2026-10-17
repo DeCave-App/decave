@@ -4168,12 +4168,9 @@ function App() {
           currentServer.chatBackgroundUrl
             ? { "--dc-chat-background": `url(${HTTP_URL}${currentServer.chatBackgroundUrl})` }
             : {}),
-          // Liquid Glass shows the open Hub's banner through the panels.
-          ...(glassStyle &&
-          preferences.extraSettings.glassBackdrop === "hub" &&
-          !showHome &&
-          !overlayWorkspaceOpen &&
-          currentServer.bannerUrl
+          // Liquid Glass shows the current (or last opened) Hub's banner through
+          // the panels on every page, so Home, DMs and Settings are glass too.
+          ...(glassStyle && preferences.extraSettings.glassBackdrop === "hub" && currentServer.bannerUrl
             ? { "--dc-glass-art": `url(${HTTP_URL}${currentServer.bannerUrl})` }
             : {}),
         } as CSSProperties

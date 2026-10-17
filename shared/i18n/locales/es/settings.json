@@ -1232,7 +1232,6 @@
       "autoOff": "Desactivar automáticamente",
       "autoOffHelp": "Usa paneles sólidos en dispositivos más lentos, donde el cristal podría hacer que el desplazamiento vaya a tirones.",
       "offDevice": "El cristal está desactivado porque puede que este dispositivo no lo muestre con fluidez. Desactiva «Desactivar automáticamente» para usarlo igualmente.",
-      "offContrast": "El cristal sigue desactivado mientras Alto contraste esté activado.",
       "backdropLabel": "Fondo",
       "backdrop": {
         "hub": {

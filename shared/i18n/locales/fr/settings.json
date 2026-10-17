@@ -1232,7 +1232,6 @@
       "autoOff": "Désactiver automatiquement",
       "autoOffHelp": "Panneaux opaques sur les appareils plus lents, où le verre pourrait saccader au défilement.",
       "offDevice": "Le verre est désactivé car cet appareil risque de ne pas l’afficher de façon fluide. Désactive « Désactiver automatiquement » pour l’utiliser quand même.",
-      "offContrast": "Le verre reste désactivé tant que le Contraste élevé est activé.",
       "backdropLabel": "Arrière-plan",
       "backdrop": {
         "hub": {

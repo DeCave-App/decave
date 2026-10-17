@@ -1224,7 +1224,6 @@
       "autoOff": "Turn off automatically",
       "autoOffHelp": "Use solid panels on slower devices, where glass could make scrolling stutter.",
       "offDevice": "Glass is off right now because this device may not run it smoothly. Turn off “Turn off automatically” to use it anyway.",
-      "offContrast": "Glass stays off while High contrast is on.",
       "backdropLabel": "Backdrop",
       "backdrop": {
         "hub": {

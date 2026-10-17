@@ -1224,7 +1224,6 @@
       "autoOff": "Automatisch ausschalten",
       "autoOffHelp": "Volle Flächen auf langsameren Geräten, auf denen Glas das Scrollen ruckeln lassen könnte.",
       "offDevice": "Glas ist gerade aus, weil dieses Gerät es vielleicht nicht flüssig darstellt. Schalte „Automatisch ausschalten“ aus, um es trotzdem zu nutzen.",
-      "offContrast": "Glas bleibt aus, solange Hoher Kontrast an ist.",
       "backdropLabel": "Hintergrund",
       "backdrop": {
         "hub": {

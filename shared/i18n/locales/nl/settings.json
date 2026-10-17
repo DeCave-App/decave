@@ -1224,7 +1224,6 @@
       "autoOff": "Automatisch uitschakelen",
       "autoOffHelp": "Gebruik ondoorzichtige panelen op tragere apparaten, waar glas het scrollen kan laten haperen.",
       "offDevice": "Glas staat nu uit omdat dit apparaat het misschien niet soepel weergeeft. Zet „Automatisch uitschakelen” uit om het toch te gebruiken.",
-      "offContrast": "Glas blijft uit zolang Hoog contrast aan staat.",
       "backdropLabel": "Achtergrond",
       "backdrop": {
         "hub": {

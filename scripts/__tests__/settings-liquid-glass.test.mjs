@@ -39,11 +39,12 @@ test("glass is drawn only when it is on and nothing asks for solid panels", () =
   const on = { ...DEFAULT_EXTRA_SETTINGS, glassEffect: true, glassStyle: "tinted" };
   assert.equal(activeGlass(DEFAULT_EXTRA_SETTINGS, capable), null);
   assert.equal(activeGlass(on, capable), "tinted");
-  assert.equal(activeGlass({ ...on, highContrast: true }, capable), null);
+  // High contrast keeps glass (drawn darker in CSS); it is the person's own choice.
+  assert.equal(activeGlass({ ...on, highContrast: true }, capable), "tinted");
   assert.equal(activeGlass(on, { lowPowerDevice: true }), null);
   const always = { ...on, glassAutoOff: false };
   assert.equal(activeGlass(always, { lowPowerDevice: true }), "tinted");
-  assert.equal(activeGlass({ ...always, highContrast: true }, capable), null);
+  assert.equal(activeGlass({ ...always, highContrast: true }, capable), "tinted");
 });
 
 test("only clearly weak hardware counts as a low-power device", () => {

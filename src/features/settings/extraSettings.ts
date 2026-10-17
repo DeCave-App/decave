@@ -165,13 +165,13 @@ export type GlassEnvironment = {
 };
 
 /**
- * The glass style to draw, or null for solid panels. High contrast always wins,
- * and with auto-off on, so do slower devices. The OS "reduce transparency"
- * setting does not: it is off by default on many Windows PCs, and turning
- * glass on here is the person's own explicit choice.
+ * The glass style to draw, or null for solid panels. Only auto-off on slower
+ * devices turns it off. Neither the OS "reduce transparency" setting nor High
+ * contrast does: turning glass on here is the person's own explicit choice
+ * (with High contrast the glass is drawn darker instead, see liquid-glass.css).
  */
 export function activeGlass(settings: ExtraSettings, environment: GlassEnvironment): GlassStyle | null {
-  if (!settings.glassEffect || settings.highContrast) return null;
+  if (!settings.glassEffect) return null;
   if (settings.glassAutoOff && environment.lowPowerDevice) return null;
   return settings.glassStyle;
 }

@@ -204,13 +204,10 @@ export function GlassPanel({ field, environment }: GlassProps) {
   const { t, tk } = useSettingsT();
   const value = field.value;
   const onChange = field.set;
-  const blockedNote = !value.glassEffect
-    ? null
-    : value.highContrast
-      ? t("settings.appearance.glass.offContrast")
-      : value.glassAutoOff && environment.lowPowerDevice
-        ? t("settings.appearance.glass.offDevice")
-        : null;
+  const blockedNote =
+    value.glassEffect && value.glassAutoOff && environment.lowPowerDevice
+      ? t("settings.appearance.glass.offDevice")
+      : null;
   return (
     <div className="dcs-card">
       <Toggle

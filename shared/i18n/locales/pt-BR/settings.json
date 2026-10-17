@@ -1232,7 +1232,6 @@
       "autoOff": "Desativar automaticamente",
       "autoOffHelp": "Usa painéis sólidos em dispositivos mais lentos, onde o vidro poderia deixar a rolagem travando.",
       "offDevice": "O vidro está desativado agora porque este dispositivo pode não exibi-lo com fluidez. Desative “Desativar automaticamente” para usá-lo mesmo assim.",
-      "offContrast": "O vidro fica desativado enquanto o Alto contraste estiver ativado.",
       "backdropLabel": "Fundo",
       "backdrop": {
         "hub": {
