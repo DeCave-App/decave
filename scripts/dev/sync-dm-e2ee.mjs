@@ -18,3 +18,10 @@ for (const name of [
   fs.copyFileSync(path.join(root, "shared", name), path.join(target, name));
   console.log(`copied shared/${name} -> mobile/src/lib/e2ee/${name}`);
 }
+
+// Voice-note format lives beside the e2ee folder, not inside it.
+fs.copyFileSync(path.join(root, "shared/voice-note.ts"), path.join(root, "mobile/src/lib/voice-note.ts"));
+console.log("copied shared/voice-note.ts -> mobile/src/lib/voice-note.ts");
+
+fs.copyFileSync(path.join(root, "shared/voice-played.ts"), path.join(root, "mobile/src/lib/voice-played.ts"));
+console.log("copied shared/voice-played.ts -> mobile/src/lib/voice-played.ts");

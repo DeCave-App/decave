@@ -1105,5 +1105,32 @@
       "cannotSave": "Dit apparaat kan geen bijlagen opslaan.",
       "chooseFolder": "Kies een map om de bijlage op te slaan."
     }
+  },
+  "voice": {
+    "recording": "Spraakbericht opnemen",
+    "previewLabel": "Voorbeeld van spraakbericht",
+    "delete": "Verwijderen",
+    "play": "Afspelen",
+    "pause": "Pauzeren",
+    "scrub": "Zoeken",
+    "send": "Verzenden",
+    "stop": "Opname stoppen",
+    "dismiss": "Sluiten",
+    "errorPermission": "Toegang tot de microfoon is geblokkeerd. Sta dit toe in de browser- of systeeminstellingen en probeer het opnieuw.",
+    "errorNoDevice": "Geen microfoon gevonden. Sluit er een aan en probeer het opnieuw.",
+    "errorUnsupported": "Spraakberichten worden op dit apparaat niet ondersteund.",
+    "speed": "Afspeelsnelheid",
+    "played": "Afgespeeld",
+    "errorPlay": "Spraakbericht kon niet worden afgespeeld",
+    "download": "Downloaden",
+    "unplayed": "Niet-afgespeeld spraakbericht",
+    "retry": "Opnieuw proberen",
+    "record": "Spraakbericht opnemen",
+    "sendFailed": "Spraakbericht kon niet worden verzonden. Probeer het opnieuw.",
+    "preview": "🎤 Spraakbericht ({{duration}})",
+    "slideToCancel": "Schuif naar links om te annuleren",
+    "holdHint": "Tik om op te nemen, of houd ingedrukt en laat los om te versturen",
+    "errorPermissionMobile": "Microfoontoegang staat uit. Sta het toe voor DeCave in Instellingen en probeer het opnieuw.",
+    "openSettings": "Instellingen openen"
   }
 }

@@ -36,6 +36,8 @@ import {
   groupPreview,
   groupSocketFrame,
 } from "../../e2ee/dm-e2ee-client";
+import { createVoiceNoteSender } from "../../features/voice-notes/send";
+import type { VoiceNoteDraft } from "../../features/voice-notes/useVoiceRecorder";
 
 export type DirectMessageActionsDeps = {
   currentUser: AccountUser | null;
@@ -651,6 +653,28 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     }
   };
 
+  /** Record-and-send from the DM composer; rejects (keeping the preview) when it could not be sent. */
+  const sendDmVoiceNote = async (draft: VoiceNoteDraft) => {
+    const target = activeDmUserRef.current;
+    if (!target) return;
+    setDmError("");
+    const { sendVoiceNote } = createVoiceNoteSender({
+      baseUrl: HTTP_URL,
+      fetch: authorizedFetch,
+      sendDmText: async (peerId, text) => {
+        const frame = await dmSocketFrame(peerId, text, dmReplyingTo?.id ?? null);
+        if (!sendSocket(frame)) {
+          discardDmSend(frame.clientMessageId);
+          throw new Error(i18next.t("chat.actions.message.attachmentReconnecting"));
+        }
+        setDmReplyingTo(null);
+        playUiSound("send");
+      },
+      sendRoomAttachment: async () => undefined,
+    });
+    await sendVoiceNote({ kind: "dm", id: target.id, encrypted: await dmE2ee.peerHasKey(target.id) }, draft);
+  };
+
   const cancelDmAttachmentUpload = () => {
     dmAttachmentAbortRef.current?.abort();
     dmAttachmentAbortRef.current = null;
@@ -794,6 +818,8 @@ export function createDirectMessageActions(deps: DirectMessageActionsDeps) {
     loadGroupChats,
     openGroupChat,
     sendGroupMessage,
+    sendDmVoiceNote,
+    reportDmError: (message: string) => setDmError(message),
     deleteGroupMessage,
     openNewConversationComposer,
     toggleNewGroupMember,

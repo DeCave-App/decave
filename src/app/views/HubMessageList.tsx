@@ -10,6 +10,8 @@ import { Icon } from "../../components/Icon";
 import type { SafetyReportTarget } from "../../safety/types";
 import { removeItem, type OutboxItem } from "../../features/outbox/outbox";
 import { InlineImage, canShowInline } from "../../features/media/InlineImage";
+import { HubVoiceNote } from "../../features/voice-notes/HubVoiceNote";
+import { voiceAttachmentMeta } from "../../features/voice-notes/send";
 import type {
   Channel,
   Server,
@@ -104,6 +106,7 @@ export function HubMessageList({
       {messages.map((item) => {
         // A builder bot is the author of its messages, not the admin who published it.
         const author = messageBotFields(item).bot;
+        const voiceMeta = voiceAttachmentMeta(item.attachment);
         return (
           <div className="chat-message" key={item.id} data-message-id={item.id}>
             {author ? (
@@ -173,7 +176,17 @@ export function HubMessageList({
                 })()}
               {item.text && <div className="chat-message-text">{renderHubMessageBody(item)}</div>}
 
-              {item.attachment && canShowInline(item.attachment) && (
+              {voiceMeta && item.attachment && (
+                <HubVoiceNote
+                  messageId={item.id}
+                  channelId={String(item.channelId || currentChannel.id)}
+                  attachment={item.attachment}
+                  meta={voiceMeta}
+                  selfId={currentUser.id}
+                  mine={item.userId === currentUser.id}
+                />
+              )}
+              {!voiceMeta && item.attachment && canShowInline(item.attachment) && (
                 <InlineImage
                   attachment={item.attachment}
                   baseUrl={HTTP_URL}
@@ -181,7 +194,8 @@ export function HubMessageList({
                   onDownload={() => void downloadLegacyAttachment(item.attachment!)}
                 />
               )}
-              {item.attachment &&
+              {!voiceMeta &&
+                item.attachment &&
                 !canShowInline(item.attachment) &&
                 (item.attachment.mimeType.startsWith("image/") || item.attachment.mimeType.startsWith("video/")) && (
                   <button
@@ -197,7 +211,8 @@ export function HubMessageList({
                     <small>{t("chat.messages.tapToDownload")}</small>
                   </button>
                 )}
-              {item.attachment &&
+              {!voiceMeta &&
+                item.attachment &&
                 !item.attachment.mimeType.startsWith("image/") &&
                 !item.attachment.mimeType.startsWith("video/") && (
                   <button

@@ -1122,5 +1122,32 @@
       "cannotSave": "Cet appareil ne peut pas enregistrer de pièces jointes.",
       "chooseFolder": "Choisis un dossier pour enregistrer la pièce jointe."
     }
+  },
+  "voice": {
+    "recording": "Enregistrement du message vocal",
+    "previewLabel": "Aperçu du message vocal",
+    "delete": "Supprimer",
+    "play": "Lire",
+    "pause": "Mettre en pause",
+    "scrub": "Naviguer",
+    "send": "Envoyer",
+    "stop": "Arrêter l'enregistrement",
+    "dismiss": "Fermer",
+    "errorPermission": "L'accès au microphone est bloqué. Autorisez-le dans les paramètres du navigateur ou du système, puis réessayez.",
+    "errorNoDevice": "Aucun microphone détecté. Branchez-en un et réessayez.",
+    "errorUnsupported": "Les messages vocaux ne sont pas pris en charge sur cet appareil.",
+    "speed": "Vitesse de lecture",
+    "played": "Écouté",
+    "errorPlay": "Impossible de lire le message vocal",
+    "download": "Télécharger",
+    "unplayed": "Message vocal non écouté",
+    "retry": "Réessayer",
+    "record": "Enregistrer un message vocal",
+    "sendFailed": "Impossible d'envoyer le message vocal. Réessaie.",
+    "preview": "🎤 Message vocal ({{duration}})",
+    "slideToCancel": "Glissez vers la gauche pour annuler",
+    "holdHint": "Touchez pour enregistrer, ou maintenez et relâchez pour envoyer",
+    "errorPermissionMobile": "L'accès au micro est désactivé. Autorisez-le pour DeCave dans les Réglages, puis réessayez.",
+    "openSettings": "Ouvrir les Réglages"
   }
 }

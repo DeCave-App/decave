@@ -10,6 +10,7 @@ export const dmPreviewLabels: DmPreviewLabels = {
   namedAttachment: (name) => i18next.t("dm.preview.namedAttachment", { name }),
   poll: () => i18next.t("dm.preview.poll"),
   pollQuestion: (question) => i18next.t("dm.preview.pollQuestion", { question }),
+  voice: (duration) => i18next.t("chat.voice.preview", { duration }),
   message: () => i18next.t("dm.preview.message"),
   encrypted: () => i18next.t("dm.preview.encrypted"),
 };

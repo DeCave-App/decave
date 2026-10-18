@@ -2,7 +2,7 @@
   "expo": {
     "name": "DeCave",
     "slug": "decave-mobile",
-    "version": "0.1.97",
+    "version": "0.1.99",
     "orientation": "portrait",
     "scheme": "decave",
     "userInterfaceStyle": "dark",

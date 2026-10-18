@@ -681,13 +681,17 @@ export function sealReactions(input: {
   from: string;
   to: string;
   emojis: readonly string[];
+  /** The listener played this voice note (`p: true`); old clients read only `e` and ignore it. */
+  played?: boolean;
   sender: DmAccountKeys;
   recipientKey: DmPublicKey;
 }): DmEnvelope {
+  const plain: { e: string[]; p?: true } = { e: cleanReactions(input.emojis) };
+  if (input.played) plain.p = true;
   return sealEnvelope(
     "reactions",
     { id: input.messageId, from: input.from, to: input.to, sender: input.sender, recipients: [input.recipientKey] },
-    utf8(JSON.stringify({ e: cleanReactions(input.emojis) })),
+    utf8(JSON.stringify(plain)),
   );
 }
 
@@ -700,6 +704,18 @@ export function openReactions(input: {
   const { messageId, from, to } = input.expected;
   const raw = openEnvelope("reactions", input, { id: messageId, from, to }) as { e?: unknown } | null;
   return cleanReactions(raw?.e);
+}
+
+/** Like openReactions, plus whether the envelope says its author played the voice note. */
+export function openReactionState(input: {
+  envelope: DmEnvelope;
+  reader: DmAccountKeys | DmKeyring;
+  senderKey: DmPublicKey;
+  expected: { messageId: string; from: string; to: string };
+}): { emojis: string[]; played: boolean } {
+  const { messageId, from, to } = input.expected;
+  const raw = openEnvelope("reactions", input, { id: messageId, from, to }) as { e?: unknown; p?: unknown } | null;
+  return { emojis: cleanReactions(raw?.e), played: raw?.p === true };
 }
 
 // ---------------------------------------------------------------- group chats

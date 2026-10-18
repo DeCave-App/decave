@@ -611,6 +611,9 @@
     "structuredTypeChange": "I messaggi strutturati non possono cambiare tipo quando vengono modificati",
     "forumTagInvalid": "Scegli i tag dall'elenco dei tag di questo forum"
   },
+  "upload": {
+    "voiceTooLarge": "I messaggi vocali possono durare fino a 2 minuti."
+  },
   "trustSafety": {
     "reportedUserNotFound": "L'utente segnalato non è stato trovato.",
     "reportSelfAccount": "Non puoi segnalare il tuo account.",

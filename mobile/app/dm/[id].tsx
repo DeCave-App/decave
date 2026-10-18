@@ -61,6 +61,12 @@ import { dateLocale } from "@/src/lib/date-locale";
 import { isReactionChip, parsePoll, pollVoteToggles } from "@/src/lib/polls";
 import { PollCard } from "@/src/components/chat/PollCard";
 import { PollComposerSheet } from "@/src/components/chat/PollComposerSheet";
+import { DmVoiceNote, dmPlayedReceipts } from "@/src/components/voice-notes/DmVoiceNote";
+import { VoiceComposer } from "@/src/components/voice-notes/VoiceComposer";
+import { nativeVoiceNoteSender } from "@/src/components/voice-notes/native-sender";
+import { voiceAttachmentMeta } from "@/src/components/voice-notes/send";
+import type { VoiceNoteDraft } from "@/src/components/voice-notes/recorder";
+import type { VoiceNoteMeta } from "@/src/lib/voice-note";
 
 /** Encrypt a picked photo or video, upload the ciphertext and describe it for the encrypted message. */
 async function uploadEncryptedAsset(targetId: string, asset: ImagePickerAsset, token: string) {
@@ -87,7 +93,7 @@ async function uploadEncryptedAsset(targetId: string, asset: ImagePickerAsset, t
 const DM_REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡", "🎉", "🔥", "👎", "✅"] as const;
 const DM_ATTACHMENT_PREFIX = "__DECAVE_DM_ATTACHMENT__";
 
-type LegacyDmAttachment = { name: string; mimeType: string; size: number; url: string; fileKey?: unknown };
+type LegacyDmAttachment = { name: string; mimeType: string; size: number; url: string; fileKey?: unknown; voice?: VoiceNoteMeta | null };
 
 function parseLegacyAttachment(text: string): LegacyDmAttachment | null {
   if (!text.startsWith(DM_ATTACHMENT_PREFIX)) return null;
@@ -95,7 +101,7 @@ function parseLegacyAttachment(text: string): LegacyDmAttachment | null {
     const value = JSON.parse(text.slice(DM_ATTACHMENT_PREFIX.length)) as Partial<LegacyDmAttachment>;
     if (typeof value.name !== "string" || typeof value.mimeType !== "string" || typeof value.url !== "string") return null;
     // fileKey: the file was encrypted before upload (end-to-end encrypted DMs).
-    return { name: value.name, mimeType: value.mimeType, size: typeof value.size === "number" ? value.size : 0, url: value.url, fileKey: value.fileKey };
+    return { name: value.name, mimeType: value.mimeType, size: typeof value.size === "number" ? value.size : 0, url: value.url, fileKey: value.fileKey, voice: voiceAttachmentMeta(value) };
   } catch {
     return null;
   }
@@ -283,6 +289,13 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
   useEffect(() => {
     if (e2eeState.status === "ready") void load();
   }, [e2eeState.status, e2eeState.keyId]);
+
+  // Voice-note Played marks that failed to send go again on open and on reconnect.
+  useEffect(() => {
+    if (user?.id && token && connectionState === "connected" && e2eeState.status === "ready") {
+      dmPlayedReceipts.retry(user.id, token);
+    }
+  }, [connectionState, user?.id, token, e2eeState.status]);
 
   useEffect(() => {
     if (!lastEvent) return;
@@ -513,6 +526,27 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
     } finally {
       setUploading(false);
     }
+  };
+
+  const sendVoiceNote = async (draft: VoiceNoteDraft) => {
+    if (!token || !targetId) throw new Error(t("chat.voice.sendFailed"));
+    const replyToId = replyingTo?.id ?? null;
+    const sender = nativeVoiceNoteSender({
+      token,
+      sendDm: async (peerId, text) => {
+        const frame = await dmSocketFrame(peerId, text, replyToId);
+        if (!send(frame)) {
+          discardDmSend(frame.clientMessageId);
+          throw new Error(t("dm.mobile.conversation.realtimeIsReconnectingTryAgain"));
+        }
+      },
+    });
+    try {
+      await sender.sendVoiceNote({ kind: "dm", id: targetId, encrypted: await dmE2ee.peerHasKey(targetId) }, draft);
+    } catch (error) {
+      throw new Error(e2eeErrorText(error, t("chat.voice.sendFailed")));
+    }
+    setReplyingTo(null);
   };
 
   const sendGif = async (gif: GiphyGif) => {
@@ -812,6 +846,16 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
                           {item.e2ee === "locked" ? t("dm.mobile.conversation.encryptedMessageUnlockEncryptedMessages") : t("dm.e2ee.unreadable.failed")}
                         </Text>
                       </View>
+                    ) : legacyAttachment?.voice && user ? (
+                      <DmVoiceNote
+                        message={item}
+                        attachment={legacyAttachment}
+                        meta={legacyAttachment.voice}
+                        selfId={user.id}
+                        token={token}
+                        conversationId={`dm:${targetId}`}
+                        onSave={() => void downloadLegacyAttachment(legacyAttachment)}
+                      />
                     ) : legacyAttachment && isImageMime(legacyAttachment.mimeType) ? (
                       <MessageImage url={legacyAttachment.url} title={legacyAttachment.name} token={token} authenticated decrypt={attachmentDecrypter(legacyAttachment)} mimeType={legacyAttachment.mimeType} onSave={() => void downloadLegacyAttachment(legacyAttachment)} />
                     ) : parsePoll(item.text) ? (
@@ -905,6 +949,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
         {<View style={styles.composerShell}>
           {sendFailed && <SendFailedBanner onRetry={() => void sendMessage()} onDismiss={() => setSendFailed(false)} />}
           <View style={styles.composer}>
+            <VoiceComposer showMic={!input.trim() && !editingId} disabled={uploading} onSend={sendVoiceNote}>
             <Pressable
               style={styles.composerIcon}
               onPress={() => setMediaOpen(true)}
@@ -929,6 +974,7 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
               textAlignVertical="center"
             />
 
+            {(!!input.trim() || !!editingId) && (
             <Pressable
               style={[
                 styles.send,
@@ -941,6 +987,8 @@ export function DmView({ params, embedded = false, onClosed }: { params: DmParam
             >
               <Ionicons name="arrow-up" size={20} color="#fff" />
             </Pressable>
+            )}
+            </VoiceComposer>
           </View>
         </View>}
       </KeyboardAware>

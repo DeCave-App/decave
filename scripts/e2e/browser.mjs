@@ -90,8 +90,10 @@ const HELPERS = `window.__e2e = {
   connectedPeers: () => window.__e2ePeers.filter((pc) => pc.connectionState === "connected").length,
 };`;
 
-export async function launchBrowser(name, port) {
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), `decave-e2e-${name}-`));
+// Pass `profileDir` to keep the profile (and its device keys) across runs.
+export async function launchBrowser(name, port, { profileDir } = {}) {
+  const profile = profileDir ?? fs.mkdtempSync(path.join(os.tmpdir(), `decave-e2e-${name}-`));
+  if (profileDir) fs.mkdirSync(profileDir, { recursive: true });
   const child = spawn(
     chromePath(),
     [
@@ -122,8 +124,10 @@ export async function launchBrowser(name, port) {
   });
   let nextId = 1;
   const pending = new Map();
+  const listeners = new Set();
   socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
+    if (message.method) for (const listener of listeners) listener(message);
     if (message.id && pending.has(message.id)) {
       const { resolve, reject } = pending.get(message.id);
       pending.delete(message.id);
@@ -152,13 +156,16 @@ export async function launchBrowser(name, port) {
     // Chromium runs as a process tree; end exactly this one.
     if (process.platform === "win32") spawn("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" });
     else child.kill();
-    setTimeout(() => {
-      try {
-        fs.rmSync(profile, { recursive: true, force: true });
-      } catch {}
-    }, 1000);
+    if (!profileDir)
+      setTimeout(() => {
+        try {
+          fs.rmSync(profile, { recursive: true, force: true });
+        } catch {}
+      }, 1000);
   };
-  return { name, send, evaluate, close };
+  const onEvent = (listener) => listeners.add(listener);
+  const offEvent = (listener) => listeners.delete(listener);
+  return { name, send, evaluate, close, onEvent, offEvent };
 }
 
 export async function waitFor(browser, label, expression, timeoutMs = 20_000) {

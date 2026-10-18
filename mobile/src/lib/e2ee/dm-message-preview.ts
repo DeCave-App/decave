@@ -13,6 +13,18 @@ function parsePrefixed<T>(text: string, prefix: string): T | null {
   }
 }
 
+// Mirrors parseVoiceNoteMeta/formatVoiceDuration in voice-note.ts; kept inline because this file is
+// copied byte-for-byte into the mobile app, where voice-note.ts sits in a different folder.
+function voiceDuration(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const { ms, wave } = value as { ms?: unknown; wave?: unknown };
+  // Same bounds as parseVoiceNoteMeta: a hostile sender can't show a silly duration.
+  if (typeof ms !== "number" || !Number.isFinite(ms) || ms <= 0 || ms > 120000 || typeof wave !== "string") return null;
+  const total = Math.ceil(ms / 1000);
+  const seconds = total % 60;
+  return `${Math.floor(total / 60)}:${seconds < 10 ? "0" : ""}${seconds}`;
+}
+
 /**
  * Words the previews add around the message. Apps that translate pass their own
  * (catalog keys under dm.preview); the English is the default.
@@ -23,6 +35,7 @@ export type DmPreviewLabels = {
   namedAttachment: (name: string) => string;
   poll: () => string;
   pollQuestion: (question: string) => string;
+  voice: (duration: string) => string;
   message: () => string;
   encrypted: () => string;
 };
@@ -33,6 +46,7 @@ export const ENGLISH_DM_PREVIEW_LABELS: DmPreviewLabels = {
   namedAttachment: (name) => `📎 ${name}`,
   poll: () => "Poll",
   pollQuestion: (question) => `Poll: ${question}`,
+  voice: (duration) => `🎤 Voice message (${duration})`,
   message: () => "Message",
   encrypted: () => "🔒 Encrypted message",
 };
@@ -40,7 +54,9 @@ export const ENGLISH_DM_PREVIEW_LABELS: DmPreviewLabels = {
 /** One-line list preview for a DM or group message, so payload JSON (and attachment file keys) never reach the UI. */
 export function dmPreviewText(text: string, labels: DmPreviewLabels = ENGLISH_DM_PREVIEW_LABELS): string {
   if (parsePrefixed<{ url?: unknown }>(text, GIF_PREFIX)) return labels.gif();
-  const attachment = parsePrefixed<{ name?: unknown }>(text, DM_ATTACHMENT_PREFIX);
+  const attachment = parsePrefixed<{ name?: unknown; voice?: unknown }>(text, DM_ATTACHMENT_PREFIX);
+  const duration = attachment ? voiceDuration(attachment.voice) : null;
+  if (duration) return labels.voice(duration);
   if (attachment)
     return typeof attachment.name === "string" && attachment.name
       ? labels.namedAttachment(attachment.name)

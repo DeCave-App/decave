@@ -29,6 +29,7 @@ export function sniffSafeMediaMime(bytes: Uint8Array): string | null {
   if (bytes.length >= 12 && ascii(4, 8) === "ftyp") {
     const brand = ascii(8, Math.min(bytes.length, 16));
     if (brand.includes("qt  ")) return "video/quicktime";
+    if (/^M4[AB] /.test(brand)) return "audio/mp4";
     if (/^(isom|iso[2-9]|mp4|avc1|M4V)/.test(brand)) return "video/mp4";
   }
   return null;

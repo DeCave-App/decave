@@ -8,6 +8,7 @@ import type { ComposerState } from "../state/composer";
 import type { HubChatActions } from "../actions/hub-chat";
 import { HTTP_URL } from "../env";
 import { useChatPrefs } from "../../features/settings/chatPrefs";
+import { VoiceComposer } from "../../features/voice-notes/VoiceComposer";
 import { BotCommandSuggestions, commandInsertText, useBotCommands } from "../../features/bot-cards";
 
 type Props = {
@@ -54,6 +55,7 @@ export function HubComposer({
     openEventComposer,
     handleMessageKeyDown,
     authorizedFetch,
+    sendRoomVoiceNote,
   } = hubChat;
   const {
     messageInput,
@@ -61,6 +63,7 @@ export function HubComposer({
     setPendingAttachment,
     attachmentBusy,
     attachmentError,
+    setAttachmentError,
     showComposerPlusMenu,
     setShowComposerPlusMenu,
   } = composer;
@@ -231,6 +234,13 @@ export function HubComposer({
           </button>
           {renderComposerEmojiPicker("hub")}
         </span>
+        <VoiceComposer
+          text={messageInput}
+          hasOtherContent={Boolean(pendingAttachment) || attachmentBusy}
+          disabled={!canPostInCurrentHub || connectionStatus !== "Connected"}
+          onSend={sendRoomVoiceNote}
+          onError={setAttachmentError}
+        />
         <button
           type="button"
           className="dc-dm-send"

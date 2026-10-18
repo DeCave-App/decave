@@ -24,7 +24,7 @@ import {
   openScreenKey,
   sealScreenKey,
   openKeyBackup,
-  openReactions,
+  openReactionState,
   openSuccessor,
   publicKeyOf,
   reportProofFor,
@@ -144,6 +144,8 @@ export type DmLike = {
   reactions?: Record<string, string[]>;
   /** Encrypted reactions: one envelope per account that reacted. */
   reactionEnvelopes?: unknown[] | null;
+  /** Set when opened: the accounts whose reactions envelope says they played this voice note. */
+  playedBy?: string[];
 };
 
 export type GroupMessageLike = {
@@ -305,7 +307,11 @@ export class DmE2eeSession {
   private peerFetches = new Map<string, Promise<PeerKeys>>();
   private opened = new Map<string, { text: string; mark: DmE2eeMark; replyToId?: string }>();
   /** Decrypted reaction envelopes, by signature. */
-  private openedReactions = new Map<string, string[] | null>();
+  private openedReactions = new Map<string, { emojis: string[]; played: boolean } | null>();
+  /** Voice notes this account's own reactions envelope marks as played (kept when reactions change). */
+  private ownPlayed = new Set<string>();
+  /** This account's own emojis per encrypted DM, as last opened or sealed here. */
+  private ownEmojis = new Map<string, string[]>();
   /** Reply links of encrypted messages (they travel inside the ciphertext), so edits keep them. */
   private replies = new Map<string, string>();
   private listeners = new Set<() => void>();
@@ -424,6 +430,8 @@ export class DmE2eeSession {
     this.peerFetches.clear();
     this.opened.clear();
     this.openedReactions.clear();
+    this.ownPlayed.clear();
+    this.ownEmojis.clear();
     this.replies.clear();
     this.linkSecret = null;
     if (this.linkTimer) clearTimeout(this.linkTimer);
@@ -692,6 +700,8 @@ export class DmE2eeSession {
     this.keys = keyring[0];
     this.opened.clear();
     this.openedReactions.clear();
+    this.ownPlayed.clear();
+    this.ownEmojis.clear();
     this.set({ status: "ready", keyId: keyring[0].keyId, link: null, error: "", errorKey: null });
     void this.refreshApprovals();
   }
@@ -1024,10 +1034,14 @@ export class DmE2eeSession {
     const generation = this.generation;
     const opened = await this.openText(message, peerId);
     if (!this.owns(accountId, generation)) return { ...message, text: "", e2ee: "failed" };
-    if (!message.reactionEnvelopes?.length) return opened;
-    const reactions = await this.mergeReactions(message, peerId);
+    if (!message.reactionEnvelopes?.length) {
+      // An encrypted message with no reactions envelope: this account has none on it yet.
+      if (opened.e2ee === "encrypted") this.ownEmojis.set(message.id, []);
+      return opened;
+    }
+    const { reactions, playedBy } = await this.mergeReactions(message, peerId);
     if (!this.owns(accountId, generation)) return { ...message, text: "", e2ee: "failed" };
-    return { ...opened, reactions };
+    return { ...opened, reactions, playedBy };
   }
 
   private async openText<T extends DmLike>(
@@ -1073,15 +1087,22 @@ export class DmE2eeSession {
     return error instanceof DmCryptoError && error.code === "no-key" ? "locked" : "failed";
   }
 
-  /** Add the encrypted reactions to a message's reaction map (same shape: emoji to account ids). */
-  private async mergeReactions(message: DmLike, peerId?: string): Promise<Record<string, string[]>> {
+  /**
+   * Add the encrypted reactions to a message's reaction map (same shape: emoji to
+   * account ids), and list who marked the voice note played (`p` in the envelope).
+   */
+  private async mergeReactions(
+    message: DmLike,
+    peerId?: string,
+  ): Promise<{ reactions: Record<string, string[]>; playedBy: string[] }> {
     const merged: Record<string, string[]> = {};
+    const playedBy: string[] = [];
     for (const [emoji, users] of Object.entries(message.reactions ?? {})) merged[emoji] = [...users];
     const me = this.state.accountId;
     const generation = this.generation;
     const seen = new Set<string>();
     for (const raw of message.reactionEnvelopes ?? []) {
-      if (!this.owns(me, generation)) return merged;
+      if (!this.owns(me, generation)) return { reactions: merged, playedBy };
       const envelope = parseDmEnvelope(raw);
       if (!envelope || seen.has(envelope.from) || !this.keys || !me) continue;
       // Only the two people in this conversation react, each to the other.
@@ -1092,13 +1113,13 @@ export class DmE2eeSession {
         (peerId === undefined || envelope.from === me || envelope.from === peerId);
       if (!allowed) continue;
       seen.add(envelope.from);
-      let emojis = this.openedReactions.get(reactionCacheKey(message.id, envelope.from, other, envelope.s));
-      if (emojis === undefined) {
+      let state = this.openedReactions.get(reactionCacheKey(message.id, envelope.from, other, envelope.s));
+      if (state === undefined) {
         try {
           const senderKey = await this.senderKey(envelope.from, envelope.sk);
           this.assertOwns(me, generation);
-          emojis = senderKey
-            ? openReactions({
+          state = senderKey
+            ? openReactionState({
                 envelope,
                 reader: this.keyring,
                 senderKey,
@@ -1107,16 +1128,21 @@ export class DmE2eeSession {
             : null;
         } catch (error) {
           if (error instanceof DmE2eeUnavailableError) continue;
-          emojis = null;
+          state = null;
         }
-        this.openedReactions.set(reactionCacheKey(message.id, envelope.from, other, envelope.s), emojis);
+        this.openedReactions.set(reactionCacheKey(message.id, envelope.from, other, envelope.s), state);
       }
-      for (const emoji of emojis ?? []) {
+      for (const emoji of state?.emojis ?? []) {
         const users = (merged[emoji] ??= []);
         if (!users.includes(envelope.from)) users.push(envelope.from);
       }
+      if (envelope.from === me && state) this.ownEmojis.set(message.id, [...state.emojis]);
+      if (state?.played) {
+        playedBy.push(envelope.from);
+        if (envelope.from === me) this.ownPlayed.add(message.id);
+      }
     }
-    return merged;
+    return { reactions: merged, playedBy };
   }
 
   private withReply<T extends DmLike | GroupMessageLike>(message: T, replyToId: string | undefined): T {
@@ -1215,13 +1241,14 @@ export class DmE2eeSession {
   /**
    * This account's reactions to an encrypted DM, sealed to replace its previous
    * ones: `emojis` is the full new set (empty to remove them all; see
-   * toggledReactions).
+   * toggledReactions). `played` marks a voice note played for its sender; once
+   * set on a message it is kept on every later seal from this device.
    */
   async sealReactions(
     peerId: string,
     messageId: string,
     emojis: readonly string[],
-    options: { refreshKeys?: boolean } = {},
+    options: { refreshKeys?: boolean; played?: boolean } = {},
   ): Promise<DmEnvelope> {
     const accountId = this.state.accountId;
     if (!accountId) throw unavailable("signInFirst");
@@ -1229,16 +1256,34 @@ export class DmE2eeSession {
     const peer = await this.peerKeys(peerId, options.refreshKeys);
     this.assertOwns(accountId, generation);
     if (!peer.current) throw unavailable("peerCantReact");
+    const played = Boolean(options.played) || this.ownPlayed.has(messageId);
     const envelope = sealReactions({
       messageId,
       from: accountId,
       to: peerId,
       emojis,
+      played,
       sender: this.requireKeys(),
       recipientKey: peer.current,
     });
-    this.openedReactions.set(reactionCacheKey(messageId, accountId, peerId, envelope.s), [...emojis]);
+    if (played) this.ownPlayed.add(messageId);
+    this.ownEmojis.set(messageId, [...emojis]);
+    this.openedReactions.set(reactionCacheKey(messageId, accountId, peerId, envelope.s), {
+      emojis: [...emojis],
+      played,
+    });
     return envelope;
+  }
+
+  /** True when this account has marked the voice note `messageId` played (seen on this device). */
+  hasPlayed(messageId: string): boolean {
+    return this.ownPlayed.has(messageId);
+  }
+
+  /** This account's emojis on an encrypted DM, or undefined when this device hasn't opened it yet. */
+  ownReactions(messageId: string): string[] | undefined {
+    const emojis = this.ownEmojis.get(messageId);
+    return emojis ? [...emojis] : undefined;
   }
 
   // ------------------------------------------------------------ group chats

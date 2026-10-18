@@ -1122,5 +1122,32 @@
       "cannotSave": "Este dispositivo não consegue salvar anexos.",
       "chooseFolder": "Escolha uma pasta para salvar o anexo."
     }
+  },
+  "voice": {
+    "recording": "Gravando mensagem de voz",
+    "previewLabel": "Prévia da mensagem de voz",
+    "delete": "Excluir",
+    "play": "Reproduzir",
+    "pause": "Pausar",
+    "scrub": "Buscar",
+    "send": "Enviar",
+    "stop": "Parar gravação",
+    "dismiss": "Fechar",
+    "errorPermission": "O acesso ao microfone está bloqueado. Permita nas configurações do navegador ou do sistema e tente novamente.",
+    "errorNoDevice": "Nenhum microfone encontrado. Conecte um e tente novamente.",
+    "errorUnsupported": "Mensagens de voz não são compatíveis com este dispositivo.",
+    "speed": "Velocidade de reprodução",
+    "played": "Reproduzido",
+    "errorPlay": "Não foi possível reproduzir a mensagem de voz",
+    "download": "Baixar",
+    "unplayed": "Mensagem de voz não reproduzida",
+    "retry": "Tentar novamente",
+    "record": "Gravar mensagem de voz",
+    "sendFailed": "Não foi possível enviar a mensagem de voz. Tente novamente.",
+    "preview": "🎤 Mensagem de voz ({{duration}})",
+    "slideToCancel": "Deslize para a esquerda para cancelar",
+    "holdHint": "Toque para gravar, ou segure e solte para enviar",
+    "errorPermissionMobile": "O acesso ao microfone está desativado. Permita-o para o DeCave nos Ajustes e tente novamente.",
+    "openSettings": "Abrir Ajustes"
   }
 }

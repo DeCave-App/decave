@@ -12,6 +12,8 @@ import type {
 } from "react";
 import { createPortal } from "react-dom";
 import { setStatus, type OutboxItem } from "../../features/outbox/outbox";
+import { createVoiceNoteSender } from "../../features/voice-notes/send";
+import type { VoiceNoteDraft } from "../../features/voice-notes/useVoiceRecorder";
 import {
   apiEventToItem,
   type CalendarItem,
@@ -41,6 +43,7 @@ import type {
   UiSoundEvent,
 } from "../types";
 import { HTTP_URL } from "../env";
+import { discardDmSend, discardGroupSend, dmSocketFrame, groupSocketFrame } from "../../e2ee/dm-e2ee-client";
 import { messageBotFields } from "../../../shared/bots/card-view";
 import { EMOJI_GROUPS } from "../constants";
 import {
@@ -428,6 +431,36 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
     setReplyingTo(null);
   };
 
+  /** Record-and-send from the Hub composer: upload, then post through the outbox. */
+  const sendRoomVoiceNote = async (draft: VoiceNoteDraft) => {
+    if (!canPostInCurrentHub || currentChannel.type !== "text") {
+      throw new Error(i18next.t("chat.actions.message.ownerOnly"));
+    }
+    const channelId = currentChannel.id;
+    const replyToId = replyingTo?.id ?? null;
+    const { sendVoiceNote } = createVoiceNoteSender({
+      baseUrl: HTTP_URL,
+      fetch: authorizedFetch,
+      sendDmText: async () => undefined,
+      sendRoomAttachment: async (_channel, attachment) => {
+        const item: OutboxItem<AttachmentMeta> = {
+          localId: crypto.randomUUID(),
+          channelId,
+          text: "",
+          replyToId,
+          attachment,
+          status: "sending",
+          sentAt: Date.now(),
+        };
+        const sent = sendSocket({ type: "CHAT_MESSAGE", text: "", channelId, replyToId, attachment });
+        setOutbox((current) => [...current, sent ? item : { ...item, status: "queued" }]);
+        setReplyingTo(null);
+        playUiSound("send");
+      },
+    });
+    await sendVoiceNote({ kind: "room", id: String(channelId), encrypted: false }, draft);
+  };
+
   const loadGiphy = async (query: string) => {
     setGifLoading(true);
     setGifError("");
@@ -483,16 +516,22 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
         channelId: hubChannelId ?? selectedChannel,
         replyToId: replyingTo?.id ?? null,
       });
+    // Polls and GIFs go through the same sealing as typed messages, so they
+    // reach encrypted conversations (the server refuses plaintext there).
     if (target === "dm") {
       const peer = activeDmUserRef.current;
-      return Boolean(
-        peer && sendSocket({ type: "DM_MESSAGE", targetUserId: peer.id, text, replyToId: dmReplyingTo?.id ?? null }),
-      );
+      if (!peer) return false;
+      const frame = await dmSocketFrame(peer.id, text, dmReplyingTo?.id ?? null);
+      if (sendSocket(frame)) return true;
+      discardDmSend(frame.clientMessageId);
+      return false;
     }
     const group = activeGroupChatRef.current;
-    return Boolean(
-      group && sendSocket({ type: "GROUP_MESSAGE", groupId: group.id, text, replyToId: groupReplyingTo?.id ?? null }),
-    );
+    if (!group) return false;
+    const frame = await groupSocketFrame(group, text, groupReplyingTo?.id ?? null);
+    if (sendSocket(frame)) return true;
+    discardGroupSend(frame.clientMessageId);
+    return false;
   };
 
   const waitForPostedHubMessage = async (
@@ -804,10 +843,12 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
       .slice(0, 8);
     if (!question || options.length < 2) return;
     const text = `${POLL_PREFIX}${JSON.stringify({ question, options } satisfies PollPayload)}`;
-    if (showPollComposer === "hub") {
-      if (!(await sendRichComposerText("hub", text))) return;
-    } else {
-      if (!(await sendRichComposerText("dm", text))) return;
+    try {
+      if (!(await sendRichComposerText(showPollComposer === "hub" ? "hub" : "dm", text))) return;
+    } catch (error) {
+      // Sealing failed (keys unavailable); keep the dialog open so nothing is lost.
+      console.error("Could not send poll:", error);
+      return;
     }
     if (showPollComposer === "hub") setReplyingTo(null);
     else setDmReplyingTo(null);
@@ -955,6 +996,7 @@ export function createHubChatActions(deps: HubChatActionsDeps) {
 
   return {
     uploadAttachment,
+    sendRoomVoiceNote,
     cancelAttachmentUpload,
     publishForumText,
     publishForumPostAwaitingAck,

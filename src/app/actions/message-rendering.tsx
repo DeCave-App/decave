@@ -43,6 +43,8 @@ import { attachmentDecrypter } from "../../e2ee/dm-e2ee-client";
 import { unreadableMessageText } from "../../e2ee/DmEncryptionUi";
 import { isEmojiOnly } from "../../features/settings/chatPrefs";
 import { ChatAnimatedImage, LargeEmoji } from "../../features/settings/ChatMedia";
+import { DmVoiceNote } from "../../features/voice-notes/DmVoiceNote";
+import { voiceAttachmentMeta } from "../../features/voice-notes/send";
 
 export type MessageRenderingDeps = {
   currentUser: AccountUser;
@@ -392,6 +394,17 @@ export function createMessageRendering(deps: MessageRenderingDeps) {
     const poll = parsePrefixedJson<PollPayload>(message.text, POLL_PREFIX);
     if (poll) return renderPoll(poll, message.reactions, (index) => void voteInDmPoll(message, index));
     const attachment = parsePrefixedJson<AttachmentMeta>(message.text, DM_ATTACHMENT_PREFIX);
+    const voiceMeta = voiceAttachmentMeta(attachment);
+    if (attachment && voiceMeta)
+      return (
+        <DmVoiceNote
+          message={message}
+          attachment={attachment}
+          meta={voiceMeta}
+          selfId={currentUser.id}
+          conversationId={`dm:${message.fromUserId === currentUser.id ? message.toUserId : message.fromUserId}`}
+        />
+      );
     if (attachment && canShowInline(attachment))
       return (
         <InlineImage

@@ -34,6 +34,11 @@ import { LoadError } from "@/src/components/LoadError";
 import { SwipeToReply } from "@/src/components/SwipeToReply";
 import { Avatar } from "@/src/components/Avatar";
 import { MessageImage } from "@/src/components/MessageMedia";
+import { HubVoiceNote } from "@/src/components/voice-notes/HubVoiceNote";
+import { VoiceComposer } from "@/src/components/voice-notes/VoiceComposer";
+import { nativeVoiceNoteSender } from "@/src/components/voice-notes/native-sender";
+import { voiceAttachmentMeta } from "@/src/components/voice-notes/send";
+import type { VoiceNoteDraft } from "@/src/components/voice-notes/recorder";
 import { firstLink, LinkChip } from "@/src/components/LinkifiedText";
 import { SendFailedBanner } from "@/src/components/SendFailedBanner";
 import { MessagePreview } from "@/src/components/MessagePreview";
@@ -332,6 +337,21 @@ function ChatRoomView({ params, embedded = false }: { params: ChannelParams; emb
     } finally {
       setUploading(false);
     }
+  };
+
+  const sendVoiceNote = async (draft: VoiceNoteDraft) => {
+    if (!token) throw new Error(t("chat.voice.sendFailed"));
+    const replyToId = replyingTo?.id ?? null;
+    const sender = nativeVoiceNoteSender({
+      token,
+      sendRoom: async (_channel, attachment) => {
+        if (!send({ type: "CHAT_MESSAGE", text: "", channelId, replyToId, attachment })) {
+          throw new Error(t("chat.mobile.channel.realtimeIsReconnectingTryAgain"));
+        }
+      },
+    });
+    await sender.sendVoiceNote({ kind: "room", id: String(channelId), encrypted: false }, draft);
+    setReplyingTo(null);
   };
 
   const sendGif = (gif: GiphyGif) => {
@@ -812,7 +832,19 @@ function ChatRoomView({ params, embedded = false }: { params: ChannelParams; emb
 
                     
 
-                    {!!item.attachment && isImageMime(item.attachment.mimeType) ? (
+                    {!!item.attachment && !!user && voiceAttachmentMeta(item.attachment) ? (
+                      <HubVoiceNote
+                        messageId={item.id}
+                        channelId={channelId}
+                        timestamp={item.timestamp}
+                        attachment={item.attachment}
+                        meta={voiceAttachmentMeta(item.attachment)!}
+                        selfId={user.id}
+                        mine={item.userId === user.id}
+                        token={token}
+                        onSave={() => void downloadLegacyAttachment(item.attachment!)}
+                      />
+                    ) : !!item.attachment && isImageMime(item.attachment.mimeType) ? (
                       <MessageImage
                         url={item.attachment.url}
                         title={item.attachment.name}
@@ -943,6 +975,7 @@ function ChatRoomView({ params, embedded = false }: { params: ChannelParams; emb
           <BotCommandSuggestions suggestions={botCommands} onChoose={(command) => setInput(commandInsertText(command))} />
           {sendFailed && <SendFailedBanner onRetry={() => void sendMessage()} onDismiss={() => setSendFailed(false)} />}
           <View style={styles.composer}>
+            <VoiceComposer showMic={!input.trim() && !editingId} disabled={uploading} onSend={sendVoiceNote}>
             <Pressable
               style={styles.plusButton}
               onPress={() => setMediaOpen(true)}
@@ -967,6 +1000,7 @@ function ChatRoomView({ params, embedded = false }: { params: ChannelParams; emb
               textAlignVertical="center"
             />
 
+            {(!!input.trim() || !!editingId) && (
             <Pressable
               style={[
                 styles.send,
@@ -979,6 +1013,8 @@ function ChatRoomView({ params, embedded = false }: { params: ChannelParams; emb
             >
               <Ionicons name="arrow-up" size={20} color="#fff" />
             </Pressable>
+            )}
+            </VoiceComposer>
           </View>
 
         </View>

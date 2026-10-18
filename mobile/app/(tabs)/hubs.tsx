@@ -43,7 +43,7 @@ export default function HubsScreen() {
   const discover = publicHubs ?? NO_HUBS;
   // Lists whose first load failed stop showing the skeleton.
   const [failed, setFailed] = useState<Record<HubListKind, boolean>>({ mine: false, discover: false });
-  const params = useLocalSearchParams<{ mode?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; create?: string }>();
   const mode: "mine" | "discover" = params.mode === "discover" ? "discover" : "mine";
   // The mode lives in the route so the rail's Discover entry can deep-link to it.
   const setMode = (next: "mine" | "discover") => router.setParams({ mode: next });
@@ -51,6 +51,12 @@ export default function HubsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
+  // The welcome screen links here with ?create=1 to open the Create Hub sheet.
+  useEffect(() => {
+    if (params.create !== "1") return;
+    setCreateOpen(true);
+    router.setParams({ create: undefined });
+  }, [params.create]);
   const [name, setName] = useState("");
   const [visibility, setVisibility] =
     useState<"private" | "public">("private");

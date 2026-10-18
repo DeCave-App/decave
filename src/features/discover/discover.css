@@ -512,6 +512,18 @@
   height: 100%;
   object-fit: cover;
 }
+/* A Hub logo is usually its own rounded tile: show it edge to edge rather than
+   inside the letter tile's frame and fill, which read as a box in a box. */
+:is(.dsc-icon, .dsc-sheet-icon):has(img) {
+  border-color: transparent;
+  background: transparent;
+}
+.dsc-icon img {
+  border-radius: 10px;
+}
+.dsc-sheet-icon img {
+  border-radius: 13px;
+}
 .dsc-sheet-desc {
   margin: 0;
   color: var(--ds-text-soft);

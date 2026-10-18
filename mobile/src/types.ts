@@ -1,5 +1,6 @@
 import type { DmEnvelope } from "@/src/lib/e2ee/dm-e2ee-format";
 import type { DmE2eeMark } from "@/src/lib/e2ee/dm-e2ee-session";
+import type { VoiceNoteMeta } from "@/src/lib/voice-note";
 export type PresenceStatus = "online" | "idle" | "dnd" | "invisible";
 
 export const REPORT_CATEGORIES = [
@@ -148,6 +149,8 @@ export type DirectMessage = {
   replyToId?: string | null;
   reactions?: Record<string, string[]>;
   envelope?: DmEnvelope | null;
+  /** Set once decrypted: accounts whose reactions envelope marks this voice note played. */
+  playedBy?: string[];
   /** Set once the message has been through decryption. */
   e2ee?: DmE2eeMark;
 };
@@ -208,6 +211,7 @@ export type ChatMessage = {
     mimeType: string;
     size: number;
     url: string;
+    voice?: VoiceNoteMeta;
   } | null;
   /** Builder-bot fields (see shared/bots/card-view.ts). */
   bot?: { id: string; name: string; color: string | null; avatarEmoji: string | null };

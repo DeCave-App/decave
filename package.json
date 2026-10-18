@@ -1,7 +1,7 @@
 {
   "name": "decave",
   "private": true,
-  "version": "0.1.163",
+  "version": "0.1.164",
   "description": "DeCave gaming chat and voice desktop client",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
@@ -32,6 +32,7 @@
     "test:clearvoice": "node --test --test-isolation=none scripts/__tests__/clearvoice-dsp.test.mjs scripts/__tests__/clearvoice-stft.test.mjs scripts/__tests__/clearvoice-transient.test.mjs scripts/__tests__/clearvoice-streaming.test.mjs scripts/__tests__/voice-peer-recovery.test.mjs scripts/__tests__/voice-playback-runtime.test.mjs scripts/__tests__/voice-activity.test.mjs scripts/__tests__/voice-transport.test.mjs scripts/__tests__/input-meter.test.mjs",
     "test:workspace-qol": "node --test --test-isolation=none scripts/__tests__/workspace-qol-regression.test.mjs",
     "e2e:bots": "node scripts/e2e/bots.mjs",
+    "e2e:voice-notes": "node scripts/e2e/voice-notes.mjs",
     "e2e:voice": "node scripts/e2e/voice-smoke.mjs",
     "e2e:voice:reconnect": "node scripts/e2e/voice-smoke.mjs --reconnect",
     "test:hub-templates": "node --test --experimental-strip-types --test-isolation=none scripts/__tests__/hub-templates.test.mjs",

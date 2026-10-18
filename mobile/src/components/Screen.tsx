@@ -4,6 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { colorMode, colors } from "@/src/theme";
 import { useSkin } from "@/src/skin";
+import { GlassBackdrop } from "@/src/components/GlassBackdrop";
 
 /** True inside the Lounge shell, which already pads for the top and bottom insets. */
 export const InShellContext = createContext(false);
@@ -16,6 +17,7 @@ export function Screen({ children }: PropsWithChildren) {
       edges={inShell ? ["left", "right"] : undefined}
       style={[styles.safe, { backgroundColor: inShell ? "transparent" : palette.bg }]}
     >
+      {!inShell && <GlassBackdrop />}
       <StatusBar style={colorMode === "light" ? "dark" : "light"} />
       <View style={[styles.body, { backgroundColor: inShell ? "transparent" : palette.bg }]}>{children}</View>
     </SafeAreaView>

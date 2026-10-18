@@ -9,6 +9,9 @@ import { loadAuthenticatedAttachmentImage } from "@/src/lib/legacy-attachment-do
 import { giphyImageSource } from "@/src/lib/chat-media";
 import { colors } from "@/src/theme";
 
+// Voice notes have their own bubble (play, waveform, speed); the screens render it for `voice` attachments.
+export { VoiceNoteBubble } from "@/src/components/voice-notes/VoiceNoteBubble";
+
 type LoadedImage = { url: string; token: string; uri: string };
 
 /**

@@ -611,6 +611,9 @@
     "structuredTypeChange": "Gestructureerde berichten kunnen bij bewerken niet van type veranderen",
     "forumTagInvalid": "Kies tags uit de taglijst van dit forum"
   },
+  "upload": {
+    "voiceTooLarge": "Spraakberichten mogen maximaal 2 minuten duren."
+  },
   "trustSafety": {
     "reportedUserNotFound": "De gerapporteerde gebruiker is niet gevonden.",
     "reportSelfAccount": "Je kunt je eigen account niet rapporteren.",

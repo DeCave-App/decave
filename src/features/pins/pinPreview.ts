@@ -1,6 +1,8 @@
 // What the pinned-messages panel shows for each pin.
 
-type Previewable = { text: string; attachment?: { name: string; mimeType: string } | null };
+import { formatVoiceDuration, parseVoiceNoteMeta } from "../../../shared/voice-note";
+
+type Previewable = { text: string; attachment?: { name: string; mimeType: string; voice?: unknown } | null };
 
 /** Kinds of pin that are described rather than quoted. */
 export type PinKind = "forumPost" | "event" | "poll" | "bot" | "gif" | "sticker" | "image" | "file" | "message";
@@ -39,7 +41,12 @@ const englishLabel: PinLabel = (kind, detail) => {
 };
 
 /** Text to show for a pin: plain text, or what kind of special message it is. */
-export function pinPreview(message: Previewable, full = false, label: PinLabel = englishLabel): string {
+export function pinPreview(
+  message: Previewable,
+  full = false,
+  label: PinLabel = englishLabel,
+  voiceText: (duration: string) => string = (duration) => `🎤 Voice message (${duration})`,
+): string {
   const text = message.text ?? "";
   for (const [prefix, kind] of STRUCTURED) {
     if (text.startsWith(prefix)) {
@@ -59,6 +66,8 @@ export function pinPreview(message: Previewable, full = false, label: PinLabel =
     }
   }
   if (text.trim()) return !full && text.length > 280 ? `${text.slice(0, 280)}…` : text;
+  const voice = message.attachment ? parseVoiceNoteMeta(message.attachment.voice) : null;
+  if (voice) return voiceText(formatVoiceDuration(voice.ms));
   if (message.attachment)
     return label(message.attachment.mimeType.startsWith("image/") ? "image" : "file", message.attachment.name);
   return label("message");

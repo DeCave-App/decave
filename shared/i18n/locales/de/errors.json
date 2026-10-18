@@ -611,6 +611,9 @@
     "structuredTypeChange": "Strukturierte Nachrichten können beim Bearbeiten ihren Typ nicht ändern",
     "forumTagInvalid": "Wähle Tags aus der Tag-Liste dieses Forums"
   },
+  "upload": {
+    "voiceTooLarge": "Sprachnachrichten dürfen höchstens 2 Minuten lang sein."
+  },
   "trustSafety": {
     "reportedUserNotFound": "Die gemeldete Person wurde nicht gefunden.",
     "reportSelfAccount": "Du kannst deinen eigenen Account nicht melden.",

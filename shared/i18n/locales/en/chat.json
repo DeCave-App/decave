@@ -1105,5 +1105,32 @@
       "cannotSave": "This device cannot save attachments.",
       "chooseFolder": "Choose a folder to save the attachment."
     }
+  },
+  "voice": {
+    "recording": "Recording voice message",
+    "previewLabel": "Voice message preview",
+    "delete": "Delete",
+    "play": "Play",
+    "pause": "Pause",
+    "scrub": "Seek",
+    "send": "Send",
+    "stop": "Stop recording",
+    "dismiss": "Dismiss",
+    "errorPermission": "Microphone access is blocked. Allow it in your browser or system settings, then try again.",
+    "errorNoDevice": "No microphone was found. Connect one and try again.",
+    "errorUnsupported": "Voice messages are not supported on this device.",
+    "speed": "Playback speed",
+    "played": "Played",
+    "errorPlay": "Couldn't play voice message",
+    "download": "Download",
+    "unplayed": "Unplayed voice message",
+    "retry": "Retry",
+    "record": "Record voice message",
+    "sendFailed": "Couldn't send voice message. Try again.",
+    "preview": "🎤 Voice message ({{duration}})",
+    "slideToCancel": "Slide left to cancel",
+    "holdHint": "Tap to record, or hold to record and release to send",
+    "errorPermissionMobile": "Microphone access is off. Allow it for DeCave in Settings, then try again.",
+    "openSettings": "Open Settings"
   }
 }

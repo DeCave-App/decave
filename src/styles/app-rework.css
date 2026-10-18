@@ -8013,6 +8013,19 @@ body .message-reaction-picker.message-reaction-picker-portal {
   overflow: hidden !important;
 }
 
+/* The round profile button holds a 42px avatar: the narrow-window rules give
+   it a 34px column and clip it, which pushed the avatar off-centre, cut its
+   left edge and drew a grey disc behind the accent ring. The status dot gets a
+   cutout in the top bar's own colour. */
+.app[data-skin][data-workspace] > .vadrion-topbar .vadrion-top-user-button {
+  grid-template-columns: 42px !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+.app[data-skin][data-workspace] > .vadrion-topbar .vadrion-top-user-status {
+  border-color: var(--gc-bg-1, #111820) !important;
+}
+
 /* Hub strip alignment: it follows the logo directly and owns every pixel up
    to the account controls, rather than sizing itself only to its buttons. */
 .app[data-skin][data-workspace] > .vadrion-topbar {

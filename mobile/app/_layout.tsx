@@ -5,7 +5,9 @@ import "@/src/lib/e2ee/polyfills";
 import "@/src/lib/intl-polyfills";
 // Before any screen renders text: starts the translation runtime.
 import { useAccountLocaleSync } from "@/src/i18n";
-import { Stack } from "expo-router";
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from "expo-router";
+import { useMemo } from "react";
+import { colorMode } from "@/src/theme";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession } from "@/src/providers/SessionProvider";
@@ -36,6 +38,14 @@ function AccountLocaleSync() {
 
 export default function RootLayout() {
   const { palette } = useSkin();
+  // Navigators paint their theme's background behind every screen. Without a
+  // theme that is React Navigation's light grey, which showed through when
+  // Liquid Glass made the screens see-through, so set it from the skin
+  // ("transparent" with glass, so the backdrop picture shows).
+  const navigationTheme = useMemo<Theme>(() => {
+    const base = colorMode === "light" ? DefaultTheme : DarkTheme;
+    return { ...base, colors: { ...base.colors, background: palette.bg } };
+  }, [palette.bg]);
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.bg }}>
       <GlassBackdrop />
@@ -56,13 +66,15 @@ export default function RootLayout() {
               <VoiceCallKitBridge />
               <SystemSurfacesBridge />
               <IosBroadcastPicker />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: palette.bg },
-                  animation: "fade",
-                }}
-              />
+              <ThemeProvider value={navigationTheme}>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: palette.bg },
+                    animation: "fade",
+                  }}
+                />
+              </ThemeProvider>
               <AndroidUpdateBanner />
                     </DirectCallProvider>
                   </VoiceProvider>

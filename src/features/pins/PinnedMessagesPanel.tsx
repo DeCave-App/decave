@@ -44,7 +44,7 @@ export function PinnedMessagesPanel({
   onUnpin,
   onClose,
 }: Props) {
-  const { t } = useTranslation(["hub"]);
+  const { t } = useTranslation(["hub", "chat"]);
   const pinLabel: PinLabel = (kind, detail) =>
     detail === undefined ? t(`hub.pins.kinds.${kind}`) : t(`hub.pins.kindsWithDetail.${kind}`, { detail });
   const [pins, setPins] = useState<PinnedMessage[] | null>(null);
@@ -141,7 +141,11 @@ export function PinnedMessagesPanel({
                 <strong className="ds-row-title">
                   {message.username} <small className="ds-row-meta">{formatTime(message.timestamp)}</small>
                 </strong>
-                <span className="ds-row-sub pins-text">{pinPreview(message, expanded === message.id, pinLabel)}</span>
+                <span className="ds-row-sub pins-text">
+                  {pinPreview(message, expanded === message.id, pinLabel, (duration) =>
+                    t("chat.voice.preview", { duration }),
+                  )}
+                </span>
               </div>
               <div className="pins-actions">
                 {loadedIds.has(message.id) ? (

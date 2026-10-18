@@ -26,6 +26,7 @@ import {
   rawForumPostJson,
 } from "../../shared/forum";
 import { parseRoomAccent } from "../../shared/room-style";
+import { VOICE_NOTE_MAX_BYTES } from "../../shared/voice-note";
 import { realtimeRecheckAccess, realtimeBroadcast } from "../lib/realtime";
 import { historyCursor, HISTORY_PAGE_SIZE } from "../lib/social";
 import { messagesForClient, messageForClient } from "../lib/messages";
@@ -623,8 +624,9 @@ export async function handleRoomRoutes({ request, env, url, p, method, ctx }: Ap
     if (!(await canAccessRoom(env.DB, room, user.id))) return apiError("rooms.noAccess", 403);
     const postingError = await requireHubPostingPermission(env.DB, room.hub_id, user.id);
     if (postingError) return postingError;
-    const bytes = await boundedBodyBytes(request, 25 * 1024 * 1024);
-    if (!bytes) return apiError("rooms.attachmentTooLarge", 413);
+    const isVoiceNote = request.headers.get("X-Voice-Note") === "1";
+    const bytes = await boundedBodyBytes(request, isVoiceNote ? VOICE_NOTE_MAX_BYTES : 25 * 1024 * 1024);
+    if (!bytes) return isVoiceNote ? apiError("upload.voiceTooLarge", 413) : apiError("rooms.attachmentTooLarge", 413);
     if (!bytes.byteLength) return apiError("rooms.attachmentEmpty", 400);
     let name = "attachment";
     try {

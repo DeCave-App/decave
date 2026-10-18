@@ -4790,6 +4790,7 @@ function App() {
       {showSocial && (
         <SocialPage
           currentUser={currentUser}
+          connectionStatus={connectionStatus}
           friends={friends}
           friendListSearch={friendListSearch}
           setFriendListSearch={setFriendListSearch}

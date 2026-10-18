@@ -6,7 +6,8 @@
 
 import type { TFunction } from "i18next";
 import { DEFAULT_LOCALE } from "../shared/i18n/languages.ts";
-import { workerT } from "./lib/i18n";
+import { formatVoiceDuration } from "../shared/voice-note.ts";
+import { tWith, workerT } from "./lib/i18n";
 
 type PushEnv = { DB: D1Database };
 
@@ -201,4 +202,9 @@ export function pushPreview(text: string, t: TFunction = workerT(DEFAULT_LOCALE)
   if (text.startsWith("__DECAVE_DM_ATTACHMENT__")) return t("push.preview.attachment");
   const clean = text.replace(/\s+/g, " ").trim();
   return clean.length > 140 ? `${clean.slice(0, 137)}…` : clean;
+}
+
+/** Hub voice-note push text: the same string the in-app previews use. Hub text is not end-to-end encrypted; DM pushes never reach here. */
+export function voicePushPreview(ms: number, t: TFunction = workerT(DEFAULT_LOCALE)): string {
+  return tWith(t, "chat.voice.preview", { duration: formatVoiceDuration(ms) });
 }

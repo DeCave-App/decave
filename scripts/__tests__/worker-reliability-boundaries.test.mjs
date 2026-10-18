@@ -867,3 +867,38 @@ test("room deletion queues sent, unsent and legacy files atomically and retries 
     db.sqlite.exec("DROP TRIGGER fail_room_delete");
   }
 });
+
+test("Hub voice metadata is validated, stored and returned as attachment.voice", async () => {
+  const { messagesForClient } = await import("../../worker/lib/messages.ts");
+  const wave = Buffer.alloc(64, 128).toString("base64");
+  async function sendWith(text, voice) {
+    const upload = await api("/api/channels/10/attachments", "u2", {
+      method: "POST",
+      body: new Uint8Array([1, 2, 3]),
+      headers: { "x-file-name": "v.m4a", "x-file-type": "audio/mp4", "x-voice-note": "1" },
+    });
+    assert.equal(upload.response.status, 200);
+    const socket = new FakeSocket(completeSocketState("u2"));
+    await roomForSocket(socket).webSocketMessage(
+      socket,
+      JSON.stringify({
+        type: "CHAT_MESSAGE",
+        channelId: 10,
+        text,
+        attachment: voice === undefined ? upload.data.attachment : { ...upload.data.attachment, voice },
+      }),
+    );
+    const id = db.scalar("SELECT id FROM decave_messages WHERE text=? AND room_id=10", text);
+    assert.ok(id, "message stored");
+    const [message] = await messagesForClient(env, [id]);
+    return { id, message };
+  }
+  const valid = await sendWith("voice valid", { ms: 4200, wave, bytes: 1000, extra: "dropped" });
+  assert.deepEqual(valid.message.attachment.voice, { ms: 4200, wave, bytes: 1000 });
+  const invalid = await sendWith("voice invalid", { ms: -5, wave: "nope" });
+  assert.ok(invalid.message.attachment, "attachment is kept");
+  assert.equal("voice" in invalid.message.attachment, false);
+  assert.equal(db.scalar("SELECT attachment_voice FROM decave_messages WHERE id=?", invalid.id), null);
+  const plain = await sendWith("voice absent", undefined);
+  assert.equal("voice" in plain.message.attachment, false);
+});

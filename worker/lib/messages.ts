@@ -2,6 +2,7 @@
 // paging.
 
 import type { Env } from "./env";
+import { parseVoiceNoteMeta, type VoiceNoteMeta } from "../../shared/voice-note";
 import type { ServerRole } from "../db";
 import { parseDmEnvelope, type DmEnvelope } from "../../shared/dm-e2ee-format";
 
@@ -54,6 +55,7 @@ export type ChannelMessageRow = {
   attachment_mime: string | null;
   attachment_size: number | null;
   attachment_key: string | null;
+  attachment_voice?: string | null;
   public_id: string | null;
   username: string;
   avatar_key: string | null;
@@ -94,6 +96,17 @@ async function botsFor(env: Env, botIds: readonly string[]): Promise<Map<string,
       });
   }
   return bots;
+}
+
+/** The `voice` field of a Hub attachment, as stored JSON text, or {} when there is none. */
+export function voiceFieldFromJson(value: string | null | undefined): { voice?: VoiceNoteMeta } {
+  if (!value) return {};
+  try {
+    const voice = parseVoiceNoteMeta(JSON.parse(value));
+    return voice ? { voice } : {};
+  } catch {
+    return {};
+  }
 }
 
 function parseCard(value: string | null | undefined): unknown {
@@ -165,6 +178,7 @@ export async function messagesForClient(env: Env, messageIds: readonly string[],
                 mimeType: row.attachment_mime ?? "application/octet-stream",
                 size: Number(row.attachment_size ?? 0),
                 url: `/uploads/${row.attachment_key}`,
+                ...voiceFieldFromJson(row.attachment_voice),
               }
             : null,
         ...botFields,

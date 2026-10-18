@@ -134,7 +134,7 @@ export function createDmE2eeSending(session: DmE2eeSession, options: { previewLa
    * otherwise the plain emoji, as before.
    */
   async function dmReactionBody(
-    message: { id: string; envelope?: unknown; reactions?: Record<string, string[]> },
+    message: { id: string; envelope?: unknown; reactions?: Record<string, string[]>; playedBy?: string[] },
     me: string,
     peerId: string,
     emoji: string,
@@ -142,8 +142,41 @@ export function createDmE2eeSending(session: DmE2eeSession, options: { previewLa
   ): Promise<Record<string, unknown>> {
     if (!message.envelope || !session.getState().available) return { emoji };
     const next = toggledReactions(message.reactions, me, emoji);
-    if (!next.length) return { envelope: null };
-    return { envelope: await session.sealReactions(peerId, message.id, next, { refreshKeys }) };
+    // A played voice note keeps its (otherwise empty) envelope so its sender still sees "Played".
+    const played = Boolean(message.playedBy?.includes(me)) || session.hasPlayed(message.id);
+    if (!next.length && !played) return { envelope: null };
+    return { envelope: await session.sealReactions(peerId, message.id, next, { refreshKeys, played }) };
+  }
+
+  /**
+   * Tell an encrypted DM voice note's sender it was played: this account's
+   * reactions envelope sealed again with `p: true` (its emojis unchanged), POSTed
+   * to the ordinary reactions route, so the server sees only a reactions update.
+   * Resent once with fresh keys when a key changed. Resolves false when it could
+   * not be sent, or when this device hasn't opened the message yet (so its emojis
+   * aren't known and would be lost): best effort, retried by the caller.
+   */
+  async function sendPlayed(
+    request: (path: string, init: { method: string; body: unknown }) => Promise<{ ok: boolean; data?: unknown }>,
+    message: { id: string; fromUserId: string },
+    me: string,
+  ): Promise<boolean> {
+    if (!me || message.fromUserId === me) return false;
+    const mine = session.ownReactions(message.id);
+    if (!mine) return false;
+    const path = `/api/dms/messages/${encodeURIComponent(message.id)}/reactions`;
+    for (const refreshKeys of [false, true]) {
+      let envelope: DmEnvelope;
+      try {
+        envelope = await session.sealReactions(message.fromUserId, message.id, mine, { refreshKeys, played: true });
+      } catch {
+        return false;
+      }
+      const response = await request(path, { method: "POST", body: { envelope } });
+      if (response.ok) return true;
+      if ((response.data as { code?: unknown } | undefined)?.code !== "DM_E2EE_STALE_KEY") return false;
+    }
+    return false;
   }
 
   /** Build the GROUP_MESSAGE frame, encrypted for every member when the group is encrypted. */
@@ -271,6 +304,7 @@ export function createDmE2eeSending(session: DmE2eeSession, options: { previewLa
     discardDmSend,
     retryFrameAfterDmError,
     dmReactionBody,
+    sendPlayed,
     groupSocketFrame,
     settleGroupSend,
     discardGroupSend,

@@ -7,15 +7,11 @@ import type { HubTemplateId } from "../../../shared/hub-templates";
 import { CreateHubModal } from "../../features/create-hub/CreateHubModal";
 import type { DiscordImportPreview } from "../../../shared/discord-template";
 import type { ServerVisibility, DiscoverServer, AccountUser, AppSkin } from "../types";
+import { Icon } from "../../components/Icon";
 import { DeCaveBrand } from "../components/DeCaveBrand";
 import { DiscordImportPanel } from "../components/DiscordImportPanel";
-import {
-  discoverServerCardStyle,
-  discoverServerIconStyle,
-  errorTextStyle,
-  authSwitchStyle,
-  memberMutedStyle,
-} from "../inline-styles";
+import "../../features/onboarding/onboarding.css";
+import { discoverServerCardStyle, discoverServerIconStyle, errorTextStyle, memberMutedStyle } from "../inline-styles";
 
 type Props = {
   currentUser: AccountUser;
@@ -89,47 +85,77 @@ export function HubOnboardingScreen({
   filteredDiscoverServers,
 }: Props) {
   const { t } = useTranslation(["common", "hub", "chat"]);
+  const skipToHome = () => {
+    setHubOnboardingSkipped(true);
+    try {
+      localStorage.setItem(`decave_hub_onboarding_skipped:${currentUser.id}`, "1");
+    } catch {}
+    setShowHome(true);
+  };
   return (
     <div className="username-screen vadrion-auth-screen" data-skin={displaySkin}>
-      <div className="username-card vadrion-empty-card" style={{ width: "min(760px, 92vw)", maxWidth: "760px" }}>
+      <div className="username-card vadrion-empty-card hob-card">
         <DeCaveBrand />
         <h1>{t("hub.onboarding.title")}</h1>
         <p>{t("hub.onboarding.lead")}</p>
 
         {!showCreateServer && !showServerBrowser && (
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={() => {
-                setNewServerName("");
-                setNewServerVisibility("private");
-                setNewServerTemplate("blank");
-                setServerCreateError("");
-                setShowCreateServer(true);
-              }}
-            >
-              {t("hub.noHubs.create")}
-            </button>
-            <button type="button" onClick={openServerBrowser}>
-              {t("hub.noHubs.discover")}
-            </button>
-          </div>
-        )}
+          <>
+            <div className="hob-choices">
+              <button
+                type="button"
+                className="hob-choice hob-choice-primary"
+                onClick={() => {
+                  setNewServerName("");
+                  setNewServerVisibility("private");
+                  setNewServerTemplate("blank");
+                  setServerCreateError("");
+                  setShowCreateServer(true);
+                }}
+              >
+                <span className="hob-choice-icon">
+                  <Icon name="castle" size="xl" />
+                </span>
+                <strong>{t("hub.onboarding.createTitle")}</strong>
+                <span className="hob-choice-body">{t("hub.onboarding.createBody")}</span>
+                <span className="hob-choice-cta">
+                  {t("hub.onboarding.createCta")}
+                  <Icon name="chevron-right" size="sm" />
+                </span>
+              </button>
+              <button type="button" className="hob-choice" onClick={openServerBrowser}>
+                <span className="hob-choice-icon">
+                  <Icon name="compass" size="xl" />
+                </span>
+                <strong>{t("hub.onboarding.discoverTitle")}</strong>
+                <span className="hob-choice-body">{t("hub.onboarding.discoverBody")}</span>
+                <span className="hob-choice-cta">
+                  {t("hub.onboarding.discoverCta")}
+                  <Icon name="chevron-right" size="sm" />
+                </span>
+              </button>
+              <button type="button" className="hob-choice" onClick={skipToHome}>
+                <span className="hob-choice-icon">
+                  <Icon name="users" size="xl" />
+                </span>
+                <strong>{t("hub.onboarding.friendsTitle")}</strong>
+                <span className="hob-choice-body">{t("hub.onboarding.friendsBody")}</span>
+                <span className="hob-choice-cta">
+                  {t("hub.onboarding.friendsCta")}
+                  <Icon name="chevron-right" size="sm" />
+                </span>
+              </button>
+            </div>
 
-        {!showCreateServer && !showServerBrowser && (
-          <button
-            type="button"
-            style={{ ...authSwitchStyle, marginTop: "12px" }}
-            onClick={() => {
-              setHubOnboardingSkipped(true);
-              try {
-                localStorage.setItem(`decave_hub_onboarding_skipped:${currentUser.id}`, "1");
-              } catch {}
-              setShowHome(true);
-            }}
-          >
-            {t("hub.onboarding.skip")}
-          </button>
+            <p className="hob-explainer">
+              <Icon name="lock" size="sm" />
+              <span>{t("hub.onboarding.explainer")}</span>
+            </p>
+
+            <button type="button" className="hob-skip" onClick={skipToHome}>
+              {t("hub.onboarding.skip")}
+            </button>
+          </>
         )}
 
         {showCreateServer && (

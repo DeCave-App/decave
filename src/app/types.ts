@@ -2,6 +2,7 @@
 
 import type { DmEnvelope } from "../../shared/dm-e2ee-format";
 import type { DmFileKey } from "../../shared/dm-e2ee";
+import type { VoiceNoteMeta } from "../../shared/voice-note";
 import type { DmE2eeMark } from "../../shared/dm-e2ee-session";
 import type { DateStyleLanguage } from "../../shared/date-style";
 import type { IconName } from "../components/Icon";
@@ -220,6 +221,8 @@ export type AttachmentMeta = {
   url: string;
   /** Present when the file was encrypted before upload (end-to-end encrypted DMs). */
   fileKey?: DmFileKey;
+  /** Present on voice messages. */
+  voice?: VoiceNoteMeta;
 };
 
 export type ChatMessage = {
@@ -308,6 +311,8 @@ export type DirectMessage = {
   reactions?: Record<string, string[]>;
   /** Encrypted reactions, merged into `reactions` once decrypted. */
   reactionEnvelopes?: DmEnvelope[] | null;
+  /** Set once decrypted: accounts whose reactions envelope marks this voice note played. */
+  playedBy?: string[];
   envelope?: DmEnvelope | null;
   /** Set once the message has been through decryption. */
   e2ee?: DmE2eeMark;

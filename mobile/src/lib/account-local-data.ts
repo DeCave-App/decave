@@ -2,9 +2,11 @@ import * as SecureStore from "expo-secure-store";
 import { forgetStoredDrafts } from "./drafts";
 import { forgetLastVoiceRoom } from "./last-voice-room";
 import { notificationSettingsStorageKey } from "./notification-settings-store";
+import { forgetLocallyPlayed } from "@/src/components/voice-notes/store";
 
-// Per-account data this phone keeps: unsent drafts, the last voice room and the
-// notification privacy settings. It is deleted when the person chooses to sign
+// Per-account data this phone keeps: unsent drafts, the last voice room, the
+// notification privacy settings and which voice notes were played (with any
+// Played receipts still waiting to be sent). It is deleted when the person chooses to sign
 // out, and when a different account signs in (the previous account's data is
 // found through the owner marker below). A session that ended elsewhere keeps
 // it, the same way the DM encryption key is kept (dmE2ee.stop({ forget })).
@@ -18,6 +20,7 @@ export async function forgetAccountLocalData(accountId: string): Promise<void> {
     forgetStoredDrafts(accountId),
     forgetLastVoiceRoom(accountId),
     SecureStore.deleteItemAsync(notificationSettingsStorageKey(accountId)),
+    Promise.resolve().then(() => forgetLocallyPlayed(accountId)),
   ]);
 }
 

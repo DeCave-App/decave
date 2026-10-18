@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   Pressable,
@@ -16,6 +16,7 @@ import { HomeNowCards } from "@/src/components/HomeNowCards";
 import { JumpBackCard, UpcomingEventsCard } from "@/src/components/HomeUpcoming";
 import { API_BASE, apiJson } from "@/src/lib/api";
 import { loadHubList } from "@/src/lib/hub-list-cache";
+import { hubWelcomeSeen, markHubWelcomeSeen } from "@/src/lib/hub-welcome";
 import { useSession } from "@/src/providers/SessionProvider";
 import { useRealtime } from "@/src/providers/RealtimeProvider";
 import { useUnread } from "@/src/providers/UnreadProvider";
@@ -80,6 +81,16 @@ export default function HomeScreen() {
   });
   const [dms, setDms] = useState<DmConversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const welcomeChecked = useRef(false);
+
+  // A new account with no Hubs gets the welcome choices once, after its first Hub list loads.
+  const maybeShowWelcome = async (hubCount: number) => {
+    if (welcomeChecked.current || !user) return;
+    welcomeChecked.current = true;
+    if (hubCount > 0 || (await hubWelcomeSeen(user.id))) return;
+    await markHubWelcomeSeen(user.id);
+    router.push("/welcome");
+  };
 
   const load = async () => {
     if (!token) return;
@@ -93,6 +104,7 @@ export default function HomeScreen() {
       ]);
 
       setHubs(nextHubs);
+      void maybeShowWelcome(nextHubs.length);
       setSocial(nextSocial);
       setDms(await decryptConversationPreviews(dmData.conversations ?? []));
     } catch {}

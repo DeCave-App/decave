@@ -1,6 +1,7 @@
 import { useEffect, useMemo, type PropsWithChildren } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { GlassBackdrop } from "@/src/components/GlassBackdrop";
 import { useTranslation } from "react-i18next";
 import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,7 +14,7 @@ import { useUnread } from "@/src/providers/UnreadProvider";
 import { useVoice } from "@/src/providers/VoiceProvider";
 import { VoiceFloatingBar } from "@/src/components/VoiceFloatingBar";
 import { tapHaptic } from "@/src/lib/haptics";
-import { colors } from "@/src/theme";
+import { colors, glassActive } from "@/src/theme";
 import type { Hub } from "@/src/types";
 
 const HUB_TINTS = ["#7C3AED", "#DB2777", "#0891B2", "#16A34A", "#EA580C", "#4F46E5"];
@@ -82,7 +83,8 @@ export function LoungeShell({ children }: PropsWithChildren) {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View pointerEvents="none" style={styles.glow} />
+      {/* With Liquid Glass the backdrop picture replaces the decorative glow. */}
+      {glassActive ? <GlassBackdrop /> : <View pointerEvents="none" style={styles.glow} />}
 
       <View style={styles.header}>
         <Image source={require("../../assets/decave-mark.png")} style={styles.logo} accessibilityLabel={t("common.mobile.lounge.logo")} />

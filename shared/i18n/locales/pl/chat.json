@@ -1139,5 +1139,32 @@
       "cannotSave": "To urządzenie nie może zapisywać załączników.",
       "chooseFolder": "Wybierz folder, w którym zapisać załącznik."
     }
+  },
+  "voice": {
+    "recording": "Nagrywanie wiadomości głosowej",
+    "previewLabel": "Podgląd wiadomości głosowej",
+    "delete": "Usuń",
+    "play": "Odtwórz",
+    "pause": "Wstrzymaj",
+    "scrub": "Przewiń",
+    "send": "Wyślij",
+    "stop": "Zatrzymaj nagrywanie",
+    "dismiss": "Zamknij",
+    "errorPermission": "Dostęp do mikrofonu jest zablokowany. Zezwól na niego w ustawieniach przeglądarki lub systemu i spróbuj ponownie.",
+    "errorNoDevice": "Nie znaleziono mikrofonu. Podłącz go i spróbuj ponownie.",
+    "errorUnsupported": "Wiadomości głosowe nie są obsługiwane na tym urządzeniu.",
+    "speed": "Prędkość odtwarzania",
+    "played": "Odtworzono",
+    "errorPlay": "Nie można odtworzyć wiadomości głosowej",
+    "download": "Pobierz",
+    "unplayed": "Nieodtworzona wiadomość głosowa",
+    "retry": "Spróbuj ponownie",
+    "record": "Nagraj wiadomość głosową",
+    "sendFailed": "Nie udało się wysłać wiadomości głosowej. Spróbuj ponownie.",
+    "preview": "🎤 Wiadomość głosowa ({{duration}})",
+    "slideToCancel": "Przesuń w lewo, aby anulować",
+    "holdHint": "Dotknij, aby nagrać, lub przytrzymaj i puść, aby wysłać",
+    "errorPermissionMobile": "Dostęp do mikrofonu jest wyłączony. Zezwól na niego dla DeCave w Ustawieniach i spróbuj ponownie.",
+    "openSettings": "Otwórz Ustawienia"
   }
 }

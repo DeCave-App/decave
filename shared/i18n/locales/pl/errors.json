@@ -611,6 +611,9 @@
     "structuredTypeChange": "Wiadomości strukturalne nie mogą zmieniać typu podczas edycji",
     "forumTagInvalid": "Wybierz tagi z listy tagów tego forum"
   },
+  "upload": {
+    "voiceTooLarge": "Wiadomości głosowe mogą trwać do 2 minut."
+  },
   "trustSafety": {
     "reportedUserNotFound": "Nie znaleziono zgłaszanego użytkownika.",
     "reportSelfAccount": "Nie możesz zgłosić własnego konta.",

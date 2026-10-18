@@ -30,6 +30,8 @@ import { UserAvatar } from "../components/UserAvatar";
 import { FriendsView } from "./FriendsView";
 import type { HubChatActions } from "../actions/hub-chat";
 import type { DirectMessageActions } from "../actions/direct-messages";
+import { VoiceComposer } from "../../features/voice-notes/VoiceComposer";
+import { usePendingPlayedRetry } from "../../features/voice-notes/DmVoiceNote";
 import type { MessageRendering } from "../actions/message-rendering";
 import type { FriendActions } from "../actions/friends";
 
@@ -106,6 +108,8 @@ type Props = {
   visibleDmConversations: DmConversation[];
   hubChat: HubChatActions;
   directMessages: DirectMessageActions;
+  /** Realtime status; voice notes need a live connection to post. */
+  connectionStatus?: string;
   messageRendering: MessageRendering;
   friendActions: FriendActions;
 };
@@ -183,11 +187,13 @@ export function SocialPage({
   visibleDmConversations,
   hubChat,
   directMessages,
+  connectionStatus = "Connected",
   messageRendering,
   friendActions,
 }: Props) {
   const { t } = useTranslation(["common", "hub", "chat"]);
   const chatPrefs = useChatPrefs();
+  usePendingPlayedRetry(currentUser.id, connectionStatus === "Connected", activeDmUser?.id);
   const { loadSocialState, socialAction, addFriendByDecaveId, copyMyDecaveId } = friendActions;
   const { dmPreviewText, replyPreviewText, scrollToMessage, renderDmMessageBody } = messageRendering;
   const {
@@ -198,6 +204,8 @@ export function SocialPage({
     deleteGroupMessage,
     openNewConversationComposer,
     sendDirectMessage,
+    sendDmVoiceNote,
+    reportDmError,
     uploadDmAttachment,
     cancelDmAttachmentUpload,
     sendDmReaction,
@@ -1207,6 +1215,13 @@ export function SocialPage({
                         </button>
                         {renderComposerEmojiPicker("dm")}
                       </span>
+                      <VoiceComposer
+                        text={dmInput}
+                        hasOtherContent={dmAttachmentBusy}
+                        disabled={connectionStatus !== "Connected"}
+                        onSend={sendDmVoiceNote}
+                        onError={reportDmError}
+                      />
                       <button
                         type="button"
                         className="dc-dm-send"

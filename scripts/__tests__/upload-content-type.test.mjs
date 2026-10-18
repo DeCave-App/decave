@@ -47,3 +47,11 @@ test("image-only uploads accept only allowed sniffed formats", () => {
   assert.equal(sniffedImageMime(ascii("<svg/>"), allowed), null);
   assert.equal(sniffedImageMime(ascii("\0\0\0\x18ftypavif\0\0\0\0"), allowed), null);
 });
+
+test("m4a is audio", () => {
+  const m4a = (brand) => ascii(`\0\0\0\x20ftyp${brand}\0\0\0\0`);
+  assert.equal(safeUploadedContentType("audio/mp4", m4a("M4A ")), "audio/mp4");
+  assert.equal(safeUploadedContentType("audio/mp4", m4a("M4B ")), "audio/mp4");
+  assert.equal(safeUploadedContentType("audio/mp4", m4a("isom")), "video/mp4");
+  for (const b of ["iso6", "mp42"]) assert.equal(safeUploadedContentType("audio/mp4", m4a(b)), "video/mp4");
+});

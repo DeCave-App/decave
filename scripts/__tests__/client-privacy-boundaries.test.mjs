@@ -482,16 +482,17 @@ test("a different account signing in on a phone deletes the previous account's l
     forgetStoredDrafts: async (id) => forgotten.push(`drafts:${id}`),
     forgetLastVoiceRoom: async (id) => forgotten.push(`voice:${id}`),
     notificationSettingsStorageKey: (id) => `notify:${id}`,
+    forgetLocallyPlayed: (id) => forgotten.push(`played:${id}`),
   });
   values.set("notify:a", "{}");
   await local.claimAccountLocalData("a");
   await local.claimAccountLocalData("a");
   assert.deepEqual(forgotten, [], "the same account keeps its data");
   await local.claimAccountLocalData("b");
-  assert.deepEqual(forgotten, ["drafts:a", "voice:a"]);
+  assert.deepEqual(forgotten, ["drafts:a", "voice:a", "played:a"]);
   assert.equal(values.has("notify:a"), false);
   await local.forgetSignedOutAccount("b");
-  assert.deepEqual(forgotten.slice(2), ["drafts:b", "voice:b"]);
+  assert.deepEqual(forgotten.slice(3), ["drafts:b", "voice:b", "played:b"]);
   assert.equal(values.has("decave.localDataOwner.v1"), false);
 });
 

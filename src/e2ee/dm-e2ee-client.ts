@@ -85,6 +85,7 @@ export const {
   discardDmSend,
   retryFrameAfterDmError,
   dmReactionBody,
+  sendPlayed,
   groupSocketFrame,
   settleGroupSend,
   discardGroupSend,

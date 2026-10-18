@@ -19,7 +19,9 @@ export function LogoutConfirmDialog({ setShowLogoutConfirm, logout }: Props) {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 12000,
+        // Same layer as .dcx-confirm-overlay, so it sits above the
+        // settings page (12000), which renders later in the DOM.
+        zIndex: 14000,
         display: "grid",
         placeItems: "center",
         padding: "20px",

@@ -1,4 +1,5 @@
-import { dmMessageForClient, type ChannelMessageRow } from "./lib/messages";
+import { dmMessageForClient, voiceFieldFromJson, type ChannelMessageRow } from "./lib/messages";
+import { parseVoiceNoteMeta } from "../shared/voice-note";
 import {
   checkOutgoingDm,
   checkOutgoingGroupMessage,
@@ -54,7 +55,7 @@ import {
   safeJsonStringArray,
   forumPostExtrasProblem,
 } from "../shared/forum";
-import { pushPreview, sendPush } from "./push";
+import { pushPreview, sendPush, voicePushPreview } from "./push";
 import { loadPushSettings, pushText, shouldPush, type PushContext } from "./push-policy";
 import type { TFunction } from "i18next";
 import { DEFAULT_LOCALE, type Locale } from "../shared/i18n/languages.ts";
@@ -1139,6 +1140,8 @@ export class HubRoom extends DurableObject<Env> {
       if (!text && !attachment) return;
 
       let attachmentKey: string | null = null;
+      const voiceMeta = attachment ? parseVoiceNoteMeta(attachment.voice) : null;
+      const attachmentVoice = voiceMeta ? JSON.stringify(voiceMeta) : null;
       if (attachment) {
         const explicitKey = typeof attachment.r2Key === "string" ? attachment.r2Key : "";
         const attachmentUrl = typeof attachment.url === "string" ? attachment.url : "";
@@ -1268,8 +1271,8 @@ export class HubRoom extends DurableObject<Env> {
       const inserted = await this.env.DB.prepare(
         `INSERT INTO decave_messages
            (id,room_id,hub_id,author_user_id,text,created_at,reply_to_id,
-            attachment_id,attachment_name,attachment_mime,attachment_size,attachment_key)
-         SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE ? IS NULL OR EXISTS(
+            attachment_id,attachment_name,attachment_mime,attachment_size,attachment_key,attachment_voice)
+         SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? WHERE ? IS NULL OR EXISTS(
            SELECT 1 FROM decave_attachment_access
            WHERE r2_key=? AND kind='channel' AND owner_user_id=? AND hub_id=? AND room_id=?
          )`,
@@ -1287,6 +1290,7 @@ export class HubRoom extends DurableObject<Env> {
           typeof attachment?.mimeType === "string" ? attachment.mimeType : null,
           typeof attachment?.size === "number" ? attachment.size : null,
           attachmentKey,
+          attachmentVoice,
           attachmentKey,
           attachmentKey,
           state.userId,
@@ -1380,7 +1384,7 @@ export class HubRoom extends DurableObject<Env> {
         const pushMessage = {
           sender: state.username ?? null,
           where: `#${room.name}`,
-          text,
+          text: !text && voiceMeta ? (t: TFunction) => voicePushPreview(voiceMeta.ms, t) : text,
           route: `/channel/${roomId}?hubId=${room.hub_id}&name=${encodeURIComponent(room.name)}`,
           threadId: `room-${roomId}`,
         };
@@ -3290,6 +3294,7 @@ export class HubRoom extends DurableObject<Env> {
               mimeType: row.attachment_mime ?? "application/octet-stream",
               size: Number(row.attachment_size ?? 0),
               url: `/uploads/${row.attachment_key}`,
+              ...voiceFieldFromJson(row.attachment_voice),
             }
           : null,
     };

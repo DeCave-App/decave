@@ -611,6 +611,9 @@
     "structuredTypeChange": "Structured messages cannot change type when edited",
     "forumTagInvalid": "Choose tags from this forum's tag list"
   },
+  "upload": {
+    "voiceTooLarge": "Voice messages can be up to 2 minutes."
+  },
   "trustSafety": {
     "reportedUserNotFound": "The reported user was not found.",
     "reportSelfAccount": "You cannot report your own account.",

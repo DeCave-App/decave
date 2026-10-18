@@ -1105,5 +1105,32 @@
       "cannotSave": "Dieses Gerät kann keine Anhänge speichern.",
       "chooseFolder": "Wähle einen Ordner zum Speichern des Anhangs."
     }
+  },
+  "voice": {
+    "recording": "Sprachnachricht wird aufgenommen",
+    "previewLabel": "Vorschau der Sprachnachricht",
+    "delete": "Löschen",
+    "play": "Wiedergeben",
+    "pause": "Pausieren",
+    "scrub": "Spulen",
+    "send": "Senden",
+    "stop": "Aufnahme beenden",
+    "dismiss": "Schließen",
+    "errorPermission": "Der Mikrofonzugriff ist blockiert. Erlaube ihn in den Browser- oder Systemeinstellungen und versuche es erneut.",
+    "errorNoDevice": "Es wurde kein Mikrofon gefunden. Schließe eines an und versuche es erneut.",
+    "errorUnsupported": "Sprachnachrichten werden auf diesem Gerät nicht unterstützt.",
+    "speed": "Wiedergabegeschwindigkeit",
+    "played": "Abgespielt",
+    "errorPlay": "Sprachnachricht konnte nicht abgespielt werden",
+    "download": "Herunterladen",
+    "unplayed": "Ungehörte Sprachnachricht",
+    "retry": "Erneut versuchen",
+    "record": "Sprachnachricht aufnehmen",
+    "sendFailed": "Sprachnachricht konnte nicht gesendet werden. Versuche es erneut.",
+    "preview": "🎤 Sprachnachricht ({{duration}})",
+    "slideToCancel": "Zum Abbrechen nach links wischen",
+    "holdHint": "Tippen zum Aufnehmen oder gedrückt halten und loslassen zum Senden",
+    "errorPermissionMobile": "Der Mikrofonzugriff ist deaktiviert. Erlaube ihn für DeCave in den Einstellungen und versuche es erneut.",
+    "openSettings": "Einstellungen öffnen"
   }
 }

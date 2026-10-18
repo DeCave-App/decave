@@ -71,3 +71,16 @@ test("DM and group send acknowledgements carry bounded client ids through server
   assert.match(realtime, /conversationId !== pending\.conversationId/);
   assert.match(realtime, /pending\.draftRevision/);
 });
+
+test("polls and GIFs in DMs and group chats are sealed like typed messages", async () => {
+  const hubChat = await fs.readFile(path.join(root, "src/app/actions/hub-chat.tsx"), "utf8");
+  const rich = hubChat.slice(
+    hubChat.indexOf("const sendRichComposerText"),
+    hubChat.indexOf("const waitForPostedHubMessage"),
+  );
+
+  // A plaintext frame is refused by an encrypted conversation ("Update DeCave to send messages here").
+  assert.match(rich, /await dmSocketFrame\(peer\.id, text,/);
+  assert.match(rich, /await groupSocketFrame\(group, text,/);
+  assert.doesNotMatch(rich, /type: "DM_MESSAGE"|type: "GROUP_MESSAGE"/);
+});

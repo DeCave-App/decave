@@ -1081,6 +1081,69 @@ test("encrypted reactions round-trip through the session", async () => {
   assert.deepEqual((await u6.open(moved, publicId("u7"))).reactions, {});
 });
 
+test("a voice note's Played mark rides inside the listener's encrypted reactions envelope", async () => {
+  addUser("u20");
+  addUser("u21");
+  befriend("u20", "u21");
+  const speaker = await ready("u20", "phone");
+  const listener = await ready("u21", "desktop");
+  const { createDmE2eeSending } = await import("../../shared/dm-e2ee-sending.ts");
+  const sending = createDmE2eeSending(listener);
+  const request = async (path, init) => {
+    const response = await api(path, "u21", { method: init.method, body: init.body });
+    return { ok: response.status < 300, data: response.data };
+  };
+  const note = await speaker.seal(publicId("u21"), '__DECAVE_DM_ATTACHMENT__{"name":"voice.m4a"}');
+  const sent = await api(`/api/dms/${publicId("u21")}`, "u20", { method: "POST", body: { envelope: note.envelope } });
+  const message = sent.data.message;
+  const broadcastsBefore = broadcasts.length;
+
+  // Not opened on this device yet: its emojis are unknown, so nothing is sent (retried later).
+  assert.equal(await sending.sendPlayed(request, message, publicId("u21")), false);
+  const opened = await listener.open(message, publicId("u20"));
+  assert.equal(await sending.sendPlayed(request, opened, publicId("u21")), true);
+
+  // The server stored an ordinary reactions envelope from an account with no visible emojis.
+  const rows = (
+    await db.prepare("SELECT envelope FROM decave_dm_reaction_envelopes WHERE message_id=?").bind(message.id).all()
+  ).results;
+  assert.equal(rows.length, 1);
+  assert.doesNotMatch(rows[0].envelope, /"p"|played/i);
+  const live = broadcasts
+    .slice(broadcastsBefore)
+    .map((frame) => frame.payload?.type ?? frame.type ?? frame.message?.type);
+  assert.ok(JSON.stringify(broadcasts.slice(broadcastsBefore)).includes("DM_REACTION_UPDATED"), String(live));
+
+  const fresh = (await api(`/api/dms/${publicId("u21")}`, "u20")).data.messages.find((m) => m.id === message.id);
+  let seen = await speaker.open(fresh, publicId("u21"));
+  assert.deepEqual(seen.reactions, {});
+  assert.deepEqual(seen.playedBy, [publicId("u21")], "the sender sees Played");
+  // An old client reads only the emojis.
+  assert.deepEqual(
+    crypto.openReactions({
+      envelope: fresh.reactionEnvelopes[0],
+      reader: speaker.keyring,
+      senderKey: crypto.publicKeyOf(listener.keys),
+      expected: { messageId: message.id, from: publicId("u21"), to: publicId("u20") },
+    }),
+    [],
+  );
+
+  // Reacting and un-reacting later keeps the mark (an empty-but-played envelope is stored, not removed).
+  let mine = await listener.open(fresh, publicId("u20"));
+  assert.deepEqual(mine.playedBy, [publicId("u21")]);
+  for (const expected of [{ "👍": [publicId("u21")] }, {}]) {
+    const body = await sending.dmReactionBody(mine, publicId("u21"), publicId("u20"), "👍");
+    assert.notEqual(body.envelope, null);
+    const updated = await api(`/api/dms/messages/${message.id}/reactions`, "u21", { method: "POST", body });
+    assert.equal(updated.status, 200);
+    seen = await speaker.open(updated.data.message, publicId("u21"));
+    assert.deepEqual(seen.reactions, expected);
+    assert.deepEqual(seen.playedBy, [publicId("u21")]);
+    mine = await listener.open(updated.data.message, publicId("u20"));
+  }
+});
+
 function socketFor(userId, device = "a") {
   const socket = {
     attachment: {
