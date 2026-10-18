@@ -216,6 +216,12 @@ button.vn-download {
   position: relative;
 }
 
+/* Glass skins draw the bar on a see-through surface, so hide the composer's
+   own controls underneath rather than relying on the bar to cover them. */
+.dc-dm-reference-composer:has(> .vn-composer-overlay) > :not(.vn-composer-overlay) {
+  visibility: hidden;
+}
+
 .vn-composer-overlay {
   position: absolute;
   inset: 0;
