@@ -200,7 +200,13 @@ export function AuthScreen({
           )}
 
           {!ownerLoginChallengeToken && (
-            <>
+            <form
+              style={{ display: "contents" }}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitAuth();
+              }}
+            >
               {authMode === "register" && (
                 <input
                   type="email"
@@ -228,7 +234,7 @@ export function AuthScreen({
                   placeholder={authMode === "login" ? t("common.auth.email") : t("common.auth.username")}
                   value={usernameInput}
                   onChange={(event) => setUsernameInput(event.target.value)}
-                  autoComplete={authMode === "login" ? "email" : "nickname"}
+                  autoComplete="username"
                   autoFocus={authMode !== "register"}
                   maxLength={authMode === "login" ? 254 : 24}
                   style={authMode === "register" ? { marginTop: "12px" } : undefined}
@@ -255,9 +261,6 @@ export function AuthScreen({
                   placeholder={t("common.auth.password")}
                   value={passwordInput}
                   onChange={(event) => setPasswordInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") void submitAuth();
-                  }}
                   autoComplete={authMode === "login" ? "current-password" : "new-password"}
                   maxLength={128}
                   minLength={authMode === "register" ? 10 : undefined}
@@ -271,9 +274,6 @@ export function AuthScreen({
                   placeholder={t("common.auth.confirmPassword")}
                   value={confirmPasswordInput}
                   onChange={(event) => setConfirmPasswordInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") void submitAuth();
-                  }}
                   autoComplete="new-password"
                   maxLength={128}
                   style={{ marginTop: "12px" }}
@@ -352,8 +352,7 @@ export function AuthScreen({
               {authError && <p style={authErrorStyle}>{authError}</p>}
 
               <button
-                type="button"
-                onClick={() => void submitAuth()}
+                type="submit"
                 disabled={
                   authBusy ||
                   !turnstileToken ||
@@ -422,7 +421,7 @@ export function AuthScreen({
                   ]}
                 />
               </p>
-            </>
+            </form>
           )}
 
           <div className="vadrion-auth-skins">
