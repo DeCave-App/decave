@@ -85,7 +85,7 @@
     "sprintf-js": "file:vendor/sprintf-js",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.71.0",
-    "vite": "^8.2.2",
+    "vite": "^8.3.5",
     "wrangler": "^4.124.0"
   },
   "overrides": {
